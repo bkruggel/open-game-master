@@ -867,7 +867,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
     "Cet atelier n'a aucune préparation de campagne à copier : lieux, distribution, cartes, combats, traditions, tables, boutiques, le storyboard, WorldForge ou règles de la maison. Son Homebrew n'a besoin d'aucune copie, puisqu'il compte déjà à chaque table que tu mènes. Pour offrir ses pré-tirés aux joueurs ici, coche Proposer aux joueurs dans son panneau Groupe, puis choisis-le de nouveau.",
   "creator.import.campaignNoPrep": "Cette campagne n'a encore aucune préparation à copier.",
 
-  // La table.  "table.author.gm": "Maître du jeu",
+  // La table.
+  "table.author.gm": "Maître du jeu",
   "table.author.gmOoc": "Maître du jeu, hors personnage",
   "table.author.gmActions": "Maître du jeu : actions du message",
   "table.author.speakerThroughGm": "{name}, par la voix du maître du jeu",
