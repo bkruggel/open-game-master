@@ -4,7 +4,7 @@ import { Dices } from "lucide-react";
 import { useId, useMemo, type Ref } from "react";
 import OptionPicker, { type PickerGroup } from "@/app/characters/builder/OptionPicker";
 import { UnofficialPackNotice } from "@/components/UnofficialPackNotice";
-import { DM_MODE_HINTS, DM_MODE_LABELS, DM_MODES } from "@/lib/schemas/game-settings-options";
+import { DM_MODES } from "@/lib/schemas/game-settings-options";
 import type { FranchiseGroup, WorldPackSummary } from "@/lib/worlds/types";
 import { FieldLabel, inputClass, ToggleCard } from "@/app/create-campaign/fields";
 import type { StepProps } from "@/app/create-campaign/draft";
@@ -76,11 +76,11 @@ export function DmModeField({ draft, patch, gates }: StepProps) {
             key={mode}
             active={draft.dmMode === mode}
             onClick={() => patch({ dmMode: mode })}
-            label={DM_MODE_LABELS[mode]}
+            label={t(`creator.dmMode.mode.${mode}`)}
             hint={
               <>
                 <span className="block text-amber-200/90">{t(DM_ROLE_KEYS[mode])}</span>
-                {DM_MODE_HINTS[mode]}
+                {t(`creator.dmHint.${mode}`)}
               </>
             }
           />

@@ -14,7 +14,6 @@ import {
 import { useServerRerollBelow } from "@/app/characters/builder/useTableRules";
 import {
   CAMPAIGN_DIFFICULTIES,
-  CAMPAIGN_DIFFICULTY_HINTS,
   type CampaignDifficulty,
 } from "@/lib/campaign-types";
 import {
@@ -54,7 +53,7 @@ export function PartyBasics({ draft, patch, gates }: StepProps) {
         <FieldLabel>
           <span className="flex items-center gap-1">
             {t("creator.field.difficulty")}
-            <InfoButton label={t("creator.field.difficulty")} text={t("creator.difficulty.info", { list: difficultyList() })} />
+            <InfoButton label={t("creator.field.difficulty")} text={t("creator.difficulty.info", { list: difficultyList(t) })} />
           </span>
         </FieldLabel>
         <Select<CampaignDifficulty>
@@ -62,10 +61,10 @@ export function PartyBasics({ draft, patch, gates }: StepProps) {
           onChange={(difficulty) => patch({ difficulty })}
           label={t("creator.field.difficulty")}
           className="w-full"
-          options={CAMPAIGN_DIFFICULTIES.map((value) => ({ value, label: value }))}
+          options={CAMPAIGN_DIFFICULTIES.map((value) => ({ value, label: t(`creator.difficulty.${value}`) }))}
         />
         {/* The chosen tier says what it means without opening anything. */}
-        <p className="mt-1 text-xs text-stone-500">{CAMPAIGN_DIFFICULTY_HINTS[draft.difficulty]}</p>
+        <p className="mt-1 text-xs text-stone-500">{t(`creator.difficultyHint.${draft.difficulty}`)}</p>
       </label>
     </div>
   );
@@ -73,8 +72,8 @@ export function PartyBasics({ draft, patch, gates }: StepProps) {
 
 // The difficulty dialog's middle block: one line per tier, from the data
 // file's own hints (the tiers' words stay the data's).
-const difficultyList = () =>
-  CAMPAIGN_DIFFICULTIES.map((value) => `**${value}**: ${CAMPAIGN_DIFFICULTY_HINTS[value]}`).join("\n\n");
+const difficultyList = (t: (key: string) => string) =>
+  CAMPAIGN_DIFFICULTIES.map((value) => `**${t(`creator.difficulty.${value}`)}**: ${t(`creator.difficultyHint.${value}`)}`).join("\n\n");
 
 // How heroes are built here. Asked at creation because the first characters
 // are built before anyone opens the lobby's settings.
