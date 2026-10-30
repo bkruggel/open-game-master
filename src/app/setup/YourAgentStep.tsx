@@ -5,7 +5,8 @@ import { useState } from "react";
 import { ui } from "@/lib/ui";
 import { Switch } from "@/components/ui/Switch";
 import { AgentConnectLines } from "@/components/AgentConnectLines";
-import { AGENT_SCOPE_CHOICES } from "@/app/settings/ConnectedAgentsSection";
+import { AGENT_SCOPE_CHOICES, agentScopeHint, agentScopeLabel } from "@/app/settings/ConnectedAgentsSection";
+import { useT } from "@/lib/locale";
 
 export type MadeConnection = { id: string; token: string; mcpUrl: string };
 
@@ -21,6 +22,7 @@ export function YourAgentStep({
   made: MadeConnection | null;
   onMade: (connection: MadeConnection) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("My agent");
   const [scopes, setScopes] = useState<string[]>(["read", "play", "dm"]);
   const [busy, setBusy] = useState(false);
@@ -78,13 +80,13 @@ export function YourAgentStep({
           return (
             <label key={scope.id} className="flex items-start gap-3 text-sm text-stone-300">
               <Switch
-                label={scope.label}
+                label={agentScopeLabel(t, scope.id)}
                 on={on}
                 onChange={(next) => setScopes((current) => (next ? [...current, scope.id] : current.filter((entry) => entry !== scope.id)))}
               />
               <span>
-                {scope.label}
-                <span className="block text-xs text-stone-500">{scope.hint}</span>
+                {agentScopeLabel(t, scope.id)}
+                <span className="block text-xs text-stone-500">{agentScopeHint(t, scope.id)}</span>
               </span>
             </label>
           );

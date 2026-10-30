@@ -5,6 +5,8 @@ import { readLoad, useLoadStatus } from "@/lib/load-state";
 import { Link2, Loader2, Plug, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ui } from "@/lib/ui";
+import { localeTag } from "@/lib/messages-logic";
+import { useLocale, useT } from "@/lib/locale";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSection } from "@/components/PageShell";
 import { Select } from "@/components/ui/Select";
@@ -26,23 +28,33 @@ type Grant = {
 
 type Campaign = { id: string; title: string };
 
-export const AGENT_SCOPE_CHOICES: Array<{ id: string; label: string; hint: string }> = [
-  { id: "read", label: "Read", hint: "Your campaigns, characters, quests and lore, as you see them." },
-  { id: "play", label: "Play", hint: "Act, speak and roll at a table as your character." },
-  { id: "characters", label: "Characters", hint: "Create, edit and delete your library characters." },
-  { id: "campaigns", label: "Campaigns", hint: "Create campaigns and change the ones you lead." },
-  { id: "dm", label: "Game Master", hint: "Run the rules engine and narrate, only where you hold the GM seat." },
-];
+// The labels live in the dictionaries under `agents.scope.<id>.*`, so the
+// setup wizard's agent step and this page say the same words in any language.
+export const AGENT_SCOPE_IDS = ["read", "play", "characters", "campaigns", "dm"] as const;
+export type AgentScopeId = (typeof AGENT_SCOPE_IDS)[number];
+export const AGENT_SCOPE_CHOICES: ReadonlyArray<{ id: AgentScopeId }> = AGENT_SCOPE_IDS.map((id) => ({ id }));
 
-function when(iso: string | null): string {
-  if (!iso) return "never";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+export function agentScopeLabel(t: (key: string) => string, id: AgentScopeId): string {
+  return t(`agents.scope.${id}.label`);
+}
+export function agentScopeHint(t: (key: string) => string, id: AgentScopeId): string {
+  return t(`agents.scope.${id}.hint`);
+}
+
+function makeWhen(locale: string): (iso: string | null) => string {
+  return (iso: string | null) => {
+    if (!iso) return "never";
+    return new Date(iso).toLocaleDateString(localeTag(locale as "en" | "fr"), { month: "short", day: "numeric", year: "numeric" });
+  };
 }
 
 // Connected agents (docs/archive/harness-mcp-plan.md 7): your own Claude Code, Codex
 // or other MCP client acting as you on this server, with exactly what your
 // account can do in the browser and nothing more. The token is shown once.
 export function ConnectedAgentsSection() {
+  const t = useT();
+  const locale = useLocale();
+  const when = makeWhen(locale);
   const [grants, setGrants] = useState<Grant[] | null>(null);
   // A refused or failed read is shown in the server's words with a way to
   // ask again, never as "nothing here yet" (issue 140).
@@ -93,7 +105,7 @@ export function ConnectedAgentsSection() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data.error ?? "Could not connect an agent.");
+        setError(data.error ?? t("agents.createFailed"));
         return;
       }
       setGrants((current) => [data.grant, ...(current ?? [])]);
@@ -119,19 +131,18 @@ export function ConnectedAgentsSection() {
     }
   }
 
-  const campaignTitle = (id: string | null) => campaigns.find((campaign) => campaign.id === id)?.title ?? "one campaign";
+  const campaignTitle = (id: string | null) => campaigns.find((campaign) => campaign.id === id)?.title ?? t("agents.oneCampaign");
 
   return (
     <PageSection
-      heading="Connected agents"
+      heading={t("agents.title")}
       glyph="system-share"
-      intro={`Let your own Claude Code, Codex or other MCP client act as you here: read your campaigns, play your character, or run a table where you are the Game Master.${assistantUrl ? " ChatGPT, Claude, Grok and Meta Muse can too, through the link shown when you connect." : ""} It gets exactly the access your account has, only the parts you tick, and never your password or the server's settings.`}
+      intro={`${t("agents.intro")}${assistantUrl ? t("agents.introAssistant") : ""}`}
     >
       {fresh ? (
         <div className="hx-token mb-4 space-y-2 rounded-xl border border-amber-600/40 bg-amber-950/20 p-3">
           <p className="text-sm text-amber-100">
-            <strong>{fresh.name}</strong> is ready. This is the only time its token is shown; copy the line for
-            your agent now.
+            <strong>{fresh.name}</strong> {t("agents.readyBody")}
           </p>
           <AssistantLink base={assistantUrl} token={fresh.token} />
           <AgentConnectLines grantId={fresh.id} token={fresh.token} mcpUrl={mcpUrl} />
@@ -140,13 +151,13 @@ export function ConnectedAgentsSection() {
             <PlayerPollLinkSetup key={fresh.id} grantId={fresh.id} characterName={fresh.receiver.character.name} />
           ) : null}
           <button type="button" className={ui.btnSmall} onClick={() => setFresh(null)}>
-            I have copied it
+            {t("agents.copied")}
           </button>
         </div>
       ) : null}
 
       {grants === null ? (
-        <div className="skeleton-block h-12 rounded-xl" aria-label="Loading connected agents" />
+        <div className="skeleton-block h-12 rounded-xl" aria-label={t("agents.loading")} />
       ) : grants.length === 0 && !creating ? (
         (loadError ? (
           <LoadFailed
@@ -157,7 +168,7 @@ export function ConnectedAgentsSection() {
           <EmptyState
             size="sm"
             art="board"
-            title="No agents connected."
+            title={t("agents.nobody")}
           />
         ) : null)
       ) : (
@@ -170,18 +181,18 @@ export function ConnectedAgentsSection() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm text-stone-200">{grant.name}</span>
                 <span className="block truncate text-[11px] text-stone-500">
-                  {grant.scopes.join(", ")}
-                  {grant.campaignId ? ` · ${campaignTitle(grant.campaignId)}` : ""} · last used {when(grant.lastUsedAt)} ·
-                  expires {when(grant.expiresAt)}
+                  {grant.scopes.map((scope) => agentScopeLabel(t, scope as AgentScopeId)).join(", ")}
+                  {grant.campaignId ? ` · ${campaignTitle(grant.campaignId)}` : ""} ·{" "}
+                  {t("agents.rowMeta", { last: when(grant.lastUsedAt), expires: when(grant.expiresAt) })}
                 </span>
               </span>
               {pollLinks && grant.campaignId && grant.scopes.includes("read") && grant.scopes.includes("play") ? (
                 <button type="button" className={ui.btnSmall} onClick={() => setPollFor(pollFor === grant.id ? null : grant.id)}>
-                  <Link2 className="size-3.5" /> Poll link
+                  <Link2 className="size-3.5" /> {t("agents.pollLink")}
                 </button>
               ) : null}
               <button type="button" className={ui.btnSmall} onClick={() => revoke(grant.id)}>
-                <Trash2 className="size-3.5" /> Revoke
+                <Trash2 className="size-3.5" /> {t("agents.revoke")}
               </button>
               {pollFor === grant.id ? (
                 <div className="basis-full pt-2">
@@ -197,43 +208,43 @@ export function ConnectedAgentsSection() {
         <div className="reveal-height mt-3">
           <div className="space-y-3 rounded-xl border border-stone-800 p-3">
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-stone-400">Name</span>
+              <span className="mb-1 block text-xs font-medium text-stone-400">{t("agents.name")}</span>
               <input
                 className={ui.input}
                 value={name}
                 maxLength={60}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Claude Code on my laptop"
+                placeholder={t("agents.namePlaceholder")}
               />
             </label>
             <div className="space-y-2">
-              <span className="block text-xs font-medium text-stone-400">What it may do</span>
+              <span className="block text-xs font-medium text-stone-400">{t("agents.whatMayDo")}</span>
               {AGENT_SCOPE_CHOICES.map((scope) => {
                 const on = scopes.includes(scope.id);
                 return (
                   <label key={scope.id} className="flex items-start gap-3 text-sm text-stone-300">
                     <Switch
-                      label={scope.label}
+                      label={agentScopeLabel(t, scope.id)}
                       on={on}
                       onChange={(next) =>
                         setScopes((current) => (next ? [...current, scope.id] : current.filter((entry) => entry !== scope.id)))
                       }
                     />
                     <span>
-                      {scope.label}
-                      <span className="block text-xs text-stone-500">{scope.hint}</span>
+                      {agentScopeLabel(t, scope.id)}
+                      <span className="block text-xs text-stone-500">{agentScopeHint(t, scope.id)}</span>
                     </span>
                   </label>
                 );
               })}
             </div>
-            <div role="group" aria-label="Limit to one campaign">
-              <span className="mb-1 block text-xs font-medium text-stone-400">Limit to one campaign</span>
+            <div role="group" aria-label={t("agents.limitToCampaign")}>
+              <span className="mb-1 block text-xs font-medium text-stone-400">{t("agents.limitToCampaign")}</span>
               <Select
                 value={campaignId}
                 onChange={setCampaignId}
-                label="Limit to one campaign"
-                options={[{ value: "", label: "Any campaign I belong to" }, ...campaigns.map((campaign) => ({ value: campaign.id, label: campaign.title }))]}
+                label={t("agents.limitToCampaign")}
+                options={[{ value: "", label: t("agents.anyCampaign") }, ...campaigns.map((campaign) => ({ value: campaign.id, label: campaign.title }))]}
               />
             </div>
             {error ? (
@@ -249,17 +260,17 @@ export function ConnectedAgentsSection() {
                 disabled={busy || !name.trim() || scopes.length === 0}
                 aria-busy={busy}
               >
-                {busy ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />} Connect
+                {busy ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />} {t("action.connect")}
               </button>
               <button type="button" className={ui.btnSecondary} onClick={() => setCreating(false)}>
-                Cancel
+                {t("action.cancel")}
               </button>
             </div>
           </div>
         </div>
       ) : (
         <button type="button" className={`${ui.btnSmall} mt-3`} onClick={() => setCreating(true)}>
-          <Plug className="size-3.5" /> Connect an agent
+          <Plug className="size-3.5" /> {t("agents.connectAnAgent")}
         </button>
       )}
     </PageSection>
