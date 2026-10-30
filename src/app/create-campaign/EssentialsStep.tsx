@@ -16,6 +16,7 @@ import { WorldDetailsFields, WorldFields } from "@/app/create-campaign/WorldFiel
 import type { StepProps } from "@/app/create-campaign/draft";
 import { groupProps, type GroupControl } from "@/app/create-campaign/groups";
 import { characterSummary, prepSummary, worldSummary } from "@/app/create-campaign/summaries";
+import { useT } from "@/lib/locale";
 
 // Step 1, the essentials: a name, who runs the table, how big and how hard,
 // and the world with its theme and premise. What a first campaign can leave
@@ -40,6 +41,7 @@ export function EssentialsStep(
   },
 ) {
   const { draft, patch, gates, active, groups, selectedPack } = props;
+  const t = useT();
   return (
     <div className={cn("space-y-4 text-sm", active && "cc-live")}>
       {props.defaultsBar}
@@ -49,16 +51,16 @@ export function EssentialsStep(
       <WorldFields draft={draft} patch={patch} gates={gates} active={active} onPickGenre={props.onPickGenre} />
 
       <div className="cc-group-head pt-1">
-        <span className="cc-eyebrow">More about this campaign</span>
+        <span className="cc-eyebrow">{t("creator.essentials.more")}</span>
         <span className="cc-group-rule" aria-hidden="true" />
-        <span className="cc-note">optional</span>
+        <span className="cc-note">{t("creator.optional")}</span>
       </div>
       <div className="space-y-2">
         <DetailGroup
           {...groupProps(groups, "world")}
-          title="World and story"
+          title={t("creator.group.world")}
           glyph="system-world"
-          summary={worldSummary(draft, gates, selectedPack?.name ?? null)}
+          summary={worldSummary(t, draft, gates, selectedPack?.name ?? null)}
         >
           <WorldPackField
             draft={draft}
@@ -74,9 +76,9 @@ export function EssentialsStep(
 
         <DetailGroup
           {...groupProps(groups, "character")}
-          title="Character creation"
+          title={t("creator.group.character")}
           glyph="tab-characters"
-          summary={characterSummary(draft)}
+          summary={characterSummary(t, draft)}
         >
           <CharacterRulesFields draft={draft} patch={patch} gates={gates} />
           <SheetRows draft={draft} patch={patch} gates={gates} keys={["multiclassingEnabled"]} />
@@ -84,9 +86,9 @@ export function EssentialsStep(
 
         <DetailGroup
           {...groupProps(groups, "prep")}
-          title="House rules, lore and prep"
+          title={t("creator.group.prep")}
           glyph="system-lore"
-          summary={prepSummary(draft, props.prepSource)}
+          summary={prepSummary(t, draft, props.prepSource)}
         >
           <WorldSetupFields
             collapsible={false}
@@ -96,7 +98,7 @@ export function EssentialsStep(
             setLoreDrafts={(loreDrafts) => patch({ loreDrafts })}
           />
           <div className="rounded-lg border border-stone-800 bg-stone-950/40 p-3">
-            <span className="mb-1.5 block text-stone-400">Bring in prep</span>
+            <span className="mb-1.5 block text-stone-400">{t("creator.prep.bringIn")}</span>
             <ContentImportPicker
               selection={draft.contentImport}
               onChange={(contentImport) => patch({ contentImport })}

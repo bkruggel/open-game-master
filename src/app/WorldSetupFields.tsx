@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ui } from "@/lib/ui";
 import { Select } from "@/components/ui/Select";
+import { useT } from "@/lib/locale";
 import {
   WORLD_LORE_CATEGORIES,
   type WorldLoreCategory,
@@ -20,14 +21,16 @@ export type LoreDraft = {
   body: string;
 };
 
-const CATEGORY_LABELS: Record<WorldLoreCategory, string> = {
-  geography: "Geography",
-  factions: "Factions",
-  history: "History",
-  magic: "Magic",
-  culture: "Culture",
-  religion: "Religion",
-  other: "Other",
+// The categories' words live in the dictionaries, keyed by the ids the
+// lore logic carries (the dice.preset.<id> pattern).
+const CATEGORY_KEYS: Record<WorldLoreCategory, string> = {
+  geography: "creator.lore.category.geography",
+  factions: "creator.lore.category.factions",
+  history: "creator.lore.category.history",
+  magic: "creator.lore.category.magic",
+  culture: "creator.lore.category.culture",
+  religion: "creator.lore.category.religion",
+  other: "creator.lore.category.other",
 };
 
 // What did not save, so the creator can say so and send only that again:
@@ -90,6 +93,7 @@ export function WorldSetupFields({
   // creator's "House rules, lore and prep"): no second toggle inside it.
   collapsible?: boolean;
 }) {
+  const t = useT();
   const [toggled, setOpen] = useState(false);
   const open = toggled || !collapsible;
   const filled =
@@ -116,33 +120,30 @@ export function WorldSetupFields({
           ) : (
             <ChevronRight className="size-3.5 text-stone-500" />
           )}
-          <span className="font-medium">World building</span>
+          <span className="font-medium">{t("creator.lore.heading")}</span>
           <span className="text-xs text-stone-500">
-            optional{filled ? `, ${filled} item${filled === 1 ? "" : "s"}` : ""}
+            {t("creator.optional")}
+            {filled ? t("creator.worldSetup.items", { count: filled }) : ""}
           </span>
         </button>
       ) : null}
       {open ? (
         <div className={collapsible ? "space-y-3 border-t border-stone-800/70 p-3" : "space-y-3"}>
           <label className="block">
-            <span className="mb-1 block text-xs text-stone-400">House rules</span>
+            <span className="mb-1 block text-xs text-stone-400">{t("creator.field.houseRules")}</span>
             <textarea
               value={houseRules}
               onChange={(event) => setHouseRules(event.target.value)}
               rows={4}
               maxLength={20_000}
-              placeholder={
-                "Your table's rulings, grouped under headings, e.g.\n\nPotions:\nDrinking a potion is a bonus action."
-              }
+              placeholder={t("creator.lore.rulesPlaceholder")}
               className={ui.input}
             />
-            <span className="mt-1 block text-xs text-stone-500">
-              The GM is reminded of the relevant rules each turn. Editable later in the table&apos;s Settings.
-            </span>
+            <span className="mt-1 block text-xs text-stone-500">{t("creator.lore.rulesNote")}</span>
           </label>
 
           <div>
-            <span className="mb-1 block text-xs text-stone-400">World lore</span>
+            <span className="mb-1 block text-xs text-stone-400">{t("creator.lore.heading2")}</span>
             <div className="space-y-2">
               {loreDrafts.map((draft, index) => (
                 <div
@@ -153,15 +154,15 @@ export function WorldSetupFields({
                     <Select<WorldLoreCategory>
                       value={draft.category}
                       onChange={(category) => patchDraft(index, { category })}
-                      label="Lore category"
+                      label={t("creator.lore.category")}
                       className="w-32 shrink-0"
-                      options={WORLD_LORE_CATEGORIES.map((category) => ({ value: category, label: CATEGORY_LABELS[category] }))}
+                      options={WORLD_LORE_CATEGORIES.map((category) => ({ value: category, label: t(CATEGORY_KEYS[category]) }))}
                     />
                     <input
                       value={draft.title}
                       onChange={(event) => patchDraft(index, { title: event.target.value })}
                       maxLength={120}
-                      placeholder="Title (The Ashen League, The Sundering...)"
+                      placeholder={t("creator.lore.titlePlaceholder")}
                       className={ui.input}
                     />
                     <button
@@ -169,7 +170,7 @@ export function WorldSetupFields({
                       onClick={() =>
                         setLoreDrafts(loreDrafts.filter((_, draftIndex) => draftIndex !== index))
                       }
-                      title="Remove this entry"
+                      title={t("creator.lore.removeEntry")}
                       className="shrink-0 rounded p-1 text-stone-500 hover:text-red-400"
                     >
                       <Trash2 className="size-3.5" />
@@ -180,7 +181,7 @@ export function WorldSetupFields({
                     onChange={(event) => patchDraft(index, { body: event.target.value })}
                     rows={2}
                     maxLength={4000}
-                    placeholder="What is established about it..."
+                    placeholder={t("creator.lore.bodyPlaceholder")}
                     className={ui.input}
                   />
                 </div>
@@ -192,13 +193,10 @@ export function WorldSetupFields({
                 }
                 className="flex items-center gap-1 rounded border border-stone-700 px-2 py-1 text-xs text-stone-400 hover:bg-stone-900"
               >
-                <Plus className="size-3" /> Add lore entry
+                <Plus className="size-3" /> {t("creator.lore.add")}
               </button>
             </div>
-            <span className="mt-1 block text-xs text-stone-500">
-              Places, factions, and history the GM treats as canon. Grows anytime from the lobby
-              and the Facts tab.
-            </span>
+            <span className="mt-1 block text-xs text-stone-500">{t("creator.lore.note")}</span>
           </div>
         </div>
       ) : null}

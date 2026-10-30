@@ -122,7 +122,7 @@ await test("F03: the creator keeps the campaign it made and sends only what fail
   assert.match(dialog, /if \(problems\.length\) \{\s+setFollowUp\(/);
   const review = fs.readFileSync(new URL("../src/app/create-campaign/ReviewStep.tsx", import.meta.url), "utf8");
   assert.match(review, /role="alert"/);
-  assert.match(review, /Open the campaign as it is/);
+  assert.match(review, /creator\.review\.openAsIs(Campaign|Adventure)/);
 });
 
 globalThis.fetch = realFetch;

@@ -16,6 +16,7 @@ import {
 import type { WorldPackSummary } from "@/lib/worlds/types";
 import { FieldLabel } from "@/app/create-campaign/fields";
 import type { StepProps } from "@/app/create-campaign/draft";
+import { useT } from "@/lib/locale";
 import {
   arrivalTypeIn,
   dmFlavorText,
@@ -25,12 +26,9 @@ import {
   type TypeInPlan,
 } from "@/app/create-campaign/portals";
 
-// A card has no room for a ⓘ of its own, and a `title` tooltip never opens
-// under a finger, so every setting is also spelled out in one dialog on the
-// label.
-const SETTING_INFO = `The setting decides how the world sounds, what the maps and portraits look like, and which classes and backgrounds the character builder floats to the top. It changes no rule: every setting plays 5e.\n\n${GENRE_PRESETS.map(
-  (preset) => `**${preset.name}**: ${preset.blurb}`,
-).join("\n\n")}`;
+// The setting dialog's middle block: one line per portal, from the data
+// file's own names and blurbs (the worlds' words stay the data's).
+const settingList = () => GENRE_PRESETS.map((preset) => `**${preset.name}**: ${preset.blurb}`).join("\n\n");
 
 // The setting as eight painted portals, its custom description, the theme the
 // preset writes (and the person may overwrite) and the premise. One component
@@ -49,6 +47,7 @@ export function WorldFields({
   // the theme, so the dialog owns the handler that does all three.
   onPickGenre: (genre: Genre) => void;
 }) {
+  const t = useT();
   const showsAiFill = gates.aiNarrates && draft.aiStorySetup;
   // The type-in is a clip played over the input while its own text hides;
   // `run` re-keys it so a second pick replays it.
@@ -72,20 +71,20 @@ export function WorldFields({
   // defaults, or anything else that rewrote the theme, ends it.
   const typingNow = typing !== null && typing.text === draft.theme;
   const themeNote = draft.themeTouched
-    ? "yours; nothing will overwrite it"
+    ? t("creator.themeNote.own")
     : draft.worldPack
-      ? "written by the world pack"
+      ? t("creator.themeNote.pack")
       : draft.theme
-        ? "written by the preset"
-        : "yours to write";
+        ? t("creator.themeNote.preset")
+        : t("creator.themeNote.empty");
 
   return (
     <div className="space-y-4">
       <div>
         <FieldLabel className="mb-0">
           <span className="flex items-center gap-1">
-            Setting
-            <InfoButton label="Settings" text={SETTING_INFO} />
+            {t("creator.field.setting")}
+            <InfoButton label={t("creator.setting.infoLabel")} text={t("creator.setting.info", { list: settingList() })} />
           </span>
         </FieldLabel>
         <div className="cc-portal-grid">
@@ -94,24 +93,24 @@ export function WorldFields({
               <button type="button" onClick={() => pick(card.id)} aria-pressed={card.chosen} className="cc-portal motion-card">
                 <span
                   role="img"
-                  aria-label={`${card.name} cover plate`}
+                  aria-label={t("creator.genre.coverAria", { name: t(`creator.genre.${card.id}`) })}
                   className="cc-plate"
                   style={{ backgroundImage: `url("${card.plate}")` }}
                 >
-                  <span className="cc-plate-name">{card.name}</span>
-                  {card.humansOnly ? <span className="cc-humans">all-human world</span> : null}
+                  <span className="cc-plate-name">{t(`creator.genre.${card.id}`)}</span>
+                  {card.humansOnly ? <span className="cc-humans">{t("creator.genre.humansOnly")}</span> : null}
                 </span>
                 <span className="cc-portal-body">
                   <span className="cc-portal-blurb">{card.blurb}</span>
                   <span className="cc-portal-foot">
-                    <span className="cc-chip">{card.climate}</span>
-                    <span className="cc-cta">{card.chosen ? "Chosen" : "Tap to choose"}</span>
+                    <span className="cc-chip">{t(`creator.climate.${card.climate}`)}</span>
+                    <span className="cc-cta">{card.chosen ? t("creator.chosen") : t("creator.tapToChoose")}</span>
                   </span>
                 </span>
               </button>
               {card.chosen ? (
                 <span className="cc-chosen" aria-hidden="true">
-                  ✓ Chosen
+                  ✓ {t("creator.chosen")}
                 </span>
               ) : null}
             </div>
@@ -119,19 +118,16 @@ export function WorldFields({
         </div>
         {draft.genre === "custom" ? (
           <div className="cc-custom mt-2">
-            <span className="cc-eyebrow mb-1 block">Describe it yourself</span>
-            <p className="cc-prose mb-2 text-[13px] leading-relaxed text-stone-300">
-              Custom writes nothing for you. The theme and premise boxes stay yours, and what you describe here goes
-              to the GM in place of a preset tone.
-            </p>
+            <span className="cc-eyebrow mb-1 block">{t("creator.custom.heading")}</span>
+            <p className="cc-prose mb-2 text-[13px] leading-relaxed text-stone-300">{t("creator.custom.body")}</p>
             <span className="cc-serif block">
               <textarea
                 value={draft.customGenreText}
                 onChange={(event) => patch({ customGenreText: event.target.value })}
                 rows={2}
                 maxLength={500}
-                aria-label="Describe the world and tone"
-                placeholder="Describe the world and tone in your own words..."
+                aria-label={t("creator.custom.aria")}
+                placeholder={t("creator.custom.placeholder")}
                 className="cc-bare"
               />
             </span>
@@ -154,7 +150,7 @@ export function WorldFields({
       >
         <span key={typingNow ? typing.run : "rest"} className="cc-sweep" aria-hidden="true" />
         <span className="cc-field-head">
-          <span className="cc-eyebrow">World or theme notes</span>
+          <span className="cc-eyebrow">{t("creator.field.theme")}</span>
           <span className="cc-note">{themeNote}</span>
         </span>
         <span className="cc-type-row cc-serif block">
@@ -165,7 +161,7 @@ export function WorldFields({
               patch({ theme: event.target.value, themeTouched: true });
             }}
             maxLength={120}
-            placeholder="Low-magic gritty, homebrew fey court, neon-drenched megacity..."
+            placeholder={t("creator.theme.placeholder")}
             className="cc-bare"
           />
           {typingNow ? (
@@ -186,8 +182,11 @@ export function WorldFields({
 
       <label className="cc-field block">
         <span className="cc-field-head">
-          <span className="cc-eyebrow">Premise</span>
-          <span className="cc-note">optional{showsAiFill ? "; the AI fills this in if left blank" : ""}</span>
+          <span className="cc-eyebrow">{t("creator.field.premise")}</span>
+          <span className="cc-note">
+            {t("creator.optional")}
+            {showsAiFill ? t("creator.premise.aiFill") : ""}
+          </span>
         </span>
         <span className="cc-serif block">
           <textarea
@@ -212,12 +211,15 @@ export function WorldDetailsFields({
   patch,
   selectedPack,
 }: Pick<StepProps, "draft" | "patch"> & { selectedPack: WorldPackSummary | null }) {
+  const t = useT();
   return (
     <div className="space-y-4">
       <div className="cc-field">
         <div className="cc-field-head">
-          <span className="cc-eyebrow">How the GM will talk</span>
-          <span className="cc-note">{selectedPack ? `${selectedPack.name} adds its own voice on top` : "read-only"}</span>
+          <span className="cc-eyebrow">{t("creator.details.voiceHeading")}</span>
+          <span className="cc-note">
+            {selectedPack ? t("creator.details.packVoice", { name: selectedPack.name }) : t("creator.details.readOnly")}
+          </span>
         </div>
         <p key={draft.genre} className="cc-flavor cc-prose text-[13px] leading-relaxed text-stone-300">
           {dmFlavorText(draft.genre)}
@@ -234,13 +236,13 @@ export function WorldDetailsFields({
 
       <div className="cc-field">
         <div className="cc-field-head">
-          <span className="cc-eyebrow">Table language</span>
-          <span className="cc-note">what the story is written in</span>
+          <span className="cc-eyebrow">{t("creator.details.language")}</span>
+          <span className="cc-note">{t("creator.details.languageNote")}</span>
         </div>
         <Select<TableLanguage>
           value={draft.tableLanguage}
           onChange={(tableLanguage) => patch({ tableLanguage })}
-          label="Table language"
+          label={t("creator.details.language")}
           className="w-full"
           options={TABLE_LANGUAGES.map((value) => ({ value, label: TABLE_LANGUAGE_LABELS[value] }))}
         />
@@ -250,8 +252,8 @@ export function WorldDetailsFields({
       <div className="flex items-start gap-3 rounded-lg border border-stone-800 bg-stone-950/40 p-3">
         <ImageIcon className="mt-0.5 size-4 shrink-0 text-amber-300/70" aria-hidden="true" />
         <div>
-          <span className="block text-stone-300">Cover art</span>
-          <p className="mt-0.5 text-xs text-stone-500">You can add cover art from the campaign&apos;s details once it exists.</p>
+          <span className="block text-stone-300">{t("creator.details.cover")}</span>
+          <p className="mt-0.5 text-xs text-stone-500">{t("creator.details.coverNote")}</p>
         </div>
       </div>
     </div>

@@ -4,6 +4,11 @@ import { DELEGATIONS } from "@/lib/dm/delegation";
 import { CAMPAIGN_LENGTH_LABELS, TABLE_LANGUAGE_LABELS } from "@/lib/schemas/game-settings-options";
 import { bondsSummary, boardSummary, safetySummary, voiceSummary } from "@/app/create-campaign/summaries";
 import { textKey } from "@/lib/language/text-logic";
+import { translate } from "@/lib/messages-logic";
+
+// The group summaries' words moved into the dictionaries; until this panel's
+// own translation lands, it keeps reading the English lines (the fallback).
+const tEn = (key: string, vars?: Record<string, string | number>) => translate("en", key, vars);
 
 // The live table's settings, in the named groups the campaign creator taught
 // (src/app/create-campaign/groups.ts): a lead who met "Bonds and romance"
@@ -178,7 +183,7 @@ export function tableGroupSummary(id: TableGroupId, settings: GameSettings, cont
         `theatre inserts ${onOff(settings.presentation === "theatre")}`,
       ].join(" · ");
     case "safety":
-      return safetySummary(settings);
+      return safetySummary(tEn, settings);
     case "ai":
       return [
         settings.dmMode === "assisted" ? assistWords(settings) : null,
@@ -198,8 +203,8 @@ export function tableGroupSummary(id: TableGroupId, settings: GameSettings, cont
     }
     case "bonds":
       return conscienceShown(settings, context.lastingCompanions ?? false)
-        ? `${bondsSummary(settings)} · companions ${CONSCIENCE_WORDS[settings.companionConscience ?? "leave"]}`
-        : bondsSummary(settings);
+        ? `${bondsSummary(tEn, settings)} · companions ${CONSCIENCE_WORDS[settings.companionConscience ?? "leave"]}`
+        : bondsSummary(tEn, settings);
     case "players":
       return [
         `joining mid-game ${settings.midGameJoinOpen ? "open" : "closed"}`,
@@ -215,9 +220,9 @@ export function tableGroupSummary(id: TableGroupId, settings: GameSettings, cont
       return [messages ? `after ${messages} actions` : null, rolls ? `after ${rolls} rolls` : null].filter(Boolean).join(" or ");
     }
     case "board":
-      return boardSummary(settings);
+      return boardSummary(tEn, settings);
     case "voiceChat":
-      return voiceSummary(settings.voice);
+      return voiceSummary(tEn, settings.voice);
   }
 }
 

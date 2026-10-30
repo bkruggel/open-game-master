@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/Switch";
 import { FieldLabel } from "@/app/workshop/kit";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import {
   IMPORT_KINDS,
   WORLD_RECORD_KINDS,
@@ -92,6 +93,7 @@ export function ContentImportPicker({
   // warning.
   onChosen?: (chosen: { title: string; arcComing: boolean } | null) => void;
 }) {
+  const t = useT();
   const [sources, setSources] = useState<ImportSourceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<ImportPlan | null>(null);
@@ -265,20 +267,14 @@ export function ContentImportPicker({
     return (
       <p role="alert" className="flex items-start gap-1.5 text-xs text-amber-300/90">
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-        <span>
-          Could not load what you can copy from. Check the connection and open this again; nothing has been
-          brought in.
-        </span>
+        <span>{t("creator.import.sourcesFailed")}</span>
       </p>
     );
   }
 
   if (!offered.length) {
     return (
-      <p className="text-xs text-stone-500">
-        You have nothing to copy from yet. Build maps, lore and encounters in the Workshop, or run
-        a campaign, and you can bring any of it straight in here.
-      </p>
+      <p className="text-xs text-stone-500">{t("creator.import.nothingYet")}</p>
     );
   }
 
@@ -289,11 +285,7 @@ export function ContentImportPicker({
   const party = offeredPregens.length ? (
     <p className="flex items-start gap-1.5 text-xs text-stone-400" data-testid="import-party">
       <Info className="mt-0.5 size-3.5 shrink-0 text-sky-300/70" />
-      <span>
-        Party: {offeredPregens.length} pregen{offeredPregens.length === 1 ? "" : "s"} offered to players who join
-        tables you run ({offeredPregens.join(", ")}). One player each; tick or untick them in the
-        workshop&apos;s Party panel.
-      </span>
+      <span>{t("creator.import.party", { count: offeredPregens.length, names: offeredPregens.join(", ") })}</span>
     </p>
   ) : null;
 
@@ -320,10 +312,7 @@ export function ContentImportPicker({
       ) : null}
     </div>
   ) : (
-    <p className="text-xs text-stone-500">
-      This lands in the campaign right after it is created. Nothing is removed from
-      where it came from.
-    </p>
+    <p className="text-xs text-stone-500">{t("creator.import.landsAfterCreation")}</p>
   );
 
   return (
@@ -337,23 +326,23 @@ export function ContentImportPicker({
         </p>
       ) : null}
       <div className="block">
-        <FieldLabel className="mb-1 block">Start from</FieldLabel>
+        <FieldLabel className="mb-1 block">{t("creator.import.startFrom")}</FieldLabel>
         <Select
-          label="Start from"
+          label={t("creator.import.startFrom")}
           value={selection.sourceId}
           onChange={(id) => choose(offered.find((source) => source.id === id) ?? null)}
           options={[
-            { value: "", label: "None" },
+            { value: "", label: t("creator.import.none") },
             ...workshops.map((source) => ({
               value: source.id,
               label: source.title,
-              group: "Workshops",
+              group: t("creator.import.groupWorkshops"),
               icon: { kind: "glyph" as const, key: "system-storyboard" },
             })),
             ...campaigns.map((source) => ({
               value: source.id,
               label: source.title,
-              group: "Campaigns",
+              group: t("creator.import.groupCampaigns"),
               icon: { kind: "glyph" as const, key: "tab-campaigns" },
             })),
           ]}
@@ -373,7 +362,7 @@ export function ContentImportPicker({
                   )}
                   {selection.select.includes("world") && (WORLD_RECORD_KINDS as readonly string[]).includes(kind) ? (
                     <span className="text-xs text-stone-500" data-testid={`import-world-needs-${kind}`}>
-                      {selection.select.includes(kind) ? "WorldForge needs these" : "Left out on purpose"}
+                      {selection.select.includes(kind) ? t("creator.import.worldNeeds") : t("creator.import.leftOut")}
                     </span>
                   ) : null}
                 </div>
@@ -384,14 +373,14 @@ export function ContentImportPicker({
 
             {selection.select.includes("houseRules") ? (
               <div className="block">
-                <FieldLabel className="mb-1 block">Existing house rules</FieldLabel>
+                <FieldLabel className="mb-1 block">{t("creator.import.houseRulesLabel")}</FieldLabel>
                 <Select<"replace" | "append">
-                  label="Existing house rules"
+                  label={t("creator.import.houseRulesLabel")}
                   value={selection.houseRules}
                   onChange={(houseRules) => onChange({ ...selection, houseRules })}
                   options={[
-                    { value: "replace", label: "Replace them" },
-                    { value: "append", label: "Keep them and add these" },
+                    { value: "replace", label: t("creator.import.replace") },
+                    { value: "append", label: t("creator.import.append") },
                   ]}
                 />
               </div>
@@ -488,8 +477,8 @@ export function ContentImportPicker({
                 // only those is not empty, and saying so sent people looking for
                 // a copy step that does not exist (workshop import audit F06).
                 // Its pregens come with choosing it once one is offered.
-                "That workshop has no campaign prep to copy: places, cast, maps, fights, lore, tables, shops, the storyboard, WorldForge or house rules. Its Homebrew needs no copy, since it already counts at every table you run. To offer its pregens to players here, tick Offer to players in its Party panel, then choose it again."
-              : "That campaign has no prep to copy yet."}
+                t("creator.import.workshopNoPrep")
+              : t("creator.import.campaignNoPrep")}
           </p>
         )
       ) : null}
