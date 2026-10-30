@@ -14,6 +14,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { headerButtonClass } from "@/app/campaigns/[campaignId]/headerButton";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { shellHost, type ShellHost } from "@/lib/shell-host";
 import { useThemePrefs, writeThemeChoice } from "@/lib/theme-mode";
 
@@ -34,14 +35,15 @@ export function AppBrand({
   className?: string;
 }) {
   const shell = useSyncExternalStore<ShellHost | null>(subscribeNever, shellHost, () => null);
+  const t = useT();
   const classes = cn(
     "flex min-w-0 items-center gap-2.5 rounded-md text-left outline-none transition-colors hover:text-amber-200 focus-visible:text-amber-200",
     className,
   );
   if (shell) {
     return (
-      <Tooltip content="Back to the app's home screen" side="bottom">
-        <button type="button" onClick={() => shell.showServers()} aria-label="App home" className={classes}>
+      <Tooltip content={t("menu.appHome.tooltip")} side="bottom">
+        <button type="button" onClick={() => shell.showServers()} aria-label={t("menu.appHome.aria")} className={classes}>
           {children}
         </button>
       </Tooltip>
@@ -60,13 +62,14 @@ export function AppBrand({
 // not a door a newcomer finds. Renders nothing in a plain browser.
 export function AppHomeButton({ className }: { className?: string }) {
   const shell = useSyncExternalStore<ShellHost | null>(subscribeNever, shellHost, () => null);
+  const t = useT();
   if (!shell) return null;
   return (
-    <Tooltip content="Back to the app's home screen" side="bottom">
+    <Tooltip content={t("menu.appHome.tooltip")} side="bottom">
       <button
         type="button"
         onClick={() => shell.showServers()}
-        aria-label="App home"
+        aria-label={t("menu.appHome.aria")}
         className={headerButtonClass(false, className)}
       >
         <AppWindow className="size-4" />
@@ -112,6 +115,7 @@ export function AccountMenu({
   const shell = useSyncExternalStore<ShellHost | null>(subscribeNever, shellHost, () => null);
   const router = useRouter();
   const theme = useThemePrefs();
+  const t = useT();
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -128,11 +132,11 @@ export function AccountMenu({
   return (
     <>
       <DropdownMenu.Root>
-        <Tooltip content="Account and app menu" side="bottom">
+        <Tooltip content={t("menu.tooltip")} side="bottom">
           <DropdownMenu.Trigger asChild>
             <button
               type="button"
-              aria-label="Account"
+              aria-label={t("menu.account.aria")}
               className="rounded-full outline-none transition-shadow duration-150 hover:shadow-glow-gold focus-visible:shadow-glow-gold"
             >
               {user.avatar ? (
@@ -169,29 +173,29 @@ export function AccountMenu({
               )}
               <span className="min-w-0">
                 <span className="gold-title block truncate font-display text-sm tracking-wide">{user.username}</span>
-                <span className="eyebrow block text-[9px] text-stone-500">{user.isAdmin ? "Keeper of this server" : "Adventurer"}</span>
+                <span className="eyebrow block text-[9px] text-stone-500">{user.isAdmin ? t("menu.role.admin") : t("menu.role.player")}</span>
               </span>
             </div>
             {pathname !== "/" ? (
               <DropdownMenu.Item asChild>
                 <Link href="/" className={itemClass}>
-                  <GameIcon icon={{ kind: "glyph", key: "tab-campaigns" }} size="size-6" /> All campaigns
+                  <GameIcon icon={{ kind: "glyph", key: "tab-campaigns" }} size="size-6" /> {t("menu.allCampaigns")}
                 </Link>
               </DropdownMenu.Item>
             ) : null}
             <DropdownMenu.Item asChild>
               <Link href="/characters" className={itemClass}>
-                <GameIcon icon={{ kind: "glyph", key: "tab-characters" }} size="size-6" /> Characters
+                <GameIcon icon={{ kind: "glyph", key: "tab-characters" }} size="size-6" /> {t("menu.characters")}
               </Link>
             </DropdownMenu.Item>
             <DropdownMenu.Item asChild>
               <Link href="/rulebook" className={itemClass}>
-                <GameIcon icon={{ kind: "glyph", key: "system-rules" }} size="size-6" /> Rulebook
+                <GameIcon icon={{ kind: "glyph", key: "system-rules" }} size="size-6" /> {t("menu.rulebook")}
               </Link>
             </DropdownMenu.Item>
             <DropdownMenu.Item asChild>
               <Link href="/friends" className={itemClass}>
-                <GameIcon icon={{ kind: "glyph", key: "tab-friends" }} size="size-6" /> Friends
+                <GameIcon icon={{ kind: "glyph", key: "tab-friends" }} size="size-6" /> {t("menu.friends")}
               </Link>
             </DropdownMenu.Item>
             <DropdownMenu.Item
@@ -203,20 +207,20 @@ export function AccountMenu({
               }}
             >
               <GameIcon icon={{ kind: "glyph", key: theme.mode === "light" ? "daypart-night" : "daypart-day" }} size="size-6" />
-              <span className="grow">{theme.mode === "light" ? "Arcane night" : "Parchment day"}</span>
+              <span className="grow">{theme.mode === "light" ? t("appearance.theme.dark") : t("appearance.theme.light")}</span>
               <span className="kit-switch pointer-events-none" aria-checked={theme.mode === "light"} aria-hidden="true">
                 <span className="kit-switch-knob" />
               </span>
             </DropdownMenu.Item>
             <DropdownMenu.Item asChild>
               <Link href="/settings" className={itemClass}>
-                <GameIcon icon={{ kind: "glyph", key: "tab-settings" }} size="size-6" /> Settings
+                <GameIcon icon={{ kind: "glyph", key: "tab-settings" }} size="size-6" /> {t("menu.settings")}
               </Link>
             </DropdownMenu.Item>
             {user.isAdmin ? (
               <DropdownMenu.Item asChild>
                 <Link href="/admin" className={itemClass}>
-                  <GameIcon icon={{ kind: "glyph", key: "tab-admin" }} size="size-6" /> Admin panel
+                  <GameIcon icon={{ kind: "glyph", key: "tab-admin" }} size="size-6" /> {t("menu.adminPanel")}
                 </Link>
               </DropdownMenu.Item>
             ) : null}
@@ -224,19 +228,19 @@ export function AccountMenu({
               onSelect={() => (onHelp ? onHelp() : setHelpOpen(true))}
               className={itemClass}
             >
-              <CircleHelp className="size-4" /> Help
+              <CircleHelp className="size-4" /> {t("menu.help")}
             </DropdownMenu.Item>
             {/* What this server is running, and whether a newer release is
                 out (issue 102). */}
             <DropdownMenu.Item onSelect={() => setAboutOpen(true)} className={itemClass}>
               {/* Inside the app there are two versions: the app's own is in
                   its settings, this one is the server's. */}
-              <Info className="size-4" /> {shell ? "About this server" : "About"}
+              <Info className="size-4" /> {shell ? t("menu.aboutServer") : t("menu.about")}
             </DropdownMenu.Item>
             <DropdownMenu.Separator className="my-1 h-px bg-stone-800" />
             {shell ? (
               <DropdownMenu.Item onSelect={() => shell.showServers()} className={itemClass}>
-                <AppWindow className="size-4" /> App home
+                <AppWindow className="size-4" /> {t("menu.appHome")}
               </DropdownMenu.Item>
             ) : null}
             {/* The app's own settings (microphone, playback, dice, updates,
@@ -244,16 +248,16 @@ export function AccountMenu({
                 bar of its own over these pages, so its doors live here. */}
             {shell?.openSettings ? (
               <DropdownMenu.Item onSelect={() => shell.openSettings?.()} className={itemClass}>
-                <SlidersHorizontal className="size-4" /> App settings
+                <SlidersHorizontal className="size-4" /> {t("menu.appSettings")}
               </DropdownMenu.Item>
             ) : null}
             {shell?.openHelp ? (
               <DropdownMenu.Item onSelect={() => shell.openHelp?.()} className={itemClass}>
-                <BookOpen className="size-4" /> App guide
+                <BookOpen className="size-4" /> {t("menu.appGuide")}
               </DropdownMenu.Item>
             ) : null}
             <DropdownMenu.Item onSelect={logout} className={itemClass}>
-              <LogOut className="size-4" /> Log out
+              <LogOut className="size-4" /> {t("menu.logOut")}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

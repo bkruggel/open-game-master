@@ -1,3 +1,4 @@
+import { LocaleApplier } from "@/lib/locale";
 import { ThemeApplier } from "@/lib/theme-mode";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
@@ -72,6 +73,9 @@ export default function RootLayout({
         {/* The reader's theme and scale, applied to <html> before anything
             else paints (docs/vtt-parity-implementation-plan.md section 14). */}
         <ThemeApplier />
+        {/* The reader's language, the same on-device contract: the stored
+            choice (or the browser's) lands on <html lang> before paint. */}
+        <LocaleApplier />
         {/* Dust motes first, so the contour canvas is drawn over them. */}
         <div className="ambient-dust" aria-hidden="true" />
         <TopoBackground />
