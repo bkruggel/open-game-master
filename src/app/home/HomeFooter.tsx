@@ -1,17 +1,22 @@
+"use client";
+
+import { useT } from "@/lib/locale";
+
 // The legal links and the source, at the foot of home.
 export function HomeFooter() {
+  const t = useT();
   return (
     <footer className="ts-footer">
       <a href="/licenses" className="ts-footer-link">
-        Licenses and attribution
+        {t("settings.about.licenses")}
       </a>
       <span className="ts-footer-dot" aria-hidden="true">&middot;</span>
       <a href="/privacy" className="ts-footer-link">
-        Privacy policy
+        {t("settings.about.privacy")}
       </a>
       <span className="ts-footer-dot" aria-hidden="true">&middot;</span>
       <a href="/terms" className="ts-footer-link">
-        Terms of service
+        {t("settings.about.terms")}
       </a>
       <span className="ts-footer-dot" aria-hidden="true">&middot;</span>
       <a

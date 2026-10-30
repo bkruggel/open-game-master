@@ -1,6 +1,11 @@
 import type { CampaignSummary, HomeGlance } from "@/lib/campaign-types";
 import { sessionWhenLocal } from "@/lib/dm/session-hold-logic";
 
+// The words these helpers build live in the dictionaries (home.ago.*,
+// home.seats.*, home.slot.*, ...); each takes the translator from the
+// component that draws it, so a language switch rewords the title screen
+// with everything else. Pure otherwise: no database, no model.
+
 // What GET /api/campaigns hands the home screen: the summary row plus the
 // name of the character this user plays there, or null when they have no
 // sheet yet (a fresh lobby) or hold the DM seat instead, and the title
@@ -48,7 +53,11 @@ export function pickContinue(campaigns: HomeCampaign[]): HomeCampaign | null {
 
 // "2 days ago" for the recap and the save slots. Coarse on purpose: a title
 // screen is not a log.
-export function agoLabel(iso: string | null | undefined, now = Date.now()): string {
+export function agoLabel(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  iso: string | null | undefined,
+  now = Date.now(),
+): string {
   if (!iso) {
     return "";
   }
@@ -57,18 +66,18 @@ export function agoLabel(iso: string | null | undefined, now = Date.now()): stri
     return "";
   }
   const minutes = Math.max(0, Math.round((now - then) / 60_000));
-  if (minutes < 2) return "just now";
-  if (minutes < 60) return `${minutes} minutes ago`;
+  if (minutes < 2) return t("home.ago.justNow");
+  if (minutes < 60) return t("home.ago.minutes", { count: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return hours === 1 ? "an hour ago" : `${hours} hours ago`;
+  if (hours < 24) return hours === 1 ? t("home.ago.hour") : t("home.ago.hours", { count: hours });
   const days = Math.round(hours / 24);
-  if (days < 7) return days === 1 ? "yesterday" : `${days} days ago`;
+  if (days < 7) return days === 1 ? t("home.ago.yesterday") : t("home.ago.days", { count: days });
   const weeks = Math.round(days / 7);
-  if (weeks < 5) return weeks === 1 ? "a week ago" : `${weeks} weeks ago`;
+  if (weeks < 5) return weeks === 1 ? t("home.ago.week") : t("home.ago.weeks", { count: weeks });
   const months = Math.round(days / 30);
-  if (months < 12) return months <= 1 ? "a month ago" : `${months} months ago`;
+  if (months < 12) return months <= 1 ? t("home.ago.month") : t("home.ago.months", { count: months });
   const years = Math.round(days / 365);
-  return years <= 1 ? "a year ago" : `${years} years ago`;
+  return years <= 1 ? t("home.ago.year") : t("home.ago.years", { count: years });
 }
 
 // Roman numerals for chapter headings ("Chapter III"). Chapters are small
@@ -93,30 +102,36 @@ export function romanNumeral(value: number): string {
 }
 
 // One line under a table's name: who you are there and how full it is.
-export function seatLine(campaign: HomeCampaign, userId: string): string {
-  const seats = `${campaign.playerCount} of ${campaign.maxPlayers} seats`;
+export function seatLine(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  campaign: HomeCampaign,
+  userId: string,
+): string {
   if (campaign.status === "lobby") {
-    return `Lobby · ${campaign.playerCount} of ${campaign.maxPlayers} ready`;
+    return t("home.seats.lobby", { count: campaign.playerCount, max: campaign.maxPlayers });
   }
-  const party = campaign.maxPlayers === 1 ? "solo" : seats;
+  const party = campaign.maxPlayers === 1 ? t("home.seats.solo") : t("home.seats", { count: campaign.playerCount, max: campaign.maxPlayers });
   if (campaign.playingAs) {
-    return `Playing as ${campaign.playingAs} · ${party}`;
+    return t("home.seats.playingAs", { name: campaign.playingAs, party });
   }
   if (holdsDmSeat(campaign, userId)) {
-    return `Running the table · ${party}`;
+    return t("home.seats.dm", { party });
   }
-  return `No character yet · ${party}`;
+  return t("home.seats.noCharacter", { party });
 }
 
 // The chapter line: "Act II, Chapter III · The Drowned Lantern" (the act
 // only once the arc has one), the act's name when the chapter has none yet,
 // the scene after that, or the campaign's own description.
-export function chapterLine(campaign: HomeCampaign): string {
+export function chapterLine(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  campaign: HomeCampaign,
+): string {
   const chapter = campaign.glance?.chapter;
   const scene = (campaign as HomeCampaign & { scene?: string }).scene?.trim() || "";
   if (chapter) {
-    const act = chapter.act ? `Act ${romanNumeral(chapter.act)}, ` : "";
-    const head = `${act}Chapter ${romanNumeral(chapter.index)}`;
+    const act = chapter.act ? `${t("home.chapter.act", { num: romanNumeral(chapter.act) })}, ` : "";
+    const head = `${act}${t("home.chapter.head", { num: romanNumeral(chapter.index) })}`;
     const title = chapter.title.trim();
     if (title) return `${head} · ${title}`;
     const actTitle = chapter.actTitle?.trim() || "";
@@ -130,40 +145,52 @@ export function chapterLine(campaign: HomeCampaign): string {
 
 // The slot's badge: where the table stands. A campaign in play between
 // sessions (issue 586) says so, rather than "active" all week.
-export function statusLabel(campaign: HomeCampaign): string {
+export function statusLabel(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  campaign: HomeCampaign,
+): string {
   if (campaign.status === "active" && campaign.glance?.session?.between) {
-    return "between sessions";
+    return t("home.badge.between");
   }
-  return campaign.status;
+  const key = `home.badge.${campaign.status}`;
+  const word = t(key);
+  return word === key ? campaign.status : word;
 }
 
 // When the table meets next, in the reader's own time: "Next session Fri,
 // Nov 6, 7:00 PM". Empty when nothing is set, or from an older host.
-export function nextSessionLine(campaign: HomeCampaign): string {
+export function nextSessionLine(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  campaign: HomeCampaign,
+): string {
   const next = campaign.status === "ended" ? null : campaign.glance?.session?.next;
   const when = next ? sessionWhenLocal(next.startsAt) : "";
-  return when ? `Next session ${when}` : "";
+  return when ? t("home.nextSession", { when }) : "";
 }
 
 // The save slot's one line: what state the table is in, in a few words.
-export function slotLine(campaign: HomeCampaign, userId: string): string {
+export function slotLine(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  campaign: HomeCampaign,
+  userId: string,
+): string {
   if (campaign.status === "lobby") {
-    return `${campaign.playerCount} of ${campaign.maxPlayers} ready`;
+    return t("home.slot.ready", { count: campaign.playerCount, max: campaign.maxPlayers });
   }
   if (campaign.status === "ended") {
-    const ago = agoLabel(campaign.updatedAt);
-    return ago ? `Finished ${ago}` : "Finished";
+    const ago = agoLabel(t, campaign.updatedAt);
+    return ago ? t("home.slot.finishedAgo", { ago }) : t("home.slot.finished");
   }
-  const next = nextSessionLine(campaign);
+  const next = nextSessionLine(t, campaign);
   if (next) {
     return next;
   }
   if (campaign.glance?.session?.between) {
-    return "Between sessions";
+    return t("home.slot.between");
   }
   if (holdsDmSeat(campaign, userId)) {
-    return "Running the table";
+    return t("home.slot.dm");
   }
-  const ago = agoLabel(campaign.glance?.recapAt ?? campaign.updatedAt);
-  return ago ? `Last played ${ago}` : "In play";
+  const ago = agoLabel(t, campaign.glance?.recapAt ?? campaign.updatedAt);
+  return ago ? t("home.slot.lastPlayed", { ago }) : t("home.slot.inPlay");
 }
