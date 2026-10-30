@@ -19,6 +19,7 @@ import { KitButton, SettingToggle } from "./PanelKit";
 import { PartyOrderBar, PartyOrderHandle, usePartyOrder } from "./PartyOrder";
 import { useEffect, useId, useState, Suspense, lazy } from "react";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { CountPop } from "@/components/ui/Reveal";
 import { CharacterPortrait } from "@/lib/ui";
 import { CharacterMenu } from "@/app/campaigns/[campaignId]/CharacterMenu";
@@ -66,6 +67,7 @@ function RealDiceToggle({
   campaignId: string;
   member: CampaignMember;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   async function toggle() {
     setBusy(true);
@@ -85,16 +87,16 @@ function RealDiceToggle({
       onToggle={() => void toggle()}
       disabled={busy}
       aria-busy={busy}
-      label="Physical dice"
+      label={t("table.party.realDice")}
       title={
         member.useRealDice
-          ? "The game pauses on your rolls and asks for your real dice results. Click to switch back to automatic digital rolls."
-          : "Roll your own physical dice: the game will tell you what to roll and wait for your result. Click to opt in."
+          ? t("table.party.realDiceOnTitle")
+          : t("table.party.realDiceOffTitle")
       }
       className="w-full text-xs"
     >
       <GameIcon icon={{ kind: "glyph", key: "die-d20" }} size="size-4" className="mr-1 inline-block align-middle" />
-      {member.useRealDice ? "Physical dice: ON" : "Physical dice: off"}
+      {member.useRealDice ? t("table.party.realDiceOn") : t("table.party.realDiceOff")}
     </SettingToggle>
   );
 }
@@ -102,6 +104,7 @@ function RealDiceToggle({
 // Nudges the DM to write an AI companion into the story (the DM decides who
 // arrives and how); shown while the table is below its companion cap.
 function RequestCompanionButton({ campaignId }: { campaignId: string }) {
+  const t = useT();
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   async function request() {
     setState("sending");
@@ -123,11 +126,11 @@ function RequestCompanionButton({ campaignId }: { campaignId: string }) {
       onClick={request}
       disabled={state !== "idle"}
       busy={state === "sending"}
-      title="Ask the GM to write an ally with a real character sheet into the story"
+      title={t("table.party.requestTip")}
       className="w-full disabled:opacity-60"
     >
       {state === "sending" ? null : <GameIcon icon={{ kind: "glyph", key: "system-party" }} size="size-5" />}
-      {state === "sent" ? "The GM has been asked" : "Request a companion"}
+      {state === "sent" ? t("table.party.requested") : t("table.party.request")}
     </KitButton>
   );
 }
@@ -173,6 +176,7 @@ function HandToDmButton({
   blocked: LastingCompanionBlock | null;
   onOpenSettings?: () => void;
 }) {
+  const t = useT();
   const [state, setState] = useState<"idle" | "sending">("idle");
   const [error, setError] = useState("");
   const whyId = useId();
@@ -187,10 +191,10 @@ function HandToDmButton({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not hand the character to the GM.");
+        setError(data.error || t("table.party.handFailed"));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("table.unreachable"));
     } finally {
       setState("idle");
     }
@@ -198,7 +202,7 @@ function HandToDmButton({
   return (
     <div className="reveal mt-2 space-y-1">
       <p className="text-[11px] leading-4 text-amber-200">
-        {sheet.name} is filed in the library as an ally the GM plays, but sits here as a player&apos;s character, so the GM takes no turns for them.
+        {t("table.party.handNote", { name: sheet.name })}
       </p>
       {blocked ? (
         <div
@@ -217,7 +221,7 @@ function HandToDmButton({
               }}
               className="font-medium text-amber-300 underline decoration-amber-500/40 underline-offset-2 transition-colors hover:text-amber-100"
             >
-              Open Table settings
+              {t("table.party.openSettings")}
             </button>
           ) : null}
         </div>
@@ -231,11 +235,11 @@ function HandToDmButton({
         title={
           blocked
             ? blocked.reason
-            : "Make this character a party companion: the sheet and its progress stay, the GM plays it from here"
+            : t("table.party.handTip")
         }
         className="w-full justify-center"
       >
-        {state === "sending" ? null : <Bot className="size-3.5" />} Hand to the GM
+        {state === "sending" ? null : <Bot className="size-3.5" />} {t("table.party.hand")}
       </KitButton>
       {error ? (
         <p role="alert" className="motion-shake text-[11px] text-red-400">
@@ -250,6 +254,7 @@ function HandToDmButton({
 // only; the library keeps its own level (issue #36), and the button says so
 // for a moment instead of a bare "Saved".
 function SaveToLibraryButton({ campaignId, sheetId }: { campaignId: string; sheetId: string }) {
+  const t = useT();
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
   const [keptLevel, setKeptLevel] = useState<number | null>(null);
   async function save() {
@@ -277,22 +282,22 @@ function SaveToLibraryButton({ campaignId, sheetId }: { campaignId: string; shee
   }
   return (
     <div className="space-y-1">
-      <KitButton onClick={save} disabled={state === "saving"} busy={state === "saving"} title="Save level, gear, and spells back to your character library. A character above this table's level keeps its own level; gear, gold and notes still save." className="w-full justify-center">
+      <KitButton onClick={save} disabled={state === "saving"} busy={state === "saving"} title={t("table.party.saveTip")} className="w-full justify-center">
         {state === "saved" ? (
           <>
-            <Check className="motion-pop size-3.5 text-emerald-400" /> {keptLevel === null ? "Saved" : "Gear and notes saved"}
+            <Check className="motion-pop size-3.5 text-emerald-400" /> {keptLevel === null ? t("table.party.saved") : t("table.party.savedGear")}
           </>
         ) : state === "saving" ? (
-          "Save to library"
+          t("table.party.save")
         ) : (
           <>
-            <Save className="size-3.5" /> Save to library
+            <Save className="size-3.5" /> {t("table.party.save")}
           </>
         )}
       </KitButton>
       {state === "saved" && keptLevel !== null ? (
         <p className="reveal text-center text-[11px] text-amber-200">
-          Level {keptLevel} kept in your library; this table is below it.
+          {t("table.party.keptLevel", { level: keptLevel })}
         </p>
       ) : null}
     </div>
@@ -409,6 +414,7 @@ export function PartyPanel({
   activeSheetId?: string;
   multiCharacter?: "off" | "one_active" | "all_active";
 }) {
+  const t = useT();
   const packArt = usePackArt(worldPack);
   // A companion's "Paint a portrait" only where the server can paint, and
   // where the host has the route (an app's screens may be newer than it).
@@ -438,10 +444,10 @@ export function PartyPanel({
       const response = await fetch(`/api/campaigns/${campaignId}/sheet/switch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ characterId: sheetId }) });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
-        setSwitchError(result.error || "Could not select the character.");
+        setSwitchError(result.error || t("table.lobby.selectFailed"));
       }
     } catch {
-      setSwitchError("Could not reach the server.");
+      setSwitchError(t("table.unreachable"));
     } finally {
       setSwitching("");
     }
@@ -493,7 +499,7 @@ export function PartyPanel({
       )}
     >
       {embedded ? null : (
-        <SectionHead title="Party" glyph="tab-party" level="h2" aside={sheets.length} />
+        <SectionHead title={t("table.party.title")} glyph="tab-party" level="h2" aside={sheets.length} />
       )}
       {switchError ? <p role="alert" className="text-sm text-red-300">{switchError}</p> : null}
       <PartyOrderBar
@@ -562,7 +568,7 @@ export function PartyPanel({
               <button
                 type="button"
                 onClick={() => setViewingSheetId(sheet.id)}
-                title="View full character sheet"
+                title={t("table.party.viewSheet")}
                 className="party-card-heading flex min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40 motion-press"
               >
               <CharacterPortrait
@@ -580,7 +586,7 @@ export function PartyPanel({
                   {lights[sheet.id] ? <LightBar light={lights[sheet.id]} /> : null}
                   {mine && myOwn.length > 1 && switchesHeroes(myOwn, multiCharacter) && (multiCharacter !== "off" || !heroFell(sheet)) ? (
                     mySheet?.id === sheet.id ? (
-                      <span className="eyebrow rounded-sm border border-amber-500/50 bg-amber-400/10 px-1 text-[9px] text-amber-300">playing</span>
+                      <span className="eyebrow rounded-sm border border-amber-500/50 bg-amber-400/10 px-1 text-[9px] text-amber-300">{t("table.party.playing")}</span>
                     ) : (
                       <span
                         role="button"
@@ -600,23 +606,23 @@ export function PartyPanel({
                         }}
                         className="eyebrow inline-flex cursor-pointer items-center rounded-sm border border-stone-600 px-1 text-[9px] text-stone-300 transition-colors duration-[var(--dur-quick,150ms)] hover:border-amber-500/60 hover:text-amber-200 aria-disabled:opacity-50 motion-press"
                       >
-                        Play as
+                        {t("table.party.playAs")}
                       </span>
                     )
                   ) : null}
                   {!sheet.isCompanion && onlineUserIds.includes(sheet.userId) ? (
                     <span
-                      title="Online now"
+                      title={t("table.party.online")}
                       className="size-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]"
                     />
                   ) : null}
                   {sheet.userId === leadUserId ? (
-                    <Crown className="size-3.5 shrink-0 text-amber-300" aria-label="Party lead" />
+                    <Crown className="size-3.5 shrink-0 text-amber-300" aria-label={t("table.party.lead")} />
                   ) : null}
                   {sheet.isCompanion && !offSide(encounter, sheet.id, "pc") ? (
                     <Bot
                       className="size-3.5 shrink-0 text-sky-300"
-                      aria-label="AI companion"
+                      aria-label={t("table.party.companion")}
                     />
                   ) : null}
                 </span>
@@ -628,7 +634,7 @@ export function PartyPanel({
               {publicNoteCount ? (
                 <KitButton
                   onClick={() => setNotesSheetId(sheet.id)}
-                  title={`${publicNoteCount} party ${publicNoteCount === 1 ? "note" : "notes"} on ${sheet.name}`}
+                  title={t("table.party.notesOn", { count: publicNoteCount, name: sheet.name })}
                   className="shrink-0 gap-0.5 rounded-full px-1.5 py-0.5 text-[11px]"
                 >
                   <GameIcon icon={{ kind: "glyph", key: "tab-notes" }} size="size-4" /> {publicNoteCount}
@@ -661,7 +667,7 @@ export function PartyPanel({
             {shape ? (
               <div
                 className="mt-2 flex items-center gap-1.5 rounded-md border border-lime-800/60 bg-lime-950/40 px-2 py-1 text-xs text-lime-300"
-                title={`Wild Shaped: damage hits the beast's hit points first. ${sheet.name}'s own ${sheet.currentHp}/${hp.max} waits for them when the form breaks.`}
+                title={t("table.party.wildShapeTitle", { name: sheet.name, current: sheet.currentHp, max: hp.max })}
               >
                 <PawPrint className="size-3.5 shrink-0" />
                 <span className="truncate capitalize">{shape.form}</span>
@@ -696,7 +702,7 @@ export function PartyPanel({
               {shape ? (
                 <span
                   className="font-mono text-xs text-lime-300"
-                  title={`Beast form hit points. ${sheet.name}'s own: ${sheet.currentHp}/${hp.max}`}
+                  title={t("table.party.beastHpTitle", { name: sheet.name, current: sheet.currentHp, max: hp.max })}
                 >
                   {shape.beastHp}
                   {sheet.tempHp ? `+${sheet.tempHp}` : ""}/{shape.beastMaxHp}
@@ -713,7 +719,7 @@ export function PartyPanel({
 
             {shape ? (
               <div className="reveal mt-1 text-right font-mono text-[10px] text-stone-500">
-                own {sheet.currentHp}/{hp.max}
+                {t("table.party.ownHp", { hp: `${sheet.currentHp}/${hp.max}` })}
               </div>
             ) : null}
 
@@ -756,10 +762,10 @@ export function PartyPanel({
                         : "border-red-700 bg-red-950/50 text-red-300",
                   )}
                 >
-                  {sheet.deathSaves.dead ? "Dead" : sheet.deathSaves.stable ? "Stable" : "Dying"}
+                  {sheet.deathSaves.dead ? t("table.party.dead") : sheet.deathSaves.stable ? t("table.party.stable") : t("table.party.dying")}
                 </span>
                 {!sheet.deathSaves.dead && !sheet.deathSaves.stable ? (
-                  <span className="flex items-center gap-1.5" title="Death saves: successes and failures">
+                  <span className="flex items-center gap-1.5" title={t("table.party.deathSavesTip")}>
                     <span className="flex gap-1.5">
                       {[0, 1, 2].map((pip) => (
                         <span
@@ -807,7 +813,7 @@ export function PartyPanel({
                   )}
                   title={
                     shape && statLabel === "AC"
-                      ? `The beast form's armor class; ${sheet.name}'s own is ${sheet.ac}.`
+                      ? t("table.party.beastAcTitle", { name: sheet.name, ac: sheet.ac })
                       : undefined
                   }
                 >
@@ -817,7 +823,7 @@ export function PartyPanel({
                       size="size-3.5"
                       className="mr-0.5 inline-block -translate-y-px align-middle"
                     />
-                    {statLabel}
+                    {t(`table.party.stat.${statLabel}`)}
                   </span>
                   <span className="font-mono text-xs text-stone-200">{statValue}</span>
                 </span>
@@ -830,7 +836,7 @@ export function PartyPanel({
                   <span
                     key={id}
                     className="rounded-full border border-stone-700/50 bg-stone-950/60 px-2 py-0.5 text-[10px] capitalize text-stone-300"
-                    title="Limited-use resource: remaining/max"
+                    title={t("table.party.resourceTip")}
                   >
                     {id.replaceAll("_", " ")} {state.max - state.used}/{state.max}
                   </span>
@@ -843,10 +849,10 @@ export function PartyPanel({
                 {(sheet.exhaustion ?? 0) > 0 ? (
                   <span
                     className="inline-flex items-center gap-1 rounded-full bg-orange-950 px-2 py-0.5 text-xs text-orange-300"
-                    title={`${describeExhaustion(sheet.exhaustion ?? 0)}. A long rest lowers it by one.`}
+                    title={t("table.party.exhaustionTip", { why: describeExhaustion(sheet.exhaustion ?? 0) })}
                   >
                     <GameIcon icon={{ kind: "glyph", key: "rest-exhaustion" }} size="size-4" />
-                    exhaustion {sheet.exhaustion}
+                    {t("table.party.exhaustion", { level: sheet.exhaustion })}
                   </span>
                 ) : null}
                 {sheet.conditions.map((condition) => {
@@ -868,16 +874,16 @@ export function PartyPanel({
                 {inspired(sheet) ? (
                   <span
                     className="motion-pop inline-flex items-center gap-1 rounded-full bg-amber-950 px-2 py-0.5 text-xs text-amber-200"
-                    title="Inspiration: spent for advantage on one attack, save or check."
+                    title={t("table.party.inspirationTip")}
                   >
                     <GameIcon icon={{ kind: "glyph", key: "rest-inspiration" }} size="size-4" />
-                    Inspiration
+                    {t("table.party.inspiration")}
                   </span>
                 ) : null}
                 {sheet.concentratingOn ? (
                   <span
                     className="inline-flex items-center gap-1 rounded-full bg-sky-950 px-2 py-0.5 text-xs text-sky-300"
-                    title="Concentrating on this spell"
+                    title={t("table.party.concentratingTip")}
                   >
                     <GameIcon icon={{ kind: "spell", key: sheet.concentratingOn }} size="size-4" />
                     {sheet.concentratingOn}
@@ -890,10 +896,10 @@ export function PartyPanel({
               <KitButton
                 tone="primary"
                 onClick={onLevelUp}
-                title="You have the experience for a new level"
+                title={t("table.party.levelUpTip")}
                 className="reveal mt-2 w-full justify-center"
               >
-                <Sparkles className="size-3.5" /> Level up to {levelUpLevel}
+                <Sparkles className="size-3.5" /> {t("table.party.levelUp", { level: levelUpLevel })}
               </KitButton>
             ) : null}
 
@@ -919,7 +925,7 @@ export function PartyPanel({
                     dialog remains for corrections. */}
                 <KitButton onClick={() => setCroppingSheetId(sheet.id)} className="w-full justify-center">
                   <ImagePlus className="size-3.5" />
-                  {sheet.portrait ? "Change portrait" : "Add portrait"}
+                  {sheet.portrait ? t("table.party.changePortrait") : t("table.party.addPortrait")}
                 </KitButton>
                 {campaignId && sheet.isCompanion && steersStory && canPaint ? (
                   <CompanionPaintButton campaignId={campaignId} sheet={sheet} />
@@ -952,9 +958,9 @@ export function PartyPanel({
         <div className="reveal space-y-1.5">
           {humanDmTable ? null : <RequestCompanionButton campaignId={campaignId} />}
           {companionBuildAvailable ? (
-            <KitButton tone="secondary" onClick={() => setBuildingCompanion(true)} title="Build a companion yourself with the character creator" className="w-full">
+            <KitButton tone="secondary" onClick={() => setBuildingCompanion(true)} title={t("table.party.buildTip")} className="w-full">
               <UserPlus className="size-3.5" />
-              Build a companion
+              {t("table.party.build")}
             </KitButton>
           ) : null}
         </div>
@@ -973,7 +979,7 @@ export function PartyPanel({
 
       {partyStory && campaignId && (party?.backstory || partyStory.canWrite) ? (
         <section className="mt-4 space-y-2">
-          <SectionHead title="Party story" glyph="tab-party" level="h3" />
+          <SectionHead title={t("table.party.story")} glyph="tab-party" level="h3" />
           <PartyStory
             campaignId={campaignId}
             party={party}
@@ -1031,7 +1037,7 @@ export function PartyPanel({
       {croppingSheet ? (
         <Suspense fallback={null}>
           <AvatarCropDialog
-            title={`${croppingSheet.name}'s portrait`}
+            title={t("table.party.portraitCrop", { name: croppingSheet.name })}
             onUploaded={(image) => setPortrait(croppingSheet, image.url)}
             onClose={() => setCroppingSheetId("")}
           />
@@ -1063,6 +1069,7 @@ export function PartyPanel({
 // player opened them to advances. The opt-in reaches only the owner and a
 // DM seat (src/lib/dm/sheet-view.ts), so nothing here shows it to anyone else.
 function RomanceNote({ sheet }: { sheet: CharacterSheet }) {
+  const t = useT();
   const drawn = attractionWords(sheet.attraction);
   const open = !sheet.isCompanion && Boolean(sheet.openToAdvances);
   if (!drawn && !open) {
@@ -1070,21 +1077,22 @@ function RomanceNote({ sheet }: { sheet: CharacterSheet }) {
   }
   return (
     <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-stone-400" data-romance-note={sheet.id}>
-      {drawn ? <span>Drawn to {drawn}</span> : null}
+      {drawn ? <span>{t("table.party.drawnTo", { who: drawn })}</span> : null}
       {open ? (
-        <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-1.5 text-rose-200">Open to advances</span>
+        <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-1.5 text-rose-200">{t("table.party.openToAdvances")}</span>
       ) : null}
     </p>
   );
 }
 
 function LightBar({ light }: { light: { remaining: number; total: number } }) {
+  const t = useT();
   const fraction = light.total > 0 ? Math.max(0, Math.min(1, light.remaining / light.total)) : 0;
   const low = light.remaining <= 15;
   return (
     <span
-      title={`Light: ${light.remaining} minutes left`}
-      aria-label={`Light: ${light.remaining} minutes left`}
+      title={t("table.party.lightLeft", { count: light.remaining })}
+      aria-label={t("table.party.lightLeft", { count: light.remaining })}
       className="flex h-1.5 w-8 shrink-0 items-center overflow-hidden rounded-full border border-amber-900/60 bg-stone-900"
     >
       <span

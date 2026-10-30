@@ -10,7 +10,14 @@ import { useFaceChain } from "@/app/campaigns/[campaignId]/useFaceChain";
 import { useFaceSize } from "@/app/campaigns/[campaignId]/useFaceSize";
 import { cn } from "@/lib/cn";
 import { playerFaces } from "@/lib/speaker-faces";
-import { JOIN_NOTE_PREFIX, LEAD_NOTE_PREFIX, systemNoteWords, type CampaignMember } from "@/lib/campaign-types";
+import {
+  ADVENTURE_BEGINS_NOTE,
+  JOIN_NOTE_PREFIX,
+  LEAD_NOTE_PREFIX,
+  systemNoteWords,
+  type CampaignMember,
+} from "@/lib/campaign-types";
+import { useT } from "@/lib/locale";
 import type { CampaignMessage } from "@/lib/db/messages";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import type { TranscriptSheet } from "@/app/campaigns/[campaignId]/departing";
@@ -72,7 +79,15 @@ export function reportAction(message: CampaignMessage, onReport: (message: Campa
 // A notice that is not a halted turn: the lead's public direction as a card,
 // a joiner, or a plain line with the painting its writer stored (a line
 // written before the icon was stored draws the neutral bell).
+//
+// Begin's own note is DB-stored in English (ADVENTURE_BEGINS_NOTE and its
+// human-DM variant, built in the campaign route); the constant and its
+// comparison in the DM prompt must stay byte-identical, so the line is
+// translated here, at display, only when the content is exactly the note.
+const ADVENTURE_BEGINS_DM_LINE = `${ADVENTURE_BEGINS_NOTE} The Game Master opens the scene.`;
+
 export function SystemMessage({ content, glyph }: { content: string; glyph?: SystemGlyph }) {
+  const t = useT();
   if (content.startsWith(LEAD_NOTE_PREFIX)) {
     return (
       <div data-tone="ember" className="panel session-banner-card rounded-xl border-ember-500/40">
@@ -95,8 +110,14 @@ export function SystemMessage({ content, glyph }: { content: string; glyph?: Sys
     );
   }
   const join = content.startsWith(JOIN_NOTE_PREFIX);
-  // The markers the DM reads (a joiner, a settled offer) come off.
-  const text = systemNoteWords(content);
+  // The markers the DM reads (a joiner, a settled offer) come off. Begin's
+  // note reads in the interface's language instead of its stored English.
+  const text =
+    content === ADVENTURE_BEGINS_NOTE
+      ? t("table.system.adventureBegins")
+      : content === ADVENTURE_BEGINS_DM_LINE
+        ? t("table.system.adventureBeginsDm")
+        : systemNoteWords(content);
   return (
     <p className="session-sysline">
       <GameIcon icon={{ kind: "glyph", key: join ? "system-party" : (glyph ?? "cue-bell") }} size="size-6" />

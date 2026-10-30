@@ -10,6 +10,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { navigateTo } from "@/lib/navigation";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 
 // The detail page's one primary action (docs/visual-overhaul-plan.md 8c.2):
 // take this library character to a table. It lists the campaigns the player
@@ -50,6 +51,7 @@ export function UseInCampaignDialog({
   onClose: () => void;
 }) {
   const companion = role === "companion";
+  const t = useT();
   const [campaigns, setCampaigns] = useState<CampaignRow[] | null>(null);
   // A refused or failed read is shown in the server's words with a way to
   // ask again, never as "nothing here yet" (issue 140).
@@ -60,7 +62,7 @@ export function UseInCampaignDialog({
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ campaigns?: CampaignRow[] }>(fetch("/api/campaigns"), "Your campaigns").then((outcome) => {
+    readLoad<{ campaigns?: CampaignRow[] }>(fetch("/api/campaigns"), t("characters.use.loadLabel")).then((outcome) => {
       if (cancelled) return;
       settle(outcome);
       if (outcome.payload) {
@@ -73,7 +75,7 @@ export function UseInCampaignDialog({
     return () => {
       cancelled = true;
     };
-  }, [reloads, settle]);
+  }, [reloads, settle, t]);
 
   async function seat(campaign: CampaignRow) {
     setBusyId(campaign.id);
@@ -89,7 +91,7 @@ export function UseInCampaignDialog({
       if (!response.ok) {
         setError({
           campaignId: campaign.id,
-          text: data.error || "Could not bring the character to that table.",
+          text: data.error || t("characters.use.seatFailed"),
           // A seat already taken has a lobby to swap in; a companion refusal
           // (authority, the table's setting, its cap) has not.
           taken: !companion && response.status === 409,
@@ -98,7 +100,7 @@ export function UseInCampaignDialog({
       }
       navigateTo(`/campaigns/${campaign.id}`);
     } catch {
-      setError({ campaignId: campaign.id, text: "Could not reach the server.", taken: false });
+      setError({ campaignId: campaign.id, text: t("characters.use.unreachable"), taken: false });
     } finally {
       setBusyId("");
     }
@@ -108,28 +110,26 @@ export function UseInCampaignDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={companion ? `Bring ${characterName} to a campaign as an ally` : `Use ${characterName} in a campaign`}
+      title={companion ? t("characters.use.titleAlly", { name: characterName }) : t("characters.use.titlePc", { name: characterName })}
       icon={<GameIcon icon={{ kind: "glyph", key: "tab-campaigns" }} size="size-7" />}
       width="w-[min(92vw,30rem)]"
     >
       <p className="mb-3 text-xs leading-5 text-stone-400">
-        {companion
-          ? "The table gets its own copy of the sheet as a party companion the GM plays, at the party's level. Only whoever runs the story can bring one in, and only where the table allows companions. Your library keeps this one as it is."
-          : "The table gets its own copy of the sheet, adapted to its starting level. Your library keeps this one as it is."}
+        {companion ? t("characters.use.allyBody") : t("characters.use.pcBody")}
       </p>
       {campaigns === null && loadError ? (
         <LoadFailed error={loadError} onRetry={() => setReloads((current) => current + 1)} />
       ) : campaigns === null ? (
-        <div className="skeleton-block h-24 rounded-xl" aria-label="Loading your campaigns" />
+        <div className="skeleton-block h-24 rounded-xl" aria-label={t("characters.use.loadingAria")} />
       ) : campaigns.length === 0 ? (
         <EmptyState
           art="map"
           size="sm"
-          title="No tables to bring them to yet."
-          hint="Start a campaign or join one with a room code, then come back."
+          title={t("characters.use.emptyTitle")}
+          hint={t("characters.use.emptyHint")}
           action={
             <Link href="/" className={ui.btnSecondary}>
-              To your campaigns
+              {t("characters.use.toCampaigns")}
             </Link>
           }
         />
@@ -143,28 +143,28 @@ export function UseInCampaignDialog({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-display text-sm tracking-wide text-amber-100">{campaign.title}</span>
                   <span className="block text-[11px] text-stone-500">
-                    {seated ? "Already at this table" : campaign.status === "lobby" ? "In the lobby" : "In play"}
-                    {campaign.startingLevel ? ` · plays at level ${campaign.startingLevel}` : ""}
+                    {seated ? t("characters.use.seated") : campaign.status === "lobby" ? t("characters.use.inLobby") : t("characters.use.inPlay")}
+                    {campaign.startingLevel ? t("characters.use.playsAtLevel", { level: campaign.startingLevel }) : ""}
                   </span>
                   {!seated &&
                   characterLevel !== undefined &&
                   campaign.startingLevel &&
                   campaign.startingLevel !== characterLevel ? (
                     <span className="block text-[11px] text-amber-300">
-                      {characterName} joins as level {campaign.startingLevel}, not {characterLevel}:
+                      {t("characters.use.joinsAsLevel", { name: characterName, level: campaign.startingLevel, own: characterLevel })}
                       {campaign.startingLevel < characterLevel
-                        ? " hit points, slots, improvements and spells above that level are left behind."
-                        : " the sheet is raised to that level; choose the extra spells from the sheet."}
+                        ? t("characters.use.belowTail")
+                        : t("characters.use.aboveTail")}
                     </span>
                   ) : null}
                 </span>
                 {seated ? (
                   <Link href={`/campaigns/${campaign.id}`} className={ui.btnSmall}>
-                    Open
+                    {t("characters.use.open")}
                   </Link>
                 ) : (
                   <button type="button" disabled={Boolean(busyId)} onClick={() => void seat(campaign)} className={ui.btnSmall}>
-                    {busyId === campaign.id ? <Loader2 className="size-3.5 animate-spin" /> : null} {companion ? "Join the party" : "Take a seat"}
+                    {busyId === campaign.id ? <Loader2 className="size-3.5 animate-spin" /> : null} {companion ? t("characters.use.joinParty") : t("characters.use.takeSeat")}
                   </button>
                 )}
                 {error?.campaignId === campaign.id ? (
@@ -172,7 +172,7 @@ export function UseInCampaignDialog({
                     {error.text}{" "}
                     {error.taken ? (
                       <Link href={`/campaigns/${campaign.id}/character?mode=replace`} className="text-amber-200 underline underline-offset-2">
-                        Swap characters in its lobby
+                        {t("characters.use.swap")}
                       </Link>
                     ) : null}
                   </p>

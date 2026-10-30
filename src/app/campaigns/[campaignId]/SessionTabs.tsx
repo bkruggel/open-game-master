@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { memo, useState } from "react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { paintedRailIcon } from "@/app/campaigns/[campaignId]/SessionGlyph";
 import { SUBTAB_GLYPHS, TABLE_GLYPH, TAB_GLYPHS } from "@/app/campaigns/[campaignId]/sessionGlyphs";
@@ -80,55 +81,64 @@ const RAIL_ICONS = Object.fromEntries(
 ) as Record<PanelTab, LucideIcon>;
 const TableIcon = paintedRailIcon(TABLE_GLYPH);
 
-// Label, icon and rail tooltip per tab. Presentation only: which of these
-// a given viewer sees, and in what order, is visiblePanelTabs's decision.
+// Label, icon and rail tooltip per tab, as dictionary keys (table.tab.*,
+// table.tabHint.*). Presentation only: which of these a given viewer sees,
+// and in what order, is visiblePanelTabs's decision.
 const TAB_PRESENTATION: Record<PanelTab, [string, LucideIcon, string]> = {
   dm: [
-    "GM",
+    "table.tab.dm",
     RAIL_ICONS.dm,
-    "Everything waiting on you, and every ruling the engine can make on your say-so.",
+    "table.tabHint.dm",
   ],
   lead: [
-    "Lead",
+    "table.tab.lead",
     RAIL_ICONS.lead,
-    "Steer the table: the floor, notes waiting on you, invites and the lead seat.",
+    "table.tabHint.lead",
   ],
   party: [
-    "Party",
+    "table.tab.party",
     RAIL_ICONS.party,
-    "Character sheets, HP and conditions for the whole party, and their bonds with the people they have met.",
+    "table.tabHint.party",
   ],
-  battle: ["Battle", RAIL_ICONS.battle, "The tactical battle map. Move your token on your turn."],
-  map: ["Map", RAIL_ICONS.map, "The scene map, the places the party has found, and the Atlas maps the GM has shown."],
+  battle: ["table.tab.battle", RAIL_ICONS.battle, "table.tabHint.battle"],
+  map: ["table.tab.map", RAIL_ICONS.map, "table.tabHint.map"],
   story: [
-    "Story",
+    "table.tab.story",
     RAIL_ICONS.story,
-    "Chapters and the tale so far, the world-state record, and the audited log of rolls and stat changes.",
+    "table.tabHint.story",
   ],
-  notes: ["Notes", RAIL_ICONS.notes, "Suggest story notes; the party lead approves them."],
-  chat: ["Chat", RAIL_ICONS.chat, "Side chat between players. The GM does not see it."],
+  notes: ["table.tab.notes", RAIL_ICONS.notes, "table.tabHint.notes"],
+  chat: ["table.tab.chat", RAIL_ICONS.chat, "table.tabHint.chat"],
   world: [
-    "World",
+    "table.tab.world",
     RAIL_ICONS.world,
-    "This campaign's own copy of its world: the wiki, the web of links, the timeline, the atlas and its secrets. Players never see it.",
+    "table.tabHint.world",
   ],
   context: [
-    "Context",
+    "table.tab.context",
     RAIL_ICONS.context,
-    "What the GM was actually sent last turn, and anything the budget cut.",
+    "table.tabHint.context",
   ],
   settings: [
-    "Settings",
+    "table.tab.settings",
     RAIL_ICONS.settings,
-    "Table settings, the campaign's details and Story AI, prep from your workshops, and ending the campaign.",
+    "table.tabHint.settings",
   ],
 };
 
 // Single source of truth for the panel tab list, shared by the desktop rail
 // strip and the mobile bottom bar. The gating flags are documented on
-// TableTabInput (src/lib/dm/table-tabs.ts).
-export function buildPanelTabs(input: TableTabInput): PanelTabDef[] {
-  return visiblePanelTabs(input).map((id) => [id, ...TAB_PRESENTATION[id]]);
+// TableTabInput (src/lib/dm/table-tabs.ts). Like home/types.ts's agoLabel,
+// the reading takes the translator from the component that draws the rail,
+// so a language switch rewords it with everything else.
+export function buildPanelTabs(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  input: TableTabInput,
+): PanelTabDef[] {
+  return visiblePanelTabs(input).map((id) => {
+    const [labelKey, icon, hintKey] = TAB_PRESENTATION[id];
+    return [id, t(labelKey), icon, t(hintKey)];
+  });
 }
 
 // The lead tab is the one place in the rail that is not the DM's gold: the
@@ -230,6 +240,7 @@ function BottomTabBarInner({
   // quiet.
   steersStory: boolean;
 }) {
+  const t = useT();
   const [moreOpen, setMoreOpen] = useState(false);
   const byId = new Map(tabs.map((def) => [def[0], def]));
   const { bar, more } = phoneBarSplit(tabs.map(([id]) => id));
@@ -255,7 +266,7 @@ function BottomTabBarInner({
           className={cn(ui.railCell, "min-w-0 shrink-0 grow basis-0", mobileView === "chat" && ui.railCellActive)}
         >
           <TableIcon />
-          <span className="eyebrow whitespace-nowrap text-[9px] leading-none">Table</span>
+          <span className="eyebrow whitespace-nowrap text-[9px] leading-none">{t("table.tab.table")}</span>
         </button>
         {bar.map((value) => {
           const def = byId.get(value);
@@ -300,14 +311,14 @@ function BottomTabBarInner({
                 <i />
               </span>
             )}
-            <span className="eyebrow whitespace-nowrap text-[9px] leading-none">{shownActive ? shownActive[1] : "More"}</span>
+            <span className="eyebrow whitespace-nowrap text-[9px] leading-none">{shownActive ? shownActive[1] : t("table.tab.more")}</span>
             {moreWaiting ? <span className="absolute right-1.5 top-1 size-1.5 rounded-full bg-amber-400" /> : null}
           </button>
         ) : null}
       </nav>
       {more.length ? (
-        <Sheet open={moreOpen} onOpenChange={setMoreOpen} title="More of the table">
-          <ul className="stagger-up space-y-1.5 overflow-y-auto pb-1" aria-label="Every other tab">
+        <Sheet open={moreOpen} onOpenChange={setMoreOpen} title={t("table.tab.moreSheet")}>
+          <ul className="stagger-up space-y-1.5 overflow-y-auto pb-1" aria-label={t("table.tab.moreAria")}>
             {more.map((value) => {
               const def = byId.get(value);
               if (!def) return null;
@@ -334,7 +345,7 @@ function BottomTabBarInner({
                       <span className="block text-xs text-stone-400">{hint}</span>
                     </span>
                     {count(value) ? <span className={cn(tabBadgeClass(value), "static px-1.5 text-[10px]")}>{count(value)}</span> : null}
-                    {!count(value) && due(value) ? <span className="size-2 rounded-full bg-amber-400" aria-label="Waiting on you" /> : null}
+                    {!count(value) && due(value) ? <span className="size-2 rounded-full bg-amber-400" aria-label={t("table.tab.waitingAria")} /> : null}
                   </button>
                 </li>
               );

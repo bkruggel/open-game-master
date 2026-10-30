@@ -6,7 +6,7 @@ import { StorySetupNotice } from "@/components/StorySetupNotice";
 import { useTtsVoices, voiceLabel } from "@/components/VoicePicker";
 import { cn } from "@/lib/cn";
 import { CAMPAIGN_DIFFICULTY_HINTS } from "@/lib/campaign-types";
-import { STORY_SETUP_WARNING_COMING } from "@/lib/dm/story-setup-logic";
+import { storySetupWarningComing } from "@/lib/dm/story-setup-logic";
 import { DM_MODE_LABELS } from "@/lib/schemas/game-settings-options";
 import type { WorldPackSummary } from "@/lib/worlds/types";
 import type { StepProps } from "@/app/create-campaign/draft";
@@ -120,7 +120,7 @@ export function ReviewStep({
 
       {storyboardClash ? (
         <StorySetupNotice
-          text={STORY_SETUP_WARNING_COMING}
+          text={storySetupWarningComing(t)}
           onTurnOff={() => patch({ aiStorySetup: false })}
           onKeep={() => patch({ storySetupKept: true })}
         />

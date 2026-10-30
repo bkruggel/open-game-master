@@ -7,6 +7,7 @@ import type { PartyState } from "@/lib/dm/party-logic";
 import { PARTY_BACKSTORY_MAX } from "@/lib/dm/party-story";
 import { offersStoryModel, useCapabilities } from "@/lib/use-capabilities";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 
 // Why this party is together (src/lib/dm/party-story.ts), in the lobby and
 // on the table's Party tab. The backstory is optional, and an empty card asks
@@ -36,6 +37,7 @@ export function PartyStory({
 }) {
   const saved = party?.backstory ?? "";
   const capabilities = useCapabilities();
+  const t = useT();
   const [text, setText] = useState(saved);
   // The stored text this edit started from. When the server's copy moves
   // and the field still holds the old one, the field follows; when it holds
@@ -79,7 +81,7 @@ export function PartyStory({
     });
     const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {
-      setError(typeof data.error === "string" ? data.error : "Could not reach the party backstory.");
+      setError(typeof data.error === "string" ? data.error : t("table.partyStory.unreachable"));
       return null;
     }
     return data;
@@ -94,10 +96,10 @@ export function PartyStory({
       if (data) {
         setText(text.trim());
         setOvertaken(false);
-        setNote(text.trim() ? "Saved. The GM reads it from the next turn." : "Cleared.");
+        setNote(text.trim() ? t("table.partyStory.saved") : t("table.partyStory.cleared"));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("table.unreachable"));
     } finally {
       setBusy("");
       focusBackstory.current = true;
@@ -112,10 +114,10 @@ export function PartyStory({
       const data = await post({ do: "draft", current: text });
       if (data && typeof data.text === "string") {
         setText(data.text);
-        setNote("A draft from your characters' backstories. Edit it, then save; nothing is kept until you do.");
+        setNote(t("table.partyStory.draftNote"));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("table.unreachable"));
     } finally {
       setBusy("");
       focusBackstory.current = true;
@@ -128,7 +130,7 @@ export function PartyStory({
   return (
     <div className={cn("space-y-3 text-sm", className)} data-party-story>
       <div>
-        <span className={ui.sectionEyebrow}>Party backstory</span>
+        <span className={ui.sectionEyebrow}>{t("table.partyStory.backstory")}</span>
         {canWrite ? (
           <>
             <textarea
@@ -137,8 +139,8 @@ export function PartyStory({
               onChange={(event) => setText(event.target.value)}
               rows={4}
               maxLength={PARTY_BACKSTORY_MAX}
-              aria-label="Party backstory"
-              placeholder="Optional. How these characters know each other and why they travel together: who owes whom, what they survived, what they are after."
+              aria-label={t("table.partyStory.backstory")}
+              placeholder={t("table.partyStory.placeholder")}
               className={cn(ui.input, "mt-1")}
             />
             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -150,12 +152,12 @@ export function PartyStory({
                 className={cn(ui.btnSmall, "min-h-10")}
               >
                 {busy === "save" ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                {text.trim() || !saved ? "Save backstory" : "Clear backstory"}
+                {text.trim() || !saved ? t("table.partyStory.save") : t("table.partyStory.clear")}
               </button>
               {hasCharacters && offersStoryModel(capabilities) ? (
                 <button type="button" disabled={busy !== ""} onClick={() => void draft()} className={cn(ui.btnSmall, "min-h-10")}>
                   {busy === "draft" ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-                  Draft from our backstories
+                  {t("table.partyStory.draft")}
                 </button>
               ) : null}
               <span className="ml-auto text-[11px] text-stone-500">
@@ -165,13 +167,12 @@ export function PartyStory({
           </>
         ) : (
           <p className={cn("mt-1 whitespace-pre-line", saved ? "text-stone-300" : "text-xs text-stone-500")}>
-            {saved || "Nobody has written one yet. Build a character here to add to it."}
+            {saved || t("table.partyStory.empty")}
           </p>
         )}
         {overtaken ? (
           <p role="status" className="mt-1 text-xs text-amber-300">
-            {party?.backstoryBy || "Someone"} saved a newer version while you were editing. Your text is still here;
-            saving it replaces theirs.
+            {t("table.partyStory.overtaken", { name: party?.backstoryBy || t("table.partyStory.someone") })}
           </p>
         ) : null}
         {error ? (
@@ -185,11 +186,13 @@ export function PartyStory({
           {note && !error ? note : ""}
         </p>
         <p className="mt-1 text-xs text-stone-500">
-          {savedBy ? `Last saved by ${savedBy}${savedAt && !Number.isNaN(savedAt.getTime()) ? ` on ${savedAt.toLocaleDateString()}` : ""}. ` : ""}
-          {inPlay
-            ? "Optional. The GM reads it from the next turn; the story plan takes it in when the lead regenerates the arc. "
-            : "Optional. The GM reads it every turn and the story plan is built around it when the adventure begins. "}
-          The lead, the GM and anyone with a character here can edit it; the latest save wins.
+          {savedBy
+            ? savedAt && !Number.isNaN(savedAt.getTime())
+              ? t("table.partyStory.lastSavedAt", { name: savedBy, date: savedAt.toLocaleDateString() })
+              : t("table.partyStory.lastSaved", { name: savedBy })
+            : ""}
+          {inPlay ? t("table.partyStory.helpInPlay") : t("table.partyStory.helpLobby")}
+          {t("table.partyStory.helpWho")}
         </p>
       </div>
     </div>

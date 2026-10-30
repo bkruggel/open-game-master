@@ -56,9 +56,14 @@ import { tableAuthors, workshopClassesFor } from "@/lib/db/homebrew";
 import { testFightSource } from "@/lib/db/test-fights";
 import { isPlaytest } from "@/lib/workshop/kind";
 import { SESSION_REASON } from "@/lib/dm/session-hold-logic";
+import { translate } from "@/lib/messages-logic";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// The server's answers read in English, the dictionary's source: a request
+// carries no locale, and the client shows these lines beside its own.
+const en = (key: string, vars?: Record<string, string | number>) => translate("en", key, vars);
 
 // The handout on the table right now: the newest one shown, unless a later
 // dismissal named it (or "*", which takes down whatever is up). Both live
@@ -291,6 +296,7 @@ export async function PATCH(
     // had: a companion's sheet made up the numbers for a player who had none.
     const lobbySheets = listSheets(campaignId);
     const blocker = lobbyBlocker(
+      en,
       seats,
       listMembers(campaignId).map((member) => ({
         userId: member.userId,

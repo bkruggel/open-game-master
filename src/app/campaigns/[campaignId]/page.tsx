@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, lazy, use, useCallback, useEffect, type ComponentProps } from "react";
@@ -28,6 +29,7 @@ export default function CampaignPage({
 }: {
   params: Promise<{ campaignId: string }>;
 }) {
+  const t = useT();
   const { campaignId } = use(params);
   const {
     state,
@@ -71,11 +73,11 @@ export default function CampaignPage({
       <main className="flex flex-1 flex-col items-center justify-center gap-3 p-6">
         <EmptyState
           art="map"
-          title={state.error || "Campaign not found."}
-          hint={state.answeredBy ? `Answered by ${state.answeredBy}` : undefined}
+          title={state.error || t("table.errors.notFound")}
+          hint={state.answeredBy ? t("table.errors.answeredBy", { name: state.answeredBy }) : undefined}
           action={
             <Link href="/" className={ui.btnSecondary}>
-              Back to campaigns
+              {t("table.back")}
             </Link>
           }
         />

@@ -47,6 +47,7 @@ import {
 } from "react";
 import { JOIN_NOTE_PREFIX, latestUnintroducedJoin } from "@/lib/campaign-types";
 import { composerLimit, textLength } from "@/lib/text-limits";
+import { useT } from "@/lib/locale";
 import type { TourEnd } from "@/lib/tours/account-logic";
 import { DM_TOUR, DM_TOUR_ID, FIRST_TURN_TOUR, PLAYER_TOUR, PLAYER_TOUR_ID } from "@/lib/tours/table";
 import { finishTour, useTourFinished } from "@/lib/tours/tour-store";
@@ -601,10 +602,12 @@ export function SessionView({
     ? "This campaign has ended. The story stays here to read."
     : "The party lead has muted you at this table.";
   const enemyTurns = state.encounter?.enemyTurns === true;
+  // The gate's placeholder sentences speak the interface's language.
+  const t = useT();
   const gate = useMemo(
     () =>
-      composerGate({ floor, sheets, meUserId: meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns }),
-    [floor, sheets, meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns],
+      composerGate(t, { floor, sheets, meUserId: meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns }),
+    [t, floor, sheets, meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns],
   );
   // A mid-game joiner without a character is gated to creation first. The DM
   // runs no character, so the gate must never catch them.
@@ -614,7 +617,7 @@ export function SessionView({
   const showJoinBanner = steersStory && joinNotice !== null && dismissedJoinNotice !== joinNotice.id;
   const panelTabs = useMemo(
     () =>
-      buildPanelTabs({
+      buildPanelTabs(t, {
         hasBattleMap: Boolean(state.battleMap),
         mapsEnabled: campaign?.gameSettings?.mapsEnabled ?? true,
         hasSettings: Boolean(campaign),
@@ -622,7 +625,7 @@ export function SessionView({
         adjudicates: caps.adjudicates,
         isLead,
       }),
-    [state.battleMap, campaign, caps.secretStory, caps.adjudicates, isLead],
+    [t, state.battleMap, campaign, caps.secretStory, caps.adjudicates, isLead],
   );
   // The table's arrangement for this seat (client issue 46,
   // src/lib/table-layout.ts): which side-panel tabs have a pane of their

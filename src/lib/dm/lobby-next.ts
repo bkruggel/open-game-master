@@ -21,35 +21,52 @@ export type LobbyNextInput = {
 
 export type LobbyNext = { text: string; tone: "do" | "wait" | "go" };
 
-function names(list: string[]): string {
-  if (list.length <= 2) return list.join(" and ");
-  return `${list.slice(0, 2).join(", ")} and ${list.length - 2} more`;
+// The caller binds the language: the lobby passes its own translator, the
+// tests an English-bound one (see scripts/test-lobby-next.mjs).
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
+// The waited-on players as prose: "Ada", "Ada and Bram", "Ada, Bram and 1
+// more" (namedTwo and namedMore, the hero routes' joinery).
+function names(t: Translate, list: string[]): string {
+  if (list.length <= 1) {
+    return list.join("");
+  }
+  if (list.length === 2) {
+    return t("table.hero.namedTwo", { first: list[0], second: list[1] });
+  }
+  return t("table.hero.namedMore", { first: list[0], second: list[1], count: list.length - 2 });
 }
 
-export function lobbyNext(input: LobbyNextInput): LobbyNext {
+export function lobbyNext(t: Translate, input: LobbyNextInput): LobbyNext {
   if (input.solo) {
     return input.hasSheet
-      ? { text: "Your hero is ready. Begin whenever you like.", tone: "go" }
-      : { text: "Next: choose your hero, then begin.", tone: "do" };
+      ? { text: t("table.lobby.next.soloReady"), tone: "go" }
+      : { text: t("table.lobby.next.soloHero"), tone: "do" };
   }
   if (!input.isDm && !input.hasSheet) {
-    return { text: "Next: choose your hero. A ready-made one has you playing in a minute.", tone: "do" };
+    return { text: t("table.lobby.next.hero"), tone: "do" };
   }
   if (!input.ready) {
     return input.isDm
-      ? { text: "Next: ready up when the table is set. The adventure is yours to open.", tone: "do" }
-      : { text: "Next: ready up when you are set.", tone: "do" };
+      ? { text: t("table.lobby.next.dmReady"), tone: "do" }
+      : { text: t("table.lobby.next.ready"), tone: "do" };
   }
   if (input.blocker) {
     if (input.needHero.length) {
-      return { text: `Waiting for ${names(input.needHero)} to choose a hero.`, tone: "wait" };
+      return {
+        text: t("table.lobby.next.waitingHero", { names: names(t, input.needHero), count: input.needHero.length }),
+        tone: "wait",
+      };
     }
     if (input.notReady.length) {
-      return { text: `Waiting for ${names(input.notReady)} to ready up.`, tone: "wait" };
+      return {
+        text: t("table.lobby.next.waitingReady", { names: names(t, input.notReady), count: input.notReady.length }),
+        tone: "wait",
+      };
     }
     return { text: input.blocker, tone: "wait" };
   }
   return input.canStart
-    ? { text: "Everyone is ready. Begin the adventure.", tone: "go" }
-    : { text: "Everyone is ready. The owner or the GM opens the adventure.", tone: "wait" };
+    ? { text: t("table.lobby.next.go"), tone: "go" }
+    : { text: t("table.lobby.next.goWait"), tone: "wait" };
 }

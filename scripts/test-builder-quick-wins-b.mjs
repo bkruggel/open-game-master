@@ -71,9 +71,11 @@ await test("Q4: a chip's remove cross reaches 44 px", async () => {
 await test("Q4: the lobby's Remove stands apart from Switch, every action 44 px tall", () => {
   const source = read("src/app/campaigns/[campaignId]/LobbyActions.tsx");
   const block = source.slice(source.indexOf("function CharacterActions"), source.indexOf("// Opening the adventure."));
-  const edit = block.indexOf("> Edit");
-  const swap = block.indexOf("> Switch");
-  const remove = block.indexOf("> Remove");
+  // The three labels are translated (table.lobby.edit, table.lobby.switch,
+  // action.remove), so the test reads the t() calls' keys in source order.
+  const edit = block.indexOf('t("table.lobby.edit")');
+  const swap = block.indexOf('t("table.lobby.switch")');
+  const remove = block.indexOf('t("action.remove")');
   assert.ok(edit !== -1 && swap > edit && remove > swap, "Edit, Switch, then Remove last");
   assert.equal((block.match(/min-h-11/g) ?? []).length, 3, "each of the three is 44 px tall");
   const removeButton = block.slice(block.lastIndexOf("<button", remove), remove);

@@ -2,6 +2,7 @@
 
 import { Coffee } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/locale";
 import { SessionBanner, bannerButtonClass } from "@/app/campaigns/[campaignId]/SessionBanner";
 import { breakElapsed, type TableBreak } from "@/lib/dm/table-break-logic";
 
@@ -33,6 +34,7 @@ export function TableBreakBanner({
 }) {
   const [now, setNow] = useState(() => Date.now());
   const [busy, setBusy] = useState(false);
+  const t = useT();
   // Under the session header, whatever its height: a fight's initiative
   // ribbon makes it taller, and a fixed offset laid the banner over the
   // ribbon's names. Measured while a break is up, and again when the header
@@ -85,19 +87,20 @@ export function TableBreakBanner({
       <SessionBanner
         glyph="tab-timeline"
         lead={<Coffee aria-hidden="true" className="size-7 shrink-0 text-amber-300" />}
-        title={mine ? "You paused the table" : `Paused by ${tableBreak.name}`}
+        title={mine ? t("table.break.you") : t("table.break.by", { name: tableBreak.name })}
         className="table-break-banner pointer-events-auto w-full max-w-xl shadow-elev-2"
         actions={
           mayResume ? (
             <button type="button" disabled={busy} onClick={() => void resume()} className={bannerButtonClass(true)}>
-              Resume
+              {t("table.break.resume")}
             </button>
           ) : null
         }
       >
         <span role="status" className="text-sm text-stone-300">
-          Paused for <span className="tabular-nums text-amber-100">{breakElapsed(tableBreak.at, now)}</span>. The story
-          and its narration wait; OOC table talk still works.
+          {t("table.break.for")}
+          <span className="tabular-nums text-amber-100">{breakElapsed(tableBreak.at, now)}</span>
+          {t("table.break.after")}
         </span>
       </SessionBanner>
     </div>

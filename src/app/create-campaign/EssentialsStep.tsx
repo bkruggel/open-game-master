@@ -7,7 +7,7 @@ import type { FranchiseGroup, WorldPackSummary } from "@/lib/worlds/types";
 import { WorldSetupFields } from "@/app/WorldSetupFields";
 import { ContentImportPicker } from "@/app/workshop/ContentImportPicker";
 import { StorySetupNotice } from "@/components/StorySetupNotice";
-import { STORY_SETUP_WARNING_COMING } from "@/lib/dm/story-setup-logic";
+import { storySetupWarningComing } from "@/lib/dm/story-setup-logic";
 import { DetailGroup } from "@/app/create-campaign/fields";
 import { DmModeField, TitleField, WorldPackField } from "@/app/create-campaign/IdentityFields";
 import { CampaignLengthField, CharacterRulesFields, PartyBasics } from "@/app/create-campaign/PartyFields";
@@ -108,7 +108,7 @@ export function EssentialsStep(
               storyboardNote={(arcComing) =>
                 arcComing && gates.aiNarrates && draft.aiStorySetup && !draft.storySetupKept ? (
                   <StorySetupNotice
-                    text={STORY_SETUP_WARNING_COMING}
+                    text={storySetupWarningComing(t)}
                     onTurnOff={() => patch({ aiStorySetup: false })}
                     onKeep={() => patch({ storySetupKept: true })}
                   />

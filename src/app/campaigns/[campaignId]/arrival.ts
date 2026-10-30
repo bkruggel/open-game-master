@@ -6,7 +6,9 @@ import { classDisplayName, speciesName } from "@/lib/characters/class-words";
 // the campaign stream already keeps (a seat lands as sheet_updated), so no
 // new channel and nothing about joining changes. The sheets present when
 // the lobby opened are the baseline and never replay; companions are the
-// story's, not a player taking a seat.
+// story's, not a player taking a seat. The line's words live in the
+// dictionaries (table.arrival.*); like home/types.ts's agoLabel, the reading
+// takes the translator from the component that draws it.
 
 export type Arrival = Pick<CharacterSheet, "id" | "name" | "race" | "raceLabel" | "class" | "gender" | "portrait">;
 
@@ -22,8 +24,8 @@ export function newArrivals<T extends Seatable>(known: string[], sheets: T[]): T
   return sheets.filter((sheet) => !sheet.isCompanion && !seen.has(sheet.id));
 }
 
-export function arrivalLine(sheet: Pick<CharacterSheet, "name">) {
-  return `${sheet.name} takes a seat`;
+export function arrivalLine(t: (key: string, vars?: Record<string, string | number>) => string, sheet: Pick<CharacterSheet, "name">) {
+  return t("table.arrival.line", { name: sheet.name });
 }
 
 // "Hill dwarf · Fighter", as the lobby's party list names them.

@@ -45,6 +45,7 @@ import {
   reportAction, disputeAction } from "@/app/campaigns/[campaignId]/MessageParts";
 import type { CampaignLocation, MediaStatus } from "@/app/campaigns/[campaignId]/useCampaignStream";
 import { locationMapSlot, scenePictureSlot } from "@/app/campaigns/[campaignId]/mediaSlot";
+import { useT } from "@/lib/locale";
 
 // A right-click on the prose opens the passage's menu, but a long press must
 // stay the phone's way to select text: pinning and lore checks act on the
@@ -128,6 +129,7 @@ export const MessageItem = memo(function MessageItem({
   // A shop's "is open" line opens the Market on that shop.
   onBrowseShop?: (shopId: string) => void;
 }) {
+  const t = useT();
   // Local to the row: only one narration is ever being corrected at a time,
   // and the draft should not survive the row unmounting.
   const [editing, setEditing] = useState(false);
@@ -222,10 +224,10 @@ export const MessageItem = memo(function MessageItem({
       asideActions.push(reportAction(message, onReport, true));
     }
     return (
-      <ContextMenu items={toContextItems(asideActions)} label="Game Master" className="session-dm-aside group max-w-[92%] animate-fade-up sm:max-w-2xl">
+      <ContextMenu items={toContextItems(asideActions)} label={t("table.author.gm")} className="session-dm-aside group max-w-[92%] animate-fade-up sm:max-w-2xl">
         <p className="mb-1 flex items-center gap-1.5">
-          <span className="session-speaker truncate">Game Master, out of character</span>
-          <MessageActions actions={asideActions} menuLabel="Game Master: message actions" quiet />
+          <span className="session-speaker truncate">{t("table.author.gmOoc")}</span>
+          <MessageActions actions={asideActions} menuLabel={t("table.author.gmActions")} quiet />
         </p>
         <div className="session-bubble session-bubble-ooc session-bubble-dm">
           <p className="whitespace-pre-wrap text-pretty">{message.content}</p>
@@ -354,7 +356,7 @@ export const MessageItem = memo(function MessageItem({
     // Reroll takes: the counter only appears once a second one exists.
     const variants = message.variants ?? [];
     const variantIndex = message.variantIndex ?? 0;
-    const title = message.speaker ? `${message.speaker.name}, through the GM` : "Game Master";
+    const title = message.speaker ? t("table.author.speakerThroughGm", { name: message.speaker.name }) : t("table.author.gm");
     return (
       <div
         className="session-dm group animate-fade-up"

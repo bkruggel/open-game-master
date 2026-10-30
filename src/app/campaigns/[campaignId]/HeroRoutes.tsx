@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/locale";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { PregenPicker } from "@/app/campaigns/[campaignId]/PregenPicker";
 import { cn } from "@/lib/cn";
@@ -14,6 +15,7 @@ import { heroRouteAdvice } from "@/app/campaigns/[campaignId]/hero-routes";
 // is built step by step. The route the player most likely wants is marked,
 // and every route stays one tap away.
 export function HeroRoutes({ campaignId, className }: { campaignId: string; className?: string }) {
+  const t = useT();
   const [heroes, setHeroes] = useState<string[] | null>(null);
   const [pregens, setPregens] = useState<number | null>(null);
   const [readyOpen, setReadyOpen] = useState(false);
@@ -44,7 +46,7 @@ export function HeroRoutes({ campaignId, className }: { campaignId: string; clas
 
   const page = `/campaigns/${campaignId}/character`;
   const loading = heroes === null || pregens === null;
-  const advice = heroRouteAdvice({ library: heroes ?? [], pregens: pregens ?? 0 });
+  const advice = heroRouteAdvice(t, { library: heroes ?? [], pregens: pregens ?? 0 });
   // An empty library opens the ready-made list at once: it is the quickest
   // way to a seat, and the other two doors stay beside it.
   const showReady = readyOpen || (!loading && advice.suggested === "ready" && advice.openReady);
@@ -57,9 +59,9 @@ export function HeroRoutes({ campaignId, className }: { campaignId: string; clas
         {advice.ready ? (
           <RouteCard
             glyph="ui-quickstart"
-            title="Ready-made hero"
-            blurb="A finished character, playing in a minute. It joins your library too."
-            badge={advice.suggested === "ready" ? "Fastest" : null}
+            title={t("table.hero.readyTitle")}
+            blurb={t("table.hero.readyBlurb")}
+            badge={advice.suggested === "ready" ? t("table.hero.fastest") : null}
             pressed={showReady}
             onClick={() => setReadyOpen(!showReady)}
             route="ready"
@@ -67,16 +69,16 @@ export function HeroRoutes({ campaignId, className }: { campaignId: string; clas
         ) : null}
         <RouteCard
           glyph="tab-characters"
-          title="From your library"
+          title={t("table.hero.libraryTitle")}
           blurb={advice.libraryLine}
-          badge={advice.suggested === "library" ? "Suggested" : null}
+          badge={advice.suggested === "library" ? t("table.hero.suggested") : null}
           href={advice.library ? page : undefined}
           route="library"
         />
         <RouteCard
           glyph="ui-new"
-          title="Build your own"
-          blurb="Step by step, with a suggestion at every choice and the full rules when you want them."
+          title={t("table.hero.buildTitle")}
+          blurb={t("table.hero.buildBlurb")}
           href={`${page}?start=new`}
           route="build"
         />

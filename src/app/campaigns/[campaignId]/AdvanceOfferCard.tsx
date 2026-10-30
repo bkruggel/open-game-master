@@ -3,6 +3,7 @@
 import { Heart, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { CharacterPortrait } from "@/lib/ui";
 import { characterPlaceholder, npcPlaceholder } from "@/lib/placeholders";
 import { KitButton } from "./PanelKit";
@@ -97,12 +98,13 @@ function AdvanceOfferCard({
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState<"" | "approve" | "decline" | "cancel">("");
-  const suitor = proposal.advance?.suitor || "Someone";
+  const t = useT();
+  const suitor = proposal.advance?.suitor || t("table.advance.someone");
   const look = proposal.advance?.look;
   const face = look?.race
     ? characterPlaceholder({ race: look.race, class: look.class, gender: look.gender })
     : npcPlaceholder(look?.role, suitor);
-  const characterName = character?.name ?? "a character";
+  const characterName = character?.name ?? t("table.advance.aCharacter");
 
   async function answer(action: "approve" | "decline" | "cancel") {
     setBusy(action);
@@ -114,10 +116,10 @@ function AdvanceOfferCard({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        onError(String(data.error ?? "That did not work."));
+        onError(String(data.error ?? t("table.advance.failed")));
       }
     } catch {
-      onError("Could not reach the server.");
+      onError(t("table.unreachable"));
     } finally {
       setBusy("");
     }
@@ -126,7 +128,7 @@ function AdvanceOfferCard({
   return (
     <div className="advance-shell" data-leaving={leaving ? "" : undefined}>
       <section
-        aria-label={`${suitor} makes a romantic advance toward ${characterName}`}
+        aria-label={t("table.advance.aria", { suitor, name: characterName })}
         data-advance-card={proposal.id}
         data-offer-card={proposal.id}
         className={cn(
@@ -153,7 +155,7 @@ function AdvanceOfferCard({
             ) : null}
             {mine ? (
               <p className="mt-1 text-[11px] text-stone-400">
-                Only you answer this. Say how {characterName} takes it in the scene too, if you like.
+                {t("table.advance.mine", { name: characterName })}
               </p>
             ) : null}
           </div>
@@ -168,7 +170,7 @@ function AdvanceOfferCard({
               busy={busy === "approve"}
             >
               {busy === "approve" ? null : <Heart className="size-3.5" aria-hidden="true" />}
-              Accept
+              {t("table.advance.accept")}
             </KitButton>
             <KitButton
               className="min-h-10 px-4"
@@ -177,12 +179,12 @@ function AdvanceOfferCard({
               busy={busy === "decline"}
             >
               {busy === "decline" ? null : <X className="size-3.5" aria-hidden="true" />}
-              Decline
+              {t("table.advance.decline")}
             </KitButton>
           </div>
         ) : (
           <div className="mt-1.5 flex flex-wrap items-center justify-end gap-1.5">
-            <span className="text-[11px] italic text-stone-500">waiting on {characterName}&apos;s player</span>
+            <span className="text-[11px] italic text-stone-500">{t("table.advance.waiting", { name: characterName })}</span>
             {steersStory ? (
               <KitButton
                 className="min-h-10"
@@ -191,7 +193,7 @@ function AdvanceOfferCard({
                 busy={busy === "cancel"}
               >
                 {busy === "cancel" ? null : <X className="size-3.5" aria-hidden="true" />}
-                Withdraw
+                {t("table.advance.withdraw")}
               </KitButton>
             ) : null}
           </div>

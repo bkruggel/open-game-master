@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "@/lib/locale";
 import { PortraitMedallion } from "@/components/sheet/SheetParts";
 import { Face, useEscapeToSkip } from "@/app/campaigns/[campaignId]/moment-parts";
 import {
@@ -25,6 +26,7 @@ import type { CharacterSheet } from "@/lib/schemas/sheet";
 // heard once, from a polite region that is always there. Styles:
 // styles/moments.css, "arrival banner".
 export function ArrivalBanner({ sheets }: { sheets: CharacterSheet[] }) {
+  const t = useT();
   const [arrivals, setArrivals] = useState(() => startArrivals(sheets));
   const seen = seeSheets(arrivals, sheets);
   if (seen !== arrivals) {
@@ -49,7 +51,7 @@ export function ArrivalBanner({ sheets }: { sheets: CharacterSheet[] }) {
   return (
     <>
       <p role="status" className="sr-only">
-        {current ? `${arrivalLine(current)}: ${arrivalDetail(current)}` : ""}
+        {current ? `${arrivalLine(t, current)}: ${arrivalDetail(current)}` : ""}
       </p>
       {current ? (
         <ArrivalCard
@@ -78,6 +80,7 @@ export function ArrivalCard({
   onDismiss: () => void;
   onHold: (held: boolean) => void;
 }) {
+  const t = useT();
   return (
     <div
       className="moment-arrival"
@@ -91,12 +94,12 @@ export function ArrivalCard({
         <Face sheet={arrival} />
       </PortraitMedallion>
       <span className="min-w-0 flex-1" aria-hidden="true">
-        <span className="gold-title moment-arrival-name">{arrivalLine(arrival)}</span>
+        <span className="gold-title moment-arrival-name">{arrivalLine(t, arrival)}</span>
         <span className="moment-arrival-detail">{arrivalDetail(arrival)}</span>
       </span>
       {still ? (
         <button type="button" className="moment-arrival-dismiss" onClick={onDismiss}>
-          Dismiss
+          {t("table.arrival.dismiss")}
         </button>
       ) : null}
     </div>

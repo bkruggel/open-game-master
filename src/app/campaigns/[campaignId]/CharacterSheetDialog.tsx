@@ -7,6 +7,7 @@ import { returnFocus } from "@/components/ui/return-focus";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { FileDown, Minus, Plus, PawPrint, Wrench, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { CharacterPortrait, ui } from "@/lib/ui";
 import { downloadCharacterSheetPdf } from "@/lib/pdf/download";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
@@ -109,6 +110,7 @@ export function CharacterSheetDialog({
   onAdjust?: () => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const derived = computeSheetDerived(sheet);
   const armor = acBreakdownFor(sheet);
   const attunedCount = sheet.equipment.filter((item) => item.attuned).length;
@@ -138,7 +140,7 @@ export function CharacterSheetDialog({
     size: sizeForRace(sheet.race),
     wearer: sheet,
   });
-  const speedNote = speedState.notes.length ? speedState.notes.join(" ") : "Their walking speed.";
+  const speedNote = speedState.notes.length ? speedState.notes.join(" ") : t("table.sheet.walkingSpeed");
   const [busy, setBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   // The Carried tile's breakdown (issue #206), drawn from the same sheet and
@@ -156,7 +158,7 @@ export function CharacterSheetDialog({
   const [pendingWear, setPendingWear] = useState<PendingWear | null>(null);
   const spends = mine || corrects;
   // The usage route's own refusal for a dead character's spend.
-  const deadNote = dead && !corrects ? `${sheet.name} is dead and spends nothing.` : null;
+  const deadNote = dead && !corrects ? t("table.sheet.dead", { name: sheet.name }) : null;
 
   async function handleDownloadPdf() {
     setPdfBusy(true);
@@ -186,14 +188,14 @@ export function CharacterSheetDialog({
         // The server saw a fuller place than this sheet did: ask the same way.
         setPendingWear({ name: conflict.item, conflict, change: { equipped: true } });
       } else if (!response.ok) {
-        setRefusal({ text: typeof data?.error === "string" ? data.error : "That change was refused.", at });
+        setRefusal({ text: typeof data?.error === "string" ? data.error : t("table.sheet.refused"), at });
       } else if (typeof data?.timePassed === "string") {
         // Out of a fight armor takes minutes to put on or take off, and the
         // route moved the table's clock by them (src/lib/dm/don-doff.ts).
         setTimeNote(data.timePassed);
       }
     } catch {
-      setRefusal({ text: "The change did not reach the server.", at });
+      setRefusal({ text: t("table.sheet.changeUnreachable"), at });
     } finally {
       setBusy(false);
     }
@@ -233,7 +235,7 @@ export function CharacterSheetDialog({
                   {sheet.name}
                 </Dialog.Title>
                 <p className="text-xs text-stone-400">
-                  Level {sheet.level} {sheet.raceLabel ?? titleCase(sheet.race)}{" "}
+                  {t("table.sheet.level", { level: sheet.level })} {sheet.raceLabel ?? titleCase(sheet.race)}{" "}
                   {isSplit(sheet)
                     ? classWordsAfterLevel(sheet, (id) => workshopClassName(id) ?? titleCase(id))
                     : `${workshopClassName(sheet.class) ?? titleCase(sheet.class)}${sheet.subclass ? ` (${titleCase(sheet.subclass)})` : ""}`}
@@ -244,7 +246,7 @@ export function CharacterSheetDialog({
             </div>
             {/* The kit's own close button: a 40px target on phones. */}
             <Dialog.Close
-              aria-label="Close"
+              aria-label={t("action.close")}
               className="pk-tap -m-1 flex shrink-0 items-center justify-center rounded-md p-2 text-stone-500 transition-colors hover:bg-stone-800 hover:text-stone-300"
             >
               <X className="size-4" />
@@ -257,41 +259,41 @@ export function CharacterSheetDialog({
               vitals={[
                 {
                   glyph: "rest-ac",
-                  label: <GameTerm id="armor_class">Armor class</GameTerm>,
+                  label: <GameTerm id="armor_class">{t("table.sheet.armorClass")}</GameTerm>,
                   value: sheet.ac,
-                  title: sheet.acOverride ? "Set by hand; armor does not change it." : armor.parts.join(" + "),
+                  title: sheet.acOverride ? t("table.sheet.acPinned") : armor.parts.join(" + "),
                 },
                 {
                   glyph: "rest-speed",
-                  label: "Speed",
-                  value: `${speed} ft`,
+                  label: t("table.sheet.speed"),
+                  value: t("table.sheet.speedValue", { speed }),
                   title: [speedNote, ...otherSpeedsLine(derived.speeds)].join(" "),
                   tone: speed < speedState.base ? "warn" : "plain",
                 },
                 {
                   glyph: "rest-initiative",
-                  label: <GameTerm id="initiative">Initiative</GameTerm>,
+                  label: <GameTerm id="initiative">{t("table.sheet.initiative")}</GameTerm>,
                   value: formatModifier(derived.initiative),
                   title: explainParts(derived.parts.initiative),
                 },
                 {
                   glyph: "sense-passive-perception",
-                  label: <GameTerm id="passive_perception">Passive perception</GameTerm>,
+                  label: <GameTerm id="passive_perception">{t("table.sheet.passivePerception")}</GameTerm>,
                   value: derived.passivePerception,
                   title: explainParts(derived.parts.passivePerception),
                 },
-                { glyph: "rest-proficiency", label: "Proficiency", value: formatModifier(derived.proficiencyBonus) },
-                { glyph: "coin-gp", label: "Gold", value: `${sheet.gold} gp` },
-                { glyph: "rest-xp", label: "Experience", value: `${sheet.xp} XP` },
+                { glyph: "rest-proficiency", label: t("table.sheet.proficiency"), value: formatModifier(derived.proficiencyBonus) },
+                { glyph: "coin-gp", label: t("table.sheet.gold"), value: t("table.sheet.goldValue", { gold: sheet.gold }) },
+                { glyph: "rest-xp", label: t("table.sheet.experience"), value: `${sheet.xp} XP` },
                 {
                   glyph: `die-${sheet.hitDice.die}`,
-                  label: <GameTerm id="hit_dice">Hit dice</GameTerm>,
+                  label: <GameTerm id="hit_dice">{t("table.sheet.hitDice")}</GameTerm>,
                   // Every pool of a multiclass character, not only the first.
                   value: hitDiceLine(sheet),
                 },
                 {
                   glyph: "coin-purse",
-                  label: "Carried",
+                  label: t("table.sheet.carried"),
                   value: `${load.carriedLb}${load.unweighed ? "+" : ""}/${load.capacityLb} lb`,
                   tone: load.overCapacity || (encumbranceRule && load.tier !== "unencumbered") ? "warn" : "plain",
                   // Past the capacity (Strength x 15) the load can only be
@@ -299,13 +301,13 @@ export function CharacterSheetDialog({
                   // (src/lib/dm/load-rules.ts, speedFor).
                   title: `${
                     load.overCapacity
-                      ? `Past their carrying capacity of ${load.capacityLb} lb: they can only drag this load, at a speed of 5 feet, and nothing more can be given to them.`
+                      ? t("table.sheet.loadOver", { capacity: load.capacityLb })
                       : encumbranceRule
-                        ? `${load.note ?? "Not encumbered"}. Capacity ${load.capacityLb} lb.`
-                        : `Carrying capacity ${load.capacityLb} lb. Encumbrance is off for this table, so weight up to the capacity costs nothing.`
-                  }${load.unweighed ? ` ${load.unweighed} item${load.unweighed === 1 ? "" : "s"} of unknown weight are not counted.` : ""}`,
+                        ? t("table.sheet.loadEncumbered", { note: load.note ?? t("table.sheet.notEncumbered"), capacity: load.capacityLb })
+                        : t("table.sheet.loadPlain", { capacity: load.capacityLb })
+                  }${load.unweighed ? ` ${t("table.sheet.unweighed", { count: load.unweighed })}` : ""}`,
                   onOpen: () => setLoadOpen(true),
-                  opens: "Show what makes up this load",
+                  opens: t("table.sheet.loadOpens"),
                 },
               ]}
             />
@@ -323,15 +325,14 @@ export function CharacterSheetDialog({
           {sheet.wildShape ? (
             <div className="reveal mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-lime-800/60 bg-lime-950/40 px-3 py-2 text-sm text-lime-200">
               <span className="flex items-center gap-1.5 font-medium capitalize">
-                <PawPrint className="size-4" /> Wild Shaped: {sheet.wildShape.form}
+                <PawPrint className="size-4" /> {t("table.sheet.wildShape", { form: sheet.wildShape.form })}
               </span>
               <span className="font-mono text-xs">
-                {sheet.wildShape.beastHp}/{sheet.wildShape.beastMaxHp} beast HP
+                {t("table.sheet.beastHp", { hp: sheet.wildShape.beastHp, max: sheet.wildShape.beastMaxHp })}
               </span>
               <span className="font-mono text-xs">AC {sheet.wildShape.beastAc}</span>
               <span className="w-full text-xs text-lime-400/80">
-                Damage hits the beast&apos;s hit points first. The {sheet.currentHp}/{hp.max} HP
-                above is what {sheet.name} returns to when the form breaks.
+                {t("table.sheet.wildShapeNote", { current: sheet.currentHp, max: hp.max, name: sheet.name })}
               </span>
             </div>
           ) : null}
@@ -351,10 +352,10 @@ export function CharacterSheetDialog({
 
           <SheetBlock
             className="mt-4"
-            title="Abilities"
+            title={t("table.sheet.abilities")}
             aside={
               <>
-                <GameTerm id="saving_throw">Saving throws</GameTerm> ride each tile
+                <GameTerm id="saving_throw">{t("table.sheet.savingThrows")}</GameTerm> {t("table.sheet.rideEachTile")}
               </>
             }
           >
@@ -367,7 +368,7 @@ export function CharacterSheetDialog({
             />
           </SheetBlock>
 
-          <SheetBlock className="mt-4" title={<GameTerm id="skill">Skills</GameTerm>}>
+          <SheetBlock className="mt-4" title={<GameTerm id="skill">{t("table.sheet.skills")}</GameTerm>}>
             <SkillRows
               skills={derived.skills}
               proficient={sheet.proficiencies.skills}
@@ -375,17 +376,20 @@ export function CharacterSheetDialog({
             />
           </SheetBlock>
 
-          <SheetBlock className="mt-4" title="Languages and training">
+          <SheetBlock className="mt-4" title={t("table.sheet.languagesTraining")}>
             <TrainingLines proficiencies={sheet.proficiencies} />
           </SheetBlock>
 
           {sheet.spellcasting ? (
             <SheetBlock
               className="mt-4"
-              title="Spellcasting"
+              title={t("table.sheet.spellcasting")}
               hint={
                 derived.parts.spellSaveDc.length
-                  ? `Save DC: ${explainParts(derived.parts.spellSaveDc)}. To hit: ${explainParts(derived.parts.spellAttack)}`
+                  ? t("table.sheet.saveDcHint", {
+                      dc: explainParts(derived.parts.spellSaveDc),
+                      attack: explainParts(derived.parts.spellAttack),
+                    })
                   : undefined
               }
               aside={
@@ -400,14 +404,14 @@ export function CharacterSheetDialog({
                 <div className="reveal space-y-1.5 text-xs text-stone-300">
                   <p className="flex items-center gap-1 text-stone-400">
                     <GameIcon icon={{ kind: "glyph", key: "rest-spell-slot" }} size="size-5" />
-                    <GameTerm id="spell_slot">Spell slots</GameTerm>
-                    <span className="text-stone-500">: the magic left today</span>
+                    <GameTerm id="spell_slot">{t("table.sheet.spellSlots")}</GameTerm>
+                    <span className="text-stone-500">{t("table.sheet.slotsTag")}</span>
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(sheet.spellcasting.slots).map(([slotLevel, slot]) => (
                       <SlotRow
                         key={slotLevel}
-                        label={`Level ${ROMAN[Number(slotLevel)] ?? slotLevel}`}
+                        label={t("table.sheet.level", { level: ROMAN[Number(slotLevel)] ?? slotLevel })}
                         left={slot.max - slot.used}
                         max={slot.max}
                         spends={spends}
@@ -419,7 +423,7 @@ export function CharacterSheetDialog({
                     ))}
                     {sheet.spellcasting.pact ? (
                       <SlotRow
-                        label={`Pact, level ${ROMAN[sheet.spellcasting.pact.level] ?? sheet.spellcasting.pact.level}`}
+                        label={t("table.sheet.pactLevel", { level: ROMAN[sheet.spellcasting.pact.level] ?? sheet.spellcasting.pact.level })}
                         left={sheet.spellcasting.pact.max - sheet.spellcasting.pact.used}
                         max={sheet.spellcasting.pact.max}
                         spends={spends}
@@ -431,14 +435,13 @@ export function CharacterSheetDialog({
                     ) : null}
                   </div>
                   <p className="text-[11px] leading-snug text-stone-500">
-                    Casting a spell of level I or higher uses up one slot of that level (or a higher
-                    one, to cast it stronger); cantrips never use one. Filled marks are slots still
-                    available, empty ones are spent. They all come back after a long rest
-                    {sheet.class === "warlock" || sheet.spellcasting.pact ? " (a warlock's pact slots after a short rest too)" : ""}.
+                    {t("table.sheet.slotsExplain")}
+                    {sheet.class === "warlock" || sheet.spellcasting.pact ? t("table.sheet.warlockTail") : ""}
+                    .
                     {corrects
-                      ? " The GM marks them as spells are cast; the buttons correct the count."
+                      ? t("table.sheet.slotsCorrects")
                       : mine
-                        ? " The GM marks them as you cast; the button marks one the count missed."
+                        ? t("table.sheet.slotsMine")
                         : ""}
                   </p>
                 </div>
@@ -450,11 +453,11 @@ export function CharacterSheetDialog({
           ) : null}
 
           {spends || Object.keys(sheet.resources).length ? (
-            <SheetBlock className="mt-4" title="Hit dice and resources">
+            <SheetBlock className="mt-4" title={t("table.sheet.hitDiceResources")}>
               <div className="space-y-1.5 text-xs text-stone-300">
                 <div className="flex items-start gap-2">
                   <span className="w-36 shrink-0 pt-1 text-stone-400">
-                    <GameTerm id="hit_dice">Hit dice</GameTerm>
+                    <GameTerm id="hit_dice">{t("table.sheet.hitDice")}</GameTerm>
                   </span>
                   {/* SRD 5.1: hit dice are spent at the end of a short rest.
                       A player at the table chooses their own while the rest's
@@ -466,7 +469,7 @@ export function CharacterSheetDialog({
                       type="button"
                       className={STEP_BUTTON}
                       disabled={busy || sheet.hitDice.spent >= sheet.hitDice.total}
-                      title="Correction: mark a hit die as spent"
+                      title={t("table.sheet.hitDieSpend")}
                       onClick={() => adjustUsage({ hitDiceSpent: sheet.hitDice.spent + 1 })}
                     >
                       <Minus className="size-3" />
@@ -477,7 +480,7 @@ export function CharacterSheetDialog({
                       type="button"
                       className={STEP_BUTTON}
                       disabled={busy || sheet.hitDice.spent <= 0}
-                      title="Correction: give a hit die back"
+                      title={t("table.sheet.hitDieReturn")}
                       onClick={() => adjustUsage({ hitDiceSpent: sheet.hitDice.spent - 1 })}
                     >
                       <Plus className="size-3" />
@@ -503,9 +506,9 @@ export function CharacterSheetDialog({
               {spends ? (
                 <p className="reveal mt-1.5 text-[11px] text-stone-500">
                   {corrects
-                    ? "Minus spends, plus hands a use back as a correction."
-                    : "Minus marks a use spent. Uses come back at rests; the GM or the party lead corrects a wrong count."}{" "}
-                  Changes are logged to the session event log.
+                    ? t("table.sheet.usageCorrects")
+                    : t("table.sheet.usageMine")}{" "}
+                  {t("table.sheet.usageLogged")}
                 </p>
               ) : null}
               {refusal?.at === "usage" ? (
@@ -517,7 +520,7 @@ export function CharacterSheetDialog({
           ) : null}
 
           {sheet.equipment.length ? (
-            <SheetBlock className="mt-4" title="Equipment" aside={`Attuned ${attunedCount}/${attunementSlotsFor(sheet)}`}>
+            <SheetBlock className="mt-4" title={t("table.sheet.equipment")} aside={t("table.sheet.attuned", { count: attunedCount, max: attunementSlotsFor(sheet) })}>
               <EquipmentChips
                 equipment={sheet.equipment}
                 extra={(index) => {
@@ -528,12 +531,15 @@ export function CharacterSheetDialog({
               {(mine || corrects) && wearable.length ? (
                 <div className="reveal mt-2 space-y-1">
                   <p className="text-[11px] text-stone-500">
-                    Worn gear sets {mine ? "your" : "their"} AC ({sheet.acOverride ? "pinned by hand" : armor.parts.join(" + ")}
-                    ). Attuned {attunedCount}/{attunementSlotsFor(sheet)}.
+                    {t("table.sheet.gearSets", {
+                      whose: mine ? t("table.sheet.acYours") : t("table.sheet.acTheirs"),
+                      ac: sheet.acOverride ? t("table.sheet.acPinnedShort") : armor.parts.join(" + "),
+                    })}{" "}
+                    {t("table.sheet.attuned", { count: attunedCount, max: attunementSlotsFor(sheet) })}.
                   </p>
                   {magic.sources.length ? (
                     <p className="reveal text-[11px] text-sky-400/80">
-                      Active magic:{" "}
+                      {t("table.sheet.activeMagic")}{" "}
                       {[
                         magic.acBonus ? `+${magic.acBonus} AC` : null,
                         magic.saveBonus ? `+${magic.saveBonus} saves` : null,
@@ -575,27 +581,27 @@ export function CharacterSheetDialog({
           ) : null}
 
           {owedChoices(sheet).length ? (
-            <SheetBlock className="mt-4" title="Choices owed">
+            <SheetBlock className="mt-4" title={t("table.sheet.choicesOwed")}>
               <p className="text-sm text-amber-200/90">
-                Earned and not yet made: {owedChoices(sheet).join("; ")}. The next level-up takes them.
+                {t("table.sheet.choicesOwedBody", { list: owedChoices(sheet).join("; ") })}
               </p>
             </SheetBlock>
           ) : null}
           {sheet.features.length ? (
-            <SheetBlock className="mt-4" title="Features and traits">
+            <SheetBlock className="mt-4" title={t("table.sheet.features")}>
               <FeatureChips features={sheet.features} classId={sheet.class} subclass={sheet.subclass} />
               <FeatureChoicePicker sheet={sheet} mine={mine} inCombat={inCombat} />
             </SheetBlock>
           ) : null}
 
           {sheet.feats.length ? (
-            <SheetBlock className="mt-4" title="Feats">
+            <SheetBlock className="mt-4" title={t("table.sheet.feats")}>
               <FeatChips feats={sheet.feats} classId={sheet.class} subclass={sheet.subclass} />
             </SheetBlock>
           ) : null}
 
           {sheet.backstory ? (
-            <SheetBlock className="mt-4" title="Backstory">
+            <SheetBlock className="mt-4" title={t("table.sheet.backstory")}>
               <p className="whitespace-pre-wrap font-serif text-sm leading-relaxed text-stone-300">{sheet.backstory}</p>
             </SheetBlock>
           ) : null}
@@ -603,7 +609,7 @@ export function CharacterSheetDialog({
           {sheet.isCompanion ? null : <StoryHopes sheet={sheet} mine={mine} />}
 
           {mine && sheet.notes ? (
-            <SheetBlock className="mt-4" title="Notes" aside="only you see these">
+            <SheetBlock className="mt-4" title={t("table.sheet.notes")} aside={t("table.sheet.notesAside")}>
               <p className="whitespace-pre-wrap text-xs text-stone-300">{sheet.notes}</p>
             </SheetBlock>
           ) : null}
@@ -614,18 +620,18 @@ export function CharacterSheetDialog({
               onClick={handleDownloadPdf}
               disabled={pdfBusy}
               className={ui.btnSmall}
-              title="Download this character sheet as a fillable PDF"
+              title={t("table.sheet.pdfTitle")}
             >
-              <FileDown className="size-3.5" /> {pdfBusy ? "Preparing..." : "Download PDF"}
+              <FileDown className="size-3.5" /> {pdfBusy ? t("table.sheet.pdfPreparing") : t("table.sheet.pdf")}
             </button>
             {steersStory && onAdjust ? (
               <button
                 type="button"
                 onClick={onAdjust}
                 className={ui.btnSmall}
-                title="Party lead: correct this character's stats, items, and spells"
+                title={t("table.sheet.adjustTitle")}
               >
-                <Wrench className="size-3.5" /> Adjust
+                <Wrench className="size-3.5" /> {t("table.sheet.adjust")}
               </button>
             ) : null}
           </div>

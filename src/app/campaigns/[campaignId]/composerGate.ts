@@ -10,18 +10,22 @@ import type { CharacterSheet } from "@/lib/schemas/sheet";
 // (OOC) and lead directions never wait on the floor, and neither does the
 // Ask strip, which does not come through this composer at all.
 //
-// Pure so the reading is easy to follow in one place; SessionView memoizes
-// the lists it hands in.
-export function composerGate({
-  floor,
-  sheets,
-  meUserId,
-  kind,
-  myName,
-  leadPrivate,
-  openingNarrationPlaying,
-  enemyTurns = false,
-}: {
+// The words live in the dictionaries (table.gate.*); like home/types.ts's
+// agoLabel, the reading takes the translator from the component that draws
+// it, so a language switch rewords the box with everything else.
+// Pure otherwise: SessionView memoizes the lists it hands in.
+export function composerGate(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  {
+    floor,
+    sheets,
+    meUserId,
+    kind,
+    myName,
+    leadPrivate,
+    openingNarrationPlaying,
+    enemyTurns = false,
+  }: {
   floor: Floor;
   sheets: CharacterSheet[];
   meUserId: string;
@@ -63,25 +67,25 @@ export function composerGate({
   const narrationBlocked = openingNarrationPlaying && kind !== "ooc";
   const inputBlocked = floorBlocked || holdBlocked || initiativeBlocked || narrationBlocked;
   const placeholder = narrationBlocked
-    ? "The Game Master is setting the scene... (OOC still open)"
+    ? t("table.gate.narrating")
     : holdBlocked
       ? floor.mode === "hold" && floor.next.mode === "initiative" && enemyTurns
-        ? "The enemies are taking their turns... (OOC still open)"
-        : "The party lead has the floor held for discussion... (OOC still open)"
+        ? t("table.gate.enemies")
+        : t("table.gate.held")
       : initiativeBlocked
-        ? `${floor.mode === "initiative" ? floor.currentName : "Another hero"}'s turn in combat... (OOC still open)`
+        ? t("table.gate.initiative", { name: floor.mode === "initiative" ? floor.currentName : t("table.gate.anotherHero") })
         : floorBlocked
-          ? `Waiting on ${spotlighted.map((sheet) => sheet.name).join(", ")}... (OOC still open)`
+          ? t("table.gate.spotlight", { names: spotlighted.map((sheet) => sheet.name).join(", ") })
           : kind === "do"
-            ? `What does ${myName} do?`
+            ? t("table.gate.do", { name: myName })
             : kind === "say"
-              ? `What does ${myName} say?`
+              ? t("table.gate.say", { name: myName })
               : kind === "narrate"
-                ? "Narrate the scene. The server still rolls every die."
+                ? t("table.gate.narrate")
                 : kind === "ooc"
-                  ? "Out-of-character note to the table"
+                  ? t("table.gate.ooc")
                   : leadPrivate
-                    ? "Tell the GM privately what to do with the next turn"
-                    : "Steer the story: a direction the GM must weave in";
+                    ? t("table.gate.leadPrivate")
+                    : t("table.gate.lead");
   return { inputBlocked, placeholder, spotlighted, heldSpotlightNames };
 }

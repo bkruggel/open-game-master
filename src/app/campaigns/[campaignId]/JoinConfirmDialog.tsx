@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { refusalText } from "@/app/characters/builder/refusal";
 import {
   EMPTY_DRAFT,
@@ -53,7 +54,11 @@ function joinRequest(campaignId: string, hero: JoinHero, flow: "join" | "replace
 
 type Preview = JoinPreview & { alreadyHere: boolean };
 
-async function askPreview(campaignId: string, body: unknown): Promise<{ preview?: Preview; error?: string }> {
+async function askPreview(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  campaignId: string,
+  body: unknown,
+): Promise<{ preview?: Preview; error?: string }> {
   try {
     const response = await fetch(`/api/campaigns/${campaignId}/sheet/preview`, {
       method: "POST",
@@ -62,11 +67,11 @@ async function askPreview(campaignId: string, body: unknown): Promise<{ preview?
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.preview) {
-      return { error: refusalText(data, "Could not check this hero against the table.") };
+      return { error: refusalText(data, t("table.join.checkError")) };
     }
     return { preview: data.preview };
   } catch {
-    return { error: "Could not reach the server." };
+    return { error: t("table.join.unreachable") };
   }
 }
 
@@ -98,6 +103,8 @@ export function JoinConfirmDialog({
   onClose: () => void;
   onSeated: () => void;
 }) {
+  // The confirm sheet's words follow the interface's language.
+  const t = useT();
   // The server's answer, kept with the hero it answers for: a sheet opened
   // on another hero shows its own check, never the last one's.
   const heroKey = hero ? `${hero.kind}:${hero.id}:${flow}` : "";
@@ -127,13 +134,13 @@ export function JoinConfirmDialog({
     }
     let cancelled = false;
     const key = `${hero.kind}:${hero.id}:${flow}`;
-    void askPreview(campaignId, previewBody(hero, flow, null)).then((result) => {
+    void askPreview(t, campaignId, previewBody(hero, flow, null)).then((result) => {
       if (!cancelled) setAnswer({ key, ...result });
     });
     return () => {
       cancelled = true;
     };
-  }, [campaignId, hero, flow]);
+  }, [t, campaignId, hero, flow]);
 
   useEffect(() => {
     if (!hero || !picksKey) {
@@ -143,7 +150,7 @@ export function JoinConfirmDialog({
     const key = `${hero.kind}:${hero.id}:${flow}|${picksKey}`;
     // A short wait, so a run of clicks asks once.
     const timer = setTimeout(() => {
-      void askPreview(campaignId, previewBody(hero, flow, JSON.parse(picksKey) as SeatPicks)).then((result) => {
+      void askPreview(t, campaignId, previewBody(hero, flow, JSON.parse(picksKey) as SeatPicks)).then((result) => {
         if (!cancelled) setChecked({ key, ...result });
       });
     }, 250);
@@ -151,7 +158,7 @@ export function JoinConfirmDialog({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [campaignId, hero, flow, picksKey]);
+  }, [t, campaignId, hero, flow, picksKey]);
 
   async function confirm() {
     if (!hero) {
@@ -168,12 +175,12 @@ export function JoinConfirmDialog({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(refusalText(data, "Could not seat that hero."));
+        setError(refusalText(data, t("table.join.seatError")));
         return;
       }
       onSeated();
     } catch {
-      setError("Could not reach the server.");
+      setError(t("table.join.unreachable"));
     } finally {
       setBusy(false);
     }
@@ -185,7 +192,7 @@ export function JoinConfirmDialog({
     onClose();
   }
 
-  const name = preview?.name || hero?.name || "this hero";
+  const name = preview?.name || hero?.name || t("table.join.fallbackName");
   const owedLeft = shown?.owed ?? preview?.owed ?? [];
   return (
     <Dialog
@@ -193,12 +200,12 @@ export function JoinConfirmDialog({
       onOpenChange={(open) => {
         if (!open && !busy) close();
       }}
-      title={flow === "replace" ? `Switch to ${name}?` : `Take ${name} to the table?`}
+      title={flow === "replace" ? t("table.join.titleReplace", { name }) : t("table.join.title", { name })}
     >
       <div className="space-y-4 text-sm" data-join-confirm aria-busy={(!preview && !loadError) || checking}>
         {!preview && !loadError ? (
           <p className="flex items-center gap-2 text-stone-400">
-            <Loader2 className="size-4 animate-spin" /> Checking {name} against this table…
+            <Loader2 className="size-4 animate-spin" /> {t("table.join.checking", { name })}
           </p>
         ) : null}
         {loadError ? (
@@ -209,9 +216,9 @@ export function JoinConfirmDialog({
         {preview ? (
           <>
             <section className="space-y-1.5">
-              <h3 className={ui.sectionEyebrow}>At this table</h3>
+              <h3 className={ui.sectionEyebrow}>{t("table.join.atThisTable")}</h3>
               {preview.alreadyHere ? (
-                <p className="text-stone-300">{name} is already at this table. Joining picks them again and changes nothing.</p>
+                <p className="text-stone-300">{t("table.join.alreadyHere", { name })}</p>
               ) : (
                 <ul className="list-disc space-y-1 pl-5 text-stone-300" data-join-changes>
                   {(shown ?? preview).changes.map((line) => (
@@ -221,16 +228,18 @@ export function JoinConfirmDialog({
               )}
               {preview.rollsHp ? (
                 <p className="text-xs text-stone-400">
-                  This table rolls hit points, so they are rolled {hero?.kind === "built" ? "" : "again "}when {name} takes the seat.
+                  {hero?.kind === "built"
+                    ? t("table.join.rollsHp", { name })
+                    : t("table.join.rollsHpAgain", { name })}
                 </p>
               ) : null}
             </section>
 
             {owed && !preview.alreadyHere && preview.ok ? (
               <section className="space-y-2" data-join-owed>
-                <h3 className={ui.sectionEyebrow}>Choices to make now</h3>
+                <h3 className={ui.sectionEyebrow}>{t("table.join.choicesNow")}</h3>
                 <p className="text-xs text-stone-400">
-                  This level earned them and {name} has not made them yet. Pick them here, or leave any of them: the first level-up at this table offers what is left, and the character sheet lists it until then.
+                  {t("table.join.choicesNowNote", { name })}
                 </p>
                 <OwedPicksFields
                   owed={owed}
@@ -244,7 +253,7 @@ export function JoinConfirmDialog({
 
             {checking ? (
               <p className="flex items-center gap-2 text-stone-400" data-join-rules="checking">
-                <Loader2 className="size-4 animate-spin" /> Checking the picks…
+                <Loader2 className="size-4 animate-spin" /> {t("table.join.checkingPicks")}
               </p>
             ) : check?.error ? (
               <p className="whitespace-pre-line text-red-400" role="alert">
@@ -252,15 +261,19 @@ export function JoinConfirmDialog({
               </p>
             ) : shown ? (
               <section className="space-y-1.5" data-join-rules={shown.ok ? "pass" : "fail"}>
-                <h3 className={ui.sectionEyebrow}>Table rules</h3>
+                <h3 className={ui.sectionEyebrow}>{t("table.join.tableRules")}</h3>
                 {shown.ok ? (
                   <p className="flex items-center gap-2 text-emerald-300">
-                    <Check className="size-4 shrink-0" /> Within this table&apos;s rules{picks ? ", with these picks" : ""}.
+                    <Check className="size-4 shrink-0" /> {picks ? t("table.join.withinRulesPicks") : t("table.join.withinRules")}
                   </p>
                 ) : (
                   <div className="space-y-1 text-red-300" role="alert">
                     <p className="flex items-center gap-2">
-                      <TriangleAlert className="size-4 shrink-0" /> {name} cannot take a seat here {picks && preview.ok ? "with these picks" : "yet"}.
+                      <TriangleAlert className="size-4 shrink-0" />{" "}
+                      {t("table.join.cannotSeat", {
+                        name,
+                        reason: picks && preview.ok ? t("table.join.withPicks") : t("table.join.yet"),
+                      })}
                     </p>
                     <ul className="list-disc space-y-1 pl-5">
                       {shown.problems.map((problem) => (
@@ -274,19 +287,19 @@ export function JoinConfirmDialog({
 
             {shown?.ok && owedLeft.length && !owed ? (
               <section className="space-y-1.5" data-join-owed-left>
-                <h3 className={ui.sectionEyebrow}>Choices still to make</h3>
+                <h3 className={ui.sectionEyebrow}>{t("table.join.choicesLeft")}</h3>
                 <ul className="list-disc space-y-1 pl-5 text-amber-100">
                   {owedLeft.map((line) => (
                     <li key={line}>{line}</li>
                   ))}
                 </ul>
                 <p className="text-xs text-stone-400">
-                  This level earned them and {name} has not made them yet. The first level-up at this table offers every one, with the usual pickers, and the character sheet lists them until then.
+                  {t("table.join.choicesLeftNote", { name })}
                 </p>
               </section>
             ) : shown?.ok && owed && owedLeft.length ? (
               <p className="text-xs text-amber-100" data-join-owed-left>
-                Left for the first level-up: {owedLeft.join("; ")}.
+                {t("table.join.leftForLevelUp", { list: owedLeft.join("; ") })}
               </p>
             ) : null}
           </>
@@ -300,7 +313,7 @@ export function JoinConfirmDialog({
 
         <div className="flex flex-wrap justify-end gap-2 pt-1">
           <button type="button" onClick={close} disabled={busy} className={ui.btnSecondary}>
-            Cancel
+            {t("table.join.cancel")}
           </button>
           <button
             type="button"
@@ -311,7 +324,7 @@ export function JoinConfirmDialog({
             data-join-take
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            {flow === "replace" ? `Switch to ${name}` : "Take the seat"}
+            {flow === "replace" ? t("table.join.switchTo", { name }) : t("table.join.takeSeat")}
           </button>
         </div>
       </div>

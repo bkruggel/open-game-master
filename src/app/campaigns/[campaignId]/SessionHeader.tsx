@@ -11,6 +11,7 @@ import { AccountMenu, AppHomeButton, type AccountMenuUser } from "@/components/A
 import { Tooltip } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { headerButtonClass } from "@/app/campaigns/[campaignId]/headerButton";
 import { VoiceDock } from "@/app/campaigns/[campaignId]/VoiceDock";
 import { useCapabilities } from "@/lib/use-capabilities";
@@ -199,6 +200,7 @@ export const SessionHeader = memo(function SessionHeader({
   // 553), which no campaign list shows: its way out is its workshop.
   exit?: HeaderExit;
 }) {
+  const t = useT();
   const out = exit ?? ALL_CAMPAIGNS;
   // Narration switched off server-wide: no passage is read aloud, so the
   // narration volume would steer nothing (issue 275; the lobby's own row
@@ -222,7 +224,7 @@ export const SessionHeader = memo(function SessionHeader({
       <div className="min-w-0 flex-1">
         <h1 className="gold-title session-title font-display">{title}</h1>
         <p key={scene} className="live-in truncate font-serif text-xs italic text-stone-400">
-          {scene || "The adventure unfolds"}
+          {scene || t("table.subtitle.fallback")}
         </p>
       </div>
       {ribbon ? <div className="cine-ribbon-slot hidden lg:flex">{ribbon}</div> : null}
