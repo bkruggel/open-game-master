@@ -855,6 +855,9 @@ export const en = {
     "That workshop has no campaign prep to copy: places, cast, maps, fights, lore, tables, shops, the storyboard, WorldForge or house rules. Its Homebrew needs no copy, since it already counts at every table you run. To offer its pregens to players here, tick Offer to players in its Party panel, then choose it again.",
   "creator.import.campaignNoPrep": "That campaign has no prep to copy yet.",
 
+  // The glossary tooltips and the skill sentences the help module builds.
+  "help.skillUses": "{skill} uses {ability}.",
+
   // The table.
   "table.author.gm": "Game Master",
   "table.author.gmOoc": "Game Master, out of character",

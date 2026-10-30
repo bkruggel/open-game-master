@@ -22,6 +22,8 @@ import { variantShort, variantSummary } from "@/lib/content/species-variants";
 import { Chip } from "./steps/shared";
 import { RacialCantripPicker } from "./RacialCantripPicker";
 import { featChoice } from "@/lib/schemas/sheet";
+import { skillLabel } from "@/lib/srd";
+import { useLocale, useT } from "@/lib/locale";
 
 const ABILITY_NAMES: Record<Ability, string> = {
   str: "Strength",
@@ -32,9 +34,7 @@ const ABILITY_NAMES: Record<Ability, string> = {
   cha: "Charisma",
 };
 
-function skillName(skillId: string) {
-  return SRD_SKILLS.find((skill) => skill.id === skillId)?.name ?? skillId;
-}
+
 
 // The picks a race offers instead of fixing: half-elf's two +1 ability
 // bumps and two skills, high elf's wizard cantrip, hill dwarf's tool, the
@@ -109,6 +109,8 @@ export function RacialChoicesSection({
   known?: KnownTraining;
   inputClass: string;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const draconic = takesDraconicAncestry(race.id);
   const racialFeats = onFeatsChange ? racialFeatCount(race.id) : 0;
   const hasChoices = Boolean(
@@ -228,13 +230,13 @@ export function RacialChoicesSection({
                     { value: "", label: "Choose a skill..." },
                     ...(race.skillChoice?.from?.length ? race.skillChoice.from : ALL_SKILLS).filter(
                       (skill) => skills[index] === skill || (!skills.includes(skill) && !grantedSkills.includes(skill)),
-                    ).map((skill) => ({ value: skill as string, label: skillName(skill) })),
+                    ).map((skill) => ({ value: skill as string, label: skillLabel(skill, locale) })),
                   ]}
                 />
                 {skills[index] ? (
                   <InfoButton
-                    label={skillName(skills[index])}
-                    text={describeSkill(skills[index])}
+                    label={skillLabel(skills[index], locale)}
+                    text={describeSkill(t, skills[index], locale)}
                   />
                 ) : null}
               </span>
@@ -268,7 +270,7 @@ export function RacialChoicesSection({
       {repeated.length && onRepeatChange ? (
         <div data-builder-target="repeatSkills">
           <span className="mb-1 flex flex-wrap items-center gap-1 text-stone-400">
-            Your race and background both give {repeated.map(skillName).join(" and ")}; choose
+            Your race and background both give {repeated.map((id) => skillLabel(id, locale)).join(" and ")}; choose
             {repeated.length === 1 ? " another skill" : ` ${repeated.length} other skills`} in its place
           </span>
           <div className="grid grid-cols-2 gap-2">
@@ -286,11 +288,11 @@ export function RacialChoicesSection({
                       (skill) =>
                         repeatSkills[index] === skill ||
                         (!repeatSkills.includes(skill) && !grantedSkills.includes(skill) && !skills.includes(skill)),
-                    ).map((skill) => ({ value: skill as string, label: skillName(skill) })),
+                    ).map((skill) => ({ value: skill as string, label: skillLabel(skill, locale) })),
                   ]}
                 />
                 {repeatSkills[index] ? (
-                  <InfoButton label={skillName(repeatSkills[index])} text={describeSkill(repeatSkills[index])} />
+                  <InfoButton label={skillLabel(repeatSkills[index], locale)} text={describeSkill(t, repeatSkills[index], locale)} />
                 ) : null}
               </span>
             ))}

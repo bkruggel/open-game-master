@@ -50,6 +50,14 @@ export default function LicensesPage() {
           https://creativecommons.org/licenses/by/4.0/legalcode.
         </p>
         <p>
+          The interface&rsquo;s French terms follow Wizards of the Coast&rsquo;s own
+          French release of the SRD 5.1 (the « Document de Référence du Système
+          5.1 », CC-BY-4.0, from D&D Beyond&rsquo;s localized SRD downloads). Ce
+          travail comprend la documentation tirée du Document de Référence du
+          Système 5.1 (« SRD 5.1 ») par Wizards of the Coast LLC, distribué en
+          vertu de la licence Creative Commons Attribution 4.0 International.
+        </p>
+        <p>
           Expanded character options, spells, items, and monsters are imported from the{" "}
           <span className="text-stone-100">Open5e</span> dataset (open5e.com), which
           aggregates open-licensed tabletop content. Each source document and its license

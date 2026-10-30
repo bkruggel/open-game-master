@@ -28,6 +28,7 @@ import { fillClassSkills, type PlaystyleId } from "../playstyles";
 import FeatChoicesFields, { knownTraining } from "../FeatChoicesFields";
 import { Field, PickForMe, PickPill, StepPanel, inputClass } from "./shared";
 import { featChoice } from "@/lib/schemas/sheet";
+import { useLocale, useT } from "@/lib/locale";
 
 // Step 1 (backlog F4: how you want to play comes first): the setting's
 // notices, then the class (the playstyle question and "Help me build" over
@@ -102,6 +103,8 @@ export function CallingStep({
   // multiclassing setting, always true in the library.
   multiclassAllowed?: boolean;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const { subclass } = state;
   const { effectiveLevel } = derived;
   // The first class's own levels and features: a class taken after it
@@ -446,8 +449,8 @@ export function CallingStep({
               const grantedBy = source === "race" ? race?.name : source === "background" ? background?.name : "";
               const trait = source === "race" && race ? grantingTrait(race.id, name) : null;
               const info = source
-                ? `${name} is already yours: your ${source}${grantedBy ? ` (${grantedBy})` : ""} grants it${trait ? ` through ${trait}` : ""}, so it is not offered as a class pick here.\n\n${describeSkill(skillId) ?? ""}`.trim()
-                : describeSkill(skillId);
+                ? `${name} is already yours: your ${source}${grantedBy ? ` (${grantedBy})` : ""} grants it${trait ? ` through ${trait}` : ""}, so it is not offered as a class pick here.\n\n${describeSkill(t, skillId, locale) ?? ""}`.trim()
+                : describeSkill(t, skillId, locale);
               return (
                 <PickPill
                   key={skillId}

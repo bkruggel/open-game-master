@@ -22,6 +22,24 @@ This work includes material taken from the System Reference Document 5.1
 ("SRD 5.1") by Wizards of the Coast LLC. The SRD 5.1 is licensed under the
 Creative Commons Attribution 4.0 International License.
 
+### The French interface's rules terms
+
+The French names of the rules terms (ability scores, skills, the glossary's
+terms) follow Wizards of the Coast's own French release of the SRD 5.1, the
+« Document de Référence du Système 5.1 », downloaded from D&D Beyond's
+"Localized SRD Downloads" (media.dndbeyond.com, file SRD_CC_v5.1_FR.pdf).
+Every French term in `src/lib/help/glossary.json` and
+`src/lib/srd/skills.json` was checked word for word against that document.
+The French SRD 5.1 carries the same Creative Commons Attribution 4.0
+International License, and its own attribution statement applies:
+
+> Ce travail comprend la documentation tirée du Document de Référence du
+> Système 5.1 (« SRD 5.1 ») par Wizards of the Coast LLC et disponible à
+> l'adresse https://dnd.wizards.com/fr/resources/systems-reference-document.
+> Le SRD 5.1 est distribué en vertu de la licence Creative Commons
+> Attribution 4.0 International disponible à l'adresse
+> https://creativecommons.org/licenses/by/4.0/legalcode.fr.
+
 ### The creature table
 
 `src/lib/srd/srd-creatures.json` holds the SRD 5.1 stat blocks the shape and

@@ -12,7 +12,8 @@ import { describeConditionDuration } from "@/lib/dm/condition-logic";
 import { contentSlug, describeFeature } from "@/lib/help";
 import { useClassFeatureText } from "@/lib/classes/use-feature-text";
 import { ABILITIES } from "@/lib/schemas/sheet";
-import { formatModifier, SRD_SKILLS } from "@/lib/srd";
+import { formatModifier, skillLabel, SRD_SKILLS } from "@/lib/srd";
+import { useLocale } from "@/lib/locale";
 import { wearingIsExplicit } from "@/lib/srd/armor";
 import { oneOfKind, wornButIdle } from "@/lib/srd/wear-slots";
 import { rowName, srdNameWithBonus } from "@/lib/srd/item-row";
@@ -279,6 +280,9 @@ export function SkillRows({
   proficient: string[];
   explain?: (skillId: string) => string;
 }) {
+  // The skill's name follows the reader's language; the glyph stays keyed by
+  // the English name, which is what the art is filed under.
+  const locale = useLocale();
   return (
     <div className="stagger-up grid grid-cols-1 gap-x-3 gap-y-0.5 min-[420px]:grid-cols-2">
       {SRD_SKILLS.map((skill) => {
@@ -286,7 +290,7 @@ export function SkillRows({
         return (
           <span key={skill.id} className={cn("sheet-skill", on && "sheet-skill-on")} title={explain?.(skill.id)}>
             <GameIcon icon={{ kind: "glyph", key: `skill-${skill.name}` }} size="size-5" />
-            <span className="grow truncate">{skill.name}</span>
+            <span className="grow truncate">{skillLabel(skill.id, locale)}</span>
             <span className={cn("sheet-pip", on && "sheet-pip-on")} aria-hidden="true" />
             <span className="w-7 text-right font-mono">{formatModifier(skills[skill.id] ?? 0)}</span>
           </span>

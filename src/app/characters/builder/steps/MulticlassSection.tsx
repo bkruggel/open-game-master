@@ -11,6 +11,8 @@ import { SRD_SKILLS } from "@/lib/srd";
 import { subclassBlurb, subclassLevelFor, subclassNamesFor } from "@/lib/srd/features";
 import { MULTICLASS_CAP, describeGrant, multiclassGrantsFor } from "@/lib/srd/multiclass";
 import { textKey } from "@/lib/language/text-logic";
+import { useLocale, useT } from "@/lib/locale";
+import { skillLabel } from "@/lib/srd";
 import { hitDieChip } from "../lineage";
 import { classSplitWords, multiclassChoices } from "../multiclassBuild";
 import OptionPicker, { type PickerGroup } from "../OptionPicker";
@@ -212,6 +214,8 @@ function ExtraClassCard({
   index: number;
   numbers: boolean;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const row = entry.klass;
   const name = row.name;
   const lower = name.toLowerCase();
@@ -286,7 +290,7 @@ function ExtraClassCard({
                   label={skill?.name ?? skillId}
                   selected={selected}
                   disabled={taken}
-                  info={{ text: taken ? `${skill?.name ?? skillId} is already yours from elsewhere.` : describeSkill(skillId) }}
+                  info={{ text: taken ? `${skillLabel(skillId, locale)} is already yours from elsewhere.` : describeSkill(t, skillId, locale) }}
                   onClick={() => {
                     const count = grant.skillChoice?.count ?? 1;
                     const next = selected

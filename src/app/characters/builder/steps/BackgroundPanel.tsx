@@ -6,6 +6,8 @@ import { InfoButton } from "@/components/ui/InfoDialog";
 import { Select } from "@/components/ui/Select";
 import { describeSkill } from "@/lib/help";
 import { SRD_SKILLS } from "@/lib/srd";
+import { skillLabel } from "@/lib/srd";
+import { useLocale, useT } from "@/lib/locale";
 import OptionPicker, { type PickerGroup } from "../OptionPicker";
 import { backgroundInfoText } from "../usePickerGroups";
 import type { BackgroundOption } from "../useBuilderOptions";
@@ -38,6 +40,8 @@ export function BackgroundPanel({
   // Why the list may be short (TableScopeNote).
   note?: ReactNode;
 }) {
+  const t = useT();
+  const locale = useLocale();
   return (
     <StepPanel title="What did they do before adventuring?" help="Their background: the skills and kit their past gave them.">
       <Field label="Background" anchor="background">
@@ -80,7 +84,7 @@ export function BackgroundPanel({
                         {/* Each granted skill says what it is, so "Grants
                             Deception, Sleight of Hand" is a sentence a new
                             player can read. */}
-                        <InfoButton label={name} text={describeSkill(skillId)} />
+                        <InfoButton label={name} text={describeSkill(t, skillId, locale)} />
                       </span>
                     );
                   })
@@ -120,10 +124,6 @@ export function BackgroundPanel({
   );
 }
 
-function skillName(skillId: string) {
-  return SRD_SKILLS.find((skill) => skill.id === skillId)?.name ?? skillId;
-}
-
 // The skills a content-pack background leaves to the player ("Persuasion,
 // and either Insight or History"), one select per pick, the way the race's
 // skill choices are asked.
@@ -136,6 +136,8 @@ function BackgroundSkillChoice({
   background: BackgroundOption;
   choice: NonNullable<BackgroundOption["skillChoice"]>;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const picks = state.backgroundSkills;
   const taken = new Set([...background.skills, ...state.chosenSkills, ...state.racialSkills]);
   return (
@@ -163,10 +165,10 @@ function BackgroundSkillChoice({
                 { value: "", label: "Choose a skill..." },
                 ...choice.from
                   .filter((skill) => picks[index] === skill || (!picks.includes(skill) && !taken.has(skill)))
-                  .map((skill) => ({ value: skill, label: skillName(skill) })),
+                  .map((skill) => ({ value: skill, label: skillLabel(skill, locale) })),
               ]}
             />
-            {picks[index] ? <InfoButton label={skillName(picks[index])} text={describeSkill(picks[index])} /> : null}
+            {picks[index] ? <InfoButton label={skillLabel(picks[index], locale)} text={describeSkill(t, picks[index], locale)} /> : null}
           </span>
         ))}
       </div>

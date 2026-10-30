@@ -85,6 +85,7 @@ import type { AsiChoice, CharacterSheet } from "@/lib/schemas/sheet";
 import { textKey } from "@/lib/language/text-logic";
 import { featChoice, withFeatChoice } from "@/lib/schemas/sheet";
 import { workshopClassList } from "@/lib/classes/workshop-registry";
+import { useLocale, useT } from "@/lib/locale";
 
 
 // Guided level-up, one level at a time. The dialog gathers the CHOICES the
@@ -121,6 +122,8 @@ export function LevelUpDialog({
   worldPack?: string;
   onDone: () => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   // Held from the moment the dialog opens: the sheet the server sends back
   // after the level is already at it.
   const [startLevel] = useState(sheet.level);
@@ -1071,7 +1074,7 @@ export function LevelUpDialog({
                               >
                                 {name}
                               </button>
-                              <InfoButton label={name} text={describeSkill(skillId)} />
+                              <InfoButton label={name} text={describeSkill(t, skillId, locale)} />
                             </span>
                           );
                         })}
@@ -1144,7 +1147,7 @@ export function LevelUpDialog({
                           >
                             {name}
                           </button>
-                          <InfoButton label={name} text={describeSkill(skillId)} />
+                          <InfoButton label={name} text={describeSkill(t, skillId, locale)} />
                         </span>
                       );
                     })}

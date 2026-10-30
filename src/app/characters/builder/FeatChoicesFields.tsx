@@ -11,6 +11,8 @@ import { ABILITY_LABELS } from "./AbilityEditor";
 import { featSpellsAnything, type CastingAbility } from "@/lib/srd/feat-spells";
 import { SRD_WEAPONS } from "@/lib/srd/weapons";
 import { textKey } from "@/lib/language/text-logic";
+import { useLocale, useT } from "@/lib/locale";
+import { skillLabel } from "@/lib/srd";
 import ContentPicker from "./ContentPicker";
 import { PickPill } from "./steps/shared";
 
@@ -42,7 +44,6 @@ export function knownTraining(derived: {
 // Each word's first letter up ("thieves' tools" to "Thieves' Tools"), the
 // letter after a possessive left alone ("Alchemist's Supplies").
 const capital = (value: string) => value.replace(/(^|\s)([a-z])/g, (_, before, letter) => `${before}${letter.toUpperCase()}`);
-const skillName = (skillId: string) => SRD_SKILLS.find((skill) => skill.id === skillId)?.name ?? skillId;
 
 // The picks a feat leaves to the player, beside the feat (issue #125):
 // Linguist's three languages, Skill Expert's skill and the expertise on it,
@@ -71,6 +72,8 @@ export default function FeatChoicesFields({
   // the same, but is applied whole: it has no "rest" the DM runs.
   source?: "feat" | "subclass";
 }) {
+  const t = useT();
+  const locale = useLocale();
   const mine = {
     languages: picks?.languages ?? [],
     skills: picks?.skills ?? [],
@@ -116,7 +119,7 @@ export default function FeatChoicesFields({
   const expertiseFrom = [...new Set([...known.skills, ...mine.skills])].filter((skill) => !heldExpertise.has(textKey(skill)));
   const hasPicks = spec.languages + spec.skills + spec.expertise + spec.weapons + spec.tools + spec.any + spec.damageTypes.length > 0;
   const fixed = [
-    ...spec.fixedSkills.map((skill) => (spec.fixedExpertise.includes(skill) ? `${skillName(skill)} (expertise)` : skillName(skill))),
+    ...spec.fixedSkills.map((skill) => (spec.fixedExpertise.includes(skill) ? `${skillLabel(skill, locale)} (expertise)` : skillLabel(skill, locale))),
     ...spec.fixedLanguages,
     ...spec.armor.map((piece) => (piece === "shields" ? "shields" : `${piece} armor`)),
     ...spec.fixedWeapons,
@@ -254,7 +257,7 @@ export default function FeatChoicesFields({
                 label={skill.name}
                 selected={mine.skills.includes(skill.id)}
                 onClick={() => toggle("skills", skill.id, slots("skills"))}
-                info={{ text: describeSkill(skill.id) }}
+                info={{ text: describeSkill(t, skill.id, locale) }}
               >
                 {skill.name}
               </PickPill>
@@ -272,12 +275,12 @@ export default function FeatChoicesFields({
             {expertiseFrom.map((skillId) => (
               <PickPill
                 key={skillId}
-                label={skillName(skillId)}
+                label={skillLabel(skillId, locale)}
                 selected={mine.expertise.includes(skillId)}
                 onClick={() => toggle("expertise", skillId, spec.expertise)}
-                info={{ text: describeSkill(skillId) }}
+                info={{ text: describeSkill(t, skillId, locale) }}
               >
-                {skillName(skillId)}
+                {skillLabel(skillId, locale)}
               </PickPill>
             ))}
           </div>

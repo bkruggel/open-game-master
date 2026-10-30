@@ -2219,7 +2219,7 @@
     "lib/srd/index.ts#[a-z]": [["key",1,"race id from a race name"]],
     "lib/srd/index.ts#re-word": [["key",1,"creature sizes"]],
     "lib/srd/index.ts#str-eq": [["key",2,"creature sizes"]],
-    "lib/srd/index.ts#toLowerCase": [["key",4,"race id from a race name; class id"]],
+    "lib/srd/index.ts#toLowerCase": [["key",5,"skill and race and class ids looked up by their fixed id (never a person's text)"]],
     "lib/srd/index.ts#toUpperCase": [["display",4,"ability abbreviation shown"]],
     "lib/srd/item-check-riders.ts#str-list": [["english-source",1,"reference: SRD magic item names"]],
     "lib/srd/item-spells.ts#re-word": [["english-source",18,"reference: SRD magic item names matched whole"]],

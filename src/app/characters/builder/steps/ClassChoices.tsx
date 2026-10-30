@@ -12,6 +12,7 @@ import type { BuilderState } from "../useBuilderState";
 import { PickPill, StepPanel } from "./shared";
 import { textKey } from "@/lib/language/text-logic";
 import { splitToolGrants } from "@/lib/srd/tool-choices";
+import { useLocale, useT } from "@/lib/locale";
 
 const optionCard = (selected: boolean) =>
   cn(
@@ -35,6 +36,8 @@ export function ClassChoices({
   actions: BuilderActions;
   klass: ClassOption | undefined;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const { effectiveLevel, proficientSkills, styleSlots, styleChoices, optionSlots } = derived;
   // Each class's own at its own level: a rogue taken second brings two.
   const expertiseSlots = klass ? (derived.expertiseSlots ?? expertiseSlotsFor(klass.id, effectiveLevel)) : 0;
@@ -77,7 +80,7 @@ export function ClassChoices({
                   key={skillId}
                   label={skill?.name ?? (skillId === THIEVES_TOOLS ? "Thieves' tools" : skillId)}
                   selected={selected}
-                  info={{ text: skill ? describeSkill(skillId) : "Your proficiency bonus is doubled for ability checks you make with thieves' tools." }}
+                  info={{ text: skill ? describeSkill(t, skillId, locale) : "Your proficiency bonus is doubled for ability checks you make with thieves' tools." }}
                   onClick={() =>
                     state.setExpertisePicks((current) => {
                       // Picks whose skill has since been dropped are swept

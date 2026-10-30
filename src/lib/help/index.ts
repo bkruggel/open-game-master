@@ -26,6 +26,9 @@ import { findOptionByFeatureName } from "@/lib/srd/options";
 export type GlossaryTerm = {
   id: string;
   term: string;
+  // The official French name, from Wizards of the Coast's own French SRD 5.1
+  // (CC-BY-4.0); present on every entry. The explanations stay English.
+  fr?: string;
   short: string;
   long?: string;
 };
@@ -113,17 +116,27 @@ export function describeRace(raceId: string): string | null {
   return race ? race.traits.join(". ") + "." : null;
 }
 
-const SKILLS = (skillsJson as { skills: Array<{ id: string; name: string; ability: string }> })
+const SKILLS = (skillsJson as { skills: Array<{ id: string; name: string; fr?: string; ability: string }> })
   .skills;
 
 // A skill's line: which ability it uses, plus the glossary note on skills.
-export function describeSkill(skillId: string): string | null {
+// The translator comes from the caller (home/types.ts agoLabel pattern), so
+// the sentence and the names it weaves follow the reader's language; the
+// glossary note itself stays English this pass.
+export function describeSkill(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  skillId: string,
+  locale: "en" | "fr" = "en",
+): string | null {
   const skill = SKILLS.find((entry) => entry.id === skillId.trim().toLowerCase());
   if (!skill) {
     return null;
   }
   const ability = glossaryTerm(skill.ability);
-  return `${skill.name} uses ${ability?.term ?? skill.ability.toUpperCase()}. ${
+  const skillName = locale === "fr" && skill.fr ? skill.fr : skill.name;
+  const abilityName =
+    locale === "fr" && ability?.fr ? ability.fr : ability?.term ?? skill.ability.toUpperCase();
+  return `${t("help.skillUses", { skill: skillName, ability: abilityName })} ${
     ability?.short ?? ""
   }`.trim();
 }

@@ -29,6 +29,7 @@ import { SectionHead } from "@/components/ui/SectionHead";
 import { Select } from "@/components/ui/Select";
 import { Field, FieldLabel, OptionalStepper, addChip, chip, chipOn, chipRow, rowIcon } from "@/app/workshop/kit";
 import { textKey } from "@/lib/language/text-logic";
+import { translate } from "@/lib/messages-logic";
 
 // The printed half of a stat block (docs/workshop-parity-audit.md phase
 // 12): ability scores, skills, senses, languages and alignment, the spells
@@ -72,8 +73,9 @@ const SENSE_GLYPHS: Record<string, string> = {
 // What each skill and alignment means, for the ⓘ beside those lists. The
 // alignment blurbs are the character builder's; the bestiary's list uses
 // the spelled-out names, so they are matched by name.
+const en = (key: string, vars?: Record<string, string | number>) => translate("en", key, vars);
 const SKILL_GLOSSARY: GlossaryEntry[] = SKILL_NAMES.flatMap((name) => {
-  const blurb = describeSkill(name.toLowerCase().replace(/\s+/g, "_")) ?? describeSkill(name);
+  const blurb = describeSkill(en, name.toLowerCase().replace(/\s+/g, "_")) ?? describeSkill(en, name);
   return blurb ? [{ name, blurb }] : [];
 });
 const ALIGNMENT_GLOSSARY: GlossaryEntry[] = Object.values(ALIGNMENT_LABELS).map((entry) => ({

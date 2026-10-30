@@ -4,10 +4,16 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { InfoDialog } from "@/components/ui/InfoDialog";
 import { glossaryTerm } from "@/lib/help";
+import { useLocale } from "@/lib/locale";
 
 // An inline rules word a new player can tap: "Armor Class", "Saving throws",
 // "Concentration". Renders as the label with a dotted underline, so the page
 // stays readable and the help is there when it is wanted.
+//
+// The label follows the reader's language: in French the glossary's official
+// name wins (WotC's own French SRD 5.1 wording), over both the glossary's
+// English term and the caller's inline children, which are English by
+// convention. The tapped explanation stays English for now.
 //
 // An unknown id renders as plain text rather than throwing, so a typo
 // degrades to the label it was already showing. scripts/test-help-coverage.mjs
@@ -23,10 +29,12 @@ export function GameTerm({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const locale = useLocale();
   const entry = glossaryTerm(id);
   if (!entry) {
     return <>{children}</>;
   }
+  const label = locale === "fr" && entry.fr ? entry.fr : (children ?? entry.term);
   const body = [entry.short, entry.long].filter(Boolean).join("\n\n");
   return (
     <>
@@ -42,9 +50,9 @@ export function GameTerm({
           className,
         )}
       >
-        {children ?? entry.term}
+        {label}
       </button>
-      <InfoDialog open={open} onOpenChange={setOpen} title={entry.term} text={body} />
+      <InfoDialog open={open} onOpenChange={setOpen} title={typeof label === "string" ? label : entry.term} text={body} />
     </>
   );
 }
