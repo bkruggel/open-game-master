@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { offerCorrectionReason } from "@/lib/correction-offer";
 import { milestoneLine } from "@/lib/dm/story-panel-logic";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import type { CharacterEvent } from "@/lib/db/character-events";
 import type { AuditEntry } from "@/app/campaigns/[campaignId]/useCampaignStream";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
@@ -30,6 +31,7 @@ function ConfirmUndoDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   return (
     <AlertDialog.Root open onOpenChange={(open) => !open && onCancel()}>
       <AlertDialog.Portal>
@@ -41,12 +43,10 @@ function ConfirmUndoDialog({
           )}
         >
           <AlertDialog.Title className="font-display text-lg tracking-wide text-amber-50">
-            {turn ? "Revert this turn anyway?" : "Undo anyway?"}
+            {turn ? t("table.log.confirmTurnTitle") : t("table.log.confirmUndoTitle")}
           </AlertDialog.Title>
           <AlertDialog.Description className="mt-2 text-xs text-stone-400">
-            {turn
-              ? "This puts the character sheets and the clock back as they were before the turn. World events and companions who left stay; rewinding the chapter takes those back."
-              : "Newer changes touched the same fields; undoing will overwrite them."}
+            {turn ? t("table.log.confirmTurnBody") : t("table.log.confirmUndoBody")}
           </AlertDialog.Description>
           <ul className="mt-2 space-y-1">
             {warnings.slice(0, 5).map((warning, index) => (
@@ -56,9 +56,9 @@ function ConfirmUndoDialog({
             ))}
           </ul>
           <div className="mt-4 flex justify-end gap-2">
-            <AlertDialog.Cancel className={ui.btnSmall}>Cancel</AlertDialog.Cancel>
+            <AlertDialog.Cancel className={ui.btnSmall}>{t("action.cancel")}</AlertDialog.Cancel>
             <button type="button" onClick={onConfirm} disabled={busy} aria-busy={busy} className={ui.btnPrimary}>
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null} Undo anyway
+              {busy ? <Loader2 className="size-4 animate-spin" /> : null} {t("table.log.confirmGo")}
             </button>
           </div>
         </AlertDialog.Content>
@@ -97,9 +97,10 @@ export function EventLog({
     turn: boolean;
     run: () => Promise<void>;
   } | null>(null);
+  const t = useT();
 
   const nameForCharacter = (characterId: string) =>
-    sheets.find((sheet) => sheet.id === characterId)?.name ?? "Someone";
+    sheets.find((sheet) => sheet.id === characterId)?.name ?? t("table.log.someone");
   const nameFor = (entry: AuditEntry) =>
     entry.characterName ?? nameForCharacter(entry.characterId);
 
@@ -127,10 +128,10 @@ export function EventLog({
 
   const refusal = (response: Response | null, data: Record<string, unknown>) =>
     !response
-      ? "Could not reach the server."
+      ? t("table.unreachable")
       : typeof data.error === "string" && data.error
         ? data.error
-        : "That change could not be undone.";
+        : t("table.log.undoFailed");
 
   async function post(url: string, body: Record<string, unknown>, busyKey: string, wholeTurn = false) {
     setBusyId(busyKey);
@@ -173,9 +174,7 @@ export function EventLog({
   const feed = buildFeed(auditLog, characterEvents, clockTurns);
 
   if (!feed.length) {
-    return (
-      <EmptyState size="sm" art="scrolls" title="No stat changes yet. Damage, loot, XP, conditions, and milestones the GM applies will show here." />
-    );
+    return <EmptyState size="sm" art="scrolls" title={t("table.log.empty")} />;
   }
 
   // The turns the lead may revert from here, with their live change counts
@@ -196,7 +195,7 @@ export function EventLog({
           type="button"
           disabled={busyId === `turn:${turnId}`}
           onClick={() => revertTurn(turnId)}
-          title="Put the character sheets and the clock back as they were before this GM turn. World events and companions who left stay; rewinding the chapter takes those back."
+          title={t("table.log.revertTurnTitle")}
           className="flex w-full items-center justify-center gap-1 rounded border border-dashed border-stone-700 py-0.5 text-[10px] text-stone-500 hover:bg-stone-900 hover:text-amber-300"
         >
           {busyId === `turn:${turnId}` ? (
@@ -204,7 +203,7 @@ export function EventLog({
           ) : (
             <RotateCcw className="size-3" />
           )}
-          {changes ? `Revert this turn (${changes})` : "Revert this turn"}
+          {changes ? t("table.log.revertTurnCount", { count: changes }) : t("table.log.revertTurn")}
         </button>
         {errors[`turn:${turnId}`] ? (
           <p role="alert" className="motion-shake text-[11px] text-red-300">{errors[`turn:${turnId}`]}</p>
@@ -236,7 +235,7 @@ export function EventLog({
                 {turnRevert(turnOfItem(item))}
                 <div className="rounded-md border border-stone-800 bg-stone-950/40 px-2.5 py-1.5 text-xs text-stone-300">
                   <Hourglass className="mr-1.5 inline size-3 text-amber-600" />
-                  Time passes: {item.move.passed}
+                  {t("table.log.timePasses", { passed: item.move.passed })}
                 </div>
               </li>
             );
@@ -258,8 +257,8 @@ export function EventLog({
                 >
                   <span className={cn(reverted && "line-through text-stone-500")}>
                     <ScrollText className="mr-1.5 inline size-3 text-amber-600" />
-                    Time counts down for {names.join(", ")}
-                    {item.entries.length > 1 ? ` (${item.entries.length} changes)` : ""}
+                    {t("table.log.ticks", { names: names.join(", ") })}
+                    {item.entries.length > 1 ? t("table.log.tickCount", { count: item.entries.length }) : ""}
                   </span>
                 </div>
               </li>
@@ -282,11 +281,11 @@ export function EventLog({
                 <div className="flex items-start gap-1.5">
                   <span className={cn("min-w-0 flex-1", reverted && "line-through text-stone-500")}>
                     <ScrollText className="mr-1.5 inline size-3 text-amber-600" />
-                    {describeAuditEntry(entry, nameFor(entry))}
+                    {describeAuditEntry(t, entry, nameFor(entry))}
                   </span>
                   {reverted ? (
                     <span className="shrink-0 rounded-full border border-stone-800 px-1.5 text-[9px] uppercase tracking-wide text-stone-600">
-                      undone
+                      {t("table.log.undone")}
                     </span>
                   ) : null}
                   {canUndo ? (
@@ -294,8 +293,8 @@ export function EventLog({
                       type="button"
                       disabled={busyId === entry.id}
                       onClick={() => undoEntry(entry)}
-                      title="Undo this change (restores the sheet fields it touched)"
-                      aria-label="Undo this change"
+                      title={t("table.log.undoTitle")}
+                      aria-label={t("table.log.undoAria")}
                       className="-my-1.5 -mr-1.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-stone-600 hover:text-amber-300 motion-nudge"
                     >
                       {busyId === entry.id ? (

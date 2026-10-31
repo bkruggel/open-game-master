@@ -408,12 +408,14 @@ export function SessionView({
   // A test fight is in no campaign list (issue 553): the header's way out,
   // the phone's back arrow included, leads to the workshop it tests.
   const testWorkshopId = state.testFight?.workshopId ?? "";
+  // The screen's own sentences speak the interface's language.
+  const t = useT();
   const headerExit = useMemo(
     () =>
       testWorkshopId
-        ? { href: workshopHref(`/workshop/${testWorkshopId}`, { system: "encounters" }), label: "Back to the workshop", glyph: "system-encounters" }
+        ? { href: workshopHref(`/workshop/${testWorkshopId}`, { system: "encounters" }), label: t("table.session.backToWorkshop"), glyph: "system-encounters" }
         : undefined,
-    [testWorkshopId],
+    [t, testWorkshopId],
   );
   // Chime on new private messages (side chats + DM whispers). The loaded
   // flags keep the page-load backlog silent.
@@ -531,10 +533,10 @@ export function SessionView({
       const response = await fetch(`/api/campaigns/${breakCampaignId}/table-break`, { method }).catch(() => null);
       if (!response?.ok) {
         const body = (await response?.json().catch(() => null)) as { error?: string } | null;
-        setError(body?.error || (method === "POST" ? "Could not pause the table." : "Could not resume the table."));
+        setError(body?.error || (method === "POST" ? t("table.session.pauseFailed") : t("table.session.resumeFailed")));
       }
     },
-    [breakCampaignId],
+    [breakCampaignId, t],
   );
   const resumeTable = useCallback(() => sendBreak("DELETE"), [sendBreak]);
   // A break is for a table with someone else at it (another person or an
@@ -598,7 +600,7 @@ export function SessionView({
     Boolean(firstDmMessageId) &&
     narration.playingMessageId === firstDmMessageId &&
     messages.filter((message) => message.authorType === "dm").length === 1;
-  const myName = actingSheet?.name ?? "your character";
+  const myName = actingSheet?.name ?? t("table.session.yourCharacter");
   const meId = me?.id ?? "";
   // Muted by the party lead: the server refuses the send, so the box says
   // so instead of letting the player type into a wall.
@@ -607,12 +609,8 @@ export function SessionView({
   // box says so the same way, and the story above it stays to be read.
   const ended = campaign?.status === "ended";
   const silenced = muted || ended;
-  const silencedPlaceholder = ended
-    ? "This campaign has ended. The story stays here to read."
-    : "The party lead has muted you at this table.";
+  const silencedPlaceholder = ended ? t("table.session.endedComposer") : t("table.session.mutedComposer");
   const enemyTurns = state.encounter?.enemyTurns === true;
-  // The gate's placeholder sentences speak the interface's language.
-  const t = useT();
   const gate = useMemo(
     () =>
       composerGate(t, { floor, sheets, meUserId: meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns, playsTurn: gmPlaysTurn }),
@@ -707,21 +705,21 @@ export function SessionView({
       }).catch(() => null);
       if (!response?.ok) {
         const body = (await response?.json().catch(() => null)) as { error?: string } | null;
-        setError(body?.error || (action === "end" ? "Could not end the session." : "Could not start the session."));
+        setError(body?.error || (action === "end" ? t("table.session.endFailed") : t("table.session.startFailed")));
       }
     },
-    [sessionCampaignId],
+    [sessionCampaignId, t],
   );
   const endSession = useCallback(async () => {
     const ok = await appConfirm(
-      "Play stops for everyone where it stands, and waits for the next session. Nothing is lost: the story, every sheet, the board and any fight under way stay exactly as they are, and table talk stays open. To finish the campaign for good, use End the campaign in the settings instead.",
+      t("table.session.endBody"),
       // Nothing is lost, so the action is gold, not the ember of End the campaign.
-      { title: "End the session", actionLabel: "End the session", tone: "plain" },
+      { title: t("table.session.endTitle"), actionLabel: t("table.session.endTitle"), tone: "plain" },
     );
     if (ok) {
       await sendSession("end");
     }
-  }, [sendSession]);
+  }, [sendSession, t]);
   const startSession = useCallback(() => sendSession("start"), [sendSession]);
   const maySteerSession = maySteerSessions({ steersStory, isLead });
   const offersSessions =
@@ -745,7 +743,7 @@ export function SessionView({
   );
   // What a move reads between sessions: only table talk goes through.
   const heldPlaceholder =
-    sessionHold && kind !== "ooc" ? `Session ${sessionHold.number} is over: use OOC for table talk until the next one starts.` : null;
+    sessionHold && kind !== "ooc" ? t("table.session.held", { number: sessionHold.number }) : null;
   // A player whose heroes have all fallen keeps the table and is offered a
   // new hero above the composer (src/lib/characters/fallen-logic.ts), once
   // the host has said its seat doors let them in; an older one refuses the seat.
@@ -760,7 +758,7 @@ export function SessionView({
     return hero ? { name: hero.name, level: heroJoinLevel(own, tableStartLevel) } : null;
   }, [offersFallen, sheets, meId, tableStartLevel]);
   // The fallen hero cannot act: the box says what it is for until the new one joins.
-  const fallenPlaceholder = fallen && kind !== "ooc" ? `${fallen.name} has fallen. Use OOC for table talk until your new hero joins.` : null;
+  const fallenPlaceholder = fallen && kind !== "ooc" ? t("table.session.fallen", { name: fallen.name }) : null;
   const floorUserIds =
     floor.mode === "spotlight" || floor.mode === "initiative" ? floor.userIds : EMPTY_IDS;
   const voice = useMemo(
@@ -840,22 +838,22 @@ export function SessionView({
             response = await send({ concentrationAck });
             if (!response.ok) {
               const again = await response.json().catch(() => ({}));
-              setError(again.error || "Could not send your action.");
+              setError(again.error || t("table.hand.commit.failed"));
               return;
             }
           } else {
-            setError(data.error || "Could not send your action.");
+            setError(data.error || t("table.hand.commit.failed"));
             return;
           }
         }
         setInput("");
       } catch {
-        setError("Could not reach the server.");
+        setError(t("table.unreachable"));
       } finally {
         setSending(false);
       }
     },
-    [campaignId, input, sending, gate.inputBlocked, silenced, kind, leadPrivate, speaker, mySheet, actingSheet],
+    [campaignId, input, sending, gate.inputBlocked, silenced, kind, leadPrivate, speaker, mySheet, actingSheet, t],
   );
 
   const clearChatTarget = useCallback(() => setChatTarget(null), []);
@@ -1335,15 +1333,14 @@ export function SessionView({
                       glyph="tab-campaigns"
                       tone="quiet"
                       className="campaign-ended-banner"
-                      title="The campaign has ended"
+                      title={t("table.session.endedTitle")}
                       actions={
                         <Link href="/" className={bannerButtonClass(true)}>
-                          All campaigns
+                          {t("menu.allCampaigns")}
                         </Link>
                       }
                     >
-                      Characters from a library took their progress home with them. The story stays
-                      here to read.
+                      {t("table.session.endedBody")}
                     </SessionBanner>
                   ) : null}
                   {fallen ? (
@@ -1509,15 +1506,15 @@ export function SessionView({
         report={helpReport}
         tours={[
           {
-            label: "Tour the table",
-            detail: "How a player takes a turn, asks the GM, and finds the party, the story and the maps.",
+            label: t("table.session.tourTable"),
+            detail: t("table.session.tourTableDetail"),
             onStart: () => startTour("player"),
           },
           ...(caps.adjudicates
             ? [
                 {
-                  label: "Tour the GM console",
-                  detail: "The floor, story beats, hand-over switches, the queue and the tools.",
+                  label: t("table.session.tourGm"),
+                  detail: t("table.session.tourGmDetail"),
                   onStart: () => startTour("dm"),
                 },
               ]

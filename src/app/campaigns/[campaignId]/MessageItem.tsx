@@ -171,7 +171,7 @@ export const MessageItem = memo(function MessageItem({
       });
       const uploaded = await upload.json().catch(() => ({}));
       if (!upload.ok) {
-        void appNotice(uploaded.error || "That image would not upload.");
+        void appNotice(uploaded.error || t("table.passage.uploadFailed"));
         return;
       }
       const response = await fetch(
@@ -184,10 +184,10 @@ export const MessageItem = memo(function MessageItem({
       );
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        void appNotice(data.error || "Could not put that picture under the passage.");
+        void appNotice(data.error || t("table.passage.pictureFailed"));
       }
     } catch {
-      void appNotice("That image would not upload.");
+      void appNotice(t("table.passage.uploadFailed"));
     } finally {
       setAttaching(false);
     }
@@ -240,9 +240,9 @@ export const MessageItem = memo(function MessageItem({
     if (onRenarrate) {
       actions.push({
         id: "reroll",
-        name: "Reroll",
-        label: "Reroll this narration",
-        hint: "Reroll: have the GM write this moment again, with the same dice and outcome",
+        name: t("table.passage.reroll"),
+        label: t("table.passage.rerollLabel"),
+        hint: t("table.passage.rerollHint"),
         glyph: "die-d20",
         icon: <RefreshCw className="size-3.5" />,
         onSelect: () => onRenarrate(message),
@@ -251,9 +251,9 @@ export const MessageItem = memo(function MessageItem({
     if (onContinueScene) {
       actions.push({
         id: "continue",
-        name: "Continue the scene",
-        label: "Continue this scene",
-        hint: "Continue: have the GM keep writing from where this stopped, without moving the story on",
+        name: t("table.passage.continue"),
+        label: t("table.passage.continueLabel"),
+        hint: t("table.passage.continueHint"),
         glyph: "ui-skip",
         icon: <FastForward className="size-3.5" />,
         onSelect: () => onContinueScene(message),
@@ -262,9 +262,9 @@ export const MessageItem = memo(function MessageItem({
     if (onEditSave) {
       actions.push({
         id: "edit",
-        name: "Edit",
-        label: "Edit this narration",
-        hint: "Edit: fix what the GM said. Mechanics are untouched, and every dice marker must survive",
+        name: t("table.passage.edit"),
+        label: t("table.passage.editLabel"),
+        hint: t("table.passage.editHint"),
         glyph: "tab-log",
         icon: <Pencil className="size-3.5" />,
         onSelect: () => setEditing(true),
@@ -277,9 +277,9 @@ export const MessageItem = memo(function MessageItem({
         // bookmark here while the lead's canon control wore the pin, so the
         // panel's "press the pin icon" pointed at the wrong one.
         id: "remember",
-        name: "Pin to memory",
-        label: "Pin this to the GM's memory",
-        hint: "Pin to memory: keep your selected text (or this whole message) in front of the GM every turn",
+        name: t("table.passage.pinMemory"),
+        label: t("table.passage.pinMemoryLabel"),
+        hint: t("table.passage.pinMemoryHint"),
         glyph: "ui-pin",
         icon: <Pin className="size-3.5" />,
         onSelect: () => onPinMemory(message),
@@ -288,9 +288,9 @@ export const MessageItem = memo(function MessageItem({
     if (onLoreCheck) {
       actions.push({
         id: "lore",
-        name: "Lore check",
-        label: "Lore check this passage",
-        hint: "Lore check: flag this passage (or your selected text) against the campaign record",
+        name: t("table.passage.lore"),
+        label: t("table.passage.loreLabel"),
+        hint: t("table.passage.loreHint"),
         glyph: "system-lore",
         icon: <ShieldQuestion className="size-3.5" />,
         onSelect: () => onLoreCheck(message),
@@ -301,9 +301,9 @@ export const MessageItem = memo(function MessageItem({
         // It writes a lore entry to Facts, so it wears the Facts tab's own
         // icon, here and in the menus (issue 668).
         id: "canon",
-        name: "Add to Facts",
-        label: "Add this passage to Facts as canon",
-        hint: "Add to Facts (lead only): save this passage, or your selected text, as established fact",
+        name: t("table.passage.canon"),
+        label: t("table.passage.canonLabel"),
+        hint: t("table.passage.canonHint"),
         glyph: "tab-facts",
         icon: <BookMarked className="size-3.5" />,
         onSelect: () => onPinCanon(message),
@@ -312,11 +312,9 @@ export const MessageItem = memo(function MessageItem({
     if (canIllustrate) {
       actions.push({
         id: "picture",
-        name: message.generatedImage ? "Replace the picture" : "Add a picture",
-        label: message.generatedImage ? "Replace the picture" : "Add a picture",
-        hint: message.generatedImage
-          ? "Replace picture: put an image of your own under this passage"
-          : "Add a picture: put an image of your own under this passage",
+        name: message.generatedImage ? t("table.passage.pictureReplace") : t("table.passage.pictureAdd"),
+        label: message.generatedImage ? t("table.passage.pictureReplace") : t("table.passage.pictureAdd"),
+        hint: message.generatedImage ? t("table.passage.pictureReplaceHint") : t("table.passage.pictureAddHint"),
         glyph: "tab-handout",
         icon: <ImagePlus className="size-3.5" />,
         busy: attaching,
@@ -326,9 +324,9 @@ export const MessageItem = memo(function MessageItem({
     if (onReplayAudio) {
       actions.push({
         id: "read",
-        name: "Read aloud",
-        label: "Read this passage aloud",
-        hint: "Read aloud",
+        name: t("table.passage.read"),
+        label: t("table.passage.readLabel"),
+        hint: t("table.passage.read"),
         glyph: "cue-horn",
         icon: <Volume2 className="size-3.5" />,
         busy: narrating,
@@ -394,7 +392,7 @@ export const MessageItem = memo(function MessageItem({
                       type="button"
                       onClick={() => onSelectVariant(message, variantIndex - 1)}
                       disabled={variantIndex <= 0}
-                      aria-label="Previous take"
+                      aria-label={t("table.passage.previousTake")}
                       className={cn(ui.iconAction, "-my-1.5 p-1 opacity-100 disabled:opacity-30")}
                     >
                       <ChevronLeft className="size-3.5" />
@@ -404,14 +402,14 @@ export const MessageItem = memo(function MessageItem({
                       type="button"
                       onClick={() => onSelectVariant(message, variantIndex + 1)}
                       disabled={variantIndex >= variants.length - 1}
-                      aria-label="Next take"
+                      aria-label={t("table.passage.nextTake")}
                       className={cn(ui.iconAction, "-my-1.5 p-1 opacity-100 disabled:opacity-30")}
                     >
                       <ChevronRight className="size-3.5" />
                     </button>
                   </span>
                 ) : null}
-                <MessageActions actions={actions} menuActions={menuActions} menuLabel="Passage actions" />
+                <MessageActions actions={actions} menuActions={menuActions} menuLabel={t("table.passage.actions")} />
               </>
             }
           />
@@ -475,13 +473,13 @@ export const MessageItem = memo(function MessageItem({
           {message.generatedImage ? (
             <ImageLightbox
               src={message.generatedImage.url}
-              alt={message.imageRequest?.prompt || "Scene"}
+              alt={message.imageRequest?.prompt || t("table.passage.sceneAlt")}
               className="ken-burns max-h-96 rounded-xl border border-stone-800"
               frameClassName="mt-3 overflow-hidden rounded-xl"
             />
           ) : pictureSlot ? (
             <MediaPlaceholder
-              label="Illustrating the scene..."
+              label={t("table.passage.illustrating")}
               status={pictureSlot.status}
               fallbackStartedAt={message.createdAt}
             />
@@ -491,7 +489,7 @@ export const MessageItem = memo(function MessageItem({
             // (issue 88): what went wrong, and a way to ask again.
             <p role="status" className="live-in mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-amber-400/90">
               <VolumeX className="size-3.5 shrink-0" />
-              <span className="min-w-0">This passage was not read aloud. {narrationFailure}</span>
+              <span className="min-w-0">{t("table.passage.notRead", { reason: narrationFailure })}</span>
               {onReplayAudio ? (
                 <button
                   type="button"
@@ -507,7 +505,7 @@ export const MessageItem = memo(function MessageItem({
                   }}
                   className="motion-press rounded-md border border-amber-800/60 px-1.5 py-0.5 text-amber-200 hover:border-amber-600 disabled:opacity-60"
                 >
-                  {narrating ? "Trying…" : "Try again"}
+                  {narrating ? t("table.passage.trying") : t("table.passage.tryAgain")}
                 </button>
               ) : null}
             </p>
@@ -522,31 +520,31 @@ export const MessageItem = memo(function MessageItem({
             if (!location) {
               return null;
             }
-            if (location.mapImage) {
-              return (
-                <figure className="mt-3 max-w-md">
-                  <ImageLightbox
-                    src={location.mapImage.url}
-                    alt={`Map of ${location.name}`}
-                    caption={location.name}
-                    className="max-h-96 rounded-xl border border-stone-800"
-                  />
-                  <figcaption className="mt-1 text-xs text-stone-500">
-                    {location.name}
-                  </figcaption>
-                </figure>
-              );
-            }
-            // Still charting, or why it could not be (kept on the place, so
-            // a reload does not wait for a map that is not coming).
-            const slot = locationMapSlot(location, message.createdAt, mediaStatus[location.id]);
-            return slot ? (
-              <MediaPlaceholder
-                label="Charting the area..."
-                status={slot.status}
-                fallbackStartedAt={message.createdAt}
-              />
-            ) : null;
+              if (location.mapImage) {
+                return (
+                  <figure className="mt-3 max-w-md">
+                    <ImageLightbox
+                      src={location.mapImage.url}
+                      alt={t("table.passage.mapOf", { name: location.name })}
+                      caption={location.name}
+                      className="max-h-96 rounded-xl border border-stone-800"
+                    />
+                    <figcaption className="mt-1 text-xs text-stone-500">
+                      {location.name}
+                    </figcaption>
+                  </figure>
+                );
+              }
+              // Still charting, or why it could not be (kept on the place, so
+              // a reload does not wait for a map that is not coming).
+              const slot = locationMapSlot(location, message.createdAt, mediaStatus[location.id]);
+              return slot ? (
+                <MediaPlaceholder
+                  label={t("table.passage.charting")}
+                  status={slot.status}
+                  fallbackStartedAt={message.createdAt}
+                />
+              ) : null;
           })()}
         </div>
       </div>

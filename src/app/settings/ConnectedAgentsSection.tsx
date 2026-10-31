@@ -41,12 +41,15 @@ export const AGENT_SCOPE_CHOICES: ReadonlyArray<{ id: AgentScopeId }> = AGENT_SC
 type AgentLink = { id: string; grantId: string; campaignId: string; delivery: "poll" | "push"; characterName: string; pending: number; failed: number };
 type StoppedLink = { grantId: string; campaignId: string; delivery: "poll" | "push"; reason: StopReason; stoppedAt: string; characterName: string };
 
-function linkLine(link: AgentLink): string {
-  const what = link.delivery === "poll" ? "Poll link" : "Receiver";
+// The link's line lives in the dictionaries (agents.link.*); like the pure
+// sentence builders elsewhere, the reading takes the translator from the
+// component that draws it.
+function linkLine(t: (key: string, vars?: Record<string, string | number>) => string, link: AgentLink): string {
+  const what = link.delivery === "poll" ? t("agents.pollLink") : t("agents.link.receiver");
   const trouble = link.failed > 0
-    ? ` · ${link.failed} wake-up${link.failed === 1 ? "" : "s"} could not be delivered`
-    : link.pending > 0 ? ` · ${link.pending} waiting to be delivered` : "";
-  return `${what}: wakes the agent for ${link.characterName}${trouble}`;
+    ? t("agents.link.failed", { count: link.failed })
+    : link.pending > 0 ? t("agents.link.pending", { count: link.pending }) : "";
+  return `${what}: ${t("agents.link.wakes", { name: link.characterName })}${trouble}`;
 }
 
 export function agentScopeLabel(t: (key: string) => string, id: AgentScopeId): string {
@@ -56,9 +59,9 @@ export function agentScopeHint(t: (key: string) => string, id: AgentScopeId): st
   return t(`agents.scope.${id}.hint`);
 }
 
-function makeWhen(locale: string): (iso: string | null) => string {
+function makeWhen(t: (key: string) => string, locale: string): (iso: string | null) => string {
   return (iso: string | null) => {
-    if (!iso) return "never";
+    if (!iso) return t("agents.never");
     return new Date(iso).toLocaleDateString(localeTag(locale as "en" | "fr"), { month: "short", day: "numeric", year: "numeric" });
   };
 }
@@ -69,7 +72,7 @@ function makeWhen(locale: string): (iso: string | null) => string {
 export function ConnectedAgentsSection() {
   const t = useT();
   const locale = useLocale();
-  const when = makeWhen(locale);
+  const when = makeWhen(t, locale);
   const [grants, setGrants] = useState<Grant[] | null>(null);
   // A refused or failed read is shown in the server's words with a way to
   // ask again, never as "nothing here yet" (issue 140).
@@ -208,14 +211,14 @@ export function ConnectedAgentsSection() {
                 {showsLinks
                   ? links.filter((link) => link.grantId === grant.id).map((link) => (
                     <span key={link.id} className="block text-xs text-stone-400">
-                      {linkLine(link)}
+                      {linkLine(t, link)}
                     </span>
                   ))
                   : null}
                 {showsLinks
                   ? stoppedLinks.filter((stop) => stop.grantId === grant.id).slice(0, 1).map((stop) => (
                     <span key={`${stop.grantId}-${stop.stoppedAt}`} role="status" className="block text-xs text-amber-200">
-                      {stopWordsForPlayer(stop.reason, stop.delivery, { character: stop.characterName, date: when(stop.stoppedAt) })}
+                      {stopWordsForPlayer(t, stop.reason, stop.delivery, { character: stop.characterName, date: when(stop.stoppedAt) })}
                     </span>
                   ))
                   : null}
@@ -233,7 +236,7 @@ export function ConnectedAgentsSection() {
                   <PlayerPollLinkSetup
                     key={grant.id}
                     grantId={grant.id}
-                    characterName={links.find((link) => link.grantId === grant.id)?.characterName ?? "your character"}
+                    characterName={links.find((link) => link.grantId === grant.id)?.characterName ?? t("agents.link.yourCharacter")}
                   />
                 </div>
               ) : null}

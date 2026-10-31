@@ -60,22 +60,25 @@ export function seatVerdict(input: SeatInput): SeatVerdict {
 }
 
 // What an agent reads when its link has stopped: no names, since the link
-// is a secret that reveals nothing about the story.
-export function stopWordsForAgent(reason: StopReason, delivery: "poll" | "push"): string {
-  const what = delivery === "poll" ? "This poll link" : "This webhook";
-  const why = reason === "left_campaign" ? "its player is no longer at this table"
-    : reason === "expired" ? "the connection it belongs to has expired"
-    : "the character it woke is no longer one its player plays at this table, and no other could take it over";
-  return `${what} stopped: ${why}. Ask your player for a new one in Settings > Connected agents.`;
+// is a secret that reveals nothing about the story. The words live in the
+// dictionaries (agents.link.*); like composerGate, the reading takes the
+// translator from the caller (the settings page binds its own useT, the
+// agent-facing webhook server an English-bound one).
+export function stopWordsForAgent(t: (key: string, vars?: Record<string, string | number>) => string, reason: StopReason, delivery: "poll" | "push"): string {
+  const what = delivery === "poll" ? t("agents.link.agentPoll") : t("agents.link.agentPush");
+  const why = reason === "left_campaign" ? t("agents.link.agentLeft")
+    : reason === "expired" ? t("agents.link.agentExpired")
+    : t("agents.link.agentChanged");
+  return t("agents.link.agentStopped", { what, why });
 }
 
 // What the player reads on Settings > Connected agents.
-export function stopWordsForPlayer(reason: StopReason, delivery: "poll" | "push", names: { character: string; date: string }): string {
-  const what = delivery === "poll" ? "The poll link" : "The receiver";
-  const why = reason === "left_campaign" ? "you are no longer at that table"
-    : reason === "expired" ? "this connection expired"
-    : `${names.character} is no longer the character you play there`;
-  const next = reason === "expired" ? "Connect the agent again to make a new one."
-    : delivery === "poll" ? "Make a new one with Poll link." : "Set the receiver up again for the character you play now.";
-  return `${what} stopped on ${names.date}: ${why}. ${next}`;
+export function stopWordsForPlayer(t: (key: string, vars?: Record<string, string | number>) => string, reason: StopReason, delivery: "poll" | "push", names: { character: string; date: string }): string {
+  const what = delivery === "poll" ? t("agents.link.playerPoll") : t("agents.link.playerReceiver");
+  const why = reason === "left_campaign" ? t("agents.link.playerLeft")
+    : reason === "expired" ? t("agents.link.playerExpired")
+    : t("agents.link.playerChanged", { character: names.character });
+  const next = reason === "expired" ? t("agents.link.playerExpiredNext")
+    : delivery === "poll" ? t("agents.link.playerPollNext") : t("agents.link.playerReceiverNext");
+  return t("agents.link.playerStopped", { what, date: names.date, why, next });
 }
