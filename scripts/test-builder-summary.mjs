@@ -94,10 +94,10 @@ await test("each row lists what its step still owes, from the same blocks the ga
   const state = { name: "", backgroundSkills: [], bonusLanguages: [], racialAsi: [], racialSkills: [], feats: [], repeatSkills: [] };
   const owed = {
     ...none,
-    identity: submit.identityBlocks(state),
-    ancestry: [...submit.ancestryBlocks(state, undefined), ...submit.backgroundBlocks(state, undefined)],
-    calling: submit.callingBlocks(undefined),
-    abilities: submit.abilitiesBlocks({ abilities: null }),
+    identity: submit.identityBlocks(t, state),
+    ancestry: [...submit.ancestryBlocks(t, state, undefined), ...submit.backgroundBlocks(t, state, undefined)],
+    calling: submit.callingBlocks(t, undefined),
+    abilities: submit.abilitiesBlocks(t, { abilities: null }),
   };
   const rows = summaryRows(t, { ...complete, owed });
   assert.deepEqual(rows[0].owed.map((pick) => pick.label), ["Class"]);

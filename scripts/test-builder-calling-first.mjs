@@ -16,6 +16,8 @@ register("./lib/register-alias.mjs", import.meta.url);
 // Windows CI checks out with CRLF.
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 const submit = await import("../src/app/characters/builder/submit.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+const t = (key, vars) => translate("en", key, vars);
 const { draftStepKey } = await import("../src/app/characters/builder/builderDraft.ts");
 
 let passed = 0;
@@ -59,7 +61,7 @@ await test("the background sits beside the ancestry, with every open tool grant"
   const ancestry = stepOf("ancestry");
   assert.match(ancestry, /<BackgroundPanel/);
   assert.match(ancestry, /<ToolGrantPanels/);
-  assert.match(builder, /ancestry: \[\n\s+\.\.\.ancestryBlocks\(state, race, background, derived, featJudge\),\n\s+\.\.\.backgroundBlocks\(state, background, derived\),\n\s+\]/);
+  assert.match(builder, /ancestry: \[\n\s+\.\.\.ancestryBlocks\(t, state, race, background, derived, featJudge\),\n\s+\.\.\.backgroundBlocks\(t, state, background, derived\),\n\s+\]/);
   for (const target of ["background", "backgroundSkills", "tools"]) {
     assert.match(builder, new RegExp(`\\n  ${target}: "ancestry",`), `${target} is asked on the ancestry step`);
   }
@@ -71,24 +73,24 @@ await test("the background sits beside the ancestry, with every open tool grant"
 });
 
 await test("nothing before the identity step needs a name", () => {
-  assert.deepEqual(submit.identityBlocks({ name: "" }).map((block) => block.target), ["name"]);
-  assert.deepEqual(submit.identityBlocks({ name: "Wren" }), []);
+  assert.deepEqual(submit.identityBlocks(t, { name: "" }).map((block) => block.target), ["name"]);
+  assert.deepEqual(submit.identityBlocks(t, { name: "Wren" }), []);
   // The other steps' gates never ask for the name.
   const nameless = { name: "", backgroundSkills: [], bonusLanguages: [], racialAsi: [], racialSkills: [], feats: [], repeatSkills: [] };
   const soldier = { id: "soldier", name: "Soldier", skills: [] };
   const human = { id: "human", name: "Human", skills: [], asi: {} };
   for (const blocks of [
-    submit.backgroundBlocks(nameless, soldier, { toolGrants: { choices: [], left: [] } }),
-    submit.ancestryBlocks(nameless, human, soldier),
-    submit.callingBlocks(undefined),
-    submit.abilitiesBlocks({ abilities: null }),
+    submit.backgroundBlocks(t, nameless, soldier, { toolGrants: { choices: [], left: [] } }),
+    submit.ancestryBlocks(t, nameless, human, soldier),
+    submit.callingBlocks(t, undefined),
+    submit.abilitiesBlocks(t, { abilities: null }),
   ]) {
     assert.ok(blocks.every((block) => block.target !== "name"));
   }
   // The summary's Save waits on the earliest step's pick, the name last.
   assert.match(builder, /const firstOwed = blockers\.calling \?\? blockers\.ancestry \?\? blockers\.abilities \?\? blockers\.spells \?\? blockers\.identity;/);
   const source = read("src/app/characters/builder/submit.ts");
-  assert.match(source, /gearBlocker\(derived\) \?\?\n\s+identityBlocker\(state\);/, "the final check asks for the name last");
+  assert.match(source, /gearBlocker\(t, derived\) \?\?\n\s+identityBlocker\(t, state\);/, "the final check asks for the name last");
   // Until the name is given, the hero is "Your hero".
   assert.match(builder, /title=\{state\.name\.trim\(\) \|\| "Your hero"\}/);
 });

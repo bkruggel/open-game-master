@@ -2,15 +2,24 @@
 // class, coin), each with the one line that says where it comes from. The
 // builder shows them; it never lets them be typed, because the server works
 // them out again from the same choices when the character is saved.
+//
+// The lines live in the dictionaries under `builder.derived.*`; each builder
+// takes the translator from the component that draws it (the agoLabel
+// pattern in home/types.ts), so a language switch rewords the review with
+// the rest of the builder. Pure otherwise: no React, no database.
 import { fixedDieValue, type HpMethod } from "@/lib/srd/hit-points";
 import { formatPrice } from "@/lib/srd/currency";
 import { describeWealthDice, startingWealthDice } from "@/lib/srd/starting-wealth";
 import type { PurseView } from "./EquipmentSection";
 import type { TableRulesState } from "./useTableRules";
 
+// The reading takes the translator from the component that draws the line;
+// a test passes translate("en", ...).
+type Translator = (key: string, vars?: Record<string, string | number>) => string;
+
 export type DerivedLine = { value: string; reason: string };
 
-export function hitPointsLine(input: {
+export function hitPointsLine(t: Translator, input: {
   hitDie: number;
   level: number;
   maxHp: number;
@@ -29,47 +38,54 @@ export function hitPointsLine(input: {
   if (input.kept) {
     return {
       value: String(maxHp),
-      reason: "Kept from the stored character while its level and Constitution stand.",
+      reason: t("builder.derived.hp.kept"),
     };
   }
-  const first = `1st level is the d${hitDie}'s maximum plus Constitution`;
+  const first = t("builder.derived.hp.first", { die: hitDie });
   if (level <= 1) {
     return { value: String(maxHp), reason: `${first}.` };
   }
   if (mixed) {
     const dice = [...new Set(input.dice)].map((die) => `d${die}`).join(", ");
+    const how =
+      method === "rolled"
+        ? t("builder.derived.hp.mixedRolled")
+        : method === "max"
+          ? t("builder.derived.hp.mixedMax")
+          : t("builder.derived.hp.mixedAverage");
     return {
-      value: method === "rolled" ? `${range.min} to ${range.max}` : String(maxHp),
-      reason: `${first}; each later level its own class's die (${dice}), ${method === "rolled" ? "rolled by the server when you save" : method === "max" ? "at its highest face" : "at the table's average"}, plus Constitution (at least 1).`,
+      value: method === "rolled" ? t("builder.derived.hp.range", { min: range.min, max: range.max }) : String(maxHp),
+      reason: t("builder.derived.hp.mixed", { first, dice, how }),
     };
   }
   if (method === "rolled") {
     return {
-      value: `${range.min} to ${range.max}`,
-      reason: `${first}; the server rolls a d${hitDie} for each later level when you save (every level adds at least 1).`,
+      value: t("builder.derived.hp.range", { min: range.min, max: range.max }),
+      reason: t("builder.derived.hp.rolled", { first, die: hitDie }),
     };
   }
   const later =
     method === "max"
-      ? `each later level the die's highest face, ${hitDie}`
-      : `each later level the table's average, ${fixedDieValue(hitDie)}`;
+      ? t("builder.derived.hp.laterMax", { face: hitDie })
+      : t("builder.derived.hp.laterAverage", { average: fixedDieValue(hitDie) });
+  const atTable = input.atTable ? ` ${t("builder.derived.hp.atTable")}` : "";
   return {
     value: String(maxHp),
-    reason: `${first}; ${later}, plus Constitution (at least 1).${input.atTable ? "" : " A table that rolls or maximises hit points works them its own way when this character joins."}`,
+    reason: t("builder.derived.hp.settled", { first, later, tail: atTable }),
   };
 }
 
-export function armorClassLine(ac: number, parts: string[] | undefined): DerivedLine {
+export function armorClassLine(t: Translator, ac: number, parts: string[] | undefined): DerivedLine {
   return {
     value: String(ac),
     reason: parts?.length
-      ? `From what is worn: ${parts.join(" + ")}.`
-      : "10 plus Dexterity with nothing worn.",
+      ? t("builder.derived.ac.worn", { parts: parts.join(" + ") })
+      : t("builder.derived.ac.unarmored"),
   };
 }
 
 // The purse as the gear step and the review show it.
-export function purseViewFor(input: {
+export function purseViewFor(t: Translator, input: {
   purse: {
     gold: number;
     copper: number;
@@ -86,16 +102,16 @@ export function purseViewFor(input: {
   table: TableRulesState;
 }): PurseView {
   const { purse, table } = input;
-  const spent = purse.spentCopper ? ` Bought: ${formatPrice(purse.spentCopper)}.` : "";
+  const spent = purse.spentCopper ? ` ${t("builder.derived.purse.bought", { price: formatPrice(purse.spentCopper) })}` : "";
   const rolledTable = !input.keepsStoredGear && purse.method === "rolled";
   const dice = describeWealthDice(startingWealthDice(input.classId));
   const source = input.keepsStoredGear
-    ? `The coin this character already carries; gear added now is paid from it.${spent}`
+    ? t("builder.derived.purse.kept", { spent })
     : rolledTable
       ? table.wealth
-        ? `This table rolls a ${input.className}'s starting wealth in place of the class kit, and every item is bought from it.${spent}`
-        : `This table rolls a ${input.className}'s starting wealth (${dice}) in place of the class kit. Roll it, then buy your gear.`
-      : `The ${input.backgroundName} background's purse of ${input.backgroundPurse} gp. The class and background kit is free; anything more is bought from the purse.${spent}`;
+        ? t("builder.derived.purse.rolledSpent", { className: input.className, spent })
+        : t("builder.derived.purse.rolledKit", { className: input.className, dice })
+      : t("builder.derived.purse.background", { background: input.backgroundName, amount: input.backgroundPurse, spent });
   return {
     gold: purse.gold,
     copper: purse.copper,
@@ -113,4 +129,3 @@ export function purseViewFor(input: {
       : null,
   };
 }
-

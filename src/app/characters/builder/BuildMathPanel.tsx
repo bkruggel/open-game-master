@@ -50,13 +50,14 @@ export function BuildMathPanel({
   raceGroups: PickerGroup[];
   gender: BuilderState["gender"];
 }) {
+  const t = useT();
   const headingId = useId();
   const bodyId = useId();
   const [open, setOpen] = useState(false);
   const low = useLowEffects();
   const sections = useMemo(
-    () => buildMathSections({ derived, scores, klass, atTable }),
-    [derived, scores, klass, atTable],
+    () => buildMathSections({ t, derived, scores, klass, atTable }),
+    [t, derived, scores, klass, atTable],
   );
 
   // One short polite line per burst of changes (buildMath.ts).

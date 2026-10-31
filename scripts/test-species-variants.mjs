@@ -355,7 +355,7 @@ test("the line of choices left names the species' own choice: its Draconic ances
   const state = { racialVariant: "", racialAsi: [], racialSkills: [], racialTool: "", racialCantrips: [], bonusLanguages: [], feats: [], repeatSkills: [] };
   for (const label of ["Draconic ancestry", "Bloodline"]) {
     const race = raceOf(species(choice([ASHEN, MIRRORSCALE], label)));
-    const owed = owedPicks(t, ancestryBlocks(state, race)).find((pick) => pick.target === "variant");
+    const owed = owedPicks(t, ancestryBlocks(t, state, race)).find((pick) => pick.target === "variant");
     assert.equal(owed?.label, label);
   }
 });

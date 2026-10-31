@@ -7,8 +7,10 @@ import { workshopPlaceholder } from "@/lib/placeholders";
 import { Ribbon } from "@/components/ui/Ribbon";
 import {
   WORKSHOP_SYSTEMS,
+  systemBlurb,
   systemCount,
   systemGlyph,
+  systemLabel,
   totalPieces,
   type SystemId,
   type WorldCount,
@@ -61,7 +63,7 @@ export function SystemCards({
   onTask?: (choiceId: string) => void;
 }) {
   const t = useT();
-  const total = totalPieces(workshop, bestiary, homebrew, pregens, plugin, world);
+  const total = totalPieces(t, workshop, bestiary, homebrew, pregens, plugin, world);
   return (
     <section className="mt-5">
       {onTask ? (
@@ -101,8 +103,10 @@ export function SystemCards({
       </p>
       <ul className="stagger-up grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-tour="hub-systems">
         {WORKSHOP_SYSTEMS.map((system) => {
-          const count = systemCount(system.id, workshop, bestiary, homebrew, pregens, plugin, world);
-          const empty = count.figure === "0" || count.figure === "none";
+          const count = systemCount(t, system.id, workshop, bestiary, homebrew, pregens, plugin, world);
+          // The rule card's figure says "set" or "none" in words, so its emptiness
+          // is read from the data, not from the figure's letters.
+          const empty = count.figure === "0" || (system.id === "rules" && workshop.contents.houseRules === 0);
           return (
             <li key={system.id}>
               <button
@@ -139,9 +143,9 @@ export function SystemCards({
                 />
                 <div className="mt-auto">
                   <p className="font-display text-[13px] font-semibold tracking-[0.12em] text-amber-50">
-                    {system.label}
+                    {systemLabel(t, system.id)}
                   </p>
-                  <p className="text-xs text-stone-500">{system.blurb}</p>
+                  <p className="text-xs text-stone-500">{systemBlurb(t, system.id)}</p>
                 </div>
               </button>
             </li>

@@ -14,6 +14,7 @@ import { suite } from "./lib/enforce-harness.mjs";
 const { test, finish } = suite("test-create-chooser");
 const { CREATE_CHOICES, offeredWays, stepUnavailable } = await import("../src/lib/workshop/create-choices.ts");
 const { isSystemId } = await import("../src/app/workshop/[workshopId]/systems.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
 const { typeFor, defaultTypes } = await import("../src/lib/worldforge/model.ts");
 const { worldView } = await import("../src/lib/db/world-forge.ts");
 const { insertLoreEntry } = await import("../src/lib/db/lore.ts");
@@ -45,14 +46,20 @@ await test("Create offers every output the plan names, each saying where it land
   const wanted = ["outline", "npc", "pc", "creature", "item", "shop", "spell", "option", "place", "region", "map", "encounter", "table", "illustration"];
   assert.deepEqual(CREATE_CHOICES.map((entry) => entry.id).sort(), [...wanted].sort());
   for (const entry of CREATE_CHOICES) {
-    assert.ok(entry.lands && entry.blurb && entry.steps.length, `${entry.id} says nothing about where it goes`);
+    // The label, blurb and lands live in the dictionaries now; the English
+    // lines still have to be there.
+    for (const part of ["label", "blurb", "lands"]) {
+      const key = `workshop.create.${entry.id}.${part}`;
+      assert.notEqual(translate("en", key), key, `${key} has no English line`);
+    }
+    assert.ok(entry.steps.length, `${entry.id} says nothing about where it goes`);
   }
 });
 
 await test("Every way in reaches a real tool or page, and the tool's panel answers the editor it asks for.", () => {
   for (const step of steps()) {
-    assert.ok(step.href || step.system, `${step.choice}: "${step.label}" goes nowhere`);
-    if (step.href) assert.match(step.href, /^\/[a-z]/, `${step.choice}: "${step.label}" leaves the app`);
+    assert.ok(step.href || step.system, `${step.choice}: "${step.id}" goes nowhere`);
+    if (step.href) assert.match(step.href, /^\/[a-z]/, `${step.choice}: "${step.id}" leaves the app`);
     if (step.system) assert.ok(isSystemId(step.system), `${step.choice}: ${step.system} is not a workshop tool`);
     if (step.view) assert.ok(source("src/app/workshop/world/WorldForgePanel.tsx").includes(`value: "${step.view}"`), `${step.choice}: WorldForge has no ${step.view} view`);
     if (!step.prepare) continue;
@@ -68,7 +75,7 @@ await test("Every way in reaches a real tool or page, and the tool's panel answe
 await test("Shops have a way in: Create's Shop and the palette's New shop open the Market's form under Lore (audit WA-10).", async () => {
   assert.deepEqual(choice("shop").steps.map((step) => [step.system, step.prepare]), [["lore", "open-shop-editor"]]);
   const { SYSTEM_CREATE } = await import("../src/app/workshop/[workshopId]/palette-commands.ts");
-  assert.ok(SYSTEM_CREATE.lore.some((entry) => entry.prepare === "open-shop-editor" && entry.label === "New shop"));
+  assert.ok(SYSTEM_CREATE.lore.some((entry) => entry.prepare === "open-shop-editor" && entry.label === "workshop.palette.create.loreShop" && translate("en", entry.label) === "New shop"));
   // The panel answers only once it can: shops loaded and the viewer may prep.
   assert.match(source("src/app/campaigns/[campaignId]/MarketPanel.tsx"), /name !== "open-shop-editor" \|\| shops === null \|\| !canPrep/);
 });

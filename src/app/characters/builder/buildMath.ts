@@ -31,7 +31,11 @@ export type BuildMathRow = {
 
 export type BuildMathSection = { id: string; title: string; rows: BuildMathRow[] };
 
+// The reading takes the translator from the panel that draws the table.
+type Translator = (key: string, vars?: Record<string, string | number>) => string;
+
 export type BuildMathInput = {
+  t: Translator;
   derived: Pick<
     BuilderDerived,
     | "preview"
@@ -67,7 +71,7 @@ const SLOT_LEVELS: Array<[string, string]> = [
   ["1", "1st"], ["2", "2nd"], ["3", "3rd"], ["4", "4th"], ["5", "5th"], ["6", "6th"], ["7", "7th"], ["8", "8th"], ["9", "9th"],
 ];
 
-export function buildMathSections({ derived, scores, klass, atTable }: BuildMathInput): BuildMathSection[] {
+export function buildMathSections({ t, derived, scores, klass, atTable }: BuildMathInput): BuildMathSection[] {
   const { preview, hp, shownAbilities, effectiveLevel } = derived;
   if (!preview || !shownAbilities || !hp || !klass) {
     return [];
@@ -75,7 +79,7 @@ export function buildMathSections({ derived, scores, klass, atTable }: BuildMath
   const sheet = preview.derived;
   const sections: BuildMathSection[] = [];
 
-  const hpLine = hitPointsLine({
+  const hpLine = hitPointsLine(t, {
     hitDie: klass.hitDie,
     level: effectiveLevel,
     maxHp: preview.maxHp,
@@ -115,7 +119,7 @@ export function buildMathSections({ derived, scores, klass, atTable }: BuildMath
           : []),
         ...(parts.featureHp ? [`features ${formatModifier(parts.featureHp)}`] : []),
       ].join("; ");
-  const acLine = armorClassLine(derived.acInfo?.ac ?? derived.ac, derived.acInfo?.parts);
+  const acLine = armorClassLine(t, derived.acInfo?.ac ?? derived.ac, derived.acInfo?.parts);
   sections.push({
     id: "core",
     title: "Core",

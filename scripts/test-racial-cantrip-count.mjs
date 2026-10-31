@@ -208,7 +208,7 @@ await test("reconcile keeps as many different picks as the race offers, and a ne
 
 await test("the ancestry step asks until every cantrip is picked", () => {
   const owed = (picks, race = elf(3)) =>
-    ancestryBlocks(builder.stateOf({ racialCantrips: picks, bonusLanguages: ["Dwarvish"] }), race, backgroundOf("soldier"))
+    ancestryBlocks(t, builder.stateOf({ racialCantrips: picks, bonusLanguages: ["Dwarvish"] }), race, backgroundOf("soldier"))
       .filter((block) => block.target === "racialCantrip")
       .map((block) => block.message);
   const name = highElf.name;

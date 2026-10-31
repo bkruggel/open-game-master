@@ -66,7 +66,7 @@ export function FinishStep({
   // are shown with their reasons and never typed.
   const hpLine =
     preview && klass
-      ? hitPointsLine({
+      ? hitPointsLine(t, {
           hitDie: klass.hitDie,
           level: effectiveLevel,
           maxHp: preview.maxHp,
@@ -77,8 +77,8 @@ export function FinishStep({
           ...(derived.multiclass ? { dice: [klass.hitDie, ...derived.extras.map((entry) => entry.klass.hitDie)] } : {}),
         })
       : null;
-  const acLine = armorClassLine(acInfo?.ac ?? ac, acInfo?.parts);
-  const purse = purseViewFor({
+  const acLine = armorClassLine(t, acInfo?.ac ?? ac, acInfo?.parts);
+  const purse = purseViewFor(t, {
     purse: derived.purse,
     keepsStoredGear: state.keepsStoredGear,
     backgroundName: background?.name ?? "chosen",

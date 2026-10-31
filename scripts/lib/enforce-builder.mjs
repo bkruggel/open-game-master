@@ -13,6 +13,10 @@
 // register("./lib/register-alias.mjs", import.meta.url) in a pure suite).
 import React from "react";
 
+// The gates take the translator from the caller; the suites read English.
+const { translate } = await import("../../src/lib/messages-logic.ts");
+const enT = (key, vars) => translate("en", key, vars);
+
 const INTERNALS = "__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE";
 
 function withoutReact(fn) {
@@ -144,7 +148,7 @@ export async function openBuilder() {
       useBuilderDerived({ state, race: raceRow, klass, background: backgroundRow, extras, featDescs }),
     );
     const input = { state, derived, race: raceRow, klass, background: backgroundRow };
-    const blocker = submit.validateBuilder(input);
+    const blocker = submit.validateBuilder(enT, input);
     const result = derived.preview && raceRow && klass && backgroundRow ? submit.buildBuilderResult(input) : null;
     return { state, derived, blocker, result, sheet: result?.sheet ?? null, level: result?.level ?? null };
   }

@@ -2305,8 +2305,8 @@
     "app/characters/builder/submit.ts#toLowerCase": [
       [
         "display",
-        7,
-        "names in a sentence; label in a sentence; a second class's name in a sentence"
+        6,
+        "names in a sentence; label in a sentence (a class name repeated in one line now rides one {klass} var)"
       ]
     ],
     "app/characters/builder/useBuilderDerived.ts#toLowerCase": [
@@ -2646,13 +2646,6 @@
         "key",
         1,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
-    "app/workshop/[workshopId]/SystemCards.tsx#str-eq": [
-      [
-        "english-source",
-        1,
-        "the count label ODM writes (\"none\")"
       ]
     ],
     "app/workshop/[workshopId]/WorkshopHeader.tsx#str-eq": [

@@ -15,28 +15,28 @@ const background = { id: "pack_bg", name: "Wanderer", skills: [], skillChoice: {
 const halfElf = { id: "half_elf", name: "Half-Elf", skills: [], bonusLanguages: 1, asiChoice: { count: 2 }, skillChoice: { count: 2 } };
 
 // Identity, the last step before the summary (backlog F4): the name alone.
-assert.deepEqual(submit.identityBlocks(state).map((entry) => entry.target), ["name"]);
-assert.deepEqual(submit.identityBlocker(state), submit.identityBlocks(state)[0]);
-assert.deepEqual(submit.identityBlocks({ ...state, name: "Wren" }), []);
+assert.deepEqual(submit.identityBlocks(t, state).map((entry) => entry.target), ["name"]);
+assert.deepEqual(submit.identityBlocker(t, state), submit.identityBlocks(t, state)[0]);
+assert.deepEqual(submit.identityBlocks(t, { ...state, name: "Wren" }), []);
 
 // The background, asked beside the ancestry: itself, its skills, then any
 // open tool grant, in the gate's order.
-assert.deepEqual(submit.backgroundBlocks(state, undefined).map((entry) => entry.target), ["background"]);
+assert.deepEqual(submit.backgroundBlocks(t, state, undefined).map((entry) => entry.target), ["background"]);
 const tools = { toolGrants: { choices: [{ label: "musical instrument" }], left: [1] } };
-const past = submit.backgroundBlocks(state, background, tools);
+const past = submit.backgroundBlocks(t, state, background, tools);
 assert.deepEqual(past.map((entry) => entry.target), ["backgroundSkills", "tools"]);
 assert.equal(past[1].message, "Pick 1 more musical instrument you know how to use (tool proficiency).");
-assert.deepEqual(submit.backgroundBlocker(state, background, tools), past[0]);
-assert.deepEqual(submit.backgroundBlocks({ ...state, backgroundSkills: ["athletics", "stealth"] }, background, { toolGrants: { choices: [], left: [] } }), []);
+assert.deepEqual(submit.backgroundBlocker(t, state, background, tools), past[0]);
+assert.deepEqual(submit.backgroundBlocks(t, { ...state, backgroundSkills: ["athletics", "stealth"] }, background, { toolGrants: { choices: [], left: [] } }), []);
 
 // Ancestry: no race is the only thing said until one is chosen.
-assert.deepEqual(submit.ancestryBlocks(state, undefined).map((entry) => entry.target), ["race"]);
-const ancestry = submit.ancestryBlocks(state, halfElf, background);
+assert.deepEqual(submit.ancestryBlocks(t, state, undefined).map((entry) => entry.target), ["race"]);
+const ancestry = submit.ancestryBlocks(t, state, halfElf, background);
 assert.deepEqual(ancestry.map((entry) => entry.target), ["languages", "racialAsi", "racialSkills"]);
-assert.deepEqual(submit.ancestryBlocker(state, halfElf, background), ancestry[0], "the gate is the first owed");
+assert.deepEqual(submit.ancestryBlocker(t, state, halfElf, background), ancestry[0], "the gate is the first owed");
 
 // Abilities: no scores is the only thing said.
-assert.deepEqual(submit.abilitiesBlocks({ abilities: null }).map((entry) => entry.target), ["scores"]);
+assert.deepEqual(submit.abilitiesBlocks(t, { abilities: null }).map((entry) => entry.target), ["scores"]);
 
 // One link per block, in a player's words; the headline counts them.
 const picks = owedPicks(t, [...ancestry, { target: "languages", message: "again" }]);

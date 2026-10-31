@@ -513,7 +513,7 @@ function CharacterBuilderForm({
       return;
     }
     const input = { state, derived, race, klass, background, initial, featJudge };
-    const problem = validateBuilder(input);
+    const problem = validateBuilder(t, input);
     if (problem) {
       if (problem.kind === "spellWarning") {
         state.setSpellWarningAck(true);
@@ -568,23 +568,23 @@ function CharacterBuilderForm({
   // Each gate mirrors a rule the final check enforces, so a player learns
   // about a missing pick on the step where they can fix it. The gate is the
   // first pick owed; the step's "choices left" line names them all.
-  const gear = gearBlocker(derived);
+  const gear = gearBlocker(t, derived);
   const owed = {
     // The name alone: nothing before this step waits on it (backlog F4).
-    identity: identityBlocks(state),
+    identity: identityBlocks(t, state),
     // The background and its open picks sit beside the ancestry.
     ancestry: [
-      ...ancestryBlocks(state, race, background, derived, featJudge),
-      ...backgroundBlocks(state, background, derived),
+      ...ancestryBlocks(t, state, race, background, derived, featJudge),
+      ...backgroundBlocks(t, state, background, derived),
     ],
-    calling: callingBlocks(klass, state, derived),
+    calling: callingBlocks(t, klass, state, derived),
     // The scores set here can break the racial feat picked a step back;
     // it is flagged here too, with the way back to it.
     abilities: [
-      ...abilitiesBlocks(derived, state, featJudge),
+      ...abilitiesBlocks(t, derived, state, featJudge),
       ...racialFeatBlock(unmetFeatMessage(featJudge, state.feats.slice(0, race ? racialFeatCount(race.id) : 0))),
     ],
-    spells: [...spellsBlocks(derived, klass), ...(gear ? [gear] : [])],
+    spells: [...spellsBlocks(t, derived, klass), ...(gear ? [gear] : [])],
   };
   const blockers = {
     identity: owed.identity[0] ?? null,

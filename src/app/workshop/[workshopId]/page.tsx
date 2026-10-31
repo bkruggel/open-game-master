@@ -10,9 +10,9 @@ import { SystemView } from "@/app/workshop/[workshopId]/SystemView";
 import { TargetPartyBar } from "@/app/workshop/[workshopId]/TargetPartyBar";
 import { WorkshopHeader } from "@/app/workshop/[workshopId]/WorkshopHeader";
 import {
-  WORKSHOP_SYSTEMS,
   isSystemId,
   systemCount,
+  systemLabel,
   type SystemId,
   type WorldCount,
 } from "@/app/workshop/[workshopId]/systems";
@@ -293,7 +293,7 @@ function WorkshopPageInner({ workshopId }: { workshopId: string }) {
       ...(system
         ? [
             {
-              label: t("workshop.tour.system", { system: WORKSHOP_SYSTEMS.find((entry) => entry.id === system)?.label ?? system }),
+              label: t("workshop.tour.system", { system: systemLabel(t, system) }),
               detail: t("workshop.tour.systemDetail"),
               onStart: () => setTour(systemTourId(system)),
             },
@@ -384,9 +384,9 @@ function WorkshopPageInner({ workshopId }: { workshopId: string }) {
             <CommandPalette
               title={t("workshop.commands.title")}
               placeholder={t("workshop.commands.placeholder")}
-              commands={workshopCommands({
+              commands={workshopCommands(t, {
                 current: system,
-                phrase: (id) => systemCount(id, workshop, bestiary, homebrew, pregens, plugin, world).phrase,
+                phrase: (id) => systemCount(t, id, workshop, bestiary, homebrew, pregens, plugin, world).phrase,
                 onJump: openSystem,
                 onCreate: createIn,
                 onHub: () => void go(pathname),

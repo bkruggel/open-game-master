@@ -16,6 +16,8 @@ const { buildMathSections, changeLine, createChangeAnnouncer, knownSoFarRows, sn
   "../src/app/characters/builder/buildMath.ts"
 );
 const { computeSheetDerived, deriveAc, formatModifier, SRD_SKILLS } = await import("../src/lib/srd/index.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+const t = (key, vars) => translate("en", key, vars);
 const { withSpeciesVariant } = await import("../src/lib/content/species-variants.ts");
 const { deriveHand } = await import("../src/lib/battlemap/hand.ts");
 const { storedSheetSchema } = await import("../src/lib/schemas/sheet.ts");
@@ -33,6 +35,7 @@ const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 
 function tableOf(built) {
   return buildMathSections({
+    t,
     derived: built.derived,
     scores: built.state.scores,
     klass: builder.classes.find((entry) => entry.id === built.state.classId) ?? built.klass,

@@ -170,14 +170,14 @@ const t = useT();
   }
 
   // Every pick the build still owes, in the order the save checks them.
-  const gear = gearBlocker(derived);
+  const gear = gearBlocker(t, derived);
   const blocks: StepBlock[] = [
-    ...identityBlocks(state),
-    ...backgroundBlocks(state, background, derived),
-    ...abilitiesBlocks(derived, state, featJudge),
-    ...ancestryBlocks(state, race, background, derived, featJudge),
-    ...callingBlocks(klass, state, derived),
-    ...spellsBlocks(derived, klass),
+    ...identityBlocks(t, state),
+    ...backgroundBlocks(t, state, background, derived),
+    ...abilitiesBlocks(t, derived, state, featJudge),
+    ...ancestryBlocks(t, state, race, background, derived, featJudge),
+    ...callingBlocks(t, klass, state, derived),
+    ...spellsBlocks(t, derived, klass),
     ...(gear ? [gear] : []),
   ];
   const racialFeatProblem = unmetFeatMessage(featJudge, state.feats.slice(0, race ? racialFeatCount(race.id) : 0));
@@ -251,7 +251,7 @@ const t = useT();
       return;
     }
     const input = { state, derived, race, klass, background, initial, featJudge };
-    const check = validateBuilder(input);
+    const check = validateBuilder(t, input);
     if (check) {
       if (check.kind === "spellWarning") {
         state.setSpellWarningAck(true);
@@ -269,7 +269,7 @@ const t = useT();
   const preview = derived.preview;
   const hpLine =
     preview && klass
-      ? hitPointsLine({
+      ? hitPointsLine(t, {
           hitDie: klass.hitDie,
           level: derived.effectiveLevel,
           maxHp: preview.maxHp,

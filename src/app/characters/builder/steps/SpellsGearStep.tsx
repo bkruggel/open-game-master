@@ -52,7 +52,8 @@ export function SpellsGearStep({
   table: TableRulesState;
   pack: WorldPack | null;
 }) {
-  const purse = purseViewFor({
+  const t = useT();
+  const purse = purseViewFor(t, {
     purse: derived.purse,
     keepsStoredGear: state.keepsStoredGear,
     backgroundName: background?.name ?? "chosen",
@@ -82,7 +83,7 @@ export function SpellsGearStep({
                 choices={derived.kitChoices}
                 training={derived.kitTraining}
                 className={klass.name.toLowerCase()}
-                armorClass={armorClassLine(derived.acInfo?.ac ?? derived.ac, derived.acInfo?.parts)}
+                armorClass={armorClassLine(t, derived.acInfo?.ac ?? derived.ac, derived.acInfo?.parts)}
                 onOption={actions.chooseKitOption}
                 onPick={actions.pickKitSlot}
               />

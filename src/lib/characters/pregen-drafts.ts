@@ -233,7 +233,7 @@ function fill(
   const state = asState(fields);
   const derived = deriveBuilder({ state, ...chosen });
   const input = { state, derived, ...chosen };
-  const blocker = validateBuilder(input);
+  const blocker = validateBuilder(enT, input);
   if (blocker) {
     return { refused: blocker.message };
   }

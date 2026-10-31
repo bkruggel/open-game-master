@@ -32,10 +32,10 @@ const state = {
 // back to the list's first row (an Acolyte, who owed two languages nobody
 // asked for).
 {
-  const owed = submit.backgroundBlocks(state, undefined);
+  const owed = submit.backgroundBlocks(t, state, undefined);
   assert.deepEqual(owed.map((entry) => entry.target), ["background"]);
   assert.match(owed[0].message, /did before adventuring \(background\)/);
-  assert.equal(submit.backgroundBlocker(state, { id: "soldier", name: "Soldier", skills: [] }), null);
+  assert.equal(submit.backgroundBlocker(t, state, { id: "soldier", name: "Soldier", skills: [] }), null);
   // An unpicked background owes no languages on the next step.
   assert.equal(submit.bonusLanguageCount({ bonusLanguages: 0 }, undefined), 0);
 
@@ -101,11 +101,11 @@ const state = {
 // veteran; the "choices left" line keeps the rule word as its link.
 {
   const dwarf = { id: "hill_dwarf", name: "Hill Dwarf", toolChoice: { count: 1, options: ["Smith's tools"] }, skills: [], asi: {} };
-  const owed = submit.ancestryBlocks(state, dwarf, { id: "soldier", name: "Soldier", skills: [] });
+  const owed = submit.ancestryBlocks(t, state, dwarf, { id: "soldier", name: "Soldier", skills: [] });
   assert.deepEqual(owed.map((entry) => entry.message), ["Pick a tool your Hill Dwarf knows how to use (tool proficiency)."]);
   assert.deepEqual(owedPicks(t, owed).map((pick) => pick.label), ["Tool"], "the Show me link keeps the rule's name");
-  assert.equal(submit.ancestryBlocks(state, undefined)[0].message, "Choose where your hero comes from (race).");
-  assert.equal(submit.callingBlocks(undefined)[0].message, "Choose how you fight or use magic (class).");
+  assert.equal(submit.ancestryBlocks(t, state, undefined)[0].message, "Choose where your hero comes from (race).");
+  assert.equal(submit.callingBlocks(t, undefined)[0].message, "Choose how you fight or use magic (class).");
 
   const derived = {
     toolGrants: { choices: [{ label: "musical instrument" }], left: [2] },
@@ -116,13 +116,13 @@ const state = {
     proficientSkills: [],
   };
   const fighter = { id: "fighter", name: "Fighter", skillChoices: { count: 2 } };
-  const calling = submit.callingBlocks(fighter, { ...state, chosenSkills: [], stylePicks: [], expertisePicks: [], subclass: "" }, derived);
+  const calling = submit.callingBlocks(t, fighter, { ...state, chosenSkills: [], stylePicks: [], expertisePicks: [], subclass: "" }, derived);
   assert.deepEqual(calling.map((entry) => entry.message), [
     "Pick 2 more skills your training taught you (class skills).",
     "Pick how you like to fight (fighting style).",
   ]);
   // Open tool grants are asked beside the background (backlog F4).
-  assert.deepEqual(submit.backgroundBlocks(state, { id: "soldier", name: "Soldier", skills: [] }, derived).map((entry) => entry.message), [
+  assert.deepEqual(submit.backgroundBlocks(t, state, { id: "soldier", name: "Soldier", skills: [] }, derived).map((entry) => entry.message), [
     "Pick 2 more musical instruments you know how to use (tool proficiency).",
   ]);
   // No message still leads with the rule's word alone.
