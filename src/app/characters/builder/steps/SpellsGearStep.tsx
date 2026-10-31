@@ -6,6 +6,7 @@ import { SpellBook, type SpellTile } from "@/components/sheet/SpellBook";
 import { useSpellLookups, useWiderSpellPool } from "@/components/sheet/useSpellPool";
 import { GameTerm } from "@/components/ui/GameTerm";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { OWNS_ESCAPE } from "@/lib/owned-escape";
 import { ui } from "@/lib/ui";
 import { spellLevelOf } from "@/lib/srd/spell-lists";
@@ -146,6 +147,7 @@ function CasterSpells({
   klass: ClassOption;
   pack: WorldPack | null;
 }) {
+  const t = useT();
   const desks = (derived.casterDesks ?? []).filter((desk) => desk.casts);
   const keys = desks.map((desk) => desk.classId);
   const [chosen, setChosen] = useState<string | null>(null);
@@ -159,7 +161,7 @@ function CasterSpells({
     <div data-caster-tabs="">
       <div
         role="tablist"
-        aria-label="Spells by class"
+        aria-label={t("builder.spells.tabsAria")}
         className="mb-3 flex flex-wrap gap-2"
         onKeyDown={roving.onKeyDown}
         onFocus={roving.onFocus}
@@ -222,6 +224,7 @@ export function SpellsSection({
   klass: ClassOption;
   pack: WorldPack | null;
 }) {
+  const t = useT();
   const { spells, setSpells, cantrips, setCantrips, bookPrepared, setBookPrepared } = state;
   const {
     spellAdvice,
@@ -379,9 +382,7 @@ export function SpellsSection({
       if (offerSwap("cantrip", name)) {
         return;
       }
-      setLimitNote(
-        `You already know ${cantripCap} ${cantripCap === 1 ? "cantrip" : "cantrips"}. Remove one to choose ${name}.`,
-      );
+      setLimitNote(t("builder.spells.cantripCap", { count: cantripCap, name }));
       return;
     }
     setCantrips((current) => [...current, name]);
@@ -407,8 +408,8 @@ export function SpellsSection({
       }
       setLimitNote(
         wizard
-          ? `Your spellbook starts with ${cap} spells. Remove one to write in ${name}.`
-          : `You already have ${cap} ${spellAdvice?.label ?? "spells"}${limitWhy}. Remove one to choose ${name}.`,
+          ? t("builder.spells.bookCap", { count: cap, name })
+          : t("builder.spells.spellCap", { count: cap, label: spellAdvice?.label ?? t("builder.spells.spellsWord"), why: limitWhy, name }),
       );
       return;
     }
@@ -428,7 +429,7 @@ export function SpellsSection({
       if (offerSwap("prepared", name)) {
         return;
       }
-      setLimitNote(`You can prepare ${spellCap} spells${limitWhy}. Unprepare one to prepare ${name}.`);
+      setLimitNote(t("builder.spells.preparedCap", { count: spellCap, why: limitWhy, name }));
       return;
     }
     setBookPrepared((current) => [...current, name]);
@@ -467,7 +468,7 @@ export function SpellsSection({
   const listCap = wizard ? bookCap : spellCap;
   const listFull = listCap !== null && chosenSpells.length >= listCap;
   const preparedFull = spellCap !== null && chosenPrepared.length >= spellCap;
-  const listFullText = wizard ? "Spellbook full" : spellStyle === "known" ? "Known spells full" : "Prepared list full";
+  const listFullText = wizard ? t("builder.spells.bookFull") : spellStyle === "known" ? t("builder.spells.knownFull") : t("sheet.spells.preparedFull");
   // A full list with a pick of the player's in it that can make room for
   // this spell offers a swap instead (backlog F13): the tile says so and is
   // not dimmed.
@@ -481,20 +482,20 @@ export function SpellsSection({
       return undefined;
     }
     if (tileState === "inBook") {
-      return phase === "prepare" && preparedFull ? "Prepared list full" : undefined;
+      return phase === "prepare" && preparedFull ? t("sheet.spells.preparedFull") : undefined;
     }
     if (tileState !== "available") {
       return undefined;
     }
     if (level === 0) {
-      return cantripsFull ? "Cantrips full" : undefined;
+      return cantripsFull ? t("sheet.spells.cantripsFull") : undefined;
     }
     if (listFull) {
       // Picks to trade, and the two schools turn every one away: the rule
       // is what stands in the way, not the count.
-      return choicesFor("spell", name).ruledOut ? "Outside your two schools" : listFullText;
+      return choicesFor("spell", name).ruledOut ? t("sheet.spells.outsideSchools") : listFullText;
     }
-    return offSchool(name) ? "Outside your two schools" : undefined;
+    return offSchool(name) ? t("sheet.spells.outsideSchools") : undefined;
   };
 
   // Every tile: the class list from the pack, plus anything chosen or
@@ -542,11 +543,11 @@ export function SpellsSection({
         slug: row?.slug,
         homebrew: row?.source === "homebrew",
         ...(level === 0 && isRacial(name)
-          ? { note: "From your race" }
+          ? { note: t("builder.spells.fromRace") }
           : isFeat(name)
-            ? { note: "From your feat" }
+            ? { note: t("builder.spells.fromFeat") }
             : swappable
-              ? { note: "Full: tap to swap in" }
+              ? { note: t("builder.spells.fullSwap") }
               : {}),
         ...(row?.document && row.documentSlug !== "wotc-srd" ? { source: row.document } : {}),
       },
@@ -555,15 +556,15 @@ export function SpellsSection({
 
   const counters = [
     ...(cantripAdvice !== null
-      ? [{ label: "Cantrips", value: chosenCantrips.length, max: cantripAdvice }]
+      ? [{ label: t("sheet.spells.cantrips"), value: chosenCantrips.length, max: cantripAdvice }]
       : []),
     ...(wizard && spellbookAdvice !== null
-      ? [{ label: "Spellbook", value: chosenSpells.length, max: spellbookAdvice }]
+      ? [{ label: t("sheet.spells.spellbook"), value: chosenSpells.length, max: spellbookAdvice }]
       : []),
     ...(spellAdvice
       ? [
           {
-            label: spellStyle === "known" ? "Known" : "Prepared",
+            label: spellStyle === "known" ? t("sheet.spells.known") : t("sheet.spells.prepared"),
             value: wizard ? chosenPrepared.length : chosenSpells.length,
             max: spellAdvice.count,
           },
@@ -586,14 +587,14 @@ export function SpellsSection({
     spellCap: spellAdvice,
     known: spellStyle === "known",
   });
-  const listTitle = spellStyle === "known" ? "Known spells" : "Prepared";
+  const listTitle = spellStyle === "known" ? t("builder.spells.knownList") : t("sheet.spells.prepared");
   const named = (list: string[]) => list.map((name) => displayName(pack, "spells", name));
   const chosenLists = [
     ...(cantripCap !== null
-      ? [{ id: "cantrips", title: "Cantrips", count: `${chosenCantrips.length}/${cantripCap}`, names: named(chosenCantrips) }]
+      ? [{ id: "cantrips", title: t("sheet.spells.cantrips"), count: `${chosenCantrips.length}/${cantripCap}`, names: named(chosenCantrips) }]
       : []),
     ...(wizard
-      ? [{ id: "book", title: "Spellbook", count: `${chosenSpells.length}/${bookCap ?? "?"}`, names: named(chosenSpells) }]
+      ? [{ id: "book", title: t("sheet.spells.spellbook"), count: `${chosenSpells.length}/${bookCap ?? "?"}`, names: named(chosenSpells) }]
       : []),
     ...(spellAdvice
       ? [
@@ -606,7 +607,7 @@ export function SpellsSection({
         ]
       : []),
     ...(subclassSpells.length
-      ? [{ id: "granted", title: "Always prepared", count: String(subclassSpells.length), names: named(subclassSpells) }]
+      ? [{ id: "granted", title: t("sheet.spells.alwaysPrepared"), count: String(subclassSpells.length), names: named(subclassSpells) }]
       : []),
   ];
 
@@ -626,19 +627,19 @@ export function SpellsSection({
         });
   return (
     <StepPanel
-      title="Spells"
+      title={t("builder.spells.stepTitle")}
       ornate
       anchor="spells"
       help={
         <>
-          <GameTerm id="cantrip">Cantrips</GameTerm> are small spells you know for good and cast as
-          often as you like.{" "}
+          <GameTerm id="cantrip">{t("sheet.spells.cantrips")}</GameTerm>
+          {t("builder.spells.cantripIntro")}
           {spellStyle === "known"
-            ? `A ${className} knows a fixed set of spells, always ready to cast with a spell slot. You can swap one each time you level up.`
+            ? t("builder.spells.knownIntro", { class: className })
             : wizard
-              ? "A wizard writes spells in a spellbook, then prepares some of them to cast. Fill the book first, then choose what is prepared. In play you change what is prepared after a long rest."
-              : `A ${className} can prepare any spell on the ${className} list. Choose what you start with prepared; in play you change them after a long rest.`}{" "}
-          Tap a spell to choose it; ⓘ reads it first.
+              ? t("builder.spells.wizardIntro")
+              : t("builder.spells.preparedIntro", { class: className })}{" "}
+          {t("builder.spells.tapHint")}
         </>
       }
     >
@@ -651,11 +652,11 @@ export function SpellsSection({
       {wizard ? (
         // Two toggle buttons that switch what the list below does (write or
         // prepare), the same pattern as the spell level row in SpellBook.
-        <div role="group" aria-label="Spellbook step" data-pill-group className="mb-3 grid grid-cols-2 gap-1.5">
+        <div role="group" aria-label={t("builder.spells.deskAria")} data-pill-group className="mb-3 grid grid-cols-2 gap-1.5">
           {(
             [
-              ["book", "1. Write your spellbook", `${chosenSpells.length}/${spellbookAdvice ?? "?"}`],
-              ["prepare", "2. Prepare from it", `${chosenPrepared.length}/${spellAdvice?.count ?? "?"}`],
+              ["book", t("builder.spells.phaseBook"), `${chosenSpells.length}/${spellbookAdvice ?? "?"}`],
+              ["prepare", t("builder.spells.phasePrepare"), `${chosenPrepared.length}/${spellAdvice?.count ?? "?"}`],
             ] as const
           ).map(([key, label, count]) => (
             <button
@@ -690,7 +691,7 @@ export function SpellsSection({
             onClick={addSuggested}
             className="text-amber-300 underline-offset-2 hover:underline"
           >
-            Fill with the suggested spells
+            {t("builder.spells.fillSuggested")}
           </button>
         </p>
       ) : null}
@@ -714,7 +715,7 @@ export function SpellsSection({
             <SwapPrompt
               question={swapQuestion(
                 swap,
-                swap.kind === "cantrip" ? "Cantrips full" : swap.kind === "prepared" ? "Prepared list full" : listFullText,
+                swap.kind === "cantrip" ? t("sheet.spells.cantripsFull") : swap.kind === "prepared" ? t("sheet.spells.preparedFull") : listFullText,
               )}
               candidates={candidatesFor(swap.kind, swap.name)}
               into={swap.name}
@@ -726,14 +727,14 @@ export function SpellsSection({
         }
         emptyText={
           loading
-            ? "Loading the spell list..."
+            ? t("sheet.spells.loadingList")
             : wizard && phase === "prepare"
-              ? "Nothing in your spellbook at this level."
-              : "No spells at this level."
+              ? t("builder.spells.emptyBook")
+              : t("builder.spells.emptyLevel")
         }
         header={
           klass.genres ? (
-            <span className="text-stone-500">Counts follow the {spellSearchClass} list this class borrows.</span>
+            <span className="text-stone-500">{t("builder.spells.countsNote", { class: spellSearchClass })}</span>
           ) : null
         }
       />
@@ -755,6 +756,7 @@ function SpellDeskHeader({
   caps: ReturnType<typeof capLines>;
   lists: Array<{ id: string; title: string; count: string; names: string[] }>;
 }) {
+  const t = useT();
   return (
     <div data-spell-desk="" className="mb-3 space-y-2 text-xs">
       {numbers.dc || numbers.attack || numbers.slots.length ? (
@@ -769,7 +771,7 @@ function SpellDeskHeader({
           ) : null}
           {numbers.attack ? (
             <div className="flex gap-1">
-              <dt className="text-stone-400">Spell attack</dt>
+              <dt className="text-stone-400">{t("builder.spells.spellAttack")}</dt>
               <dd className="font-mono text-amber-100">{numbers.attack}</dd>
             </div>
           ) : null}
@@ -808,7 +810,7 @@ function SpellDeskHeader({
                   ))}
                 </ul>
               ) : (
-                <p className="mt-1 text-stone-500">None yet.</p>
+                <p className="mt-1 text-stone-500">{t("builder.spells.noneYet")}</p>
               )}
             </section>
           ))}
@@ -839,6 +841,7 @@ function SwapPrompt({
   onSwap: (out: string) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   return (
     <div
       role="group"
@@ -862,14 +865,14 @@ function SwapPrompt({
             key={name}
             type="button"
             onClick={() => onSwap(name)}
-            aria-label={`${label(name)}: swap out for ${label(into)}`}
+            aria-label={t("builder.spells.swapAria", { from: label(name), to: label(into) })}
             className={cn(ui.btnSmall, "pk-tap")}
           >
             {label(name)}
           </button>
         ))}
         <button type="button" onClick={onCancel} className={cn(ui.btnSmall, "pk-tap text-stone-400")}>
-          Cancel
+          {t("builder.spells.cancel")}
         </button>
       </div>
     </div>

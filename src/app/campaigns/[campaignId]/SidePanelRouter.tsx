@@ -42,6 +42,7 @@ import type { PlayerMapView } from "@/lib/battlemap/view";
 import type { MapPing } from "@/lib/dm/board-logic";
 import { companionSlotsFree, lastingCompanionBlock, resolveCompanionMode } from "@/lib/schemas/game-settings";
 import { hasHumanDm, partySlotCount } from "@/lib/dm/viewer";
+import { useT } from "@/lib/locale";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import type { MarketRequest } from "@/lib/dm/table-tabs";
 import type { LeadPanel as LeadPanelComponent } from "@/app/campaigns/[campaignId]/LeadPanel";
@@ -269,6 +270,7 @@ export function SidePanelRouter({
   directorArm,
   coordinating = false,
 }: SidePanelRouterProps) {
+  const t = useT();
   // Which section of Party and Story is showing. Local state: nothing outside
   // this panel reads or sets them.
   const [partySection, setPartySection] = useState<PartySection>("party");
@@ -291,17 +293,17 @@ export function SidePanelRouter({
   }
 
   const partySubTabs: SubTabDef<PartySection>[] = [
-    ["party", "Roster", Users],
-    ...(relationshipsEnabled ? ([["bonds", "Bonds", Heart]] as SubTabDef<PartySection>[]) : []),
-    ["factions", "Factions", Flag],
-    ["market", "Market", ShoppingBag],
+    ["party", t("table.side.roster"), Users],
+    ...(relationshipsEnabled ? ([["bonds", t("table.side.bonds"), Heart]] as SubTabDef<PartySection>[]) : []),
+    ["factions", t("table.side.factions"), Flag],
+    ["market", t("table.side.market"), ShoppingBag],
   ];
   const storySubTabs: SubTabDef<StorySection>[] = [
-    ["story", "Chapters", BookOpen],
-    ["quests", "Quests", ListChecks],
-    ["timeline", "Timeline", History],
-    ["facts", "Facts", BookMarked],
-    ["log", "Log", ScrollText],
+    ["story", t("table.side.chapters"), BookOpen],
+    ["quests", t("table.side.quests"), ListChecks],
+    ["timeline", t("table.side.timeline"), History],
+    ["facts", t("table.side.facts"), BookMarked],
+    ["log", t("table.side.log"), ScrollText],
   ];
 
   // Who is running the game, in the shape src/lib/dm/viewer.ts asks for. The

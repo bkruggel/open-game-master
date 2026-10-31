@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PIXEL_ICONS } from "@/lib/ui";
 import { PageSection, PageShell } from "@/components/PageShell";
+import { T } from "@/components/T";
 import { listDocuments } from "@/lib/content";
 import { contentPackInstalled, contentPackStale } from "@/lib/content/db";
 import { listWorldPackSummaries } from "@/lib/worlds";
@@ -26,11 +27,11 @@ export default function LicensesPage() {
     <PageShell
       icon={PIXEL_ICONS.support}
       glyph="ui-licenses"
-      title="Licenses and attribution"
-      blurb="Where the bundled rules, imported content and sounds come from."
+      title={<T k="docs.licenses.title" />}
+      blurb={<T k="docs.licenses.blurb" />}
       actions={
         <Link href="/" className="text-sm text-amber-200 hover:text-amber-100">
-          Back to Open Game Master
+          <T k="docs.back" />
         </Link>
       }
     >
@@ -79,7 +80,7 @@ export default function LicensesPage() {
       </PageSection>
 
       {documents.length ? (
-        <PageSection heading="Imported source documents">
+        <PageSection heading={<T k="docs.licenses.sources" />}>
           <ul className="mt-4 space-y-3">
             {documents.map((document) => (
               <li
@@ -110,7 +111,7 @@ export default function LicensesPage() {
       ) : null}
 
       {worldPacks.length ? (
-        <PageSection heading="Campaign plugins">
+        <PageSection heading={<T k="docs.licenses.plugins" />}>
           <p className="text-sm leading-6 text-stone-400">
             World packs rename existing SRD races, classes, spells, items and monsters to fit a
             setting. No rule and no stat block is changed.
@@ -127,7 +128,7 @@ export default function LicensesPage() {
       ) : null}
 
       {ambience.length ? (
-        <PageSection heading="Sound library">
+        <PageSection heading={<T k="docs.licenses.sound" />}>
           <p className="text-sm leading-6 text-stone-400">
             Each ambience and music file on this server is credited below as it arrived: made
             here with a music model, carried in the release&apos;s sound pack, supplied by the

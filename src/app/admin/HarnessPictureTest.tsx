@@ -3,6 +3,8 @@
 import { Check, ImageIcon, Loader2, Minus, Wand2, X } from "lucide-react";
 import { useState } from "react";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 
 // The agent program's picture test, painted the way the tables paint
 // (src/lib/harness/picture-test.ts): the tables' own picture door and queue,
@@ -15,24 +17,28 @@ type CampaignRow = { id: string; title: string; kind: string; backend: string; p
 type Result = { image?: { url: string }; stages?: Stage[]; campaigns?: CampaignRow[]; wouldMove?: number; error?: string };
 type Moved = { id: string; title: string; from: string; mapsTurnedOn: boolean };
 
-const STAGE_LABELS: Record<string, string> = {
-  painted: "Painted a location map through the tables' picture queue",
-  saved: "Saved where the table is sent it",
-  shape: "Came back in the map's landscape shape",
+const STAGE_KEYS: Record<string, MessageKey> = {
+  painted: "admin.harness.stage.painted",
+  saved: "admin.harness.stage.saved",
+  shape: "admin.harness.stage.shape",
 };
 const STAGE_ORDER = ["painted", "saved", "shape"];
 
-const BACKEND_NAMES: Record<string, string> = {
-  comfyui: "ComfyUI",
-  openai: "OpenAI",
-  "mflux-hs": "the FLUX worker",
-  "sdnq-hs": "the FLUX worker",
-  harness: "the agent",
+// Backend names that need the table's language; ComfyUI and OpenAI are the
+// same words everywhere.
+const BACKEND_KEYS: Record<string, MessageKey> = {
+  "mflux-hs": "admin.harness.backend.flux",
+  "sdnq-hs": "admin.harness.backend.flux",
+  harness: "admin.harness.backend.harness",
 };
 
-function names(rows: Array<{ title: string }>): string {
+function backendName(t: (key: string) => string, backend: string): string {
+  return BACKEND_KEYS[backend] ? t(BACKEND_KEYS[backend]) : backend;
+}
+
+function names(t: (key: string, vars?: Record<string, string | number>) => string, rows: Array<{ title: string }>): string {
   const titles = rows.map((row) => row.title);
-  return titles.length > 3 ? `${titles.slice(0, 3).join(", ")} and ${titles.length - 3} more` : titles.join(", ");
+  return titles.length > 3 ? t("admin.harness.andMore", { list: titles.slice(0, 3).join(", "), count: titles.length - 3 }) : titles.join(", ");
 }
 
 export function HarnessPictureTest({
@@ -52,6 +58,7 @@ export function HarnessPictureTest({
   onVerified: () => void;
   onAdopted?: () => void;
 }) {
+  const t = useT();
   const [painting, setPainting] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [adopting, setAdopting] = useState(false);
@@ -69,12 +76,12 @@ export function HarnessPictureTest({
         body: JSON.stringify({ action: "picture" }),
       });
       const data = (await response.json().catch(() => ({}))) as Result;
-      setResult(response.ok && data.image ? data : { ...data, error: data.error ?? "No picture came back." });
+      setResult(response.ok && data.image ? data : { ...data, error: data.error ?? t("admin.harness.noPicture") });
       if (response.ok && data.image) {
         onVerified();
       }
     } catch {
-      setResult({ error: "Could not reach the server." });
+      setResult({ error: t("setup.unreachable") });
     } finally {
       setPainting(false);
     }
@@ -91,13 +98,13 @@ export function HarnessPictureTest({
       });
       const data = (await response.json().catch(() => ({}))) as { moved?: Moved[]; error?: string };
       if (!response.ok) {
-        setAdoptError(data.error ?? "Could not switch the tables over.");
+        setAdoptError(data.error ?? t("admin.harness.adoptFailed"));
         return;
       }
       setMoved(data.moved ?? []);
       onAdopted?.();
     } catch {
-      setAdoptError("Could not reach the server.");
+      setAdoptError(t("setup.unreachable"));
     } finally {
       setAdopting(false);
     }
@@ -117,10 +124,10 @@ export function HarnessPictureTest({
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className={ui.btnSmall} onClick={paint} disabled={!saved || painting} aria-busy={painting}>
           {painting ? <Loader2 className="size-4 animate-spin" /> : <ImageIcon className="size-4" />}
-          {picturesVerified ? "Paint another test picture" : "Paint a test picture"}
+          {picturesVerified ? t("admin.harness.paintAgain") : t("admin.harness.paint")}
         </button>
         <span className="text-xs text-stone-500">
-          Paints one location map exactly the way a table asks for one, then checks which campaigns will use it. About a minute.
+          {t("admin.harness.paintNote")}
         </span>
       </div>
 
@@ -143,7 +150,7 @@ export function HarnessPictureTest({
                 </span>
                 <span>
                   <span className={state === "bad" ? "text-red-300" : state === "ok" ? "text-stone-200" : "text-stone-500"}>
-                    {STAGE_LABELS[stage.id] ?? stage.id}
+                    {STAGE_KEYS[stage.id] ? t(STAGE_KEYS[stage.id]) : stage.id}
                   </span>
                   {stage.detail ? <span className="block text-xs text-stone-500">{stage.detail}</span> : null}
                 </span>
@@ -154,10 +161,10 @@ export function HarnessPictureTest({
       ) : null}
 
       {painting ? (
-        <div className="hx-picture breathe aspect-[3/2] bg-stone-900" aria-label="Painting" />
+        <div className="hx-picture breathe aspect-[3/2] bg-stone-900" aria-label={t("admin.harness.paintingAria")} />
       ) : result?.image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img key={result.image.url} src={result.image.url} alt="The test map" className="hx-picture aspect-[3/2]" />
+        <img key={result.image.url} src={result.image.url} alt={t("admin.harness.testMapAlt")} className="hx-picture aspect-[3/2]" />
       ) : null}
 
       {result && !passed && result.error ? (
@@ -172,40 +179,48 @@ export function HarnessPictureTest({
             <p role="status" className="flex items-start gap-1.5 text-emerald-400">
               <Check className="tick-in mt-0.5 size-4 shrink-0" />
               <span>
-                Painting for the tables now.
+                {t("admin.harness.paintsWay")}
                 {moved.length
-                  ? ` Moved ${moved.length} ${moved.length === 1 ? "campaign" : "campaigns"} off a backend that could not paint: ${names(moved)}${moved.some((row) => row.mapsTurnedOn) ? ", with their area maps switched back on" : ""}.`
+                  ? t("admin.harness.moved", {
+                      count: moved.length,
+                      list: names(t, moved),
+                      maps: moved.some((row) => row.mapsTurnedOn) ? t("admin.harness.mapsOn") : "",
+                    })
                   : ""}
               </span>
             </p>
           ) : !offerAdopt ? (
             <p className="text-stone-300">
-              It paints the way the tables ask.
+              {t("admin.harness.paintsWay")}
               {stranded.length
-                ? ` Continue, and ${stranded.length === 1 ? "the campaign" : `the ${stranded.length} campaigns`} on a backend that cannot paint right now (${names(stranded)}) move${stranded.length === 1 ? "s" : ""} to it too.`
-                : " Continue to use it for the tables' pictures."}
+                ? t("admin.harness.continueStranded", { count: stranded.length, list: names(t, stranded) })
+                : t("admin.harness.continuePlain")}
             </p>
           ) : picturesForTables ? (
             <p className="text-stone-300">
-              The tables already paint with it{onAgent.length ? `: ${onAgent.length} ${onAgent.length === 1 ? "campaign" : "campaigns"}` : ""}.
+              {t("admin.harness.already", {
+                list: onAgent.length ? t("admin.harness.alreadyList", { count: onAgent.length }) : "",
+              })}
             </p>
           ) : (
             <div className="su-note space-y-2">
               <p>
-                It paints, but no table uses it yet.
+                {t("admin.harness.notUsed")}
                 {stranded.length
-                  ? ` ${stranded.length} ${stranded.length === 1 ? "campaign is" : "campaigns are"} on a backend that cannot paint right now (${names(stranded)}); ${stranded.length === 1 ? "it moves" : "they move"} to the agent too.`
+                  ? t("admin.harness.stranded", { count: stranded.length, list: names(t, stranded) })
                   : ""}
               </p>
               <button type="button" className={ui.btnSecondary} onClick={adopt} disabled={adopting} aria-busy={adopting}>
-                {adopting ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />} Paint the tables&apos; pictures with it
+                {adopting ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />} {t("admin.harness.adopt")}
               </button>
             </div>
           )}
           {keeping.length ? (
             <p className="text-xs text-stone-500">
-              {keeping.length === 1 ? "1 campaign keeps its own working backend" : `${keeping.length} campaigns keep their own working backends`} (
-              {[...new Set(keeping.map((row) => BACKEND_NAMES[row.backend] ?? row.backend))].join(", ")}); a lead can switch in the campaign&apos;s Settings tab, under Story AI.
+              {t("admin.harness.keeping", {
+                count: keeping.length,
+                list: [...new Set(keeping.map((row) => backendName(t, row.backend)))].join(", "),
+              })}
             </p>
           ) : null}
           {adoptError ? (

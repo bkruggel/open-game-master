@@ -13,7 +13,7 @@ import { contentSlug, describeFeature } from "@/lib/help";
 import { useClassFeatureText } from "@/lib/classes/use-feature-text";
 import { ABILITIES } from "@/lib/schemas/sheet";
 import { formatModifier, skillLabel, SRD_SKILLS } from "@/lib/srd";
-import { useLocale } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { wearingIsExplicit } from "@/lib/srd/armor";
 import { oneOfKind, wornButIdle } from "@/lib/srd/wear-slots";
 import { rowName, srdNameWithBonus } from "@/lib/srd/item-row";
@@ -27,13 +27,15 @@ import { rowName, srdNameWithBonus } from "@/lib/srd/item-row";
 
 type Ability = (typeof ABILITIES)[number];
 
-const ABILITY_NAMES: Record<Ability, string> = {
-  str: "Strength",
-  dex: "Dexterity",
-  con: "Constitution",
-  int: "Intelligence",
-  wis: "Wisdom",
-  cha: "Charisma",
+// The abilities' names as message keys (sheet.ability.*), read with the
+// component's own translator; the tile's eyebrow keeps the short code.
+const ABILITY_KEYS: Record<Ability, string> = {
+  str: "sheet.ability.str",
+  dex: "sheet.ability.dex",
+  con: "sheet.ability.con",
+  int: "sheet.ability.int",
+  wis: "sheet.ability.wis",
+  cha: "sheet.ability.cha",
 };
 
 // How a score reads at a glance: a weakness is dim, an ordinary score plain,
@@ -111,6 +113,7 @@ export function AbilityTiles({
   saveProficiencies?: string[];
   explainSave?: (ability: Ability) => string;
 }) {
+  const t = useT();
   return (
     <div className="stagger-up grid grid-cols-3 gap-2 sm:grid-cols-6">
       {ABILITIES.map((ability, index) => {
@@ -121,7 +124,7 @@ export function AbilityTiles({
             className="sheet-ability motion-card"
             data-tier={scoreTier(abilities[ability])}
             style={{ animationDelay: `${index * 45}ms` }}
-            title={ABILITY_NAMES[ability]}
+            title={t(ABILITY_KEYS[ability])}
           >
             <GameIcon icon={{ kind: "glyph", key: `ability-${ability}` }} size="size-9" className="mx-auto" />
             <p className="eyebrow mt-1 text-[10px] text-stone-400">{ability}</p>
@@ -133,7 +136,7 @@ export function AbilityTiles({
                 title={explainSave ? explainSave(ability) : undefined}
               >
                 <span className={cn("sheet-pip", proficient && "sheet-pip-on")} aria-hidden="true" />
-                Save {formatModifier(saves[ability])}
+                {t("sheet.save", { mod: formatModifier(saves[ability]) })}
               </p>
             ) : null}
           </div>
@@ -211,10 +214,14 @@ export function HpBar({
   // Why the maximum is not the sheet's own (exhaustion, an item).
   note?: string | null;
 }) {
+  const t = useT();
   const span = Math.max(1, max + temp);
   const width = (value: number) => `${Math.max(0, Math.min(100, (value / span) * 100))}%`;
   return (
-    <div className="sheet-hp" title={`${current}${temp ? ` +${temp} temporary` : ""} of ${max} hit points${note ? `. ${note}` : ""}`}>
+    <div
+      className="sheet-hp"
+      title={`${current}${temp ? ` ${t("sheet.hp.temp", { temp })}` : ""} ${t("sheet.hp.ofMax", { max })}${note ? `. ${note}` : ""}`}
+    >
       <GameIcon icon={{ kind: "glyph", key: "rest-hp" }} size="size-7" />
       <div className="min-w-0 grow">
         <div className="flex items-baseline justify-between gap-2">
@@ -251,20 +258,21 @@ export function TrainingLines({
 }: {
   proficiencies: { languages: string[]; tools: string[]; armor: string[]; weapons: string[] };
 }) {
+  const t = useT();
   const nice = (value: string) =>
     value.replace(/[-_]/g, " ").replace(/(^|\s|')([a-z])/g, (_, before: string, letter: string) => `${before}${letter.toUpperCase()}`);
   const rows: Array<[string, string[]]> = [
-    ["Languages", proficiencies.languages],
-    ["Tools", proficiencies.tools],
-    ["Armor", proficiencies.armor],
-    ["Weapons", proficiencies.weapons],
+    [t("sheet.training.languages"), proficiencies.languages],
+    [t("sheet.training.tools"), proficiencies.tools],
+    [t("sheet.training.armor"), proficiencies.armor],
+    [t("sheet.training.weapons"), proficiencies.weapons],
   ];
   return (
     <dl className="stagger-up grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
       {rows.map(([label, values]) => (
         <div key={label} className="contents">
           <dt className="text-stone-500">{label}</dt>
-          <dd className="text-stone-200">{values.length ? [...new Set(values.map(nice))].join(", ") : <span className="text-stone-600">none</span>}</dd>
+          <dd className="text-stone-200">{values.length ? [...new Set(values.map(nice))].join(", ") : <span className="text-stone-600">{t("sheet.training.none")}</span>}</dd>
         </div>
       ))}
     </dl>
@@ -313,12 +321,13 @@ export function EquipmentChips({
 }) {
   // A worn second cloak (or pair of boots...) is marked as not in effect
   // (src/lib/srd/wear-slots.ts); one the DM let stand beside another says so.
+  const t = useT();
   const explicit = wearingIsExplicit(equipment);
   const wornNote = (item: (typeof equipment)[number]) => {
     const idle = explicit ? wornButIdle(item, equipment) : null;
-    if (idle) return `worn, not in effect: ${oneOfKind(idle) ?? "one of its kind"} at a time`;
-    if (item.equipped && item.layered) return "worn beside another, on the GM's say";
-    return item.equipped ? "worn" : null;
+    if (idle) return t("sheet.gear.idleNote", { kind: oneOfKind(idle) ?? t("sheet.training.none") });
+    if (item.equipped && item.layered) return t("sheet.gear.layeredNote");
+    return item.equipped ? t("sheet.gear.worn") : null;
   };
   return (
     <InfoChipList
@@ -328,7 +337,7 @@ export function EquipmentChips({
         note:
           [
             wornNote(item),
-            item.attuned ? "attuned" : item.attuning ? "attunes at the next rest" : null,
+            item.attuned ? t("sheet.gear.attuned") : item.attuning ? t("sheet.gear.attuning") : null,
             extra?.(index) ?? null,
           ]
             .filter(Boolean)
@@ -351,14 +360,15 @@ export function FeatureChips({
   subclass?: string | null;
 }) {
   // A genre class's feature text arrives on demand (issue 411).
+  const t = useT();
   useClassFeatureText([classId, ...features.map((feature) => feature.classId)]);
   return (
     <InfoChipList
       items={features.map((feature) => ({
         name: feature.name,
         icon: { kind: "feature" as const, key: feature.name, family: `class-${classId.toLowerCase()}` },
-        note: feature.source === "story" ? "(story)" : undefined,
-        meta: feature.level ? `Level ${feature.level}` : undefined,
+        note: feature.source === "story" ? t("sheet.featureStory") : undefined,
+        meta: feature.level ? t("sheet.featureLevel", { level: feature.level }) : undefined,
         text: describeFeature(classId, subclass ?? "", feature.name) ?? undefined,
       }))}
     />

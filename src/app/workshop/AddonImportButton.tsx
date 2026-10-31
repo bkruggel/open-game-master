@@ -14,6 +14,7 @@ import { useAddons } from "@/lib/addons/use-addons";
 import { cn } from "@/lib/cn";
 import { navigateTo } from "@/lib/navigation";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 
 // A workshop made by an addon: a rulebook PDF read by a PDF importer, a
 // file of stat blocks, anything an installed importer reads. Shown only
@@ -31,12 +32,13 @@ type Stage =
   | { step: "preview"; task: TaskView; preview: BundlePreviewData };
 
 export function AddonImportButton({
-  label = "Import with an addon",
+  label,
   className = ui.btnSecondary,
 }: {
   label?: string;
   className?: string;
 } = {}) {
+  const t = useT();
   const { workshopImporters } = useAddons();
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState("");
@@ -76,13 +78,13 @@ export function AddonImportButton({
     const current = await followTask(task, (update) => setStage({ step: "run", task: update }), () => live.current);
     if (!current) {
       if (live.current) {
-        setError("Lost track of the run. Try again.");
+        setError(t("workshop.addonImport.lost"));
         setStage({ step: "pick" });
       }
       return;
     }
     if (current.status !== "done") {
-      setError(current.error || "The addon did not finish.");
+      setError(current.error || t("workshop.addonImport.notFinished"));
       setStage({ step: "pick" });
       return;
     }
@@ -93,7 +95,7 @@ export function AddonImportButton({
     }).catch(() => null);
     const preview = response ? await response.json().catch(() => ({})) : {};
     if (!response?.ok) {
-      setError(preview.error ?? "The workshop the addon made could not be read.");
+      setError(preview.error ?? t("workshop.addonImport.previewFailed"));
       setStage({ step: "pick" });
       return;
     }
@@ -106,7 +108,7 @@ export function AddonImportButton({
     if (!file) return;
     setError("");
     if (file.size > importer.maxInputMB * 1024 * 1024) {
-      setError(`${importer.title} takes files up to ${importer.maxInputMB} MB.`);
+      setError(t("workshop.addonImport.tooBig", { name: importer.title, limit: importer.maxInputMB }));
       return;
     }
     setStage({ step: "upload", sent: 0, size: file.size });
@@ -131,7 +133,7 @@ export function AddonImportButton({
     }).catch(() => null);
     const data = response ? await response.json().catch(() => ({})) : {};
     if (!response?.ok) {
-      setError(data.error ?? "The addon could not start.");
+      setError(data.error ?? t("workshop.addonImport.startFailed"));
       setStage({ step: "pick" });
       return;
     }
@@ -153,18 +155,18 @@ export function AddonImportButton({
     }).catch(() => null);
     const data = response ? await response.json().catch(() => ({})) : {};
     if (!response?.ok) {
-      setError(data.error ?? "That workshop could not be imported.");
+      setError(data.error ?? t("workshop.addonImport.importFailed"));
       setBusy(false);
       return;
     }
     const shelf = (data as { shelf?: { renamed?: string[]; refused?: string[] } }).shelf;
     const renamed = (shelf?.renamed ?? []).filter(Boolean);
     if (renamed.length) {
-      await appNotice(`${renamed.join(" ")} The new workshop's Cast, fights and pregens use these names; your other workshops are unchanged.`, "Kept beside your own");
+      await appNotice(t("workshop.import.keptBody", { list: renamed.join(" ") }), t("workshop.import.keptTitle"));
     }
     const refused = (shelf?.refused ?? []).filter(Boolean);
     if (refused.length) {
-      await appNotice(`${refused.join(" ")} The rest of the workshop came in without ${refused.length === 1 ? "it" : "them"}.`, "Left out");
+      await appNotice(t("workshop.import.leftOutBody", { count: refused.length, list: refused.join(" ") }), t("workshop.import.leftOutTitle"));
     }
     navigateTo(`/workshop/${data.workshopId}`);
   }
@@ -181,26 +183,26 @@ export function AddonImportButton({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className={className}
-        title="Read a file into a new workshop with an addon this server has"
+        title={t("workshop.addonImport.title")}
       >
         <Puzzle className="size-4" />
-        {label}
+        {label ?? t("workshop.addonImport.open")}
       </button>
 
       {open ? (
         <div className={cn(ui.card, "reveal mt-3 p-4")}>
           <SectionHead
-            title="Import with an addon"
+            title={t("workshop.addonImport.heading")}
             glyph="system-plugin"
             aside={
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className={ui.iconAction}>
+              <button type="button" onClick={() => setOpen(false)} aria-label={t("action.close")} className={ui.iconAction}>
                 <X className="size-4" />
               </button>
             }
           />
           {workshopImporters.length > 1 ? (
             <Select
-              label="Importer"
+              label={t("workshop.addonImport.importer")}
               value={key(importer)}
               onChange={choose}
               disabled={working}
@@ -213,7 +215,7 @@ export function AddonImportButton({
           )}
           {importer.description ? <p className="mt-1 text-xs text-stone-400">{importer.description}</p> : null}
           <p className="mt-1 text-[11px] text-stone-500">
-            Reads {importer.accepts.filter((entry) => entry.startsWith(".")).join(", ") || importer.accepts.join(", ")} files up to {importer.maxInputMB} MB.
+            {t("workshop.addonImport.reads", { formats: importer.accepts.filter((entry) => entry.startsWith(".")).join(", ") || importer.accepts.join(", "), limit: importer.maxInputMB })}
           </p>
 
           {importer.options.length && stage.step === "pick" ? (
@@ -244,7 +246,7 @@ export function AddonImportButton({
               />
               <button type="button" onClick={() => fileInput.current?.click()} className={ui.btnPrimary}>
                 <Upload className="size-4" />
-                Choose a file
+                {t("workshop.addonImport.chooseFile")}
               </button>
             </div>
           ) : null}
@@ -260,12 +262,12 @@ export function AddonImportButton({
               <p className="flex items-center gap-2 text-xs text-stone-300">
                 <Loader2 className="size-3.5 animate-spin" />
                 {stage.step === "upload"
-                  ? `Sending the file: ${Math.round(stage.sent / 1024 / 1024)} of ${Math.max(1, Math.round(stage.size / 1024 / 1024))} MB`
-                  : stage.task.progress.message || "Reading"}
+                  ? t("workshop.addonImport.sending", { sent: Math.round(stage.sent / 1024 / 1024), total: Math.max(1, Math.round(stage.size / 1024 / 1024)) })
+                  : stage.task.progress.message || t("workshop.addonImport.reading")}
               </p>
               {stage.step === "run" ? (
                 <button type="button" onClick={() => void cancel()} className={cn(ui.btnSmall, "text-xs")}>
-                  Stop it
+                  {t("workshop.addonImport.stop")}
                 </button>
               ) : null}
             </div>

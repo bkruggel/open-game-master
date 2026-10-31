@@ -4,16 +4,18 @@ import { Check, Loader2, Minus, PlayCircle, X } from "lucide-react";
 import { useState } from "react";
 import { ui } from "@/lib/ui";
 import { HarnessPictureTest } from "@/app/admin/HarnessPictureTest";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 
 type Stage = { id: string; ok: boolean | null; detail?: string };
 
-const STAGE_LABELS: Record<string, string> = {
-  found: "Found on this machine",
-  signedIn: "Signed in",
-  handshake: "Connected to the table's engine",
-  toolCall: "Called a rule and used its answer",
-  lockdown: "Kept to the table's tools only",
-  streaming: "Streamed its reply",
+const STAGE_KEYS: Record<string, MessageKey> = {
+  found: "admin.harness.stage.found",
+  signedIn: "admin.harness.stage.signedIn",
+  handshake: "admin.harness.stage.handshake",
+  toolCall: "admin.harness.stage.toolCall",
+  lockdown: "admin.harness.stage.lockdown",
+  streaming: "admin.harness.stage.streaming",
 };
 
 const STAGE_ORDER = ["found", "signedIn", "handshake", "toolCall", "lockdown", "streaming"];
@@ -39,6 +41,7 @@ export function HarnessTestPanel({
   onVerified: () => void;
   onAdopted?: () => void;
 }) {
+  const t = useT();
   const [testing, setTesting] = useState(false);
   const [stages, setStages] = useState<Stage[] | null>(null);
   const [error, setError] = useState("");
@@ -55,13 +58,13 @@ export function HarnessTestPanel({
       });
       const data = (await response.json().catch(() => ({}))) as { stages?: Stage[]; error?: string };
       if (!response.ok || !data.stages) {
-        setError(data.error ?? "The test could not run.");
+        setError(data.error ?? t("admin.harness.couldNotRun"));
         setStages(null);
         return;
       }
       setStages(data.stages);
     } catch {
-      setError("Could not reach the server.");
+      setError(t("setup.unreachable"));
       setStages(null);
     } finally {
       setTesting(false);
@@ -82,12 +85,12 @@ export function HarnessTestPanel({
           aria-busy={testing}
         >
           {testing ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
-          Test the table
+          {t("admin.harness.test")}
         </button>
         <span className="text-xs text-stone-500">
           {saved
-            ? "Runs one tiny real turn: start, connect, call a rule, answer. Uses a little of the plan."
-            : "Save the choice first; the test runs the program the tables will use."}
+            ? t("admin.harness.testNote")
+            : t("admin.harness.saveFirst")}
         </span>
       </div>
 
@@ -115,7 +118,7 @@ export function HarnessTestPanel({
                 </span>
                 <span>
                   <span className={state === "bad" ? "text-red-300" : state === "ok" ? "text-stone-200" : "text-stone-500"}>
-                    {STAGE_LABELS[stage.id] ?? stage.id}
+                    {STAGE_KEYS[stage.id] ? t(STAGE_KEYS[stage.id]) : stage.id}
                   </span>
                   {stage.detail ? (
                     <span className="block text-xs text-stone-500">{stage.detail}</span>
@@ -128,11 +131,11 @@ export function HarnessTestPanel({
       ) : null}
       {passed ? (
         <p role="status" className="inline-flex items-center gap-1 text-sm text-emerald-400">
-          <Check className="tick-in size-4" /> Ready to run a table.
+          <Check className="tick-in size-4" /> {t("admin.harness.ready")}
         </p>
       ) : failed && !testing ? (
         <p role="alert" className="motion-shake text-sm text-red-400">
-          {failed.detail ?? "The test stopped at the step marked above."}
+          {failed.detail ?? t("admin.harness.stoppedAt")}
         </p>
       ) : null}
       {error ? (

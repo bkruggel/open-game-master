@@ -12,6 +12,7 @@ import { lineageCard } from "../cardFaces";
 import { flattenGroups, lineageArt, srdRaceFor } from "../lineage";
 import { lineageFits } from "../lineageFits";
 import { SRD_CLASSES } from "@/lib/srd";
+import { useT } from "@/lib/locale";
 import type { CardFacet } from "../OptionCardGrid";
 import type { Ability } from "@/lib/schemas/sheet";
 import { OptionCardGrid, type OptionCardGroup } from "../OptionCardGrid";
@@ -24,22 +25,26 @@ import type { BuilderState } from "../useBuilderState";
 import { bonusLanguageCount } from "../submit";
 import { StepPanel, inputClass } from "./shared";
 
-function languageHelp(race: RaceOption, background: BackgroundOption | undefined): string {
-  const parts = [`${race.name} speaks ${race.languages.join(" and ")}`];
+function languageHelp(t: (key: string, vars?: Record<string, string | number>) => string, race: RaceOption, background: BackgroundOption | undefined): string {
+  const parts = [t("builder.ancestry.speaks", { race: race.name, langs: race.languages.join(" and ") })];
   const choice = race.languageChoice;
   const open = race.bonusLanguages - (choice?.count ?? 0);
   if (choice) {
-    parts.push(`plus ${choice.count === 1 ? "one" : choice.count} of ${choice.from.join(", ")}`);
+    parts.push(t(choice.count === 1 ? "builder.ancestry.choiceOne" : "builder.ancestry.choiceMany", { count: choice.count, from: choice.from.join(", ") }));
   }
   if (open > 0) {
-    parts.push(`${choice ? "and" : "plus"} ${open} of your choice`);
+    parts.push(t("builder.ancestry.openChoice", { join: choice ? t("builder.ancestry.and") : t("builder.ancestry.plus"), count: open }));
   }
   if (background?.knownLanguages?.length) {
-    parts.push(`and ${background.knownLanguages.join(" and ")} from your ${background.name} background`);
+    parts.push(t("builder.ancestry.backgroundLangs", { langs: background.knownLanguages.join(" and "), background: background.name }));
   }
   if (background?.languages) {
     parts.push(
-      `${race.bonusLanguages > 0 ? "and" : "plus"} ${background.languages} more from your ${background.name} background`,
+      t("builder.ancestry.moreLangs", {
+        join: race.bonusLanguages > 0 ? t("builder.ancestry.and") : t("builder.ancestry.plus"),
+        count: background.languages,
+        background: background.name,
+      }),
     );
   }
   return `${parts.join(" ")}.`;
@@ -77,6 +82,7 @@ export function AncestryStep({
   const languageCount = bonusLanguageCount(race, background);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const { gender } = state;
+  const t = useT();
 
   // One slide per picker row, in the picker's order, so the carousel walks
   // exactly what the grid shows.
@@ -97,36 +103,24 @@ export function AncestryStep({
       })),
     [raceGroups, slides],
   );
-  const facets = useMemo(() => raceFacets(slides), [slides]);
+  const facets = useMemo(() => raceFacets(t, slides), [t, slides]);
 
   return (
     <div className="space-y-4">
       <StepPanel
-        title="Where are they from?"
+        title={t("builder.ancestry.title")}
         ornate
         anchor="race"
-        help={
-          race
-            ? `${race.name} is chosen. Every lineage grants its own ability bumps, senses and tongues: tap a card to choose it, or its ? to read what it hands you first.`
-            : "Tap a card to choose a lineage, or its ? to read what it hands you first."
-        }
+        help={race ? t("builder.ancestry.helpChosen", { race: race.name }) : t("builder.ancestry.helpEmpty")}
       >
         {state.revisedSpecies ? (
           <p role="note" className="mb-3 rounded border border-amber-700/40 bg-amber-950/30 p-2 text-xs text-amber-100">
             {race ? (
-              <>
-                This character was made with the 2024 rules&rsquo; {race.name}. This server plays the 2014 rules, so they now
-                have the 2014 {race.name}&rsquo;s traits, and their ability scores stay as they were. Save to keep it, or
-                choose another lineage.
-              </>
+              t("builder.ancestry.revisedKnown", { race: race.name })
             ) : (
               // A content pack that offers no such lineage: its id, written
               // as a name, and the pick it now owes.
-              <>
-                This character was made with the 2024 rules&rsquo; {speciesWords(state.revisedSpecies)}. This server plays
-                the 2014 rules and offers no 2014 {speciesWords(state.revisedSpecies)} here, so choose a lineage below; their
-                ability scores stay as they were.
-              </>
+              t("builder.ancestry.revisedUnknown", { species: speciesWords(state.revisedSpecies) })
             )}
           </p>
         ) : null}
@@ -169,16 +163,14 @@ export function AncestryStep({
         <StepPanel
           title={
             <span className="flex items-center gap-1">
-              Bonus {languageCount === 1 ? "language" : "languages"}
+              {t("builder.ancestry.bonusLang", { count: languageCount })}
               <InfoButton
-                label="Languages"
-                text={
-                  "A language you know is one you can speak, read and write. It decides who your character can talk to without help, and it comes up more than new players expect: half the trouble in a dungeon is written on a wall.\n\nCommon is the trade tongue everyone shares. The rest are the tongues of particular peoples: Dwarvish, Elvish, Orc, Draconic and so on. Pick whatever fits where your character grew up, or whoever you expect to be negotiating with."
-                }
+                label={t("sheet.training.languages")}
+                text={t("builder.ancestry.languagesInfo")}
               />
             </span>
           }
-          help={languageHelp(race, background)}
+          help={languageHelp(t, race, background)}
           anchor="languages"
         >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -194,10 +186,10 @@ export function AncestryStep({
                   })
                 }
                 className="w-full"
-                label={`Bonus language ${index + 1}`}
-                placeholder="Choose a language..."
+                label={t("builder.ancestry.bonusLanguageN", { n: index + 1 })}
+                placeholder={t("builder.ancestry.chooseLanguage")}
                 options={[
-                  { value: "", label: "Choose a language..." },
+                  { value: "", label: t("builder.ancestry.chooseLanguage") },
                   // A race that offers "your choice of Common or Undercommon"
                   // fills its first slots from that list only.
                   ...(race.languageChoice && index < race.languageChoice.count
@@ -283,7 +275,7 @@ const ABILITY_WORDS: Array<[Ability, string]> = [
 // its size and its book. Each offers only the values some lineage has. A
 // lineage whose bumps are the player's to place raises anything they like
 // and suits any class.
-function raceFacets(slides: LineageSlide[]): CardFacet[] {
+function raceFacets(t: (key: string, vars?: Record<string, string | number>) => string, slides: LineageSlide[]): CardFacet[] {
   const byId = new Map(slides.map((slide) => [slide.id, slide]));
   const sizeOf = (id: string) => srdRaceFor(id)?.size ?? "";
   const bookOf = (slide: LineageSlide) => slide.source || "Core rules";
@@ -292,7 +284,7 @@ function raceFacets(slides: LineageSlide[]): CardFacet[] {
   return [
     {
       key: "raises",
-      label: "Raises",
+      label: t("builder.ancestry.facetRaises"),
       options: ABILITY_WORDS.map(([value, label]) => ({ value, label })),
       test: (id, ability) => {
         const slide = byId.get(id);
@@ -301,7 +293,7 @@ function raceFacets(slides: LineageSlide[]): CardFacet[] {
     },
     {
       key: "suits",
-      label: "Good for",
+      label: t("builder.ancestry.facetSuits"),
       options: SRD_CLASSES.map((klass) => ({ value: klass.name, label: klass.name })),
       test: (id, className) => {
         const slide = byId.get(id);
@@ -310,10 +302,10 @@ function raceFacets(slides: LineageSlide[]): CardFacet[] {
       },
     },
     ...(sizes.length > 1
-      ? [{ key: "size", label: "Size", options: sizes.map((size) => ({ value: size, label: size })), test: (id: string, size: string) => sizeOf(id) === size }]
+      ? [{ key: "size", label: t("builder.ancestry.facetSize"), options: sizes.map((size) => ({ value: size, label: size })), test: (id: string, size: string) => sizeOf(id) === size }]
       : []),
     ...(books.length > 1
-      ? [{ key: "book", label: "Book", options: books.map((book) => ({ value: book, label: book })), test: (id: string, book: string) => { const slide = byId.get(id); return Boolean(slide && bookOf(slide) === book); } }]
+      ? [{ key: "book", label: t("builder.ancestry.facetBook"), options: books.map((book) => ({ value: book, label: book })), test: (id: string, book: string) => { const slide = byId.get(id); return Boolean(slide && bookOf(slide) === book); } }]
       : []),
   ];
 }

@@ -28,6 +28,8 @@ const { OPEN_HAND_CHOICES, OPEN_HAND_NOT_FLURRY } = await import("../src/lib/dm/
 const { inspiredRoll } = await import("../src/lib/dm/pending-inspiration.ts");
 const { spellMechFor } = await import("../src/lib/srd/spell-mechanics.ts");
 const { counterView, otherSpeedsLine } = await import("../src/components/sheet/sheet-state.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+const t = (key, vars) => translate("en", key, vars);
 const { COMBAT_ADJUDICATIONS } = await import("../src/lib/dm/catalog-combat.ts");
 
 let passed = 0;
@@ -340,15 +342,15 @@ test("a thief's second round-1 turn is its own row: keyed by position, the point
 // ---- the sheet ----
 
 test("the sheet reads an uncapped counter as uses since its rest and offers no minus for a passive one", () => {
-  const over = counterView("overchannel", { max: 99, used: 2 });
+  const over = counterView(t, "overchannel", { max: 99, used: 2 });
   assert.equal(over.line, "used 2 times since a long rest");
   assert.equal(over.spendable, false);
-  const signature = counterView("signature_spell_1", { max: 1, used: 0 });
+  const signature = counterView(t, "signature_spell_1", { max: 1, used: 0 });
   assert.equal(signature.line, "1/1");
   assert.equal(signature.spendable, false);
-  assert.equal(counterView("rage", { max: 3, used: 1 }).spendable, true);
-  assert.deepEqual(otherSpeedsLine({ fly: 60, swim: 30 }), ["Fly 60 ft", "Swim 30 ft"]);
-  assert.deepEqual(otherSpeedsLine(undefined), []);
+  assert.equal(counterView(t, "rage", { max: 3, used: 1 }).spendable, true);
+  assert.deepEqual(otherSpeedsLine(t, { fly: 60, swim: 30 }), ["Fly 60 ft", "Swim 30 ft"]);
+  assert.deepEqual(otherSpeedsLine(t, undefined), []);
 });
 
 // ---- Inspiration on a parked roll ----

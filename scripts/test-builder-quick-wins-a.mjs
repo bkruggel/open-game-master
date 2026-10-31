@@ -12,6 +12,8 @@ const { renderToStaticMarkup } = await import("react-dom/server");
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 const submit = await import("../src/app/characters/builder/submit.ts");
 const { owedPicks } = await import("../src/app/characters/builder/owed.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+const t = (key, vars) => translate("en", key, vars);
 
 const state = {
   name: "Vex",
@@ -101,7 +103,7 @@ const state = {
   const dwarf = { id: "hill_dwarf", name: "Hill Dwarf", toolChoice: { count: 1, options: ["Smith's tools"] }, skills: [], asi: {} };
   const owed = submit.ancestryBlocks(state, dwarf, { id: "soldier", name: "Soldier", skills: [] });
   assert.deepEqual(owed.map((entry) => entry.message), ["Pick a tool your Hill Dwarf knows how to use (tool proficiency)."]);
-  assert.deepEqual(owedPicks(owed).map((pick) => pick.label), ["Tool"], "the Show me link keeps the rule's name");
+  assert.deepEqual(owedPicks(t, owed).map((pick) => pick.label), ["Tool"], "the Show me link keeps the rule's name");
   assert.equal(submit.ancestryBlocks(state, undefined)[0].message, "Choose where your hero comes from (race).");
   assert.equal(submit.callingBlocks(undefined)[0].message, "Choose how you fight or use magic (class).");
 
@@ -178,9 +180,9 @@ const state = {
   assert.ok(!identity.includes("Their place at the table"), "the Hero step no longer asks who plays them");
   assert.ok(!identity.includes("role?:"), "the Hero step takes no role");
   const finish = read("src/app/characters/builder/steps/FinishStep.tsx");
-  assert.ok(finish.includes("Their place at the table"), "the Finish step asks who plays them");
-  assert.ok(finish.includes("Joins a campaign as yours to control."), "the player character choice is explained");
-  assert.ok(finish.includes("Nobody has to roll them up again."), "the companion choice is explained");
+  assert.ok(finish.includes('t("builder.finish.placeTitle")'), "the Finish step asks who plays them");
+  assert.ok(finish.includes('t("builder.finish.pcNote")'), "the player character choice is explained");
+  assert.ok(finish.includes('t("builder.finish.companionNote")'), "the companion choice is explained");
   const builder = read("src/app/characters/builder/CharacterBuilder.tsx");
   assert.ok(/<FinishStep[\s\S]*?role=\{role\}[\s\S]*?\/>/.test(builder), "the builder hands the role to the Finish step");
   assert.ok(!builder.match(/<IdentityStep[\s\S]*?\/>/)[0].includes("role={role}"), "and not to the Hero step");

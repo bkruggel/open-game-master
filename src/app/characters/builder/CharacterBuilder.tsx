@@ -7,6 +7,7 @@ import { AvatarCropDialog } from "@/app/settings/AvatarCropDialog";
 import { Wizard, type WizardNotice, type WizardStep } from "@/components/ui/Wizard";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { prefersStillMotion, useEffectsRoot } from "@/lib/effects-mode";
 import type { Genre } from "@/lib/schemas/game-settings";
 import type { Ability, CreateSheetInput } from "@/lib/schemas/sheet";
@@ -329,6 +330,7 @@ function CharacterBuilderForm({
   // character's split, so it is offered no second class (a stored split
   // still shows, and keeps its classes there).
   const addsClasses = hostOffers(capabilities, "builderMulticlass");
+  const t = useT();
   const [cropping, setCropping] = useState(false);
   // This builder's own root, so the footer's "Show me" looks inside it and
   // not in another builder on the page.
@@ -601,11 +603,11 @@ function CharacterBuilderForm({
       <UndoChangeBar undo={state.undo} onPutBack={putBack} />
     ) : null;
   const owedLine = (blocks: typeof owed.identity) => (
-    <OwedLine picks={owedPicks(blocks)} onShow={locate} onFill={fill.running ? undefined : () => startFill()} />
+    <OwedLine picks={owedPicks(t, blocks)} onShow={locate} onFill={fill.running ? undefined : () => startFill()} />
   );
   // What a fill left for the player (a spell list that ran out), said in its
   // read-back.
-  const stillOwed = Object.values(owed).reduce((sum, blocks) => sum + owedPicks(blocks).length, 0);
+  const stillOwed = Object.values(owed).reduce((sum, blocks) => sum + owedPicks(t, blocks).length, 0);
   // A change from the read-back: to the pick's step, then to its block once
   // the step is showing.
   function changePick(target: BlockerTarget | "gender") {
@@ -616,7 +618,7 @@ function CharacterBuilderForm({
     window.setTimeout(() => locate(target), 350);
   }
   const casts = derived.casts;
-  const summary = summaryRows({
+  const summary = summaryRows(t, {
     name: state.name,
     background: background?.name,
     race: race?.name,

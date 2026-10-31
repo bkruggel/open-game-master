@@ -24,6 +24,8 @@ import { CategoryRail } from "@/app/reference/CategoryRail";
 import { ResultBadges, type BadgeRow } from "@/app/reference/ResultBadges";
 import { MAX_COMPARE, type CompareKind } from "@/lib/reference/compare";
 import { textKey } from "@/lib/language/text-logic";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 
 // Which painted icon set a reference category draws from (src/lib/icons.ts).
 const REFERENCE_ICON_KIND: Record<string, IconKind | undefined> = {
@@ -63,16 +65,30 @@ type Ruling = {
   origin: string;
 };
 
+// The category rail's labels are the dictionaries' docs.ref.tab.* lines, by
+// kind; the kinds stay the stable union the routes search.
+const TAB_KEYS: Record<(typeof TABS)[number]["kind"], MessageKey> = {
+  glossary: "docs.ref.tab.glossary",
+  spells: "docs.ref.tab.spells",
+  feats: "docs.ref.tab.feats",
+  items: "docs.ref.tab.items",
+  conditions: "docs.ref.tab.conditions",
+  races: "docs.ref.tab.races",
+  backgrounds: "docs.ref.tab.backgrounds",
+  monsters: "docs.ref.tab.monsters",
+  rulings: "docs.ref.tab.rulings",
+};
+
 const TABS = [
-  { kind: "glossary", label: "Basics", glyph: "system-lore" },
-  { kind: "spells", label: "Spells", glyph: "cue-arcane" },
-  { kind: "feats", label: "Feats", glyph: "rest-proficiency" },
-  { kind: "items", label: "Items", glyph: "tab-loot" },
-  { kind: "conditions", label: "Conditions", glyph: "rest-concentration-break" },
-  { kind: "races", label: "Lineages", glyph: "tab-characters" },
-  { kind: "backgrounds", label: "Backgrounds", glyph: "tab-journal" },
-  { kind: "monsters", label: "Monsters", glyph: "system-bestiary" },
-  { kind: "rulings", label: "House rules", glyph: "system-rules" },
+  { kind: "glossary", glyph: "system-lore" },
+  { kind: "spells", glyph: "cue-arcane" },
+  { kind: "feats", glyph: "rest-proficiency" },
+  { kind: "items", glyph: "tab-loot" },
+  { kind: "conditions", glyph: "rest-concentration-break" },
+  { kind: "races", glyph: "tab-characters" },
+  { kind: "backgrounds", glyph: "tab-journal" },
+  { kind: "monsters", glyph: "system-bestiary" },
+  { kind: "rulings", glyph: "system-rules" },
 ] as const;
 
 type Kind = (typeof TABS)[number]["kind"];
@@ -108,6 +124,7 @@ function ResultIcon({ kind, name }: { kind: Kind; name: string }) {
 }
 
 export default function ReferencePage() {
+  const t = useT();
   const [mode, setMode] = useState<Mode>("browse");
   const [kind, setKind] = useState<Kind>("glossary");
   const [query, setQuery] = useState("");
@@ -233,7 +250,7 @@ export default function ReferencePage() {
     setOpen({
       title: row.name,
       meta: kind === "spells" ? spellSummary(row.data) : undefined,
-      text: describeContentEntry(row.data) ?? "No description available for this entry.",
+      text: describeContentEntry(row.data) ?? t("docs.ref.noDescription"),
     });
   }
 
@@ -270,25 +287,25 @@ export default function ReferencePage() {
 
   const compareCount = selection?.entries.length ?? 0;
   const modes = [
-    { value: "browse" as const, label: "Browse", icon: Search },
+    { value: "browse" as const, label: t("docs.ref.mode.browse"), icon: Search },
     {
       value: "compare" as const,
-      label: compareCount ? `Compare (${compareCount})` : "Compare",
+      label: compareCount ? t("docs.ref.mode.compareCount", { count: compareCount }) : t("docs.ref.mode.compare"),
       icon: Columns3,
     },
-    { value: "calculators" as const, label: "Calculators", icon: Calculator },
-    { value: "ask" as const, label: "Ask", icon: MessageCircleQuestion },
+    { value: "calculators" as const, label: t("docs.ref.mode.calculators"), icon: Calculator },
+    { value: "ask" as const, label: t("docs.ref.mode.ask"), icon: MessageCircleQuestion },
   ];
 
   return (
     <PageShell
       icon={PIXEL_ICONS.support}
       glyph="tab-reference"
-      title="Rules reference"
-      blurb="Look something up, line things up side by side, run the numbers, or ask."
+      title={t("docs.ref.title")}
+      blurb={t("docs.ref.blurb")}
       actions={
         <Link href="/rulebook" className={cn(ui.btnSmall, "gap-1.5")}>
-          <GameIcon icon={{ kind: "glyph", key: "system-rules" }} size="size-5" /> Read the rulebook
+          <GameIcon icon={{ kind: "glyph", key: "system-rules" }} size="size-5" /> {t("docs.ref.rulebook")}
         </Link>
       }
     >
@@ -298,7 +315,7 @@ export default function ReferencePage() {
           options={modes}
           value={mode}
           onChange={setMode}
-          label="Reference mode"
+          label={t("docs.ref.mode.aria")}
           size="sm"
           className="w-max"
         />
@@ -307,17 +324,17 @@ export default function ReferencePage() {
       {/* Keyed by mode so the incoming desk rises in instead of cutting. */}
       <div key={mode} className="motion-tab space-y-4">
         {mode === "calculators" ? (
-          <PageSection heading="Calculators" glyph="tab-dice">
+          <PageSection heading={t("docs.ref.section.calculators")} glyph="tab-dice">
             <CalculatorsPanel />
           </PageSection>
         ) : null}
         {mode === "ask" ? (
-          <PageSection heading="Ask the desk" glyph="tab-lead">
+          <PageSection heading={t("docs.ref.section.ask")} glyph="tab-lead">
             <DeskPanel />
           </PageSection>
         ) : null}
         {mode === "compare" ? (
-          <PageSection heading="Compare" glyph="system-tables">
+          <PageSection heading={t("docs.ref.section.compare")} glyph="system-tables">
           <ComparePanel
             selection={selection ?? { kind: "spells", entries: [] }}
             onRemove={(slug) =>
@@ -334,11 +351,11 @@ export default function ReferencePage() {
 
         {mode === "browse" ? (
           <PageSection
-            heading="Browse"
+            heading={t("docs.ref.section.browse")}
             glyph={categoryGlyph(kind)}
-            intro="New to this? Start with Basics, which explains the terms the game leans on constantly. The other tabs search everything the app knows about, including your own homebrew and the house rules on your rulesets."
+            intro={t("docs.ref.browseIntro")}
           >
-            <CategoryRail tabs={TABS} value={kind} onChange={setKind} label="Category" className="mb-3" />
+            <CategoryRail tabs={TABS.map((tab) => ({ ...tab, label: t(TAB_KEYS[tab.kind]) }))} value={kind} onChange={setKind} label={t("docs.ref.category")} className="mb-3" />
 
             <div className="relative mb-4">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-300/70" />
@@ -347,12 +364,12 @@ export default function ReferencePage() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={
                   kind === "glossary"
-                    ? "Search the basics"
+                    ? t("docs.ref.search.glossary")
                     : kind === "rulings"
-                      ? "Search your house rules"
-                      : `Search ${kind}`
+                      ? t("docs.ref.search.rulings")
+                      : t("docs.ref.search", { kind })
                 }
-                aria-label="Search"
+                aria-label={t("docs.ref.searchAria")}
                 className={cn(ui.input, "h-11 pl-9 pr-9")}
               />
               {loading ? (
@@ -362,7 +379,7 @@ export default function ReferencePage() {
 
             {comparableKind(kind) ? (
               <p className="reveal mb-3 text-xs text-stone-500">
-                Tick up to {MAX_COMPARE} to line them up side by side in Compare.
+                {t("docs.ref.compareHint", { max: MAX_COMPARE })}
               </p>
             ) : null}
 
@@ -381,7 +398,7 @@ export default function ReferencePage() {
                 ))}
                 {!filteredTerms.length ? (
                   <li>
-                    <EmptyState art="scrolls" size="sm" title="Nothing matches that." />
+                    <EmptyState art="scrolls" size="sm" title={t("docs.ref.empty")} />
                   </li>
                 ) : null}
               </ul>
@@ -408,8 +425,8 @@ export default function ReferencePage() {
                       size="sm"
                       title={
                         query.trim()
-                          ? "None of your house rules mention that."
-                          : "No house rules yet. Rulesets in your library are where they live."
+                          ? t("docs.ref.emptyRulings")
+                          : t("docs.ref.emptyRulingsAll")
                       }
                     />
                   </li>
@@ -423,9 +440,9 @@ export default function ReferencePage() {
                       <button
                         type="button"
                         onClick={() => toggleCompare(row)}
-                        aria-label={`Compare ${row.name}`}
+                        aria-label={t("docs.ref.compareAria", { name: row.name })}
                         aria-pressed={picked.has(row.slug)}
-                        title={picked.has(row.slug) ? "Take out of Compare" : "Add to Compare"}
+                        title={picked.has(row.slug) ? t("docs.ref.compareOn") : t("docs.ref.compareOff")}
                         className={cn(
                           "motion-press min-w-10 shrink-0 rounded-xl border px-2.5 text-xs transition-colors",
                           picked.has(row.slug)
@@ -460,8 +477,8 @@ export default function ReferencePage() {
                       size="sm"
                       title={
                         unavailable
-                          ? "The content pack is not installed, so there is nothing to browse here yet."
-                          : "Nothing matches that."
+                          ? t("docs.ref.packMissing")
+                          : t("docs.ref.empty")
                       }
                     />
                   </li>
@@ -469,12 +486,12 @@ export default function ReferencePage() {
                 {rows.length ? (
                   <li className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-stone-500">
                     <span aria-live="polite">
-                      Showing {rows.length}
-                      {hasMore ? ", and there are more" : ""}
+                      {t("docs.ref.showing", { count: rows.length })}
+                      {hasMore ? t("docs.ref.showingMore") : ""}
                     </span>
                     {hasMore ? (
                       <button type="button" onClick={() => void loadMore()} disabled={loadingMore} className={ui.btnSmall}>
-                        {loadingMore ? <Loader2 className="size-3.5 animate-spin" /> : null} Load more
+                        {loadingMore ? <Loader2 className="size-3.5 animate-spin" /> : null} {t("docs.ref.loadMore")}
                       </button>
                     ) : null}
                   </li>

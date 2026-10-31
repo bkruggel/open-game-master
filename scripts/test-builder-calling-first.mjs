@@ -49,7 +49,7 @@ await test("the first step asks how you want to play, with Help me build, the no
   assert.match(calling, /levelField=\{<LevelField state=\{state\} fixedLevel=\{fixedLevel\} levelNote=\{levelNote\}/);
   const step = read("src/app/characters/builder/steps/CallingStep.tsx");
   assert.match(step, /onHelpMeBuild=\{playstyle\?\.onHelpMeBuild\}/);
-  assert.ok(step.indexOf("{levelField}") > step.indexOf('<Field label="Class"') && step.indexOf("{levelField}") < step.indexOf("{offersSubclass ? ("), "the level sits under the class, above the subclass it decides");
+  assert.ok(step.indexOf("{levelField}") > step.indexOf('<Field label={t("builder.calling.class")}') && step.indexOf("{levelField}") < step.indexOf("{offersSubclass ? ("), "the level sits under the class, above the subclass it decides");
   const level = read("src/app/characters/builder/steps/CallingSetup.tsx");
   assert.match(level, /state\.changeLevel\(Number\(next\)\)/);
   assert.match(level, /levelNote \? \(/, "the door's note is said beside the level");
@@ -99,7 +99,7 @@ await test("the name, alignment, looks and story are the last step before the su
   assert.match(identity, /alignmentGroups=\{pickers\.alignmentGroups\}/);
   assert.match(identity, /onUploadPortrait=\{\(\) => setCropping\(true\)\}/);
   const step = read("src/app/characters/builder/steps/IdentityStep.tsx");
-  for (const field of ['aria-label="Name"', "<AttractionPicker", '<span id={alignmentId}>Alignment</span>', '<Field label="Appearance"', 'aria-label="Backstory"']) {
+  for (const field of ['aria-label={t("builder.identity.nameAria")}', "<AttractionPicker", '<span id={alignmentId}>{t("builder.identity.alignment")}</span>', '<Field label={t("builder.identity.appearance")}', 'aria-label={t("builder.identity.backstoryAria")}']) {
     assert.ok(step.includes(field), `the identity step holds ${field}`);
   }
   // Who plays them changes nothing earlier, so the toggle stays on Finish.

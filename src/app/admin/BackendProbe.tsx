@@ -5,15 +5,23 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { RECOMMENDED_WINDOW, STORY_WINDOW_NEEDS, aWindow, storyWindowVerdict, windowFlag, windowLabel } from "@/lib/story-window";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 
 // The three things the DM loop needs from a backend, in the order the probe
 // tries them (scripts/lib/provider-capability-probe.mjs). A model that fails
 // one of these will fail mid-story, so the admin can run the same probe the
 // CLI runs before assigning a backend to a campaign.
+const STAGE_KEYS: Record<(typeof STAGES)[number]["key"], MessageKey> = {
+  streaming: "admin.probe.stage.streaming",
+  toolCall: "admin.probe.stage.toolCall",
+  toolContinuation: "admin.probe.stage.toolContinuation",
+};
+
 const STAGES = [
-  { key: "streaming", label: "Streams tokens" },
-  { key: "toolCall", label: "Makes structured tool calls" },
-  { key: "toolContinuation", label: "Continues after a tool result" },
+  { key: "streaming" },
+  { key: "toolCall" },
+  { key: "toolContinuation" },
 ] as const;
 
 type ProbeStage = { ok?: boolean; sample?: string; name?: string | null };
@@ -33,9 +41,10 @@ type ProbeResult = {
   window?: { tokens: number; reported: boolean };
 };
 
-const ROUTE_NOTES: Record<string, string> = {
-  "chat-no-reasoning": "with its reasoning off, the only way its tools run on Chat Completions",
-  responses: "through OpenAI's Responses API, the only place its tools run",
+// The route note's key, for the two routes worth a word.
+const ROUTE_KEYS: Record<string, MessageKey> = {
+  "chat-no-reasoning": "admin.probe.route.chat-no-reasoning",
+  responses: "admin.probe.route.responses",
 };
 
 // baseUrl/model/apiKey are the field values as typed; blanks fall back to the
@@ -55,6 +64,7 @@ export function BackendProbe({
   apiKey?: string;
   provider?: "local" | "custom";
 }) {
+  const t = useT();
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<ProbeResult | null>(null);
 
@@ -69,10 +79,10 @@ export function BackendProbe({
       });
       const data = await response.json().catch(() => null);
       setResult(
-        data ?? { ok: false, error: "The probe request failed without an answer." },
+        data ?? { ok: false, error: t("admin.probe.failed") },
       );
     } catch {
-      setResult({ ok: false, error: "Could not reach the server." });
+      setResult({ ok: false, error: t("setup.unreachable") });
     } finally {
       setTesting(false);
     }
@@ -91,17 +101,15 @@ export function BackendProbe({
           className={ui.btnSmall}
         >
           {testing ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
-          Test backend
+          {t("admin.probe.run")}
         </button>
         <span className="text-xs text-stone-500">
-          {which === "story"
-            ? "Checks streaming, tool calls and the context window, the way a campaign uses them. Takes a few seconds."
-            : "Checks streaming and tool calls, the way a campaign uses them. Takes a few seconds."}
+          {which === "story" ? t("admin.probe.storyNote") : t("admin.probe.utilityNote")}
         </span>
       </div>
       {testing ? (
         <p role="status" className="live-in mt-2 text-sm text-stone-400">
-          Asking the backend for a streamed reply, a tool call, and a continuation…
+          {t("admin.probe.asking")}
         </p>
       ) : null}
       {result ? (
@@ -116,14 +124,14 @@ export function BackendProbe({
                 ) : (
                   <X className="size-4 shrink-0 text-red-400" />
                 )}
-                <span className={state.ok ? "text-stone-300" : "text-red-400"}>{stage.label}</span>
+                <span className={state.ok ? "text-stone-300" : "text-red-400"}>{t(STAGE_KEYS[stage.key])}</span>
               </p>
             );
           })}
           {result.ok ? (
             <p role="status" className="inline-flex items-center gap-1 text-emerald-400">
-              <Check className="size-4" /> {result.model} can run the storyteller loop
-              {result.route && ROUTE_NOTES[result.route] ? ` (${ROUTE_NOTES[result.route]})` : ""}.
+              <Check className="size-4" /> {t("admin.probe.ok", { model: result.model ?? "" })}
+              {result.route && ROUTE_KEYS[result.route] ? ` (${t(ROUTE_KEYS[result.route])})` : ""}.
             </p>
           ) : null}
           {result.ok && result.window ? <WindowLine size={result.window} /> : null}
@@ -131,9 +139,9 @@ export function BackendProbe({
             <p role="alert" className="motion-shake text-red-400">
               {result.error
                 ? result.error
-                : `${result.model || "This model"} cannot run the storyteller loop`}
+                : t("admin.probe.fail", { model: result.model || t("admin.probe.failFallback") })}
               {!result.error && result.stages?.streaming?.ok
-                ? " — see the failed checks above."
+                ? t("admin.probe.seeAbove")
                 : "."}
             </p>
           )}
@@ -141,7 +149,7 @@ export function BackendProbe({
       ) : null}
       {failed && result?.endpoint ? (
         <p className={cn("mt-1 break-all text-xs text-stone-500")} title={result.endpoint}>
-          Probed {result.endpoint}
+          {t("admin.probe.probed", { endpoint: result.endpoint })}
         </p>
       ) : null}
     </div>
@@ -151,12 +159,14 @@ export function BackendProbe({
 // Whether the window is big enough to narrate and to fight, and what to
 // change when it is not.
 function WindowLine({ size }: { size: { tokens: number; reported: boolean } }) {
-  const raise = `Give it a larger window (llama-server -c ${windowFlag(RECOMMENDED_WINDOW)}, Ollama's num_ctx, LM Studio's context length) or choose a model with one.`;
+  const t = useT();
+  const raise = t("admin.probe.window.raise", { flag: windowFlag(RECOMMENDED_WINDOW) });
   if (!size.reported) {
     return (
       <p className="text-xs leading-5 text-amber-200">
-        This server does not report its context window, so tables plan for {windowLabel(size.tokens)}. {STORY_WINDOW_NEEDS} Run
-        it with at least that, and set OPENAI_COMPAT_CONTEXT to the size it runs so tables use all of it.
+        {t("admin.probe.window.unreportedBefore", { size: windowLabel(size.tokens) })}
+        {STORY_WINDOW_NEEDS}
+        {t("admin.probe.window.unreportedAfter")}
       </p>
     );
   }
@@ -164,7 +174,7 @@ function WindowLine({ size }: { size: { tokens: number; reported: boolean } }) {
   if (verdict.level === "ok") {
     return (
       <p className="flex items-center gap-1 text-emerald-400">
-        <Check className="size-4 shrink-0" /> {aWindow(size.tokens)} context window: room to narrate, fight and remember the story.
+        <Check className="size-4 shrink-0" /> {t("admin.probe.window.ok", { window: aWindow(size.tokens) })}
       </p>
     );
   }

@@ -9,6 +9,7 @@ import { appConfirm } from "@/components/ui/ConfirmDialog";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { SectionHead } from "@/components/ui/SectionHead";
+import { useT } from "@/lib/locale";
 
 type AdminUser = {
   id: string;
@@ -27,6 +28,7 @@ type AdminUser = {
 // User management: promote/demote admins, reset passwords (temp password
 // shown exactly once), delete accounts. All actions re-checked server-side.
 export function AdminUsersPanel({ meId }: { meId: string }) {
+  const t = useT();
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -52,7 +54,7 @@ export function AdminUsersPanel({ meId }: { meId: string }) {
       const response = await run();
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        setError(data?.error || "That didn't work.");
+        setError(data?.error || t("admin.users.fail"));
         return null;
       }
       return response;
@@ -96,10 +98,11 @@ export function AdminUsersPanel({ meId }: { meId: string }) {
   }
 
   async function deleteUser(user: AdminUser) {
-    const sure = await appConfirm(
-      "Their account, campaigns they own, characters, pictures and private chats are erased right now, with no grace period. Messages they wrote in other people's campaigns stay in those transcripts without their name.",
-      { title: `Delete ${user.username}?`, actionLabel: "Delete forever", tone: "danger" },
-    );
+    const sure = await appConfirm(t("admin.users.deleteConfirm"), {
+      title: t("admin.users.deleteTitle", { name: user.username }),
+      actionLabel: t("admin.users.deleteAction"),
+      tone: "danger",
+    });
     if (!sure) return;
     const response = await act(user.id, () =>
       fetch(`/api/admin/users/${user.id}`, { method: "DELETE" }),
@@ -114,18 +117,18 @@ export function AdminUsersPanel({ meId }: { meId: string }) {
     return [
       {
         id: "admin",
-        label: user.isAdmin ? "Remove admin" : "Make admin",
+        label: user.isAdmin ? t("admin.users.removeAdmin") : t("admin.users.makeAdmin"),
         glyph: "tab-dm",
         disabled: busy,
         onSelect: () => void toggleAdmin(user),
       },
-      { id: "reset", label: "Reset password", glyph: "ui-key", disabled: busy, onSelect: () => void resetPassword(user) },
+      { id: "reset", label: t("admin.users.reset"), glyph: "ui-key", disabled: busy, onSelect: () => void resetPassword(user) },
       ...(user.deletionDueAt
-        ? [{ id: "keep", label: "Call off the scheduled deletion", glyph: "ui-restore", disabled: busy, onSelect: () => void keepAccount(user) }]
+        ? [{ id: "keep", label: t("admin.users.cancelDeletion"), glyph: "ui-restore", disabled: busy, onSelect: () => void keepAccount(user) }]
         : []),
       {
         id: "delete",
-        label: user.deletionDueAt ? "Erase now instead of waiting" : "Delete user",
+        label: user.deletionDueAt ? t("admin.users.eraseNow") : t("admin.users.delete"),
         glyph: "ui-delete",
         tone: "danger" as const,
         separated: true,
@@ -144,10 +147,9 @@ export function AdminUsersPanel({ meId }: { meId: string }) {
     <div className="space-y-4">
       {tempPassword ? (
         <div className="live-in panel ornate rounded-xl border-amber-500/40 p-4">
-          <SectionHead title="Temporary password" glyph="tab-admin" />
+          <SectionHead title={t("admin.users.tempTitle")} glyph="tab-admin" />
           <p className="text-sm text-stone-200">
-            Temporary password for <span className="text-amber-200">{tempPassword.username}</span>.
-            It is shown only once; they must change it at next login.
+            {t("admin.users.tempFor", { name: tempPassword.username })}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <code className="rounded-lg border border-amber-500/30 bg-stone-950/80 px-3 py-1.5 font-mono text-sm text-amber-100">
@@ -161,10 +163,10 @@ export function AdminUsersPanel({ meId }: { meId: string }) {
                 setCopied(true);
               }}
             >
-              {copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />} {copied ? "Copied" : "Copy"}
+              {copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />} {copied ? t("action.copied") : t("action.copy")}
             </button>
             <button type="button" className={ui.btnSmall} onClick={() => setTempPassword(null)}>
-              Dismiss
+              {t("admin.users.dismiss")}
             </button>
           </div>
         </div>
@@ -175,7 +177,7 @@ export function AdminUsersPanel({ meId }: { meId: string }) {
       <section className="panel texture-noise rounded-xl p-5">
         <SectionHead
           level="h2"
-          title="Accounts"
+          title={t("admin.users.heading")}
           glyph="tab-party"
           aside={<span className="count-pop tabular-nums">{users.length}</span>}
         />
@@ -190,40 +192,42 @@ export function AdminUsersPanel({ meId }: { meId: string }) {
                 <div className="min-w-0 flex-1 basis-40">
                   <p className="flex flex-wrap items-center gap-1.5 text-sm text-stone-100">
                     {user.username}
-                    {user.id === meId ? <span className="text-xs text-stone-500">(you)</span> : null}
+                    {user.id === meId ? <span className="text-xs text-stone-500">{t("admin.users.you")}</span> : null}
                     {user.isAdmin ? (
                       <span className="plate-chip">
-                        <GameIcon icon={{ kind: "glyph", key: "tab-admin" }} size="size-4" /> Admin
+                        <GameIcon icon={{ kind: "glyph", key: "tab-admin" }} size="size-4" /> {t("admin.users.adminChip")}
                       </span>
                     ) : null}
                     {user.hasDiscord ? <span className="plate-chip" data-tone="indigo">Discord</span> : null}
-                    {user.mustChangePassword ? <span className="plate-chip" data-tone="orange">Reset pending</span> : null}
+                    {user.mustChangePassword ? <span className="plate-chip" data-tone="orange">{t("admin.users.resetPending")}</span> : null}
                     {user.deletionDueAt ? (
                       <span
-                        title={`Asked to delete their account; erased on ${new Date(user.deletionDueAt).toLocaleString()}`}
+                        title={t("admin.users.deletionTitle", { date: new Date(user.deletionDueAt).toLocaleString() })}
                         className="plate-chip"
                         data-tone="red"
                       >
-                        Deletion {new Date(user.deletionDueAt).toLocaleDateString()}
+                        {t("admin.users.deletionChip", { date: new Date(user.deletionDueAt).toLocaleDateString() })}
                       </span>
                     ) : null}
                   </p>
                   <p className="text-xs text-stone-500">
-                    {user.campaignCount} campaign{user.campaignCount === 1 ? "" : "s"} · joined{" "}
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {t("admin.users.campaigns", {
+                      count: user.campaignCount,
+                      date: new Date(user.createdAt).toLocaleDateString(),
+                    })}
                   </p>
                 </div>
                 <div className="ml-auto flex items-center gap-1.5">
                   <button
                     type="button"
-                    title="Reset password"
+                    title={t("admin.users.reset")}
                     disabled={busyId === user.id}
                     onClick={() => resetPassword(user)}
                     className={ui.btnSmall}
                   >
-                    {busyId === user.id ? <Loader2 className="size-3.5 animate-spin" /> : <KeyRound className="size-3.5" />} Reset
+                    {busyId === user.id ? <Loader2 className="size-3.5 animate-spin" /> : <KeyRound className="size-3.5" />} {t("admin.users.resetButton")}
                   </button>
-                  <KebabMenu items={menu} label={`More actions for ${user.username}`} heading={user.username} />
+                  <KebabMenu items={menu} label={t("admin.users.actionsAria", { name: user.username })} heading={user.username} />
                 </div>
               </ContextMenu>
             );

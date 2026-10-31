@@ -10,6 +10,7 @@ import { VoicePreviewButton } from "@/components/VoicePreviewButton";
 import { cn } from "@/lib/cn";
 import type { GameSettings } from "@/lib/schemas/game-settings";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { PanelError, SettingToggle } from "./PanelKit";
 
 // Who reads whose lines (issue 97). The narrator reads the prose; anyone
@@ -22,16 +23,18 @@ type Voice = { voiceId: string; speed: number };
 type Kind = "pc" | "companion" | "npc" | "monster";
 type Entry = { key: string; kind: Kind; name: string; portraitUrl: string; voice: Voice | null; mine: boolean };
 
-const GROUPS: Array<{ kinds: Kind[]; title: string; glyph: string }> = [
-  { kinds: ["pc", "companion"], title: "The party", glyph: "system-party" },
-  { kinds: ["npc"], title: "The cast", glyph: "system-cast" },
-  { kinds: ["monster"], title: "On the board", glyph: "system-bestiary" },
+const GROUPS: Array<{ kinds: Kind[]; titleKey: string; glyph: string }> = [
+  { kinds: ["pc", "companion"], titleKey: "voice.voices.groupParty", glyph: "system-party" },
+  { kinds: ["npc"], titleKey: "voice.voices.groupCast", glyph: "system-cast" },
+  { kinds: ["monster"], titleKey: "voice.voices.groupBoard", glyph: "system-bestiary" },
 ];
 
-const KIND_NOTE: Record<Kind, string> = { pc: "", companion: "AI companion", npc: "", monster: "every one of them" };
+const KIND_NOTE_KEY: Record<Kind, string> = { pc: "", companion: "voice.voices.companionNote", npc: "", monster: "voice.voices.monsterNote" };
 
 function VoiceRow({ entry, onVoice }: { entry: Entry; onVoice: (voice: Voice | null, settle: boolean) => void }) {
+  const t = useT();
   const group = GROUPS.find((candidate) => candidate.kinds.includes(entry.kind))!;
+  const kindNote = KIND_NOTE_KEY[entry.kind];
   return (
     <li className="flex flex-wrap items-center gap-1.5 py-1">
       {entry.portraitUrl ? (
@@ -42,25 +45,25 @@ function VoiceRow({ entry, onVoice }: { entry: Entry; onVoice: (voice: Voice | n
       )}
       <span className="w-32 min-w-0 shrink-0 leading-tight">
         <span className="block truncate text-stone-200">{entry.name}</span>
-        {KIND_NOTE[entry.kind] ? <span className="block truncate text-[10px] text-stone-500">{KIND_NOTE[entry.kind]}</span> : null}
+        {kindNote ? <span className="block truncate text-[10px] text-stone-500">{t(kindNote)}</span> : null}
       </span>
       <span className="min-w-0 flex-1 basis-44 sm:max-w-64">
         <VoicePicker
           size="sm"
-          label={`Voice for ${entry.name}`}
+          label={t("voice.voices.for", { name: entry.name })}
           value={entry.voice?.voiceId ?? ""}
           onChange={(voiceId) => onVoice(voiceId ? { voiceId, speed: entry.voice?.speed ?? 1 } : null, true)}
-          noneLabel="The narrator's voice"
+          noneLabel={t("voice.voices.narrator")}
           className="w-full"
         />
       </span>
       {entry.voice ? (
         <span className="reveal flex items-center gap-1.5 text-stone-400">
           <VoicePreviewButton voice={entry.voice.voiceId} />
-          Pace
+          {t("voice.voices.pace")}
           <span className="w-24">
             <Slider
-              label={`Pace for ${entry.name}`}
+              label={t("voice.voices.paceFor", { name: entry.name })}
               min={0.7}
               max={1.4}
               step={0.05}
@@ -88,6 +91,7 @@ export function CharacterVoices({
   // The lead's settings write, for the narrator's pace and the casting rule.
   patch?: (update: Partial<GameSettings>) => void;
 }) {
+  const t = useT();
   const [roster, setRoster] = useState<Entry[] | null>(null);
   const [open, setOpen] = useState(false);
   const [casting, setCasting] = useState(false);
@@ -142,14 +146,14 @@ export function CharacterVoices({
       });
       const data = (await response.json().catch(() => ({}))) as { roster?: Entry[]; error?: string };
       if (!response.ok) {
-        setError(data.error ?? "That voice was not saved.");
+        setError(data.error ?? t("voice.voices.saveFailed"));
         return;
       }
       if (Array.isArray(data.roster)) {
         setRoster(data.roster);
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("table.unreachable"));
     }
   }
 
@@ -172,7 +176,7 @@ export function CharacterVoices({
     }
     return (
       <div className="reveal mt-3 text-xs">
-        <p className="pk-rowlabel mb-1" style={{ width: "auto" }}>Your voice</p>
+        <p className="pk-rowlabel mb-1" style={{ width: "auto" }}>{t("voice.voices.yourVoice")}</p>
         {error ? <PanelError className="mb-1">{error}</PanelError> : null}
         <ul>
           {mine.map((entry) => (
@@ -180,7 +184,7 @@ export function CharacterVoices({
           ))}
         </ul>
         <p className="text-[11px] leading-4 text-stone-500">
-          When the narration quotes your character, the line is read in this voice.
+          {t("voice.voices.yourVoiceNote")}
         </p>
       </div>
     );
@@ -191,26 +195,27 @@ export function CharacterVoices({
   return (
     <>
       <div className="reveal flex flex-wrap items-center gap-2">
-        <span className="pk-rowlabel">Voices</span>
+        <span className="pk-rowlabel">{t("voice.voices.heading")}</span>
         <button
           type="button"
           aria-expanded={open}
           onClick={() => setOpen(!open)}
           className={cn(ui.btnSmall, "gap-1.5", open && "border-amber-500/70 text-amber-100")}
         >
-          Character voices{roster ? ` (${voiced} of ${roster.length})` : ""}
+          {t("voice.voices.button")}
+          {roster ? ` ${t("voice.voices.buttonCount", { voiced, total: roster.length })}` : ""}
           <ChevronDown className={cn("size-3.5 transition-transform duration-200", open && "rotate-180")} />
         </button>
-        <Tooltip content="On: anyone who speaks without a voice of their own is given one of this server's voices the first time they do, and keeps it. Off: only the voices chosen here are heard; everyone else is read by the narrator.">
+        <Tooltip content={t("voice.voices.autoCastTip")}>
           <SettingToggle on={Boolean(settings.ttsAutoCast)} onToggle={() => patch?.({ ttsAutoCast: !settings.ttsAutoCast })}>
-            {settings.ttsAutoCast ? "New speakers are cast for you" : "Only the voices you choose"}
+            {settings.ttsAutoCast ? t("voice.voices.autoCastOn") : t("voice.voices.autoCastOff")}
           </SettingToggle>
         </Tooltip>
         <span className="flex items-center gap-1.5 text-stone-400">
-          Narrator pace
+          {t("voice.voices.narratorPace")}
           <span className="w-24">
             <Slider
-              label="Narrator pace"
+              label={t("voice.voices.narratorPace")}
               min={0.7}
               max={1.4}
               step={0.05}
@@ -230,8 +235,7 @@ export function CharacterVoices({
           {error ? <PanelError className="mb-2">{error}</PanelError> : null}
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <p className="min-w-0 flex-1 basis-56 text-[11px] leading-4 text-stone-500">
-              The narrator reads the prose. Anyone with a voice here reads their own quoted lines, and whatever the
-              GM speaks as them.
+              {t("voice.voices.deskNote")}
             </p>
             <button
               type="button"
@@ -244,22 +248,22 @@ export function CharacterVoices({
               className={cn(ui.btnSmall, "gap-1.5")}
             >
               {casting ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-              {unvoiced ? `Cast the other ${unvoiced}` : "Everyone has a voice"}
+              {unvoiced ? t("voice.voices.castOthers", { count: unvoiced }) : t("voice.voices.everyoneVoiced")}
             </button>
           </div>
           {roster === null ? (
             <p className="flex items-center gap-1.5 text-stone-500">
-              <Loader2 className="size-3.5 animate-spin" /> Gathering the table...
+              <Loader2 className="size-3.5 animate-spin" /> {t("voice.voices.gathering")}
             </p>
           ) : roster.length === 0 ? (
-            <p className="text-stone-500">No one is at this table yet. Characters, the cast and monsters appear here as they arrive.</p>
+            <p className="text-stone-500">{t("voice.voices.empty")}</p>
           ) : (
             <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
               {GROUPS.map((group) => {
                 const entries = roster.filter((entry) => group.kinds.includes(entry.kind));
                 return entries.length ? (
-                  <section key={group.title}>
-                    <p className="eyebrow text-[10px] text-amber-300/80">{group.title}</p>
+                  <section key={group.titleKey}>
+                    <p className="eyebrow text-[10px] text-amber-300/80">{t(group.titleKey)}</p>
                     <ul className="stagger divide-y divide-stone-800/60">
                       {entries.map((entry) => (
                         <VoiceRow key={entry.key} entry={entry} onVoice={(voice, settle) => setVoice(entry, voice, settle)} />

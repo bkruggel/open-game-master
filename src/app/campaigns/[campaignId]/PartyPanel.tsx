@@ -521,7 +521,7 @@ export function PartyPanel({
         // bar tracks it and the druid's own hit points wait in the label.
         const shape = sheet.wildShape;
         // The maximum the engine heals to (exhaustion 4 halves it).
-        const hp = maxHpView(sheet);
+        const hp = maxHpView(t, sheet);
         const hpFraction = shape
           ? shape.beastMaxHp > 0
             ? shape.beastHp / shape.beastMaxHp

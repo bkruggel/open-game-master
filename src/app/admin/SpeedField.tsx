@@ -1,6 +1,7 @@
 "use client";
 
 import { Zap } from "lucide-react";
+import { useT } from "@/lib/locale";
 import { Field, SelectField } from "@/app/admin/AdminSettingsFields";
 import { FAST_COST_NOTE, type Speed, type SpeedEligibility } from "@/lib/speed-tier";
 import type { SpeedNote } from "@/lib/speed-status";
@@ -23,11 +24,12 @@ export function SpeedField({
   eligibility: SpeedEligibility;
   note?: SpeedNote;
 }) {
+  const t = useT();
   if (!eligibility.ok) {
     return (
       <Field label={label} hint={eligibility.reason} group>
         <p className="rounded-md border border-stone-800 bg-stone-950/40 px-2.5 py-1.5 text-xs text-stone-400" data-speed-unavailable>
-          Provider default{value === "fast" ? " (Fast is set, but this connection has no Fast tier, so none is asked for)" : ""}
+          {t("admin.speed.default")}{value === "fast" ? t("admin.speed.defaultNoTier") : ""}
         </p>
       </Field>
     );
@@ -39,10 +41,10 @@ export function SpeedField({
         value={value}
         onChange={onChange}
         options={[
-          { value: "" as const, label: "Provider default" },
-          { value: "fast" as const, label: "Fast (premium price)" },
+          { value: "" as const, label: t("admin.speed.default") },
+          { value: "fast" as const, label: t("admin.speed.fast") },
         ]}
-        hint={value === "fast" ? FAST_COST_NOTE : "Fast answers sooner at a premium price; the default keeps today's speed and cost."}
+        hint={value === "fast" ? FAST_COST_NOTE : t("admin.speed.fastHint")}
       />
       {value === "fast" ? <SpeedNoteLine note={note} /> : null}
     </div>
@@ -50,17 +52,20 @@ export function SpeedField({
 }
 
 function SpeedNoteLine({ note }: { note?: SpeedNote }) {
+  const t = useT();
   if (!note) {
-    return <p className="mt-1 text-[11px] text-stone-500">No call has run at this setting since the server started.</p>;
+    return <p className="mt-1 text-[11px] text-stone-500">{t("admin.speed.noCalls")}</p>;
   }
   const when = new Date(note.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const said = (reported?: string) =>
+    note.reported && note.reported !== "fast" ? t("admin.speed.reported", { said: reported ?? note.reported ?? "" }) : "";
   const text = note.refused
-    ? `Last call (${when}): ${note.refused}`
+    ? t("admin.speed.refused", { time: when, message: note.refused })
     : note.effective === "fast"
-      ? `Last call (${when}) ran at Fast${note.reported && note.reported !== "fast" ? ` (the provider says "${note.reported}")` : ""}.`
+      ? t("admin.speed.ranFast", { time: when, reported: said(note.reported ?? undefined) })
       : note.effective === "standard"
-        ? `Last call (${when}) asked for Fast but ran at standard speed${note.reported ? ` (the provider says "${note.reported}")` : ""}, and was billed as standard.`
-        : `Last call (${when}) asked for Fast; the provider did not say which speed ran.`;
+        ? t("admin.speed.ranStandard", { time: when, reported: note.reported ? t("admin.speed.reported", { said: note.reported }) : "" })
+        : t("admin.speed.unknownSpeed", { time: when });
   return (
     <p className="mt-1 flex items-start gap-1 text-[11px] text-stone-400" data-speed-note>
       <Zap className="mt-px size-3 shrink-0 text-amber-300" aria-hidden="true" />

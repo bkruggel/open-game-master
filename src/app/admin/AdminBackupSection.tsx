@@ -9,6 +9,7 @@ import { ui } from "@/lib/ui";
 import { EmptyState } from "@/components/EmptyState";
 import { appConfirm } from "@/components/ui/ConfirmDialog";
 import { Switch } from "@/components/ui/Switch";
+import { useT } from "@/lib/locale";
 
 // Verified backups of the campaign state, mirroring scripts/odm-backup.mjs
 // and scripts/odm-restore.mjs. An archive holds the encrypted database plus
@@ -30,6 +31,7 @@ function formatSize(bytes: number) {
 }
 
 export function AdminBackupSection() {
+  const t = useT();
   const [backups, setBackups] = useState<BackupEntry[] | null>(null);
   // A refused or failed read is shown in the server's words with a way to
   // ask again, never as "nothing here yet" (issue 140).
@@ -81,12 +83,12 @@ export function AdminBackupSection() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data.error || "Could not create the backup.");
+        setError(data.error || t("admin.backup.createFailed"));
         return;
       }
       setBackups((current) => [data.backup, ...(current ?? [])].filter((entry, index, all) => all.findIndex((e) => e.name === entry.name) === index));
     } catch {
-      setError("Could not reach the server.");
+      setError(t("admin.worlds.unreachable"));
     } finally {
       setCreating(false);
     }
@@ -103,7 +105,7 @@ export function AdminBackupSection() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data.error || "This archive failed verification.");
+        setError(data.error || t("admin.backup.verifyFailed"));
         return;
       }
       setVerified((current) => ({ ...current, [name]: data.proof }));
@@ -115,10 +117,11 @@ export function AdminBackupSection() {
   }
 
   async function restore(name: string) {
-    const sure = await appConfirm(
-      `Restore ${name}? Everything now on this server — campaigns, accounts, uploads and settings — is replaced by the contents of this archive. The server stops taking play the moment the files are in place; restart it to load the restored world.`,
-      { title: "Restore this backup?", actionLabel: "Restore", tone: "danger" },
-    );
+    const sure = await appConfirm(t("admin.backup.restoreConfirm", { name }), {
+      title: t("admin.backup.restoreTitle"),
+      actionLabel: t("admin.backup.restoreAction"),
+      tone: "danger",
+    });
     if (!sure) return;
     setBusyName(name);
     setError("");
@@ -130,7 +133,7 @@ export function AdminBackupSection() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data.error || "The restore failed.");
+        setError(data.error || t("admin.backup.restoreFailed"));
         return;
       }
       setRestoredName(name);
@@ -142,9 +145,9 @@ export function AdminBackupSection() {
   }
 
   async function remove(name: string) {
-    const sure = await appConfirm(`Delete the backup ${name}? The archive and its fingerprint go away.`, {
-      title: "Delete this backup?",
-      actionLabel: "Delete",
+    const sure = await appConfirm(t("admin.backup.deleteConfirm", { name }), {
+      title: t("admin.backup.deleteTitle"),
+      actionLabel: t("action.delete"),
       tone: "danger",
     });
     if (!sure) return;
@@ -161,30 +164,27 @@ export function AdminBackupSection() {
   }
 
   if (backups === null) {
-    return <div className="skeleton-block mt-3 h-16 rounded-xl" aria-label="Loading backups" />;
+    return <div className="skeleton-block mt-3 h-16 rounded-xl" aria-label={t("admin.backup.loadAria")} />;
   }
 
   return (
     <div className="space-y-3">
       <p className="text-xs leading-5 text-stone-500">
-        A backup snapshots the encrypted campaign database, uploads, generated media and server
-        settings into one archive. Downloaded models are left out unless you include them; they
-        download again on first use. The archive carries the database encryption key, so keep it
-        like a password: whoever holds it can read every campaign.{" "}
+        {t("admin.backup.intro")}
         {dir ? <span className="font-mono text-stone-600">{dir}</span> : null}
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={create} disabled={creating} aria-busy={creating} className={ui.btnSmall}>
           {creating ? <Loader2 className="size-4 animate-spin" /> : <DatabaseBackup className="size-4" />}
-          Take backup now
+          {t("admin.backup.take")}
         </button>
         <label className="flex items-center gap-2 text-xs text-stone-400">
-          <Switch label="Include downloaded models" on={includeModels} onChange={setIncludeModels} disabled={creating} />
-          Include downloaded models
+          <Switch label={t("admin.backup.includeModels")} on={includeModels} onChange={setIncludeModels} disabled={creating} />
+          {t("admin.backup.includeModels")}
         </label>
         {creating ? (
           <span key={phase} className="live-in text-xs text-stone-500">
-            {phase ? `${phase[0].toUpperCase()}${phase.slice(1)}…` : "Snapshotting the database and packing the archive…"}
+            {phase ? `${phase[0].toUpperCase()}${phase.slice(1)}…` : t("admin.backup.phase")}
           </span>
         ) : null}
       </div>
@@ -192,8 +192,7 @@ export function AdminBackupSection() {
       {restoredName ? (
         <p role="status" className="live-in text-sm text-amber-300">
           <TriangleAlert className="mr-1 inline size-4" />
-          Restored {restoredName}. The server has stopped taking play; restart it now to load the
-          restored world.
+          {t("admin.backup.restored", { name: restoredName })}
         </p>
       ) : null}
       {backups.length === 0 ? (
@@ -206,7 +205,7 @@ export function AdminBackupSection() {
           <EmptyState
             size="sm"
             art="scrolls"
-            title="No backups yet. Take one before a big session, or restore one you made with scripts/odm-backup.mjs."
+            title={t("admin.backup.empty")}
           />
         ) : null)
       ) : (
@@ -221,15 +220,19 @@ export function AdminBackupSection() {
               {verified[backup.name] ? (
                 <span
                   className="live-in inline-flex items-center gap-1 text-xs text-emerald-400"
-                  title={`integrity ok — ${verified[backup.name].campaigns} campaigns, ${verified[backup.name].users} users, ${verified[backup.name].messages} messages`}
+                  title={t("admin.backup.verifiedTitle", {
+                    campaigns: verified[backup.name].campaigns,
+                    users: verified[backup.name].users,
+                    messages: verified[backup.name].messages,
+                  })}
                 >
                   <ShieldCheck className="size-3.5" />
-                  verified
+                  {t("admin.backup.verified")}
                 </span>
               ) : null}
               {restoredName === backup.name ? (
                 <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
-                  <Check className="size-3.5" /> restored
+                  <Check className="size-3.5" /> {t("admin.backup.restoredRow")}
                 </span>
               ) : null}
               <span className="ml-auto flex items-center gap-1.5">
@@ -238,27 +241,27 @@ export function AdminBackupSection() {
                   onClick={() => verify(backup.name)}
                   disabled={busyName === backup.name}
                   aria-busy={busyName === backup.name}
-                  title="Verify integrity and open the encrypted database without touching anything"
+                  title={t("admin.backup.verifyTitle")}
                   className={ui.btnSmall}
                 >
                   {busyName === backup.name ? <Loader2 className="size-3.5 animate-spin" /> : <ShieldCheck className="size-3.5" />}
-                  {verified[backup.name] ? "Re-verify" : "Verify"}
+                  {verified[backup.name] ? t("admin.backup.reverify") : t("admin.backup.verify")}
                 </button>
                 {verified[backup.name] && restoredName !== backup.name ? (
                   <button
                     type="button"
                     onClick={() => restore(backup.name)}
                     disabled={busyName === backup.name}
-                    title="Replace this server's state with the archive"
+                    title={t("admin.backup.restoreButtonTitle")}
                     className={cn(ui.btnSmall, "hover:border-red-500/50 hover:text-red-400")}
                   >
-                    Restore
+                    {t("admin.backup.restoreAction")}
                   </button>
                 ) : null}
                 <a
                   href={`/api/admin/backup/${encodeURIComponent(backup.name)}`}
                   download={backup.name}
-                  title="Download the archive"
+                  title={t("admin.backup.downloadTitle")}
                   className={ui.btnSmall}
                 >
                   <Download className="size-3.5" />
@@ -266,8 +269,8 @@ export function AdminBackupSection() {
                 <button
                   type="button"
                   onClick={() => remove(backup.name)}
-                  title={`Delete ${backup.name}`}
-                  aria-label={`Delete ${backup.name}`}
+                  title={t("admin.backup.deleteAria", { name: backup.name })}
+                  aria-label={t("admin.backup.deleteAria", { name: backup.name })}
                   className={cn(ui.btnSmall, "px-2 hover:border-red-500/50 hover:text-red-400")}
                 >
                   <Trash2 className="size-3.5" />

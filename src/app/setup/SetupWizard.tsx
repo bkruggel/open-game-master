@@ -16,6 +16,7 @@ import { WelcomeStep } from "@/app/setup/WelcomeStep";
 import { YourAgentStep, type MadeConnection } from "@/app/setup/YourAgentStep";
 import { normalizeBaseUrl, storySourceForUrl } from "@/lib/setup/discovery-logic";
 import { fillsStep, suggestNarration, suggestPictures } from "@/lib/setup/suggest";
+import { useT } from "@/lib/locale";
 import {
   PAINTING_AGENTS,
   dictationPatch,
@@ -62,6 +63,7 @@ function storyChoice(draft: Draft, found: ScanResult["text"]): StoryChoice | nul
 // chosen. The scan of this computer starts with the page and fills in what
 // it finds while the admin reads the first step.
 export function SetupWizard({ config: initialConfig, env, info }: { config: MaskedConfig; env: EnvDefaults; info: SetupInfo }) {
+  const t = useT();
   const [config, setConfig] = useState(initialConfig);
   const firstRun = !info.state.finishedAt;
   const [draft, setDraft] = useState<Draft>(() => draftFromConfig(initialConfig, firstRun));
@@ -121,8 +123,8 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
     comfyFound: Boolean(scan?.comfyui),
     kokoroFound: Boolean(scan?.kokoro),
   };
-  const picturesSuggestion = suggestPictures(suggestInput);
-  const narrationSuggestion = suggestNarration(suggestInput);
+  const picturesSuggestion = suggestPictures(t, suggestInput);
+  const narrationSuggestion = suggestNarration(t, suggestInput);
   const savedKeyFor = useMemo(() => {
     if (!config.text.hasCustomApiKey) return null;
     const source = storySourceForUrl(config.text.customBaseUrl);
@@ -145,7 +147,7 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
     }).catch(() => null);
     const data = await response?.json().catch(() => null);
     if (!response?.ok) {
-      setSaveError(data?.error || "Could not save. Try again.");
+      setSaveError(data?.error || t("setup.saveError"));
       return false;
     }
     if (data?.config) setConfig(data.config as MaskedConfig);
@@ -159,7 +161,7 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
     }
     if (key === "story") {
       const choice = storyChoice(draft, scan?.text ?? []);
-      if (!choice) return { error: "Choose who tells the story." };
+      if (!choice) return { error: t("setup.blocker.story") };
       const built = storyPatch(choice, config.text.customBaseUrl);
       return "error" in built ? built : built.patch;
     }
@@ -282,16 +284,16 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
   // Why Continue is held on a step, said beside the button.
   const storyBlocker =
     draft.story === ""
-      ? "Choose who tells the story."
+      ? t("setup.blocker.story")
       : draft.story === "local" && !(draft.local.baseUrl.trim() && draft.local.model.trim())
-        ? "Pick a model server and a model."
+        ? t("setup.blocker.local")
         : draft.story === "key" && !(draft.key.model.trim() && (draft.key.apiKey.trim() || savedKeyFor === draft.key.provider))
-          ? "Paste the key, check it, and pick a model."
+          ? t("setup.blocker.key")
           : draft.story === "agent" && !draft.agent.id
-            ? "Choose a program."
+            ? t("setup.blocker.agent")
             : null;
   const agentPaints = draft.story === "agent" && draft.agent.id !== "" && PAINTING_AGENTS.includes(draft.agent.id);
-  const picturesBlocker = picturesStepBlocker(draft, {
+  const picturesBlocker = picturesStepBlocker(t, draft, {
     agentVerified: Boolean(config.harness.imagesVerifiedAt),
     storyIsOpenAi,
     openaiKeySaved: config.images.hasOpenaiApiKey,
@@ -300,15 +302,15 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
   });
   const voiceBlocker =
     draft.narration === "kokoro" && !draft.kokoro.url.trim()
-      ? "Type where Kokoro runs, or choose another answer."
+      ? t("setup.blocker.voice.url")
       : draft.narration === "openai" &&
           !storyIsOpenAi &&
           !draft.narrationKey.trim() &&
           !config.speech.hasTtsApiKey &&
           !config.images.hasOpenaiApiKey
-        ? "Paste an OpenAI key, or choose another answer."
+        ? t("setup.blocker.voice.key")
         : draft.narration === "openai" && !draft.narrationModel.trim() && !env.ttsModel
-          ? "Pick the narration model, or choose another answer."
+          ? t("setup.blocker.voice.model")
           : null;
 
   const address = draft.publicUrl.trim() || info.lanUrls[0] || "";
@@ -326,17 +328,17 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
   const steps: Array<WizardStep & { key: StepKey }> = [
     {
       key: "welcome",
-      label: "Welcome",
-      title: title("Welcome", "Let's get your table ready", "welcome"),
-      blurb: "A few questions, a few minutes. Everything here can be changed later in the admin panel.",
+      label: t("setup.step.welcome"),
+      title: title(t("setup.welcome.eyebrow"), t("setup.welcome.title"), "welcome"),
+      blurb: t("setup.welcome.blurb"),
       content: <WelcomeStep draft={draft} update={update} scan={scan} scanning={scanning} />,
-      continueLabel: "Begin",
+      continueLabel: t("setup.welcome.begin"),
     },
     {
       key: "story",
-      label: "Storyteller",
-      title: title("The storyteller", "Who tells the story?", "story"),
-      blurb: "The Game Master's words. The server always rolls the dice and keeps the rules; this only chooses who tells the story. Reading it aloud is a later step.",
+      label: t("setup.step.story"),
+      title: title(t("setup.story.eyebrow"), t("setup.story.title"), "story"),
+      blurb: t("setup.story.blurb"),
       content: (
         <StorytellerStep
           draft={draft}
@@ -354,16 +356,16 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
       secondary: storyBlocker
         ? undefined
         : {
-            label: "Save and finish later",
-            title: "Saves the storyteller and goes to the summary. Pictures, voice and the rest stay as they are until you set them.",
+            label: t("setup.story.saveLater"),
+            title: t("setup.story.saveLaterTitle"),
             onClick: () => void finishLater(),
           },
     },
     {
       key: "pictures",
-      label: "Pictures",
-      title: title("Pictures", "Should the table have pictures?", "pictures"),
-      blurb: "Character portraits, scene art and battle maps. Every table works without them.",
+      label: t("setup.step.pictures"),
+      title: title(t("setup.pictures.eyebrow"), t("setup.pictures.title"), "pictures"),
+      blurb: t("setup.pictures.blurb"),
       content: (
         <PicturesStep
           draft={draft}
@@ -373,7 +375,7 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
           storyIsOpenAi={storyIsOpenAi}
           agentPaints={agentPaints}
           agentVerified={Boolean(config.harness.imagesVerifiedAt)}
-          agentLabel={draft.agent.id === "grok" ? "Grok Build" : "Codex"}
+          agentLabel={draft.agent.id === "grok" ? t("setup.agentLabel.grok") : t("setup.agentLabel.codex")}
           onAgentVerified={() => void refreshConfig()}
           openaiKeySaved={config.images.hasOpenaiApiKey}
           env={env}
@@ -384,13 +386,13 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
       ),
       blocker: picturesBlocker,
       canContinue: !picturesBlocker,
-      secondary: { label: "Skip for now", title: "Leaves pictures as they are. Nothing on this step is saved.", onClick: () => skip("pictures") },
+      secondary: { label: t("setup.pictures.skip"), title: t("setup.pictures.skipTitle"), onClick: () => skip("pictures") },
     },
     {
       key: "voice",
-      label: "Voice",
-      title: title("Speech", "Should the storyteller speak?", "voice"),
-      blurb: "Narration reads each passage aloud; dictation lets players talk instead of type. Both are optional.",
+      label: t("setup.step.voice"),
+      title: title(t("setup.voice.eyebrow"), t("setup.voice.title"), "voice"),
+      blurb: t("setup.voice.blurb"),
       content: (
         <VoiceStep
           draft={draft}
@@ -406,31 +408,31 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
       ),
       blocker: voiceBlocker,
       canContinue: !voiceBlocker,
-      secondary: { label: "Skip for now", title: "Leaves narration and dictation as they are. Nothing on this step is saved.", onClick: () => skip("voice") },
+      secondary: { label: t("setup.pictures.skip"), title: t("setup.voice.skipTitle"), onClick: () => skip("voice") },
     },
     {
       key: "players",
-      label: "Players",
-      title: title("Players", "How do players get in?", "players"),
-      blurb: "The address to send your friends, and who may make an account.",
+      label: t("setup.step.players"),
+      title: title(t("setup.players.eyebrow"), t("setup.players.title"), "players"),
+      blurb: t("setup.players.blurb"),
       content: (
         <PlayersStep draft={draft} update={update} lanUrls={info.lanUrls} />
       ),
-      secondary: { label: "Skip for now", title: "Leaves sign-ups and the address as they are. Nothing on this step is saved.", onClick: () => skip("players") },
+      secondary: { label: t("setup.pictures.skip"), title: t("setup.players.skipTitle"), onClick: () => skip("players") },
     },
     {
       key: "agent",
-      label: "Your agent",
-      title: title("Your own agent", "Bring your own AI agent?", "agent"),
-      blurb: "Optional. Connect Claude Code, Codex or opencode to this server over MCP, as you.",
+      label: t("setup.step.agent"),
+      title: title(t("setup.agent.eyebrow"), t("setup.agent.title"), "agent"),
+      blurb: t("setup.agent.blurb"),
       content: <YourAgentStep made={made} onMade={setMade} />,
-      continueLabel: made ? "Continue" : "Skip for now",
+      continueLabel: made ? t("setup.agent.continue") : t("setup.agent.skip"),
     },
     {
       key: "ready",
-      label: "Ready",
-      title: title("All set", "Your server is ready", "ready"),
-      blurb: "Here is what it can do right now. Change any of it here, or later in the admin panel.",
+      label: t("setup.step.ready"),
+      title: title(t("setup.ready.eyebrow"), t("setup.ready.title"), "ready"),
+      blurb: t("setup.ready.blurb"),
       content: (
         <ReadyStep
           key={readyVisit}
@@ -449,14 +451,14 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
     <>
       <button
         type="button"
-        aria-label="Leave setup"
+        aria-label={t("setup.leaveAria")}
         onClick={() => navigateTo("/")}
         className="absolute right-3 top-3 z-10 rounded p-1 text-stone-400 hover:bg-stone-900 sm:right-5 sm:top-5"
       >
         <X className="size-4" />
       </button>
       <Wizard
-        title="Server setup"
+        title={t("setup.title")}
         variant="diamonds"
         steps={steps.map((entry) =>
           entry.key === KEYS[step] && saving
@@ -464,7 +466,7 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
                 ...entry,
                 continueLabel: (
                   <>
-                    <Loader2 className="size-4 animate-spin" /> Saving
+                    <Loader2 className="size-4 animate-spin" /> {t("setup.saving")}
                   </>
                 ),
               }
@@ -479,7 +481,7 @@ export function SetupWizard({ config: initialConfig, env, info }: { config: Mask
         doneLabel={
           <>
             {saving ? <Loader2 className="size-4 animate-spin" /> : null}
-            Start your first campaign
+            {t("setup.doneLabel")}
           </>
         }
         className="[&>header]:pr-9"

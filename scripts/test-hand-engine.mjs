@@ -22,6 +22,8 @@ const { hudGates } = await import("../src/lib/battlemap/hand-hud.ts");
 const { conditionNote, conditionNoteLine, namesLookup } = await import("../src/lib/battlemap/condition-notes.ts");
 const { characterStageRows, enemyStageRows } = await import("../src/lib/battlemap/view-stage.ts");
 const { messageIntentSchema, describeIntent, intentAnswered, intentCorrection, intentTools } = await import("../src/lib/dm/intent-logic.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+const t = (key, vars) => translate("en", key, vars);
 const { maxHpView, speedView, hitDiceRows, hitDiceLine, itemStatus, stateTags } = await import(
   "../src/components/sheet/sheet-state.ts"
 );
@@ -450,17 +452,18 @@ test("a character's token rows carry concentration, exhaustion and the death tra
 
 test("the sheet's hit points and speed are the engine's effective ones, with the reason", () => {
   const worn = sheet({ maxHp: 40, currentHp: 18, exhaustion: 4 });
-  const hp = maxHpView(worn);
+  const hp = maxHpView(t, worn);
   assert.equal(hp.max, 20);
   assert.match(hp.note, /halved by exhaustion 4/);
-  assert.equal(speedView(sheet({ conditions: ["grappled"] })).speed, 0);
-  assert.match(speedView(sheet({ conditions: ["grappled"] })).notes.join(" "), /grappled: speed 0/);
-  assert.equal(speedView(sheet({ exhaustion: 2 })).speed, 15);
-  assert.match(speedView(sheet({ exhaustion: 2 })).notes.join(" "), /Exhaustion 2: speed halved/);
+  assert.equal(speedView(t, sheet({ conditions: ["grappled"] })).speed, 0);
+  assert.match(speedView(t, sheet({ conditions: ["grappled"] })).notes.join(" "), /grappled: speed 0/);
+  assert.equal(speedView(t, sheet({ exhaustion: 2 })).speed, 15);
+  assert.match(speedView(t, sheet({ exhaustion: 2 })).notes.join(" "), /Exhaustion 2: speed halved/);
 });
 
 test("the sheet's state row: the death track, exhaustion's effects, concentration, a readied trigger, Inspiration", () => {
   const tags = stateTags(
+    t,
     sheet({
       currentHp: 0,
       deathSaves: { successes: 2, failures: 1 },
@@ -490,13 +493,13 @@ test("every hit die pool of a multiclass character is shown", () => {
 
 test("a charged item shows its count, a pending attunement shows, and a cursed one refuses to let go", () => {
   const wand = item("Wand of Magic Missiles");
-  assert.equal(itemStatus(sheet({ equipment: [wand] }), wand).charges, "7/7 charges");
+  assert.equal(itemStatus(t, sheet({ equipment: [wand] }), wand).charges, "7/7 charges");
   const used = item("Wand of Magic Missiles", { charges: 4 });
-  assert.equal(itemStatus(sheet({ equipment: [used] }), used).charges, "4/7 charges");
+  assert.equal(itemStatus(t, sheet({ equipment: [used] }), used).charges, "4/7 charges");
   const pending = item("Ring of Protection", { attuning: true });
-  assert.equal(itemStatus(sheet({ equipment: [pending] }), pending).attuning, true);
+  assert.equal(itemStatus(t, sheet({ equipment: [pending] }), pending).attuning, true);
   const axe = item("Berserker Axe", { equipped: true, attuned: true });
-  const status = itemStatus(sheet({ equipment: [axe] }), axe);
+  const status = itemStatus(t, sheet({ equipment: [axe] }), axe);
   assert.equal(status.cursed, true);
   assert.match(status.attuneRefusal, /is cursed/);
 });

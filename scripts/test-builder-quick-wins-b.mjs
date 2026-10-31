@@ -109,7 +109,7 @@ await test("Q5: a prepared caster's limit carries its working", async () => {
   assert.equal(preparedFormula("cha", 1, "paladin", 5), "Charisma modifier (+1) + half your level, rounded down (2)");
   assert.equal(preparedFormula("int", -1, "wizard", 1), "Intelligence modifier (-1) + level (1), and never fewer than 1");
   const step = read("src/app/characters/builder/steps/SpellsGearStep.tsx");
-  assert.equal((step.match(/\$\{limitWhy\}/g) ?? []).length, 2, "both prepared-count notes say the working");
+  assert.equal((step.match(/why: limitWhy/g) ?? []).length, 2, "both prepared-count notes say the working");
 });
 
 await test("Q7: a throw's name says which die was set aside", async () => {

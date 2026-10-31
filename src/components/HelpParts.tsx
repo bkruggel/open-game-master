@@ -6,6 +6,8 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
 import { textKey } from "@/lib/language/text-logic";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 
 // The painted glyph each section of this dialog leads with, by title. The
 // other help dialogs pass titles that are not here and keep their line icon.
@@ -40,15 +42,20 @@ function sectionId(title: string): string {
 export function Section({
   icon: Icon,
   title,
+  id,
   children,
 }: {
   icon: LucideIcon;
   title: string;
+  // The section's stable English id (its key in the glyph map and its anchor),
+  // when the title on screen is a translated line.
+  id?: string;
   children: ReactNode;
 }) {
-  const glyph = SECTION_GLYPHS[title];
+  const key = id ?? title;
+  const glyph = SECTION_GLYPHS[key];
   return (
-    <section id={sectionId(title)} className="mb-6 scroll-mt-4 last:mb-0">
+    <section id={sectionId(key)} className="mb-6 scroll-mt-4 last:mb-0">
       {/* The kit heading's classes with either a painted glyph or, for the
           dialogs that have none, the line icon they always passed. */}
       <header className="section-head">
@@ -90,6 +97,30 @@ export function ModeRow({
   );
 }
 
+
+// The title each section shows, by its stable English id: the ids double as
+// the glyph map's keys and the anchors, while the words on screen follow the
+// table's language.
+const SECTION_TITLE_KEYS: Record<string, MessageKey> = {
+  "Guided tours": "help.tours.heading",
+  "Getting started": "help.started.heading",
+  "The lobby": "help.lobby.heading",
+  "Talking to the GM": "help.talking.heading",
+  "Your hand in a fight": "help.hand.heading",
+  "When the GM gets it wrong": "help.fixes.heading",
+  "Report a problem": "help.report.heading",
+  "What the GM remembers": "help.memory.heading",
+  "The side panel": "help.panel.heading",
+  Dice: "help.dice.heading",
+  "Voice and narration": "help.voice.heading",
+  "Live voice chat": "help.live.heading",
+  "Ambience and music": "help.ambience.heading",
+  "Playing with a human GM": "help.human.heading",
+  "Party lead": "help.lead.heading",
+  "Campaign plugins": "help.plugins.heading",
+  "New to D&D?": "help.newbie.heading",
+  About: "help.about.heading",
+};
 
 // Everyday words for what a section covers that its title does not say, so
 // "volume" finds the narration and ambience sections and "mic" finds voice
@@ -150,6 +181,7 @@ export function HelpContents({
   withReport?: boolean;
   initialSection?: string;
 }) {
+  const t = useT();
   const [find, setFind] = useState("");
   const needle = textKey(find);
   // Opened from a control that has a section of its own: brought into view
@@ -159,12 +191,13 @@ export function HelpContents({
     const timer = window.setTimeout(() => jumpToSection(initialSection), 120);
     return () => window.clearTimeout(timer);
   }, [initialSection]);
-  const contents = Object.keys(SECTION_GLYPHS).filter((title) => {
-    if (title === "Guided tours" && !withTours) return false;
-    if (title === "Report a problem" && !withReport) return false;
+  const contents = Object.keys(SECTION_GLYPHS).filter((id) => {
+    if (id === "Guided tours" && !withTours) return false;
+    if (id === "Report a problem" && !withReport) return false;
     if (!needle) return true;
-    const text = typeof document === "undefined" ? "" : document.getElementById(sectionId(title))?.textContent ?? "";
-    return helpMatches(title, needle, text);
+    const shown = SECTION_TITLE_KEYS[id] ? t(SECTION_TITLE_KEYS[id]) : id;
+    const text = typeof document === "undefined" ? "" : document.getElementById(sectionId(id))?.textContent ?? "";
+    return helpMatches(`${id} ${shown}`, needle, text);
   });
   return (
     <nav aria-label="Help contents" className="mb-5">
@@ -180,24 +213,24 @@ export function HelpContents({
               jumpToSection(contents[0]);
             }
           }}
-          placeholder="Find a topic, a button or a word"
-          aria-label="Find a help topic"
+          placeholder={t("help.find.placeholder")}
+          aria-label={t("help.find.aria")}
           className={cn(ui.input, "h-10 pl-9")}
         />
       </div>
       <div className="stagger-pop flex flex-wrap gap-1.5" aria-live="polite">
-        {contents.map((title) => (
+        {contents.map((id) => (
           <button
-            key={title}
+            key={id}
             type="button"
-            onClick={() => jumpToSection(title)}
+            onClick={() => jumpToSection(id)}
             className="motion-press inline-flex min-h-9 items-center gap-1.5 rounded-full border border-stone-700/70 py-0.5 pl-1 pr-3 text-xs text-stone-300 hover:border-amber-500/40 hover:text-amber-100"
           >
-            <GameIcon icon={{ kind: "glyph", key: SECTION_GLYPHS[title] }} size="size-6" />
-            {title}
+            <GameIcon icon={{ kind: "glyph", key: SECTION_GLYPHS[id] }} size="size-6" />
+            {SECTION_TITLE_KEYS[id] ? t(SECTION_TITLE_KEYS[id]) : id}
           </button>
         ))}
-        {!contents.length ? <p className="text-xs text-stone-500">Nothing in Help mentions that. Try another word.</p> : null}
+        {!contents.length ? <p className="text-xs text-stone-500">{t("help.find.nothing")}</p> : null}
       </div>
     </nav>
   );

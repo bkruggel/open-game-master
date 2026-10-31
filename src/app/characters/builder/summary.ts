@@ -69,7 +69,10 @@ export function someNames(names: string[], shown = 3): string {
 
 const counted = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-export function summaryRows(input: SummaryInput): SummaryRow[] {
+// The caller's translator (home/types.ts agoLabel pattern): the owed picks'
+// labels read in the reader's language. The rows' own labels and lines are
+// the engine's own words this pass.
+export function summaryRows(t: (key: string, vars?: Record<string, string | number>) => string, input: SummaryInput): SummaryRow[] {
   const name = input.name.trim();
   const items = input.gear.reduce((sum, item) => sum + Math.max(item.qty, 1), 0);
   const gearLine = items
@@ -92,13 +95,13 @@ export function summaryRows(input: SummaryInput): SummaryRow[] {
         // Said only once chosen: it is optional, and owes nothing unset.
         ...(input.gender ? [`Gender: ${input.gender}`] : []),
       ],
-      owed: owedPicks(input.owed.calling),
+      owed: owedPicks(t, input.owed.calling),
     },
     {
       key: "ancestry",
       label: "Ancestry and background",
       lines: [input.race ?? "No ancestry chosen", input.background ? `${input.background} background` : "No background chosen"],
-      owed: owedPicks(input.owed.ancestry),
+      owed: owedPicks(t, input.owed.ancestry),
     },
     {
       key: "abilities",
@@ -108,7 +111,7 @@ export function summaryRows(input: SummaryInput): SummaryRow[] {
           ? ABILITIES.map((ability) => `${ABILITY_SHORT[ability]} ${input.abilities?.[ability]}`).join(", ")
           : "Not set yet",
       ],
-      owed: owedPicks(input.owed.abilities),
+      owed: owedPicks(t, input.owed.abilities),
     },
     {
       key: "spells-gear",
@@ -122,13 +125,13 @@ export function summaryRows(input: SummaryInput): SummaryRow[] {
           : []),
         gearLine,
       ],
-      owed: owedPicks(input.owed.spells),
+      owed: owedPicks(t, input.owed.spells),
     },
     {
       key: "identity",
       label: "Name and story",
       lines: [name || "No name yet", ...touches],
-      owed: owedPicks(input.owed.identity),
+      owed: owedPicks(t, input.owed.identity),
     },
   ];
 }

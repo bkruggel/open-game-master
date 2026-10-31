@@ -4,6 +4,7 @@ import { Loader2, Scale } from "lucide-react";
 import { useState } from "react";
 import { ui } from "@/lib/ui";
 import { Dialog } from "@/components/ui/Dialog";
+import { useT } from "@/lib/locale";
 import { DISPUTE_REASON_MAX } from "@/lib/dm/dispute-logic";
 
 // A player objects to a passage the AI narrated: a line on why, then
@@ -22,6 +23,7 @@ export function DisputeDialog({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const t = useT();
 
   function close() {
     setReason("");
@@ -41,7 +43,7 @@ export function DisputeDialog({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not raise the dispute.");
+        setError(data.error || t("table.dispute.failed"));
         return;
       }
       close();
@@ -54,34 +56,30 @@ export function DisputeDialog({
     <Dialog
       open={Boolean(messageId)}
       onOpenChange={(open) => !open && close()}
-      title="Dispute this ruling"
+      title={t("table.dispute.title")}
       icon={<Scale className="size-4 text-amber-300" />}
     >
       <div className="space-y-4">
-        <p className="text-sm leading-6 text-stone-400">
-          Say what the narrator got wrong: a hit that should have missed, a rule misread, the
-          wrong target. Whoever steers the story will uphold it, overrule it, or put it to the
-          table. The fix comes after the ruling.
-        </p>
+        <p className="text-sm leading-6 text-stone-400">{t("table.dispute.intro")}</p>
         <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wide text-stone-500">Why</span>
+          <span className="mb-1 block text-xs uppercase tracking-wide text-stone-500">{t("table.dispute.why")}</span>
           <textarea
             className={ui.input}
             rows={3}
             maxLength={DISPUTE_REASON_MAX}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="The goblin rolled a 7 against AC 16 and still hit."
+            placeholder={t("table.dispute.placeholder")}
           />
         </label>
         {error ? <p className="motion-shake text-sm text-red-400">{error}</p> : null}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={close} className={ui.btnSmall} disabled={busy}>
-            Cancel
+            {t("action.cancel")}
           </button>
           <button type="button" onClick={submit} className={ui.btnPrimary} disabled={busy} aria-busy={busy}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Scale className="size-4" />}
-            Dispute
+            {t("table.dispute.submit")}
           </button>
         </div>
       </div>

@@ -80,5 +80,5 @@ assert.match(panel, /\{narrating \|\| narrationOff \? <NarrationNote \/> : null\
 assert.doesNotMatch(panel.replace(/const narrating = settings\.ttsEnabled && !narrationOff;/, ""), /\{settings\.ttsEnabled \?/, "no voice control reads the raw switch any more");
 const header = read("src/app/campaigns/[campaignId]/SessionHeader.tsx");
 assert.match(header, /const narrates = ttsEnabled && capabilities\?\.tts\?\.provider !== "off";/);
-assert.match(header, /\{narrates \? \(\s*<HeaderAudioControl\s*onLabel="Mute narration"/, "no narration volume for a server that reads nothing aloud");
+assert.match(header, /\{narrates \? \(\s*<HeaderAudioControl\s*onLabel=\{t\("table\.header\.muteNarration"\)\}/, "no narration volume for a server that reads nothing aloud");
 console.log("ok: the lobby's Narration row and the table's header read the server's speech switch");

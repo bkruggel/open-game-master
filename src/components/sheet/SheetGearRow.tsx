@@ -2,6 +2,7 @@
 
 import { GameIcon } from "@/components/ui/GameIcon";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { changeWears, gearWornState, isWornGear, itemStatus } from "@/components/sheet/sheet-state";
 import { armorChangeMinutes } from "@/lib/dm/don-doff";
 import { matchArmor } from "@/lib/srd/armor";
@@ -51,12 +52,13 @@ export function SheetGearRow({
 }) {
   // Magic gear works only while worn, so every row here can
   // be put on; only body armor is barred in a fight.
+  const t = useT();
   const isArmor = matchArmor(item) !== null;
   const isShield = matchArmor(item)?.category === "shield";
   const armorLocked = inCombat && isArmor && !isShield;
   // A shield takes the action, on the character's own turn.
   const shieldLocked = inCombat && isShield && !myTurn;
-  const status = itemStatus(sheet, item);
+  const status = itemStatus(t, sheet, item);
   // Only an item that asks for attunement offers it; plain
   // armor and "+1" gear work without one, and the server
   // refuses the rest (srd/magic-items.ts attunementProblem).
@@ -72,12 +74,12 @@ export function SheetGearRow({
       <GameIcon icon={{ kind: "item", key: item.name, family: "item-gear" }} size="size-6" />
       <span className="min-w-0 grow truncate">{item.name}</span>
       {idle ? (
-        <span className="motion-pop shrink-0 rounded-full border border-stone-700 px-1.5 text-[10px] text-stone-400" title={`Worn, but a character wears ${idle} at a time, so its magic does not count.`}>
-          not in effect
+        <span className="motion-pop shrink-0 rounded-full border border-stone-700 px-1.5 text-[10px] text-stone-400" title={t("sheet.gear.idleTitle", { kind: idle })}>
+          {t("sheet.gear.idle")}
         </span>
       ) : item.layered && worn ? (
-        <span className="motion-pop shrink-0 rounded-full border border-amber-800/60 px-1.5 text-[10px] text-amber-300" title="Worn beside another of its kind, on the GM's say.">
-          beside another
+        <span className="motion-pop shrink-0 rounded-full border border-amber-800/60 px-1.5 text-[10px] text-amber-300" title={t("sheet.gear.layeredTitle")}>
+          {t("sheet.gear.layered")}
         </span>
       ) : null}
       {status.charges ? (
@@ -86,13 +88,13 @@ export function SheetGearRow({
         </span>
       ) : null}
       {status.attuning ? (
-        <span className="motion-pop shrink-0 rounded-full border border-sky-800/60 px-1.5 text-[10px] text-sky-300" title="Attuning takes a short rest; the next rest completes it.">
-          attunes at the next rest
+        <span className="motion-pop shrink-0 rounded-full border border-sky-800/60 px-1.5 text-[10px] text-sky-300" title={t("sheet.gear.attuningTitle")}>
+          {t("sheet.gear.attuning")}
         </span>
       ) : null}
       {status.cursed ? (
-        <span className="motion-pop shrink-0 rounded-full border border-red-800/60 px-1.5 text-[10px] text-red-300" title={status.attuneRefusal ?? "Cursed"}>
-          cursed
+        <span className="motion-pop shrink-0 rounded-full border border-red-800/60 px-1.5 text-[10px] text-red-300" title={status.attuneRefusal ?? t("sheet.gear.cursedTitle")}>
+          {t("sheet.gear.cursed")}
         </span>
       ) : null}
       {/* Only what is worn or wielded offers it: a wand is held, a potion carried. */}
@@ -103,7 +105,7 @@ export function SheetGearRow({
         aria-busy={busy}
         title={
           dead
-            ? `${sheet.name} is dead and cannot change what they wear or are attuned to.`
+            ? t("sheet.gear.deadTitle", { name: sheet.name })
             : !inCombat
               ? // What the route will charge the clock (don-doff.ts), before the press.
                 armorChangeMinutes(sheet.equipment, { [item.name]: { equipped: !worn } }).lines.join(" ") || undefined
@@ -111,9 +113,9 @@ export function SheetGearRow({
                 ? undefined
                 : isShield
                   ? shieldLocked
-                    ? "A shield takes your action, on your own turn; it is not your turn."
-                    : "A shield takes your action, on your own turn"
-                  : "Armor takes minutes to change, so not during a fight"
+                    ? t("sheet.gear.shieldNotTurn")
+                    : t("sheet.gear.shieldCost")
+                  : t("sheet.gear.armorFight")
         }
         onClick={() => onGear({ equipped: !worn })}
         className={cn(
@@ -123,7 +125,7 @@ export function SheetGearRow({
             : "border-stone-700 text-stone-400",
         )}
       >
-        {worn ? "worn" : "wear"}
+        {worn ? t("sheet.gear.worn") : t("sheet.gear.wear")}
       </button>
       ) : null}
       {attunable ? (
@@ -134,7 +136,7 @@ export function SheetGearRow({
         // the three-item cap, who may attune).
         title={
           inCombat
-            ? "Attuning to an item, or ending it, takes a short rest, so not during a fight."
+            ? t("sheet.gear.attuneFight")
             : (status.attuneRefusal ??
               // Ending it on purpose moves the clock an hour (don-doff.ts).
               (item.attuned
@@ -149,24 +151,24 @@ export function SheetGearRow({
             : "border-stone-700 text-stone-400",
         )}
       >
-        {item.attuned ? "attuned" : item.attuning ? "cancel" : "attune"}
+        {item.attuned ? t("sheet.gear.attuned") : item.attuning ? t("sheet.gear.cancel") : t("sheet.gear.attune")}
       </button>
       ) : null}
     </div>
     {conflict ? (
-      <div role="group" aria-label={`Wear ${item.name}?`} className="reveal ml-8 space-y-1.5 rounded border border-amber-800/60 bg-amber-950/30 px-2 py-1.5 text-[11px] text-amber-100">
+      <div role="group" aria-label={t("sheet.gear.wearAsk", { name: item.name })} className="reveal ml-8 space-y-1.5 rounded border border-amber-800/60 bg-amber-950/30 px-2 py-1.5 text-[11px] text-amber-100">
         <p>{swapQuestion(conflict)}</p>
         <div className="flex flex-wrap gap-1.5">
           <button type="button" disabled={busy} onClick={onSwap} className="motion-press rounded border border-amber-700/70 bg-amber-950/40 px-1.5 py-0.5 text-amber-200 disabled:opacity-40">
-            Take off {conflict.wearing.join(" and ")}, wear {item.name}
+            {t("sheet.gear.swap", { off: conflict.wearing.join(" and "), name: item.name })}
           </button>
           {canLayer ? (
-            <button type="button" disabled={busy} onClick={onLayer} title="The SRD's exception, the GM's call: a circlet under a helmet, two cloaks layered." className="motion-press rounded border border-stone-600 px-1.5 py-0.5 text-stone-200 disabled:opacity-40">
-              Wear both (GM&apos;s call)
+            <button type="button" disabled={busy} onClick={onLayer} title={t("sheet.gear.wearBothTitle")} className="motion-press rounded border border-stone-600 px-1.5 py-0.5 text-stone-200 disabled:opacity-40">
+              {t("sheet.gear.wearBoth")}
             </button>
           ) : null}
           <button type="button" onClick={onDismiss} className="motion-press rounded border border-stone-700 px-1.5 py-0.5 text-stone-400">
-            Keep as is
+            {t("sheet.gear.keepAsIs")}
           </button>
         </div>
       </div>

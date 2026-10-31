@@ -1,4 +1,9 @@
+import type { MessageKey } from "@/lib/messages/en";
 import type { BlockerTarget, StepBlock } from "./submit";
+
+// The caller's translator (home/types.ts agoLabel pattern): the owed line
+// reads in the reader's language, a test passing translate("en", ...).
+type Translator = (key: string, vars?: Record<string, string | number>) => string;
 
 // The "choices left on this step" line (steps/shared.tsx OwedLine): every
 // pick a step's gate still holds, once per block, in the gate's order and
@@ -6,53 +11,50 @@ import type { BlockerTarget, StepBlock } from "./submit";
 // says how many there are and goes to each. Pure, for
 // scripts/test-builder-owed.mjs.
 
-export const TARGET_WORDS: Record<BlockerTarget, string> = {
-  name: "Name",
-  background: "Background",
-  backgroundSkills: "Background skills",
-  race: "Race",
-  languages: "Languages",
-  racialAsi: "Ability bonus",
-  racialSkills: "Race skills",
-  racialTool: "Tool",
-  racialCantrip: "Cantrip",
-  racialFeat: "Feat",
-  ancestry: "Draconic ancestry",
+export const TARGET_WORDS: Record<BlockerTarget, MessageKey> = {
+  name: "builder.owed.name",
+  background: "builder.owed.background",
+  backgroundSkills: "builder.owed.backgroundSkills",
+  race: "builder.owed.race",
+  languages: "builder.owed.languages",
+  racialAsi: "builder.owed.racialAsi",
+  racialSkills: "builder.owed.racialSkills",
+  racialTool: "builder.owed.racialTool",
+  racialCantrip: "builder.owed.racialCantrip",
+  racialFeat: "builder.owed.racialFeat",
+  ancestry: "builder.owed.ancestry",
   // The species names its own choice ("Bloodline"); the block carries it.
-  variant: "Species choice",
-  repeatSkills: "Replacement skill",
-  class: "Class",
-  multiclass: "Second class",
-  classSkills: "Class skills",
-  tools: "Tools",
-  subclass: "Subclass",
-  styles: "Fighting style",
-  expertise: "Expertise",
-  options: "Class options",
-  scores: "Ability scores",
-  asi: "Ability score improvement",
-  spells: "Spells",
-  gear: "Gear",
+  variant: "builder.owed.variant",
+  repeatSkills: "builder.owed.repeatSkills",
+  class: "builder.owed.class",
+  multiclass: "builder.owed.multiclass",
+  classSkills: "builder.owed.classSkills",
+  tools: "builder.owed.tools",
+  subclass: "builder.owed.subclass",
+  styles: "builder.owed.styles",
+  expertise: "builder.owed.expertise",
+  options: "builder.owed.options",
+  scores: "builder.owed.scores",
+  asi: "builder.owed.asi",
+  spells: "builder.owed.spells",
+  gear: "builder.owed.gear",
 };
 
 export type OwedPick = { target: BlockerTarget; label: string; message: string };
 
-export function owedPicks(blocks: ReadonlyArray<StepBlock>): OwedPick[] {
+export function owedPicks(t: Translator, blocks: ReadonlyArray<StepBlock>): OwedPick[] {
   const seen = new Set<BlockerTarget>();
   const out: OwedPick[] = [];
   for (const entry of blocks) {
     if (seen.has(entry.target)) continue;
     seen.add(entry.target);
-    out.push({ target: entry.target, label: entry.label ?? TARGET_WORDS[entry.target], message: entry.message });
+    out.push({ target: entry.target, label: entry.label ?? t(TARGET_WORDS[entry.target]), message: entry.message });
   }
   return out;
 }
 
-const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
-
 // "Two choices left on this step", or null when none are.
-export function owedHeadline(count: number): string | null {
+export function owedHeadline(t: Translator, count: number): string | null {
   if (count <= 0) return null;
-  const words = COUNT_WORDS[count] ?? String(count);
-  return `${words} ${count === 1 ? "choice" : "choices"} left on this step`;
+  return t("builder.owed.headline", { count });
 }

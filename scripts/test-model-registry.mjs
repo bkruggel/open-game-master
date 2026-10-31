@@ -28,6 +28,7 @@ const probes = await import("../src/lib/model-registry/probes.ts");
 const blanks = await import("../src/app/admin/model-blanks.ts");
 const { modelChoices } = await import("../src/lib/model-registry/registry.ts");
 const { forgetOllamaInfoForTests, forgetSoleModelsForTests, soleListedModel } = await import("../src/lib/model-registry/discovery.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
 const hardware = await import("../src/lib/model-registry/hardware.ts");
 const textModels = await import("../src/lib/text-models.ts");
 const { normalizeSettings } = await import("../src/lib/db/settings.ts");
@@ -472,14 +473,17 @@ try {
   });
 
   await test("every picker's blank entry says what it runs, or None with what that means", () => {
+    // The blanks build their sentences for the screen; the test reads them in English.
+    const t = (key, vars) => translate("en", key, vars);
     const listing = (ids) => ({ reachable: true, models: ids.map((id) => ({ id, label: id, listed: true })) });
-    assert.equal(blanks.BLANK.whisper(listing(["large-v3"])), "large-v3 (the server's only model)");
-    assert.equal(blanks.BLANK.whisper(listing(["large-v3", "small"])), "None (no Whisper dictation)");
-    assert.equal(blanks.BLANK.story(null), "Not chosen (the server's only model, once it answers)", "before the server answers, nobody knows");
-    assert.equal(blanks.BLANK.story({ reachable: false, models: [] }), "Not chosen (the server's only model, once it answers)");
-    assert.equal(blanks.BLANK.story({ reachable: true, models: [{ id: "saved", label: "saved", listed: false }, { id: "only", label: "only", listed: true }] }), "only (the server's only model)", "a saved model the server dropped is not counted");
-    assert.equal(blanks.fromEnv("large-v3", "STT_MODEL"), "large-v3 (from STT_MODEL)");
-    for (const [field, label] of Object.entries(blanks.BLANK)) {
+    const BLANK = blanks.blanks(t);
+    assert.equal(BLANK.whisper(listing(["large-v3"])), "large-v3 (the server's only model)");
+    assert.equal(BLANK.whisper(listing(["large-v3", "small"])), "None (no Whisper dictation)");
+    assert.equal(BLANK.story(null), "Not chosen (the server's only model, once it answers)", "before the server answers, nobody knows");
+    assert.equal(BLANK.story({ reachable: false, models: [] }), "Not chosen (the server's only model, once it answers)");
+    assert.equal(BLANK.story({ reachable: true, models: [{ id: "saved", label: "saved", listed: false }, { id: "only", label: "only", listed: true }] }), "only (the server's only model)", "a saved model the server dropped is not counted");
+    assert.equal(blanks.fromEnv(t, "large-v3", "STT_MODEL"), "large-v3 (from STT_MODEL)");
+    for (const [field, label] of Object.entries(BLANK)) {
       const text = typeof label === "function" ? label(listing(["a", "b"])) : label;
       assert.match(text, /^(None \(no [^()]+\)|Not chosen \([^()]+\))$/, `${field}: "${text}"`);
     }

@@ -7,6 +7,8 @@ import { register } from "node:module";
 register("./lib/register-alias.mjs", import.meta.url);
 const submit = await import("../src/app/characters/builder/submit.ts");
 const { owedHeadline, owedPicks } = await import("../src/app/characters/builder/owed.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+const t = (key, vars) => translate("en", key, vars);
 
 const state = { name: "", backgroundSkills: [], bonusLanguages: [], racialAsi: [], racialSkills: [], feats: [], repeatSkills: [] };
 const background = { id: "pack_bg", name: "Wanderer", skills: [], skillChoice: { count: 2, from: ["athletics", "survival", "stealth"] }, languages: 1 };
@@ -37,10 +39,10 @@ assert.deepEqual(submit.ancestryBlocker(state, halfElf, background), ancestry[0]
 assert.deepEqual(submit.abilitiesBlocks({ abilities: null }).map((entry) => entry.target), ["scores"]);
 
 // One link per block, in a player's words; the headline counts them.
-const picks = owedPicks([...ancestry, { target: "languages", message: "again" }]);
+const picks = owedPicks(t, [...ancestry, { target: "languages", message: "again" }]);
 assert.deepEqual(picks.map((entry) => entry.label), ["Languages", "Ability bonus", "Race skills"]);
 assert.equal(picks[0].message, ancestry[0].message);
-assert.equal(owedHeadline(picks.length), "Three choices left on this step");
-assert.equal(owedHeadline(1), "One choice left on this step");
-assert.equal(owedHeadline(0), null);
+assert.equal(owedHeadline(t, picks.length), "3 choices left on this step");
+assert.equal(owedHeadline(t, 1), "1 choice left on this step");
+assert.equal(owedHeadline(t, 0), null);
 console.log("test-builder-owed: ok");

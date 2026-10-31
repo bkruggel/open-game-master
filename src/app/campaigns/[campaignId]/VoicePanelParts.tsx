@@ -4,6 +4,7 @@ import { DoorOpen } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { Select } from "@/components/ui/Select";
@@ -39,10 +40,11 @@ export function VoiceSettings({
   micMode: MicMode;
   onSelectMicMode: (mode: MicMode) => void;
 }) {
+  const t = useT();
   return (
     <div className="reveal panel mt-2 space-y-2.5 rounded-lg p-2.5">
       <div>
-        <span className="session-field-label">Everyone{"\u2019"}s volume</span>
+        <span className="session-field-label">{t("voice.settings.everyoneVolume")}</span>
         <Slider
           min={0}
           max={MASTER_VOLUME_MAX}
@@ -50,42 +52,43 @@ export function VoiceSettings({
           value={masterVolume}
           disabled={deafened}
           onChange={onMasterVolume}
-          label="How loud the whole call is"
+          label={t("voice.settings.masterHint")}
           bubble={(value) => `${Math.round(value * 100)}%`}
           className="w-full"
         />
       </div>
       <div>
-        <span className="session-field-label">Microphone</span>
+        <span className="session-field-label">{t("voice.settings.microphone")}</span>
         <Select
           value={micId}
           onChange={onSelectMic}
-          label="Microphone"
+          label={t("voice.settings.microphone")}
           size="sm"
           className="w-full"
           options={[
-            { value: "", label: "System default" },
+            { value: "", label: t("voice.settings.micDefault") },
             ...micDevices.map((device) => ({ value: device.deviceId, label: device.label })),
           ]}
         />
       </div>
       <div>
         <span className="session-field-label">
-          Mode {micMode === "ptt" ? "(hold ` or the button)" : ""}
+          {t("voice.settings.mode")}
+          {micMode === "ptt" ? t("voice.settings.modePtt") : ""}
         </span>
         <Select<MicMode>
           value={micMode}
           onChange={onSelectMicMode}
-          label="Microphone mode"
+          label={t("voice.settings.micModeLabel")}
           size="sm"
           className="w-full"
           options={[
-            { value: "open", label: "Open mic" },
-            { value: "ptt", label: "Push to talk" },
+            { value: "open", label: t("voice.settings.openMic") },
+            { value: "ptt", label: t("voice.settings.pushToTalk") },
           ]}
         />
       </div>
-      <p className="text-[11px] text-stone-500">Saved in this browser.</p>
+      <p className="text-[11px] text-stone-500">{t("voice.settings.savedHere")}</p>
     </div>
   );
 }
@@ -101,10 +104,11 @@ export function VoiceRooms({
   steersStory: boolean;
   onAction: (body: Record<string, unknown>) => void;
 }) {
+  const t = useT();
   const [newRoom, setNewRoom] = useState("");
   return (
     <div className="reveal mt-3">
-      <SectionHead title="Rooms" glyph="tab-campaigns" level="h4" className="mb-1.5" />
+      <SectionHead title={t("voice.rooms.title")} glyph="tab-campaigns" level="h4" className="mb-1.5" />
       <div className="space-y-1">
         {channels.map((channel) => (
           <div key={channel.id} className="flex min-h-8 items-center gap-2 text-xs">
@@ -117,8 +121,8 @@ export function VoiceRooms({
               <button
                 type="button"
                 onClick={() => onAction({ action: "close", channelId: channel.id })}
-                aria-label={`Close ${channel.name} and send everyone back to the table`}
-                title="Close this room and send everyone back to the table"
+                aria-label={t("voice.rooms.closeAria", { name: channel.name })}
+                title={t("voice.rooms.closeTitle")}
                 className={cn(ui.btnSmall, "session-voice-mini ml-auto hover:border-red-500/50 hover:text-red-300")}
               >
                 <DoorOpen className="size-3.5" />
@@ -132,8 +136,8 @@ export function VoiceRooms({
           <input
             value={newRoom}
             onChange={(event) => setNewRoom(event.target.value)}
-            placeholder="New side room"
-            aria-label="New side room"
+            placeholder={t("voice.rooms.newPlaceholder")}
+            aria-label={t("voice.rooms.newPlaceholder")}
             className={cn(ui.input, "min-w-0 flex-1 py-1.5 text-xs")}
           />
           <button
@@ -145,16 +149,16 @@ export function VoiceRooms({
             }}
             className={cn(ui.btnSmall, "text-xs")}
           >
-            Open
+            {t("voice.rooms.open")}
           </button>
           {channels.length > 1 ? (
             <button
               type="button"
               onClick={() => onAction({ action: "recall" })}
-              title="Bring everyone back to the table"
+              title={t("voice.rooms.recallTitle")}
               className={cn(ui.btnSmall, "text-xs")}
             >
-              Recall
+              {t("voice.rooms.recall")}
             </button>
           ) : null}
         </div>

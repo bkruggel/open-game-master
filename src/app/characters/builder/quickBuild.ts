@@ -228,6 +228,9 @@ export function suggestBuilds(answers: QuizAnswers, offered: Offered): BuildSeed
 export type FilledPick = { target: BlockerTarget; label: string; value: string };
 
 export type FillContext = {
+  // The caller's translator (home/types.ts agoLabel pattern): the filled
+  // picks' labels read in the reader's language.
+  t: (key: string, vars?: Record<string, string | number>) => string;
   fields: BuilderDraftFields;
   derived: BuilderDerived;
   race: RaceOption | undefined;
@@ -324,7 +327,7 @@ export function fillRound(ctx: FillContext): FillRound {
   const wants = (target: BlockerTarget) => !ctx.only || ctx.only.includes(target);
   const patch: Partial<BuilderDraftFields> = {};
   const filled: FilledPick[] = [];
-  const note = (target: BlockerTarget, value: string, label = TARGET_WORDS[target]) => filled.push({ target, label, value });
+  const note = (target: BlockerTarget, value: string, label = ctx.t(TARGET_WORDS[target])) => filled.push({ target, label, value });
 
   // The three big choices, in the order they lean on each other: the class
   // decides which species fits, the answers which background.

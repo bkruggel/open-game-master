@@ -22,12 +22,14 @@ import { AdminBackupSection } from "@/app/admin/AdminBackupSection";
 import { AdminStorageSection } from "@/app/admin/AdminStorageSection";
 import { BackendProbe } from "@/app/admin/BackendProbe";
 import { ModelChoiceField } from "@/app/admin/ModelChoice";
-import { BLANK, fromEnv } from "@/app/admin/model-blanks";
+import { blanks, fromEnv } from "@/app/admin/model-blanks";
 import { AdminImagesSection } from "@/app/admin/AdminImagesSection";
 import { AdminSpeechSection } from "@/app/admin/AdminSpeechSection";
 import { AmbienceLibraryCard } from "@/app/admin/AmbienceLibraryCard";
 import { AdminHarnessSection } from "@/app/admin/AdminHarnessSection";
 import { mergeAdminConfigDraft } from "@/app/admin/merge-config-draft";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 import { Lamp, type Tone } from "@/app/setup/SetupParts";
 import { useCapabilities } from "@/lib/use-capabilities";
 import {
@@ -42,20 +44,52 @@ import {
 
 // The sticky contents rail: one stop per section, left out where a device
 // world hides the section itself.
-const STOPS: Array<{ id: string; label: string; glyph: string; server?: boolean }> = [
-  { id: "admin-server", label: "Server", glyph: "tab-settings", server: true },
-  { id: "admin-accounts", label: "Accounts", glyph: "ui-accounts", server: true },
-  { id: "admin-text", label: "Text model", glyph: "ui-ai" },
-  { id: "admin-harness", label: "Agent", glyph: "ui-agent" },
-  { id: "admin-utility", label: "Utility model", glyph: "ui-utility" },
-  { id: "admin-images", label: "Images", glyph: "ui-paint" },
-  { id: "admin-speech", label: "Speech", glyph: "ui-speech" },
-  { id: "admin-ambience", label: "Sound library", glyph: "tab-ambience" },
-  { id: "admin-voice", label: "Voice chat", glyph: "ui-voice", server: true },
-  { id: "admin-discord", label: "Discord", glyph: "system-share", server: true },
-  { id: "admin-player-agents", label: "Player agents", glyph: "ui-agent", server: true },
-  { id: "admin-backup", label: "Backup", glyph: "ui-backup", server: true },
-  { id: "admin-storage", label: "Storage", glyph: "ui-storage" },
+// The rail's labels are the dictionaries' admin.nav.* lines, by stop id.
+type StopId =
+  | "admin-server"
+  | "admin-accounts"
+  | "admin-text"
+  | "admin-harness"
+  | "admin-utility"
+  | "admin-images"
+  | "admin-speech"
+  | "admin-ambience"
+  | "admin-voice"
+  | "admin-discord"
+  | "admin-player-agents"
+  | "admin-backup"
+  | "admin-storage";
+
+const STOP_KEYS: Record<StopId, MessageKey> = {
+  "admin-server": "admin.nav.server",
+  "admin-accounts": "admin.nav.accounts",
+  "admin-text": "admin.nav.text",
+  "admin-harness": "admin.nav.agent",
+  "admin-utility": "admin.nav.utility",
+  "admin-images": "admin.nav.images",
+  "admin-speech": "admin.nav.speech",
+  "admin-ambience": "admin.nav.sound",
+  "admin-voice": "admin.nav.voice",
+  "admin-discord": "admin.nav.discord",
+  "admin-player-agents": "admin.nav.playerAgents",
+  "admin-backup": "admin.nav.backup",
+  "admin-storage": "admin.nav.storage",
+};
+
+const STOPS: Array<{ id: StopId; glyph: string; server?: boolean }> = [
+  { id: "admin-server", glyph: "tab-settings", server: true },
+  { id: "admin-accounts", glyph: "ui-accounts", server: true },
+  { id: "admin-text", glyph: "ui-ai" },
+  { id: "admin-harness", glyph: "ui-agent" },
+  { id: "admin-utility", glyph: "ui-utility" },
+  { id: "admin-images", glyph: "ui-paint" },
+  { id: "admin-speech", glyph: "ui-speech" },
+  { id: "admin-ambience", glyph: "tab-ambience" },
+  { id: "admin-voice", glyph: "ui-voice", server: true },
+  { id: "admin-discord", glyph: "system-share", server: true },
+  { id: "admin-player-agents", glyph: "ui-agent", server: true },
+  { id: "admin-backup", glyph: "ui-backup", server: true },
+  { id: "admin-storage", glyph: "ui-storage" },
 ];
 
 function jumpTo(id: string) {
@@ -67,6 +101,8 @@ function jumpTo(id: string) {
 // field falls back to the env value shown as the placeholder/hint.
 
 export function AdminSettingsPanel() {
+  const t = useT();
+  const BLANK = blanks(t);
   const [config, setConfig] = useState<MaskedConfig | null>(null);
   // The config as the server last saved it, so the panel can say whether
   // anything here is waiting for Save settings.
@@ -177,14 +213,14 @@ export function AdminSettingsPanel() {
   const lampFor = (id: string): { tone: Tone; words: string } | null => {
     const part = id === "admin-text" ? "story" : id === "admin-images" ? "images" : id === "admin-speech" ? "tts" : null;
     if (!part) return null;
-    if (!capabilities) return { tone: "wait", words: "Checking" };
+    if (!capabilities) return { tone: "wait", words: t("admin.lamp.checking") };
     const switchedOff =
       (part === "story" && savedConfig?.text.provider === "none") ||
       (part === "tts" && (savedConfig?.speech.ttsProvider === "off" || capabilities.tts?.provider === "off"));
-    if (switchedOff) return { tone: "off", words: "Switched off" };
+    if (switchedOff) return { tone: "off", words: t("admin.lamp.off") };
     const state = capabilities[part];
-    if (!state.configured) return { tone: "warn", words: "Not set up yet" };
-    return state.reachable ? { tone: "ok", words: "Working" } : { tone: "bad", words: "Set up, but not answering" };
+    if (!state.configured) return { tone: "warn", words: t("admin.lamp.notSetup") };
+    return state.reachable ? { tone: "ok", words: t("admin.lamp.working") } : { tone: "bad", words: t("admin.lamp.stuck") };
   };
 
   async function save() {
@@ -254,7 +290,7 @@ export function AdminSettingsPanel() {
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) {
-        setError(data?.error || "Could not save settings.");
+        setError(data?.error || t("setup.saveError"));
         return;
       }
       setConfig(data.config);
@@ -275,12 +311,12 @@ export function AdminSettingsPanel() {
 
   return (
     <div className="space-y-4">
-      <nav aria-label="Settings sections" className="contents-rail panel">
+      <nav aria-label={t("admin.nav.aria")} className="contents-rail panel">
         {STOPS.filter((stop) => !(deviceWorld && stop.server)).map((stop) => {
           const lamp = lampFor(stop.id);
           return (
             <button key={stop.id} type="button" onClick={() => jumpTo(stop.id)} className="motion-press">
-              <GameIcon icon={{ kind: "glyph", key: stop.glyph }} size="size-7" /> {stop.label}
+              <GameIcon icon={{ kind: "glyph", key: stop.glyph }} size="size-7" /> {t(STOP_KEYS[stop.id])}
               {lamp ? (
                 <span title={lamp.words}>
                   <Lamp tone={lamp.tone} className="ml-0.5" />
@@ -292,42 +328,40 @@ export function AdminSettingsPanel() {
         })}
       </nav>
       <p className="text-xs text-stone-500">
-        Changes on this page wait for <span className="text-stone-300">Save settings</span>, which follows you down the
-        page. Invites, backups, storage and player agents act at once.
+        {t("admin.saveWait.before")}
+        <span className="text-stone-300">{t("admin.saveWait.link")}</span>
+        {t("admin.saveWait.after")}
       </p>
       {/* The lamps in words, so the four states are read rather than told
           apart by colour alone. */}
       <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-400" data-admin-status>
         {(
           [
-            ["admin-text", "Text model"],
-            ["admin-images", "Images"],
-            ["admin-speech", "Speech"],
+            ["admin-text", "admin.nav.text"],
+            ["admin-images", "admin.nav.images"],
+            ["admin-speech", "admin.nav.speech"],
           ] as const
-        ).map(([id, label]) => {
+        ).map(([id, labelKey]) => {
           const lamp = lampFor(id);
           return lamp ? (
             <span key={`${id}-${lamp.words}`} className="reveal inline-flex items-center gap-1.5">
               <Lamp tone={lamp.tone} />
-              {label}: {lamp.words.toLowerCase()}
+              {t(labelKey)}: {lamp.words.toLowerCase()}
             </span>
           ) : null;
         })}
       </p>
       {deviceWorld ? (
         <p className="reveal text-xs text-stone-500">
-          This world runs inside the app, which manages its address, sharing
-          and voice chat for you. There are no passwords or sign-up rules to
-          set: anyone you give a live room code to can join, and nobody else
-          can make an account. The settings here tune the AI it plays with.
+          {t("admin.deviceWorldNote")}
         </p>
       ) : null}
       {deviceWorld ? null : (
-        <PageSection id="admin-server" heading="Server" glyph="tab-settings">
+        <PageSection id="admin-server" heading={t("admin.nav.server")} glyph="tab-settings">
           <div className="mb-3">
             <Field
-              label="Server name"
-              hint="Shown on the login screen and in client apps' server pickers. Blank = Open Game Master."
+              label={t("admin.server.name")}
+              hint={t("admin.server.nameHint")}
             >
               <input
                 className={ui.input}
@@ -339,11 +373,11 @@ export function AdminSettingsPanel() {
             </Field>
           </div>
           <Field
-            label="Public URL"
+            label={t("admin.server.publicUrl")}
             hint={
               env.publicUrl
-                ? inheritedHint(config.publicUrl, env.publicUrl)
-                : "The address players actually use (needed for Discord sign-in behind a reverse proxy). Blank = auto-detect."
+                ? inheritedHint(t, config.publicUrl, env.publicUrl)
+                : t("admin.server.publicUrlHint")
             }
           >
             <input
@@ -357,20 +391,19 @@ export function AdminSettingsPanel() {
       )}
 
       {deviceWorld ? null : (
-        <PageSection id="admin-accounts" heading="Accounts" glyph="ui-accounts">
+        <PageSection id="admin-accounts" heading={t("admin.nav.accounts")} glyph="ui-accounts">
           <SelectField
-            label="New account sign-ups"
+            label={t("admin.accounts.signups")}
             value={config.signupMode}
             onChange={(signupMode) => setConfig({ ...config, signupMode })}
             options={[
-              { value: "open", label: "Open: anyone with the address can register" },
-              { value: "invite", label: "Invite-only: registering needs a code from below" },
-              { value: "closed", label: "Closed: no new accounts" },
+              { value: "open", label: t("admin.accounts.signups.open") },
+              { value: "invite", label: t("admin.accounts.signups.invite") },
+              { value: "closed", label: t("admin.accounts.signups.closed") },
             ]}
           />
           <p className="mt-2 text-xs text-stone-500">
-            Applies to registration and to first-time Discord sign-ins alike. Existing users always
-            keep their access.
+            {t("admin.accounts.signupsNote")}
           </p>
           {config.signupMode === "invite" ? <AdminInvitesSection /> : null}
           {/* Sharing the server with friends who run their own tables
@@ -379,37 +412,37 @@ export function AdminSettingsPanel() {
               the Usage tab. */}
           <div className="mt-4 space-y-3">
             <SelectField
-              label="Who may start campaigns and workshops"
+              label={t("admin.accounts.whoStarts")}
               value={config.sharedHost.campaignCreation || "everyone"}
               onChange={(campaignCreation) => setConfig({ ...config, sharedHost: { ...config.sharedHost, campaignCreation } })}
               options={[
-                { value: "everyone", label: "Everyone with an account" },
-                { value: "admins", label: "Administrators only: others join by room code" },
+                { value: "everyone", label: t("admin.accounts.startEveryone") },
+                { value: "admins", label: t("admin.accounts.startAdmins") },
               ]}
             />
             <SelectField
-              label="Paid AI backends"
-              hint="Paid means a text, picture or speech backend on a public host that takes this server's key (OpenAI, OpenRouter, a hosted model), and the agent program. Backends on this machine or your network (llama-server, Ollama, ComfyUI, Kokoro, Whisper) stay open to every table, keyed or not. A table that may not spend the paid ones can bring its own key in the client app."
+              label={t("admin.accounts.paidAi")}
+              hint={t("admin.accounts.paidAiHint")}
               value={config.sharedHost.paidAi || "everyone"}
               onChange={(paidAi) => setConfig({ ...config, sharedHost: { ...config.sharedHost, paidAi } })}
               options={[
-                { value: "everyone", label: "Every campaign may use them" },
-                { value: "admins", label: "Only campaigns an administrator leads" },
+                { value: "everyone", label: t("admin.accounts.paidEveryone") },
+                { value: "admins", label: t("admin.accounts.paidAdmins") },
               ]}
             />
           </div>
           <div className="mt-4">
             <Field
               group
-              label="Account deletion grace period (days)"
-              hint="When someone deletes their account it is signed out at once and erased after this many days; signing in before then keeps it. 0 erases immediately. Deleting a user from the Users tab always erases at once."
+              label={t("admin.accounts.grace")}
+              hint={t("admin.accounts.graceHint")}
             >
               <NumberStepper
-                label="Account deletion grace period (days)"
+                label={t("admin.accounts.grace")}
                 min={0}
                 max={90}
                 step={1}
-                suffix="days"
+                suffix={t("admin.accounts.days")}
                 value={config.accountDeletionGraceDays}
                 onChange={(next) => {
                   const days = Math.round(Number(next));
@@ -421,28 +454,28 @@ export function AdminSettingsPanel() {
               />
             </Field>
             <Field
-              label="Rolled 4d6 stats"
-              hint="The server throws and keeps a player's six 4d6 totals. Choose whether they may throw again: never, only when the six add up to less than a total you set (70 is the default; the book names no rule), or as often as they like. This is the rule in the library and at every table that follows the server, where a player has one six for all of them. A table can set its own rule in its settings and then keeps a separate six for each player; a character made there still joins its player's library like any other, and a library character or a file brought to a table is only checked against what the dice could give."
+              label={t("admin.accounts.rolled")}
+              hint={t("admin.accounts.rolledHint")}
             >
               <Select
-                label="Rolled 4d6 stats"
+                label={t("admin.accounts.rolled")}
                 value={rerollChoiceOf(config.abilityRerollBelow)}
                 onChange={(choice) =>
                   setConfig({ ...config, abilityRerollBelow: rerollBelowFor(choice, config.abilityRerollBelow) })
                 }
                 options={[
-                  { value: "keep", label: "The first roll stands" },
-                  { value: "low", label: "Reroll a low roll" },
-                  { value: "free", label: "Reroll as often as they like" },
+                  { value: "keep", label: t("admin.accounts.rolled.first") },
+                  { value: "low", label: t("admin.accounts.rolled.low") },
+                  { value: "free", label: t("admin.accounts.rolled.free") },
                 ]}
               />
               {rerollChoiceOf(config.abilityRerollBelow) === "low" ? (
                 <NumberStepper
-                  label="Reroll when the six add up to less than"
+                  label={t("admin.accounts.rolledBelow")}
                   min={1}
                   max={107}
                   step={1}
-                  suffix="total"
+                  suffix={t("admin.accounts.total")}
                   value={config.abilityRerollBelow}
                   onChange={(next) => {
                     const below = Math.round(Number(next));
@@ -458,38 +491,37 @@ export function AdminSettingsPanel() {
         </PageSection>
       )}
 
-      <PageSection id="admin-text" heading="Text model defaults" glyph="ui-ai">
+      <PageSection id="admin-text" heading={t("admin.text.heading")} glyph="ui-ai">
         <p className="mb-3 text-xs text-stone-500">
-          The backend every player&apos;s campaign runs on. A campaign can still pick its model,
-          but only an admin&apos;s own campaigns can point at another address or key.
+          {t("admin.text.intro")}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <SelectField
-            label="Default provider"
+            label={t("admin.text.provider")}
             value={config.text.provider}
             onChange={(provider) => setConfig({ ...config, text: { ...config.text, provider } })}
             options={[
-              { value: "" as const, label: "Auto (env or built-in)" },
-              { value: "custom" as const, label: "llama.cpp or another OpenAI-compatible server" },
-              ...(phoneWorld ? [] : [{ value: "local" as const, label: "Ollama" }]),
-              ...(phoneWorld ? [] : [{ value: "harness" as const, label: "The agent program (below)" }]),
-              { value: "none" as const, label: "No AI storyteller" },
+              { value: "" as const, label: t("admin.text.provider.auto") },
+              { value: "custom" as const, label: t("admin.text.provider.custom") },
+              ...(phoneWorld ? [] : [{ value: "local" as const, label: t("admin.text.provider.ollama") }]),
+              ...(phoneWorld ? [] : [{ value: "harness" as const, label: t("admin.text.provider.harness") }]),
+              { value: "none" as const, label: t("admin.text.provider.none") },
             ]}
           />
           {/* Only where Ollama is what runs: picked here, or what a blank
               provider means in the environment. */}
           {phoneWorld || (config.text.provider || env.textProvider) !== "local" ? null : (
             <ModelChoiceField
-              label="Ollama model"
-              hint="What this machine's Ollama has pulled; any tag it serves can be typed."
+              label={t("admin.text.ollamaModel")}
+              hint={t("admin.text.ollamaModelHint")}
               role="story"
               provider="local"
               value={config.text.localTextModel}
               onChange={(localTextModel) => setConfig({ ...config, text: { ...config.text, localTextModel } })}
-              blankLabel={env.localTextModel ? fromEnv(env.localTextModel, "LOCAL_TEXT_MODEL") : BLANK.story}
+              blankLabel={env.localTextModel ? fromEnv(t, env.localTextModel, "LOCAL_TEXT_MODEL") : BLANK.story}
             />
           )}
-          <Field label="Backend base URL" hint={inheritedHint(config.text.customBaseUrl, env.customBaseUrl)}>
+          <Field label={t("admin.text.baseUrl")} hint={inheritedHint(t, config.text.customBaseUrl, env.customBaseUrl)}>
             <input
               className={ui.input}
               value={config.text.customBaseUrl}
@@ -500,26 +532,26 @@ export function AdminSettingsPanel() {
             />
           </Field>
           <ModelChoiceField
-            label="Model name"
+            label={t("admin.text.model")}
             role="story"
             provider="custom"
             baseUrl={config.text.customBaseUrl || env.customBaseUrl}
             apiKey={apiKey === SECRET_KEPT ? "" : apiKey}
             value={config.text.customModel}
             onChange={(customModel) => setConfig({ ...config, text: { ...config.text, customModel } })}
-            blankLabel={env.customModel ? fromEnv(env.customModel, "OPENAI_COMPAT_MODEL") : BLANK.story}
+            blankLabel={env.customModel ? fromEnv(t, env.customModel, "OPENAI_COMPAT_MODEL") : BLANK.story}
           />
         </div>
         <div className="mt-3">
           <SecretField
-            label="API key"
+            label={t("admin.text.apiKey")}
             isSet={config.text.hasCustomApiKey}
             value={apiKey}
             onChange={setApiKey}
             hint={
               env.hasCustomApiKey
-                ? "An env-var key is also set; this one wins when filled."
-                : "Most local servers need none."
+                ? t("admin.text.keyEnvHint")
+                : t("admin.text.keyNone")
             }
           />
         </div>
@@ -530,7 +562,7 @@ export function AdminSettingsPanel() {
         {config.text.provider === "" || config.text.provider === "custom" ? (
           <div className="mt-3 sm:w-1/2">
             <SpeedField
-              label="Processing speed"
+              label={t("admin.speed.label")}
               value={config.text.speed}
               onChange={(speed) => setConfig({ ...config, text: { ...config.text, speed } })}
               eligibility={apiSpeedEligibility({
@@ -563,18 +595,13 @@ export function AdminSettingsPanel() {
         />
       )}
 
-      <PageSection id="admin-utility" heading="Utility model (optional)" glyph="ui-utility">
+      <PageSection id="admin-utility" heading={t("admin.utility.heading")} glyph="ui-utility">
         <p className="mb-3 text-xs text-stone-500">
-          A second, smaller model for the mechanical work: history compaction, chapter summaries
-          and fact extraction, world-arc ticks, lore checks, and Ask answers. None of it is
-          narration, so a small model does it well while the story model keeps its weights and
-          prompt cache resident. Leave the model name blank to turn this off, and every one of
-          those calls goes back to the story model. If a configured utility model is unreachable,
-          the story model picks the job up anyway.
+          {t("admin.utility.intro")}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <SelectField
-            label="Provider"
+            label={t("admin.utility.provider")}
             value={config.text.utilityProvider}
             onChange={(utilityProvider) => setConfig({ ...config, text: { ...config.text, utilityProvider } })}
             options={[
@@ -582,18 +609,18 @@ export function AdminSettingsPanel() {
                 value: "" as const,
                 label:
                   env.utilityProvider === "local"
-                    ? "Auto (Ollama, from UTILITY_TEXT_PROVIDER)"
+                    ? t("admin.utility.provider.autoEnv")
                     : storyOnOllama
-                      ? "Auto (the story's server, Ollama)"
-                      : "Auto (the story's server)",
+                      ? t("admin.utility.provider.autoOllama")
+                      : t("admin.utility.provider.autoStory"),
               },
-              { value: "custom" as const, label: "llama.cpp or another OpenAI-compatible server" },
-              ...(phoneWorld ? [] : [{ value: "local" as const, label: "Ollama" }]),
+              { value: "custom" as const, label: t("admin.text.provider.custom") },
+              ...(phoneWorld ? [] : [{ value: "local" as const, label: t("admin.text.provider.ollama") }]),
             ]}
           />
           <ModelChoiceField
-            label="Model name"
-            hint="Anything in the 4B-8B class is plenty."
+            label={t("admin.utility.model")}
+            hint={t("admin.utility.modelHint")}
             role="utility"
             provider={utilityOnOllama ? "local" : "custom"}
             baseUrl={utilityOnOllama ? "" : config.text.utilityBaseUrl || config.text.customBaseUrl || env.customBaseUrl}
@@ -603,8 +630,8 @@ export function AdminSettingsPanel() {
             blankLabel={BLANK.utility}
           />
           <Field
-            label="Backend base URL"
-            hint="For a llama.cpp or other OpenAI-compatible helper on another machine. Blank uses the story's server."
+            label={t("admin.utility.baseUrl")}
+            hint={t("admin.utility.baseUrlHint")}
           >
             <input
               className={ui.input}
@@ -619,15 +646,15 @@ export function AdminSettingsPanel() {
             />
           </Field>
           <SecretField
-            label="API key"
+            label={t("admin.utility.apiKey")}
             isSet={config.text.hasUtilityApiKey}
             value={utilityApiKey}
             onChange={setUtilityApiKey}
-            hint="Most local servers need none."
+            hint={t("admin.text.keyNone")}
           />
           {!utilityOnOllama && config.text.utilityModel.trim() ? (
             <SpeedField
-              label="Processing speed"
+              label={t("admin.speed.label")}
               value={config.text.utilitySpeed}
               onChange={(utilitySpeed) => setConfig({ ...config, text: { ...config.text, utilitySpeed } })}
               eligibility={apiSpeedEligibility({
@@ -696,28 +723,30 @@ export function AdminSettingsPanel() {
 
       <div className="admin-savebar flex flex-wrap items-center gap-3" data-dirty={dirty || undefined}>
         <button type="button" onClick={save} disabled={saving} aria-busy={saving} className={ui.btnPrimary}>
-          {saving ? <Loader2 className="size-4 animate-spin" /> : null} Save settings
+          {saving ? <Loader2 className="size-4 animate-spin" /> : null} {t("admin.savebar.save")}
         </button>
         {dirty && !saving ? (
           <>
             <span role="status" className="live-in inline-flex items-center gap-1.5 text-sm text-amber-200">
-              <Lamp tone="wait" /> Unsaved changes
+              <Lamp tone="wait" /> {t("admin.savebar.unsaved")}
             </span>
             <button type="button" onClick={discard} className={ui.btnSmall}>
-              Undo changes
+              {t("admin.savebar.undo")}
             </button>
           </>
         ) : null}
         {saved ? (
           <span role="status" className="live-in inline-flex items-center gap-1 text-sm text-emerald-400">
-            <Check className="size-4" /> Saved
+            <Check className="size-4" /> {t("admin.savebar.saved")}
           </span>
         ) : null}
         {rescued.length ? (
           <span role="status" className="live-in basis-full text-xs text-stone-400">
-            {rescued.length === 1 ? "1 campaign" : `${rescued.length} campaigns`} could not paint on {rescued.length === 1 ? "its" : "their"} old picture backend and now use{rescued.length === 1 ? "s" : ""} the new default:{" "}
-            {rescued.slice(0, 4).map((row) => row.title).join(", ")}
-            {rescued.length > 4 ? ` and ${rescued.length - 4} more` : ""}.
+            {t("admin.rescued", {
+              count: rescued.length,
+              list: rescued.slice(0, 4).map((row) => row.title).join(", "),
+              more: rescued.length > 4 ? t("admin.rescued.more", { count: rescued.length - 4 }) : "",
+            })}
           </span>
         ) : null}
         {error ? <span role="alert" className="motion-shake inline-block text-sm text-red-400">{error}</span> : null}

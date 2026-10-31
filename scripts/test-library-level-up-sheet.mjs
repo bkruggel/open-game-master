@@ -128,8 +128,8 @@ await test("The sheet builds the result the builder would and fills only its own
   assert.ok(sheet.includes("const check = validateBuilder(input);"));
   assert.ok(sheet.includes("onSubmit(buildBuilderResult(input));"));
   assert.ok(sheet.includes("fill.start({ only: [...SHEET_TARGETS] });"), "Choose for me runs the builder's fill on the sheet's picks");
-  assert.ok(sheet.includes("Choose for me"));
-  assert.ok(sheet.includes("Edit the whole build"));
+  assert.ok(sheet.includes('t("builder.levelup.chooseForMe")'));
+  assert.ok(sheet.includes('t("builder.levelup.editWhole")'));
   assert.ok(sheet.includes("<LevelProgressionTable rows={rows}"), "the level table, current and next marked");
   assert.ok(sheet.includes("{ current: initialLevel, next: nextLevel }"));
 });

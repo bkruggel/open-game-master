@@ -10,6 +10,8 @@ import {
   type MaskedConfig,
   inheritedHint,
 } from "@/app/admin/AdminSettingsFields";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 
 // The two sections about how the server is reached from outside: live voice
 // and Discord sign-in. A world an app hosts owns both itself, so the panel
@@ -29,46 +31,46 @@ export function AdminNetworkSections({
   discordSecret: string;
   setDiscordSecret: (value: string) => void;
 }) {
+  const t = useT();
   return (
     <>
-        <PageSection id="admin-voice" heading="Voice chat" glyph="ui-voice">
+        <PageSection id="admin-voice" heading={t("admin.voice.heading")} glyph="ui-voice">
           <p className="mb-3 text-xs text-stone-500">
-            Lets a table talk over live audio. Needs two things beyond this switch:
-            the app reached over <strong>https</strong> (browsers block microphone
-            access on plain http, except on localhost), and{" "}
-            <strong>one open port</strong> for both UDP and TCP. That port carries the
-            audio itself, which is not HTTP and cannot go through a reverse proxy, so
-            open it on your firewall pointing straight at this host.
+            {t("admin.voice.intro.a")}
+            <strong>https</strong>
+            {t("admin.voice.intro.b")}
+            <strong>{t("admin.voice.intro.port")}</strong>
+            {t("admin.voice.intro.c")}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <SelectField
-              label="Voice chat"
+              label={t("admin.voice.toggle")}
               hint={
                 config.voiceChat.enabled === ""
-                  ? `Following the server config: ${env.voiceEnabled ? "on" : "off"}`
-                  : "Overrides the server config."
+                  ? t("admin.voice.following", { state: env.voiceEnabled ? t("admin.voice.state.on") : t("admin.voice.state.off") })
+                  : t("admin.voice.override")
               }
               value={config.voiceChat.enabled}
               onChange={(enabled) => setConfig({ ...config, voiceChat: { ...config.voiceChat, enabled } })}
               options={[
-                { value: "", label: `Use server config (${env.voiceEnabled ? "on" : "off"})` },
-                { value: "on", label: "On" },
-                { value: "off", label: "Off" },
+                { value: "", label: t("admin.voice.useConfig", { state: env.voiceEnabled ? t("admin.voice.state.on") : t("admin.voice.state.off") }) },
+                { value: "on", label: t("admin.voice.on") },
+                { value: "off", label: t("admin.voice.off") },
               ]}
             />
             <SelectField
-              label="Transport"
-              hint="The voice server needs the media port below open. Peer-to-peer needs no port and works through tunnels, but suits small tables: every player sends audio to every other player."
+              label={t("admin.voice.transport")}
+              hint={t("admin.voice.transportHint")}
               value={config.voiceChat.mode}
               onChange={(mode) => setConfig({ ...config, voiceChat: { ...config.voiceChat, mode } })}
               options={[
-                { value: "", label: "Voice server (default)" },
-                { value: "mesh", label: "Peer-to-peer (mesh)" },
+                { value: "", label: t("admin.voice.transport.sfu") },
+                { value: "mesh", label: t("admin.voice.transport.mesh") },
               ]}
             />
             <Field
-              label="Media port"
-              hint={`Open for UDP and TCP. Env: ${env.voiceRtcPort}`}
+              label={t("admin.voice.mediaPort")}
+              hint={t("admin.voice.mediaPortHint", { port: env.voiceRtcPort })}
             >
               <input
                 className={ui.input}
@@ -83,8 +85,8 @@ export function AdminNetworkSections({
               />
             </Field>
             <Field
-              label="Announced address"
-              hint="The address a player's BROWSER can reach this host on, normally your public IP. Leave blank only for a localhost-only install."
+              label={t("admin.voice.announced")}
+              hint={t("admin.voice.announcedHint")}
             >
               <input
                 className={ui.input}
@@ -99,8 +101,8 @@ export function AdminNetworkSections({
               />
             </Field>
             <Field
-              label="Voice domain (optional)"
-              hint="Announce a hostname instead of the IP. It must resolve straight here: a Cloudflare-proxied name does not carry UDP, so calls would connect and stay silent."
+              label={t("admin.voice.domain")}
+              hint={t("admin.voice.domainHint")}
             >
               <input
                 className={ui.input}
@@ -120,28 +122,24 @@ export function AdminNetworkSections({
               nothing. */}
           {voiceUnroutable && config.voiceChat.mode !== "mesh" ? (
             <p role="status" className="live-in mt-3 text-xs text-amber-400">
-              Voice will connect but stay silent for remote players: set an announced
-              address or domain.
+              {t("admin.voice.unroutable")}
             </p>
           ) : null}
           <p className="mt-3 text-[11px] text-stone-500">
-            Port and address changes apply the next time somebody joins a call, once
-            nobody is connected. No server restart needed.
+            {t("admin.voice.applyNote")}
           </p>
         </PageSection>
 
-        <PageSection id="admin-discord" heading="Discord sign-in" glyph="system-share">
+        <PageSection id="admin-discord" heading={t("admin.discord.heading")} glyph="system-share">
           <p className="mb-3 text-xs text-stone-500">
-            Optional. Create an application at discord.com/developers, add the redirect URI
-            {" "}<code className="text-stone-400">&lt;public URL&gt;/api/auth/discord/callback</code>{" "}
-            (the exact address players use, e.g. https://your.domain or http://lan-host:3005),
-            then paste the client ID and secret. The login button appears once both are set.
-            Behind a reverse proxy, also set the Public URL in the Server section above.
+            {t("admin.discord.intro.a")}
+            <code className="text-stone-400">&lt;public URL&gt;/api/auth/discord/callback</code>
+            {t("admin.discord.intro.b")}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
-              label="Client ID"
-              hint={inheritedHint(config.discord.clientId, env.discordClientId)}
+              label={t("admin.discord.clientId")}
+              hint={inheritedHint(t, config.discord.clientId, env.discordClientId)}
             >
               <input
                 className={ui.input}
@@ -149,15 +147,15 @@ export function AdminNetworkSections({
                 onChange={(event) =>
                   setConfig({ ...config, discord: { ...config.discord, clientId: event.target.value } })
                 }
-                placeholder={env.discordClientId || "Not set"}
+                placeholder={env.discordClientId || t("admin.discord.notSet")}
               />
             </Field>
             <SecretField
-              label="Client secret"
+              label={t("admin.discord.clientSecret")}
               isSet={config.discord.hasClientSecret}
               value={discordSecret}
               onChange={setDiscordSecret}
-              hint={env.hasDiscordClientSecret ? "An env-var secret is also set." : undefined}
+              hint={env.hasDiscordClientSecret ? t("admin.discord.secretEnv") : undefined}
             />
           </div>
         </PageSection>

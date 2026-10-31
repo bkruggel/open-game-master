@@ -15,6 +15,8 @@ import {
 } from "@/app/workshop/[workshopId]/systems";
 import type { WorkshopSummary } from "@/app/workshop/types";
 import { HUB_TASKS } from "@/app/workshop/[workshopId]/CreateChooser";
+import { useT } from "@/lib/locale";
+import type { MessageKey } from "@/lib/messages/en";
 
 // The hub: one card per system, each wearing its live count so a DM sees at
 // a glance what is built and what is still empty. Tapping one opens that
@@ -27,6 +29,16 @@ function systemPlate(id: SystemId): string {
   }
   return workshopPlaceholder(id === "rules" ? "rulesets" : id);
 }
+
+// The hub tasks' labels, keyed by the choice id HUB_TASKS carries.
+type HubTaskId = "encounter" | "map" | "npc" | "outline";
+
+const TASK_KEYS: Record<HubTaskId, MessageKey> = {
+  encounter: "workshop.hub.task.encounter",
+  map: "workshop.hub.task.map",
+  npc: "workshop.hub.task.npc",
+  outline: "workshop.hub.task.outline",
+};
 
 export function SystemCards({
   workshop,
@@ -48,6 +60,7 @@ export function SystemCards({
   // A task on the row above the tools: opens the Create chooser on it.
   onTask?: (choiceId: string) => void;
 }) {
+  const t = useT();
   const total = totalPieces(workshop, bestiary, homebrew, pregens, plugin, world);
   return (
     <section className="mt-5">
@@ -56,7 +69,7 @@ export function SystemCards({
         // which tool makes it. Each opens the Create chooser on that job;
         // every tool stays below.
         <div className="mb-5" data-hub-tasks>
-          <Ribbon className="mb-2">Start with a task</Ribbon>
+          <Ribbon className="mb-2">{t("workshop.hub.taskRibbon")}</Ribbon>
           <ul className="stagger-up grid grid-cols-2 gap-2 sm:grid-cols-4">
             {HUB_TASKS.map((task) => (
               <li key={task.id}>
@@ -67,7 +80,7 @@ export function SystemCards({
                   data-hub-task={task.id}
                 >
                   <GameIcon icon={{ kind: "glyph", key: task.glyph }} size="size-7" className="shrink-0" />
-                  {task.label}
+                  {t(TASK_KEYS[task.id as HubTaskId])}
                 </button>
               </li>
             ))}
@@ -75,19 +88,16 @@ export function SystemCards({
         </div>
       ) : null}
       <div className="mb-1.5 flex items-center gap-3">
-        <Ribbon className="flex-1">Systems</Ribbon>
+        <Ribbon className="flex-1">{t("workshop.hub.systemsRibbon")}</Ribbon>
         <span className="shrink-0 text-xs text-stone-500">
-          {total} {total === 1 ? "piece" : "pieces"} of prep
+          {t("workshop.hub.pieces", { count: total })}
         </span>
       </div>
       {/* The counts are what is here, not what is missing: a workshop with
           one good fight in it is finished if one fight is what the game
           needs. */}
       <p className="mb-3 text-xs leading-relaxed text-stone-500">
-        Use only the tools your game needs; nothing here has to be filled in before you play. WorldForge, Cast,
-        Region, Factions and Lore are views of the same records, so a change in one shows in all of them. A
-        workshop stays yours until you bring it into a campaign; Plugin turns it into a world pack, one file any
-        server can install so a campaign can be played in your setting.
+        {t("workshop.hub.systemsHint")}
       </p>
       <ul className="stagger-up grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-tour="hub-systems">
         {WORKSHOP_SYSTEMS.map((system) => {
@@ -139,7 +149,7 @@ export function SystemCards({
         })}
       </ul>
       <p className="mt-4 text-sm text-stone-500">
-        Everything here is yours alone. Import any of it into a campaign when you start one.
+        {t("workshop.hub.footer")}
       </p>
     </section>
   );

@@ -168,7 +168,22 @@ export function micOpen(gate: MicGate): boolean {
 // ---- labels ----
 
 // What the table is told about the current floor. Kept here next to the rules
-// so the words and the behaviour cannot drift apart.
+// so the words and the behaviour cannot drift apart. These are message keys
+// (voice.* in the dictionaries), read by the panel through the table's own
+// translator; the English lines stay below, for a test that wants words.
+export const FLOOR_VOICE_KEYS: Record<VoiceFloorMode, string> = {
+  open: "voice.floor.open",
+  hold: "voice.floor.hold",
+  spotlight: "voice.floor.spotlight",
+  initiative: "voice.floor.initiative",
+};
+
+export const TRANSMIT_BLOCK_KEYS: Record<Exclude<TransmitBlock, "">, string> = {
+  dm_holds_floor: "voice.block.dmHoldsFloor",
+  not_your_turn: "voice.block.notYourTurn",
+  spotlight_elsewhere: "voice.block.spotlight",
+};
+
 export const FLOOR_VOICE_LABELS: Record<VoiceFloorMode, string> = {
   open: "Anyone can speak",
   hold: "The GM has the floor",

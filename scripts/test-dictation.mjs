@@ -261,7 +261,7 @@ test("both mic buttons hide when there is no engine", () => {
   assert.match(pushToTalk, /if \(!available\) \{\s*return null;\s*\}/);
   // Admin > Speech says so, without promising it of the Android app, whose
   // native engine keeps the mics on the phone's recognizer.
-  assert.match(read("src/app/admin/BuiltinSpeechCard.tsx"), /none: "nothing yet, so the mic buttons are hidden \(the Android app uses the phone's own recognizer\)"/);
+  assert.match(read("src/app/admin/BuiltinSpeechCard.tsx"), /none: "admin\.builtin\.engine\.none"/);
 });
 
 // Voice-chat transcription asks the transcript route's own question

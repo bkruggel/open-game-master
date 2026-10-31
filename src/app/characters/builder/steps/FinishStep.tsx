@@ -5,6 +5,7 @@ import { contentSlug } from "@/lib/help";
 import { formatModifier, proficiencyBonus } from "@/lib/srd";
 import { racialFeatCount } from "@/lib/srd/race-id";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { HpExplainerButton } from "../AbilityExplainers";
 import { armorClassLine, hitPointsLine, purseViewFor } from "../derivedReasons";
 import type { BackgroundOption, ClassOption, RaceOption } from "../useBuilderOptions";
@@ -58,6 +59,7 @@ export function FinishStep({
   // here, at the end, because it changes nothing on the sheet.
   role?: { value: BuilderRole; onChange: (role: BuilderRole) => void };
 }) {
+  const t = useT();
   const { preview, acInfo, ac, effectiveLevel } = derived;
   const hp = hpExplainerInput(derived, klass);
   // Hit points, armor class and coin are the server's to work out, so they
@@ -97,12 +99,12 @@ export function FinishStep({
       <SummaryPanel rows={summary} onEdit={(key) => onEdit?.(key)} onFix={onFix} />
 
       {preview && race ? (
-        <StepPanel title="Derived stats" ornate className="border-amber-500/30">
+        <StepPanel title={t("builder.finish.derivedTitle")} ornate className="border-amber-500/30">
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-stone-300 sm:grid-cols-4">
             <Field
               label={
                 <span className="flex items-center gap-0.5">
-                  Max HP
+                  {t("builder.finish.maxHp")}
                   {hp ? <HpExplainerButton hp={hp} compact /> : null}
                 </span>
               }
@@ -112,30 +114,30 @@ export function FinishStep({
               </span>
               <span className="mt-1 block text-sm text-stone-500">{hpLine?.reason}</span>
             </Field>
-            <Field label="AC">
+            <Field label={t("builder.finish.ac")}>
               <span key={acLine.value} className="reveal font-mono text-base text-amber-100">
                 {acLine.value}
               </span>
               <span className="mt-1 block text-sm text-stone-500">{acLine.reason}</span>
             </Field>
-            <Field label="Gold" className="col-span-2">
+            <Field label={t("builder.finish.gold")} className="col-span-2">
               <span key={`${purse.gold}-${purse.copper}`} className="reveal font-mono text-base text-amber-100">
                 {purse.gold} gp{purse.copper ? ` ${purse.copper} cp` : ""}
               </span>
               <span className="mt-1 block text-sm text-stone-500">
                 {purse.wealth?.rolled
-                  ? `Rolled by the server: ${purse.wealth.rolled.gold} gp on ${purse.wealth.dice}. `
+                  ? t("builder.finish.rolledBy", { gold: purse.wealth.rolled.gold, dice: purse.wealth.dice })
                   : ""}
                 {purse.source}
               </span>
             </Field>
-            <span className="self-end">Speed {race.speed} ft</span>
-            <span className="self-end">Prof {formatModifier(proficiencyBonus(effectiveLevel))}</span>
-            <span>Initiative {formatModifier(preview.derived.initiative)}</span>
-            <span>Passive Perception {preview.derived.passivePerception}</span>
-            {preview.derived.spellSaveDc ? <span>Spell DC {preview.derived.spellSaveDc}</span> : null}
+            <span className="self-end">{t("builder.finish.speed", { speed: race.speed })}</span>
+            <span className="self-end">{t("builder.finish.prof", { bonus: formatModifier(proficiencyBonus(effectiveLevel)) })}</span>
+            <span>{t("builder.finish.initiative", { mod: formatModifier(preview.derived.initiative) })}</span>
+            <span>{t("builder.finish.passive", { value: preview.derived.passivePerception })}</span>
+            {preview.derived.spellSaveDc ? <span>{t("builder.finish.spellDc", { value: preview.derived.spellSaveDc })}</span> : null}
             {preview.derived.spellAttack !== null ? (
-              <span>Spell attack {formatModifier(preview.derived.spellAttack)}</span>
+              <span>{t("builder.finish.spellAttack", { mod: formatModifier(preview.derived.spellAttack) })}</span>
             ) : null}
           </div>
         </StepPanel>
@@ -147,29 +149,27 @@ export function FinishStep({
       <BuilderLevelTable state={state} derived={derived} klass={klass} />
 
       {role ? (
-        <StepPanel title="Their place at the table" help="It changes nothing on the sheet, only how they join a campaign.">
+        <StepPanel title={t("builder.finish.placeTitle")} help={t("builder.finish.placeHelp")}>
           <SegmentedControl
-            label="Their place at the table"
+            label={t("builder.finish.placeTitle")}
             value={role.value}
             onChange={role.onChange}
             options={[
-              { value: "pc", label: "A character I play" },
-              { value: "companion", label: "An ally the GM plays" },
+              { value: "pc", label: t("builder.finish.rolePc") },
+              { value: "companion", label: t("builder.finish.roleCompanion") },
             ]}
             className="w-full sm:max-w-md"
           />
           <p className="mt-1.5 text-xs text-stone-500">
-            {role.value === "companion"
-              ? "Companions are offered when a party adds one, at whatever level that table plays at. Nobody has to roll them up again."
-              : "Joins a campaign as yours to control."}
+            {role.value === "companion" ? t("builder.finish.companionNote") : t("builder.finish.pcNote")}
           </p>
         </StepPanel>
       ) : null}
 
       {!racialFeat && state.feats.length ? (
         <StepPanel
-          title="Feats"
-          help="Feats this character already holds. New feats come with an ability score improvement."
+          title={t("builder.finish.featsTitle")}
+          help={t("builder.finish.featsHelp")}
         >
           <div className="mt-2 flex flex-wrap gap-1.5">
             {state.feats.map((feat) => (
@@ -188,7 +188,7 @@ export function FinishStep({
         <p role="alert" className="reveal flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-100">
           {table.rulesError}
           <button type="button" onClick={table.retryRules} className={ui.btnSmall}>
-            Try again
+            {t("builder.finish.tryAgain")}
           </button>
         </p>
       ) : null}
@@ -196,7 +196,7 @@ export function FinishStep({
         // Every reason the server gave, not just the first (U:UB8).
         error.includes("\n") ? (
           <div className="motion-shake text-sm text-red-400" role="alert">
-            <p>The server did not save the character:</p>
+            <p>{t("builder.finish.saveFailedHead")}</p>
             <ul className="stagger mt-1 list-disc space-y-0.5 pl-5">
               {error.split("\n").map((line) => (
                 <li key={line}>{line}</li>

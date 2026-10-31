@@ -12,6 +12,7 @@ import { UtilityCallStrip } from "@/app/campaigns/[campaignId]/UtilityCallStrip"
 import { FightSummaryCard } from "@/app/campaigns/[campaignId]/FightSummaryCard";
 import { AskDock } from "@/app/campaigns/[campaignId]/AskPanel";
 import { DmCoverNotice } from "@/app/campaigns/[campaignId]/DmDelegationPanel";
+import { useT } from "@/lib/locale";
 import type { CampaignState, NarrationStatus } from "@/app/campaigns/[campaignId]/useCampaignStream";
 import type { CampaignMessage } from "@/lib/db/messages";
 
@@ -73,6 +74,7 @@ export function SessionChatColumn({
   children: ReactNode;
 }) {
   const { campaign, messages, rolls, sheets, locations, dmStatus, utilityCalls } = state;
+  const t = useT();
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   // The passage a player is objecting to (DisputeDialog.tsx); only a table
   // the AI narrates has rulings to dispute this way.
@@ -122,7 +124,7 @@ export function SessionChatColumn({
         onDispute={narratedByAi && !steersStory ? (message) => setDisputeMessageId(message.id) : undefined}
         onReport={(message) => {
           if (message.authorType === "dm") {
-            setReportTarget({ messageId: message.id, authorType: "dm", label: "the Game Master" });
+            setReportTarget({ messageId: message.id, authorType: "dm", label: t("table.chat.reportGm") });
             return;
           }
           const sheet =
@@ -133,7 +135,7 @@ export function SessionChatColumn({
             messageId: message.id,
             userId: message.userId ?? undefined,
             authorType: "player",
-            label: sheet?.name ?? member?.username ?? "this player",
+            label: sheet?.name ?? member?.username ?? t("table.chat.reportPlayer"),
           });
         }}
         locations={locations}
@@ -161,7 +163,7 @@ export function SessionChatColumn({
                 );
                 if (!response.ok) {
                   const data = await response.json().catch(() => ({}));
-                  onError(data.error || "Could not continue the scene.");
+                  onError(data.error || t("table.chat.continueError"));
                 }
               }
             : undefined
@@ -181,7 +183,7 @@ export function SessionChatColumn({
                 );
                 if (!response.ok) {
                   const data = await response.json().catch(() => ({}));
-                  onError(data.error || "Could not switch takes.");
+                  onError(data.error || t("table.chat.switchTakesError"));
                 }
               }
             : undefined
@@ -201,7 +203,7 @@ export function SessionChatColumn({
                 );
                 if (!response.ok) {
                   const data = await response.json().catch(() => ({}));
-                  return data.error || "Could not save that edit.";
+                  return data.error || t("table.chat.editSaveError");
                 }
                 offerCorrectionReason(campaignId, await response.json().catch(() => null));
                 return null;
@@ -225,7 +227,7 @@ export function SessionChatColumn({
           });
           if (!response.ok) {
             const data = await response.json().catch(() => ({}));
-            onError(data.error || "Could not pin that.");
+            onError(data.error || t("table.chat.pinError"));
             return;
           }
           onPinned();

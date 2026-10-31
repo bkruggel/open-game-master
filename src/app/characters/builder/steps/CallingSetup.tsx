@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { UnofficialPackNotice } from "@/components/UnofficialPackNotice";
 import { Select } from "@/components/ui/Select";
 import { GENDERS, type Gender } from "@/lib/gender";
+import { useT } from "@/lib/locale";
 import type { WorldPack } from "@/lib/worlds/types";
 import type { BuilderState } from "../useBuilderState";
 import { Field } from "./shared";
@@ -20,6 +21,7 @@ export function ContentNotices({ pack, packInstalled }: { pack: WorldPack | null
   // The install command is for whoever runs the server. A player can do
   // nothing with it, and a first-timer read it as something being broken.
   const [isAdmin, setIsAdmin] = useState(false);
+  const t = useT();
   useEffect(() => {
     if (packInstalled !== false) {
       return;
@@ -34,18 +36,18 @@ export function ContentNotices({ pack, packInstalled }: { pack: WorldPack | null
     <>
       {packInstalled === null ? (
         <p role="status" className="rounded-lg border border-stone-700/60 bg-stone-900/60 p-3 text-xs text-stone-400">
-          Loading the races, classes and backgrounds this server offers…
+          {t("builder.setup.loading")}
         </p>
       ) : !packInstalled ? (
         <p className="rounded-lg border border-stone-700/60 bg-stone-900/60 p-3 text-xs text-stone-400">
           {isAdmin ? (
             <>
-              Content pack not installed; showing SRD 5.1 basics only. Run
-              <span className="font-mono"> node scripts/import-open5e.mjs</span> on the server
-              for the full Open5e catalog.
+              {t("builder.setup.packMissingHead")}
+              <span className="font-mono"> node scripts/import-open5e.mjs</span>{" "}
+              {t("builder.setup.packMissingTail")}
             </>
           ) : (
-            "This server uses the basic rules set (SRD 5.1), so some races, classes and backgrounds from other books are not offered."
+            t("builder.setup.srdOnly")
           )}
         </p>
       ) : null}
@@ -55,7 +57,7 @@ export function ContentNotices({ pack, packInstalled }: { pack: WorldPack | null
             <span className="font-medium">{pack.name}</span> · {pack.blurb}
           </p>
           <p className="mt-1 text-sm text-stone-400">
-            Names only. Every race, class, spell and item below plays by the same 5e rules.
+            {t("builder.setup.namesOnly")}
           </p>
           <UnofficialPackNotice
             rightsHolder={pack.rightsHolder}
@@ -86,18 +88,19 @@ export function LevelField({
   levelNote?: string;
   className?: string;
 }) {
+  const t = useT();
   return (
-    <Field label="Level" className={className}>
+    <Field label={t("builder.shared.level")} className={className}>
       {fixedLevel ? (
         <span className="block rounded-lg border border-stone-700/70 bg-stone-950/60 px-3 py-2 text-sm text-stone-400">
-          {fixedLevel} (campaign)
+          {t("builder.setup.levelFixed", { level: fixedLevel })}
         </span>
       ) : (
         <>
           <Select<string>
             value={String(state.level)}
             onChange={(next) => state.changeLevel(Number(next))}
-            label="Level"
+            label={t("builder.shared.level")}
             className="w-full"
             options={Array.from({ length: 21 - state.levelFloor }, (_, index) => ({
               value: String(index + state.levelFloor),
@@ -106,7 +109,7 @@ export function LevelField({
           />
           {state.levelFloor > 1 ? (
             <span className="mt-1 block text-xs text-stone-500">
-              Improvements taken in play are in their scores, so they stay level {state.levelFloor} or higher.
+              {t("builder.setup.floorNote", { level: state.levelFloor })}
             </span>
           ) : levelNote ? (
             <span className="mt-1 block text-xs text-stone-500">{levelNote}</span>
@@ -124,21 +127,22 @@ export function LevelField({
 // pronouns for a choice nobody made. Until it is chosen the cards show a mix
 // of looks (lineage.ts previewGender), and nothing of that mix is saved.
 export function GenderField({ state, className }: { state: BuilderState; className?: string }) {
-  return (
-    <Field label="Gender" className={className} anchor="gender">
+    const t = useT();
+    return (
+      <Field label={t("builder.shared.gender")} className={className} anchor="gender">
       <div className="sm:max-w-xs">
         <Select<Gender>
           value={state.gender}
           onChange={state.setGender}
-          label="Gender"
+          label={t("builder.shared.gender")}
           className="w-full"
-          options={[{ value: "", label: "Not chosen" }, ...GENDERS.map((value) => ({ value, label: value }))]}
+          options={[{ value: "", label: t("builder.shared.notChosen") }, ...GENDERS.map((value) => ({ value, label: value }))]}
         />
       </div>
       <span className="mt-1 block text-xs text-stone-500">
         {state.gender
-          ? "The cards show your choice, and the GM uses it for pronouns."
-          : "Optional. The cards show a mix of looks until you choose."}
+          ? t("builder.setup.genderChosen")
+          : t("builder.setup.genderEmpty")}
       </span>
     </Field>
   );

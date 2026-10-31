@@ -16,6 +16,7 @@ import {
   type CasterView,
 } from "@/lib/srd/spell-prep";
 import { SpellBook, type SpellTile } from "./SpellBook";
+import { useT } from "@/lib/locale";
 import { useSpellLookups, useSpellPool, type PoolSpell } from "./useSpellPool";
 import { textKey } from "@/lib/language/text-logic";
 import { revisedOnlySpellProblem } from "@/lib/content/edition";
@@ -94,6 +95,7 @@ function CasterBook({
   editable: boolean;
   showClass: boolean;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "note" | "error"; text: string } | null>(null);
@@ -121,7 +123,7 @@ function CasterBook({
   const full = editing && view.style !== "known" && cap !== null && preparedCount(view) >= cap.count;
   const tiles = buildTiles(view, [...lookups.values(), ...(editing ? pool : [])], editing).map((tile) =>
     full && (tile.state === "available" || tile.state === "inBook") && tile.level !== 0
-      ? { ...tile, blocked: "Prepared list full" }
+      ? { ...tile, blocked: t("sheet.spells.preparedFull") }
       : tile,
   );
   // A 2024-only spell an older sheet still lists: it is not cast here, and
@@ -135,16 +137,16 @@ function CasterBook({
     ),
   ];
   const counters = [
-    ...(view.cantrips.length ? [{ label: "Cantrips", value: view.cantrips.length }] : []),
+    ...(view.cantrips.length ? [{ label: t("sheet.spells.cantrips"), value: view.cantrips.length }] : []),
     view.style === "known"
-      ? { label: "Known", value: heldSpells(view).filter((name) => !isGranted(view, name)).length, max: cap?.count }
+      ? { label: t("sheet.spells.known"), value: heldSpells(view).filter((name) => !isGranted(view, name)).length, max: cap?.count }
       : {
-          label: "Prepared",
+          label: t("sheet.spells.prepared"),
           value: preparedCount(view),
           max: cap?.count,
-          extra: view.pending.length ? `(${view.pending.length} at long rest)` : undefined,
+          extra: view.pending.length ? t("sheet.spells.pendingCount", { count: view.pending.length }) : undefined,
         },
-    ...(view.style === "spellbook" ? [{ label: "Spellbook", value: spellbookOf(view).length }] : []),
+    ...(view.style === "spellbook" ? [{ label: t("sheet.spells.spellbook"), value: spellbookOf(view).length }] : []),
   ];
 
   async function toggle(tile: SpellTile) {
@@ -161,7 +163,7 @@ function CasterBook({
       const data = (await response.json().catch(() => ({}))) as { error?: string; note?: string };
       setMessage(
         response.ok
-          ? { tone: "note", text: data.note ?? "Done." }
+          ? { tone: "note", text: data.note ?? t("sheet.spells.done") }
           : {
               tone: "error",
               // A 404 means the server answering does not have this action
@@ -169,12 +171,12 @@ function CasterBook({
               text:
                 data.error ??
                 (response.status === 404
-                  ? "The server does not know how to change prepared spells yet (HTTP 404). Restart or update the server this table runs on."
-                  : `Could not change that spell (HTTP ${response.status}).`),
+                  ? t("sheet.spells.error404")
+                  : t("sheet.spells.errorStatus", { status: response.status })),
             },
       );
     } catch {
-      setMessage({ tone: "error", text: "Could not reach the server." });
+      setMessage({ tone: "error", text: t("sheet.unreachable") });
     } finally {
       setBusy(false);
     }
@@ -192,7 +194,7 @@ function CasterBook({
         busy={busy}
         onTile={editing ? toggle : undefined}
         canToggle={(tile) => tile.state !== "granted" && tile.level !== 0}
-        emptyText={editing ? (loading ? "Loading the class list..." : "Nothing to prepare at this level.") : "Nothing prepared at this level."}
+        emptyText={editing ? (loading ? t("sheet.spells.classLoading") : t("sheet.spells.noneToPrepare")) : t("sheet.spells.nonePrepared")}
         header={
           canPrepare ? (
             <button
@@ -207,25 +209,20 @@ function CasterBook({
                   : "ml-auto rounded-full border border-amber-500/50 px-3 py-0.5 text-xs text-amber-200 hover:bg-amber-400/10"
               }
             >
-              {editing ? "Done" : view.style === "spellbook" ? "Prepare from spellbook" : "Change prepared spells"}
+              {editing ? t("sheet.spells.doneButton") : view.style === "spellbook" ? t("sheet.spells.prepareFromBook") : t("sheet.spells.changePrepared")}
             </button>
           ) : null
         }
         footer={
           <>
             {editing ? (
-              <p className="mt-2 text-[11px] text-stone-500">
-                Tap a spell to prepare it: it becomes ready after your next long rest. Tapping a
-                ready spell unprepares it at once. Cantrips and subclass spells never change.
-              </p>
+              <p className="mt-2 text-[11px] text-stone-500">{t("sheet.spells.editNote")}</p>
             ) : view.style === "known" && editable ? (
-              <p className="mt-2 text-[11px] text-stone-500">
-                You know these spells and always have them ready. You can swap one when you level up.
-              </p>
+              <p className="mt-2 text-[11px] text-stone-500">{t("sheet.spells.knownNote")}</p>
             ) : null}
             {revised.length ? (
               <p role="note" className="mt-2 text-[11px] text-amber-200/90">
-                {revised.join(" ")} The character&apos;s next edit asks for it.
+                {t("sheet.spells.revisedNote", { problems: revised.join(" ") })}
               </p>
             ) : null}
             {message ? (

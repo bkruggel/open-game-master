@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 
 // Player-to-player trade (docs/vtt-parity-implementation-plan.md 11.2): two
@@ -14,6 +15,7 @@ import type { CharacterSheet } from "@/lib/schemas/sheet";
 type Picked = Record<string, number>;
 
 function ItemPicker({ sheet, picked, onChange, title }: { sheet: CharacterSheet; picked: Picked; onChange: (next: Picked) => void; title: string }) {
+  const t = useT();
   return (
     <div className="space-y-1">
       <p className="text-[10px] uppercase tracking-wide text-stone-500">{title}</p>
@@ -38,7 +40,7 @@ function ItemPicker({ sheet, picked, onChange, title }: { sheet: CharacterSheet;
                     max={item.qty}
                     value={qty}
                     onChange={(next) => onChange({ ...picked, [item.name]: Math.max(1, Math.min(item.qty, next || 1)) })}
-                    label={`How many ${item.name}`}
+                    label={t("table.trade.howMany", { name: item.name })}
                     size="sm"
                   />
                 ) : null}
@@ -47,23 +49,25 @@ function ItemPicker({ sheet, picked, onChange, title }: { sheet: CharacterSheet;
           })}
         </ul>
       ) : (
-        <p className="text-[11px] italic text-stone-600">Nothing carried.</p>
+        <p className="text-[11px] italic text-stone-600">{t("table.trade.nothingCarried")}</p>
       )}
     </div>
   );
 }
 
 function CoinField({ label, max, value, onChange }: { label: string; max: number; value: number; onChange: (gold: number) => void }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap items-center gap-1 text-[11px] text-stone-400">
       {label}
       <NumberStepper min={0} max={max} value={value} onChange={(next) => onChange(Math.max(0, Math.min(max, next || 0)))} label={label} size="sm" />
-      <span className="text-stone-500">gp of {max}</span>
+      <span className="text-stone-500">{t("table.trade.coinOf", { max })}</span>
     </div>
   );
 }
 
 export function TradeDialog({ campaignId, me, them, onClose }: { campaignId: string; me: CharacterSheet; them: CharacterSheet; onClose: () => void }) {
+  const t = useT();
   const [give, setGive] = useState<Picked>({});
   const [want, setWant] = useState<Picked>({});
   const [giveGold, setGiveGold] = useState(0);
@@ -84,7 +88,7 @@ export function TradeDialog({ campaignId, me, them, onClose }: { campaignId: str
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(String(data.error ?? "The offer could not be made."));
+        setError(String(data.error ?? t("table.trade.failed")));
         return;
       }
       onClose();
@@ -94,26 +98,26 @@ export function TradeDialog({ campaignId, me, them, onClose }: { campaignId: str
   }
 
   return (
-    <Dialog open onOpenChange={(open) => (open ? null : onClose())} title={`Trade with ${them.name}`} icon={<ArrowLeftRight className="size-4 text-amber-400" />} width="w-[min(94vw,40rem)]">
+    <Dialog open onOpenChange={(open) => (open ? null : onClose())} title={t("table.trade.title", { name: them.name })} icon={<ArrowLeftRight className="size-4 text-amber-400" />} width="w-[min(94vw,40rem)]">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2 rounded-lg border border-stone-800 bg-stone-950/50 p-2.5">
-          <p className="font-display text-sm text-amber-100">{me.name} gives</p>
-          <ItemPicker sheet={me} picked={give} onChange={setGive} title="From my pack" />
-          <CoinField label="Coin" max={me.gold} value={giveGold} onChange={setGiveGold} />
+          <p className="font-display text-sm text-amber-100">{t("table.trade.gives", { name: me.name })}</p>
+          <ItemPicker sheet={me} picked={give} onChange={setGive} title={t("table.trade.fromMyPack")} />
+          <CoinField label={t("table.trade.coin")} max={me.gold} value={giveGold} onChange={setGiveGold} />
         </div>
         <div className="space-y-2 rounded-lg border border-stone-800 bg-stone-950/50 p-2.5">
-          <p className="font-display text-sm text-amber-100">{them.name} gives</p>
-          <ItemPicker sheet={them} picked={want} onChange={setWant} title="From their pack" />
-          <CoinField label="Coin" max={them.gold} value={wantGold} onChange={setWantGold} />
+          <p className="font-display text-sm text-amber-100">{t("table.trade.gives", { name: them.name })}</p>
+          <ItemPicker sheet={them} picked={want} onChange={setWant} title={t("table.trade.fromTheirPack")} />
+          <CoinField label={t("table.trade.coin")} max={them.gold} value={wantGold} onChange={setWantGold} />
         </div>
       </div>
       {error ? <p className="motion-shake mt-2 text-[11px] text-red-400">{error}</p> : null}
       <div className="mt-3 flex justify-end gap-2">
         <button type="button" onClick={onClose} className="rounded border border-stone-700 px-3 py-1 text-xs text-stone-400 hover:bg-stone-900">
-          Never mind
+          {t("table.trade.neverMind")}
         </button>
         <button type="button" disabled={busy || empty} onClick={() => void offer()} className="flex items-center gap-1 rounded border border-amber-700 bg-amber-950/50 px-3 py-1 text-xs text-amber-100 disabled:opacity-50">
-          {busy ? <Loader2 className="size-3 animate-spin" /> : <ArrowLeftRight className="size-3" />} Offer the trade
+          {busy ? <Loader2 className="size-3 animate-spin" /> : <ArrowLeftRight className="size-3" />} {t("table.trade.offer")}
         </button>
       </div>
     </Dialog>

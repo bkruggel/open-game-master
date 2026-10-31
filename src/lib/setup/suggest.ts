@@ -27,36 +27,42 @@ export const AGENT_LABELS: Record<HarnessChoiceId, string> = {
   grok: "Grok Build",
 };
 
-export function suggestPictures(input: SuggestInput): PicturesSuggestion {
+export function suggestPictures(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  input: SuggestInput,
+): PicturesSuggestion {
   if (input.story === "agent" && input.agentId && PAINTING_AGENTS.includes(input.agentId)) {
     const name = AGENT_LABELS[input.agentId];
     return {
       pick: "agent",
-      reason: `${name} narrates your tables, and it can paint too, on the same sign-in and plan. One test map first, so the tables only get a painter that works.`,
+      reason: t("setup.suggest.agentPaints", { name }),
     };
   }
   if (input.storyIsOpenAi) {
-    return { pick: "openai", reason: "The OpenAI key you gave the storyteller paints pictures too. Nothing more to paste." };
+    return { pick: "openai", reason: t("setup.suggest.openaiPictures") };
   }
   if (input.comfyFound) {
-    return { pick: "comfyui", reason: "ComfyUI is already running on this computer: free pictures that never leave it." };
+    return { pick: "comfyui", reason: t("setup.suggest.comfy") };
   }
   return {
     pick: "none",
-    reason: "Nothing that paints is running here yet. Tables play well with painted placeholders, and a ComfyUI started later is picked up on its own.",
+    reason: t("setup.suggest.none"),
   };
 }
 
-export function suggestNarration(input: SuggestInput): NarrationSuggestion {
+export function suggestNarration(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  input: SuggestInput,
+): NarrationSuggestion {
   if (input.storyIsOpenAi) {
-    return { pick: "openai", reason: "The OpenAI key you gave the storyteller can read the story aloud too, and take dictation." };
+    return { pick: "openai", reason: t("setup.suggest.openaiNarration") };
   }
   if (input.kokoroFound) {
-    return { pick: "kokoro", reason: "Kokoro is already running on this computer: free narration, and the text never leaves it." };
+    return { pick: "kokoro", reason: t("setup.suggest.kokoro") };
   }
   return {
     pick: "off",
-    reason: "Nothing that speaks is running here yet. Kokoro is one command away (below); until then the story is read on screen.",
+    reason: t("setup.suggest.off"),
   };
 }
 

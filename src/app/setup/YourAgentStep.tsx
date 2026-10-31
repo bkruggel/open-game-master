@@ -39,12 +39,12 @@ export function YourAgentStep({
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data.error ?? "Could not make the connection.");
+        setError(data.error ?? t("setup.agent.connectFailed"));
         return;
       }
       onMade({ id: data.grant.id, token: data.token, mcpUrl: data.mcpUrl });
     } catch {
-      setError("Could not reach this server.");
+      setError(t("setup.unreachable"));
     } finally {
       setBusy(false);
     }
@@ -54,10 +54,10 @@ export function YourAgentStep({
     return (
       <div className="hx-token space-y-3">
         <p className="text-sm text-amber-100">
-          The connection is made. Its token is shown only here; copy the line for your program now.
+          {t("setup.agent.made")}
         </p>
         <AgentConnectLines grantId={made.id} token={made.token} mcpUrl={made.mcpUrl} />
-        <p className="text-[11px] text-stone-500">Revoke it, or make more, under Settings, Connected agents.</p>
+        <p className="text-[11px] text-stone-500">{t("setup.agent.madeNote")}</p>
       </div>
     );
   }
@@ -65,16 +65,14 @@ export function YourAgentStep({
   return (
     <div className="space-y-4">
       <p className="text-sm text-stone-300">
-        If you use Claude Code, Codex, opencode or another MCP client, it can work here as you: read your campaigns, play your
-        character, or run a table from the GM seat. It gets only what you tick, never your password or this server&apos;s
-        settings. Skip this if you do not use one.
+        {t("setup.agent.intro")}
       </p>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-stone-400">Name</span>
+        <span className="mb-1 block text-xs font-medium text-stone-400">{t("setup.agent.name")}</span>
         <input className={ui.input} value={name} maxLength={60} onChange={(event) => setName(event.target.value)} />
       </label>
       <div className="space-y-2">
-        <span className="block text-xs font-medium text-stone-400">What it may do</span>
+        <span className="block text-xs font-medium text-stone-400">{t("setup.agent.scopesHeading")}</span>
         {AGENT_SCOPE_CHOICES.map((scope) => {
           const on = scopes.includes(scope.id);
           return (
@@ -98,7 +96,7 @@ export function YourAgentStep({
         </p>
       ) : null}
       <button type="button" className={ui.btnSecondary} onClick={connect} disabled={busy || scopes.length === 0} aria-busy={busy}>
-        {busy ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />} Make the connection
+        {busy ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />} {t("setup.agent.connect")}
       </button>
     </div>
   );

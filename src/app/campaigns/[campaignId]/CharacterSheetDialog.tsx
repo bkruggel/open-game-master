@@ -126,9 +126,9 @@ export function CharacterSheetDialog({
   // heavy pack costs more when the table plays with encumbrance.
   // speedFor, then the conditions, then exhaustion: the speed the move route
   // lets them walk (src/components/sheet/sheet-state.ts).
-  const speedState = speedView(sheet, { encumbrance: encumbranceRule });
+  const speedState = speedView(t, sheet, { encumbrance: encumbranceRule });
   const speed = speedState.speed;
-  const hp = maxHpView(sheet);
+  const hp = maxHpView(t, sheet);
   const nameOf = namesLookup(names);
   const dead = Boolean(sheet.deathSaves?.dead);
   // The same load speedFor weighs (size and a Belt of Giant Strength count),
@@ -267,7 +267,7 @@ export function CharacterSheetDialog({
                   glyph: "rest-speed",
                   label: t("table.sheet.speed"),
                   value: t("table.sheet.speedValue", { speed }),
-                  title: [speedNote, ...otherSpeedsLine(derived.speeds)].join(" "),
+                  title: [speedNote, ...otherSpeedsLine(t, derived.speeds)].join(" "),
                   tone: speed < speedState.base ? "warn" : "plain",
                 },
                 {
@@ -525,7 +525,7 @@ export function CharacterSheetDialog({
                 equipment={sheet.equipment}
                 extra={(index) => {
                   const item = sheet.equipment[index];
-                  return item ? itemStatus(sheet, item).charges : null;
+                  return item ? itemStatus(t, sheet, item).charges : null;
                 }}
               />
               {(mine || corrects) && wearable.length ? (

@@ -31,7 +31,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "
 
   // The Appearance box is on the identity step, the last before the summary (backlog F4).
   const identity = read("src/app/characters/builder/steps/IdentityStep.tsx");
-  const appearance = identity.slice(identity.indexOf('<Field label="Appearance"'), identity.indexOf("</Field>", identity.indexOf('<Field label="Appearance"')));
+  const appearance = identity.slice(identity.indexOf('<Field label={t("builder.identity.appearance")}'), identity.indexOf("</Field>", identity.indexOf('<Field label={t("builder.identity.appearance")}')));
   assert.ok(appearance.includes("captionId={appearanceId}"), "the Appearance field names its caption");
   assert.ok(appearance.includes("aria-labelledby={appearanceId}"), "the Appearance textarea is labelled by its caption");
   console.log("ok: builder field captions name their fields (B11)");
@@ -77,7 +77,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "
   assert.ok(step.includes('role="tablist"') && step.includes('role="tabpanel"'), "the classes' tabs have a tablist and their panels");
   assert.ok(step.includes("aria-controls={") && step.includes("aria-labelledby={"), "each tab controls its panel, and each panel is named by its tab");
   assert.ok(!/phase === "book"[^\n]*role="tab/.test(step), "the spellbook switch itself is no tab");
-  assert.ok(step.includes('role="group" aria-label="Spellbook step"'), "the step switch is a labelled group");
+  assert.ok(step.includes('aria-label={t("builder.spells.deskAria")}'), "the step switch is a labelled group");
   assert.ok(step.includes("aria-pressed={mounted && phase === key}"), "each step button says whether it is on");
   console.log("ok: spell levels and spellbook steps are toggle-button groups (B10)");
 }
@@ -142,6 +142,6 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "
   const dialog = read("src/app/campaigns/[campaignId]/CompanionBuilderDialog.tsx");
   const closes = [...dialog.matchAll(/<Dialog\.Close\b[^>]*>/g)].map((match) => match[0]);
   assert.ok(closes.length, "the companion dialog has a close button");
-  for (const close of closes) assert.ok(close.includes('aria-label="Close"'), `named close: ${close}`);
+  for (const close of closes) assert.ok(close.includes('aria-label={t("action.close")}'), `named close: ${close}`);
   console.log("ok: the companion dialog's close button is named (B15)");
 }
