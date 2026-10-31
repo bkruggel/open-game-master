@@ -24,7 +24,7 @@ import { CategoryRail } from "@/app/reference/CategoryRail";
 import { ResultBadges, type BadgeRow } from "@/app/reference/ResultBadges";
 import { MAX_COMPARE, type CompareKind } from "@/lib/reference/compare";
 import { textKey } from "@/lib/language/text-logic";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import type { MessageKey } from "@/lib/messages/en";
 
 // Which painted icon set a reference category draws from (src/lib/icons.ts).
@@ -125,6 +125,11 @@ function ResultIcon({ kind, name }: { kind: Kind; name: string }) {
 
 export default function ReferencePage() {
   const t = useT();
+  const locale = useLocale();
+  // Glossary bodies follow the reader: the French explanation fields when
+  // the locale is fr and present, the English source otherwise. The term's
+  // name itself is WotC's French SRD wording, carried on the entry as `fr`.
+  const french = locale === "fr";
   const [mode, setMode] = useState<Mode>("browse");
   const [kind, setKind] = useState<Kind>("glossary");
   const [query, setQuery] = useState("");
@@ -243,7 +248,9 @@ export default function ReferencePage() {
   }
 
   function openTerm(term: GlossaryTerm) {
-    setOpen({ title: term.term, text: [term.short, term.long].filter(Boolean).join("\n\n") });
+    const short = french && term.shortFr ? term.shortFr : term.short;
+    const long = french && term.longFr ? term.longFr : term.long;
+    setOpen({ title: term.term, text: [short, long].filter(Boolean).join("\n\n") });
   }
 
   function openRow(row: Row) {
@@ -391,7 +398,9 @@ export default function ReferencePage() {
                       <GameIcon icon={{ kind: "glyph", key: "system-lore" }} size="size-8" />
                       <span className="min-w-0 flex-1">
                         <span className="block font-display text-sm tracking-wide text-amber-100">{term.term}</span>
-                        <span className="block text-xs text-stone-400">{term.short}</span>
+                        <span className="block text-xs text-stone-400">
+                          {french && term.shortFr ? term.shortFr : term.short}
+                        </span>
                       </span>
                     </button>
                   </li>

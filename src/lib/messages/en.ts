@@ -4059,6 +4059,15 @@ export const en = {
   "help.workshop.ai.body.c": ".",
   "help.workshop.rules.heading": "Where the rules live",
   "help.workshop.rules.body": "Everything here is still 5e underneath: attack expressions have to roll, challenge ratings show their working, and imported material behaves in a campaign exactly like material made there. When you want the numbers themselves, the rules reference and its calculators are one click away in the account menu.",
+
+  // The guided tour card (GuidedTour.tsx). The steps' own words live in
+  // src/lib/tours as titleFr/bodyFr beside the English source.
+  "tour.aria": "Guided tour",
+  "tour.end": "End the tour",
+  "tour.stepOf": "{n} of {total}",
+  "tour.back": "Back",
+  "tour.next": "Next",
+  "tour.done": "Done",
 } as const;
 
 export type MessageDictionary = typeof en;

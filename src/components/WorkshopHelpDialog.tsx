@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { WORKSHOP_GUIDES } from "@/lib/tours/workshop-guide";
 import { Dialog } from "@/components/ui/Dialog";
 import { Section } from "@/components/HelpDialog";
@@ -40,6 +40,10 @@ export function WorkshopHelpDialog({
   system?: string | null;
 }) {
   const t = useT();
+  const locale = useLocale();
+  // Each guide follows the reader: the French fields when the locale is fr
+  // and present, the English source otherwise.
+  const french = locale === "fr";
   const guides = [
     ...WORKSHOP_GUIDES.filter((guide) => guide.id === system),
     ...WORKSHOP_GUIDES.filter((guide) => guide.id !== system),
@@ -81,7 +85,13 @@ export function WorkshopHelpDialog({
           {system ? t("help.workshop.tools.introOpen") : ""}
         </p>
         <div className="space-y-1.5">
-          {guides.map((guide) => (
+          {guides.map((guide) => {
+            const title = french && guide.titleFr ? guide.titleFr : guide.title;
+            const purpose = french && guide.purposeFr ? guide.purposeFr : guide.purpose;
+            const steps = french && guide.stepsFr ? guide.stepsFr : guide.steps;
+            const atTable = french && guide.atTableFr ? guide.atTableFr : guide.atTable;
+            const tips = french && guide.tipsFr ? guide.tipsFr : guide.tips;
+            return (
             <details
               key={guide.id}
               open={guide.id === system}
@@ -93,23 +103,23 @@ export function WorkshopHelpDialog({
                   "flex items-baseline gap-2",
                 )}
               >
-                <span>{guide.title}</span>
+                <span>{title}</span>
                 <span className="text-xs font-normal normal-case tracking-normal text-stone-500">
-                  {guide.purpose}
+                  {purpose}
                 </span>
               </summary>
               <div className="space-y-2 border-t border-stone-800/70 px-3 py-2">
                 <ol className="list-decimal space-y-1 pl-5 text-sm text-stone-300">
-                  {guide.steps.map((step) => (
+                  {steps.map((step) => (
                     <li key={step}>{step}</li>
                   ))}
                 </ol>
                 <p className="text-sm text-stone-300">
-                  <span className="text-amber-200/90">{t("help.workshop.atTable")}</span> {guide.atTable}
+                  <span className="text-amber-200/90">{t("help.workshop.atTable")}</span> {atTable}
                 </p>
-                {guide.tips.length ? (
+                {tips.length ? (
                   <ul className="reveal space-y-1 text-xs text-stone-500">
-                    {guide.tips.map((tip) => (
+                    {tips.map((tip) => (
                       <li key={tip} className="flex gap-1.5">
                         <span className="text-amber-500/70">&#8226;</span>
                         <span>{tip}</span>
@@ -119,7 +129,8 @@ export function WorkshopHelpDialog({
                 ) : null}
               </div>
             </details>
-          ))}
+            );
+          })}
         </div>
       </Section>
       <Section icon={Hammer} title={t("help.workshop.what.heading")} id="What a workshop is">

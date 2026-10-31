@@ -4078,4 +4078,13 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "help.workshop.ai.body.c": ".",
   "help.workshop.rules.heading": "Où vivent les règles",
   "help.workshop.rules.body": "Tout ici reste du 5e dessous : les expressions d'attaque doivent lancer, les degrés de défi montrent leurs calculs, et le matériel importé se comporte en campagne exactement comme le matériel fait là. Quand tu veux les chiffres eux-mêmes, la référence des règles et ses calculatrices sont à un clic dans le menu du compte.",
+
+  // La carte de visite guidée (GuidedTour.tsx). Les mots des étapes vivent
+  // dans src/lib/tours, en titleFr/bodyFr à côté de la source anglaise.
+  "tour.aria": "Visite guidée",
+  "tour.end": "Terminer la visite",
+  "tour.stepOf": "{n} sur {total}",
+  "tour.back": "Retour",
+  "tour.next": "Suivant",
+  "tour.done": "Terminé",
 };

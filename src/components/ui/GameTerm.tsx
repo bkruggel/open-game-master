@@ -13,7 +13,8 @@ import { useLocale } from "@/lib/locale";
 // The label follows the reader's language: in French the glossary's official
 // name wins (WotC's own French SRD 5.1 wording), over both the glossary's
 // English term and the caller's inline children, which are English by
-// convention. The tapped explanation stays English for now.
+// convention. The tapped explanation follows too: the glossary's own French
+// bodies when it has them, the English ones otherwise.
 //
 // An unknown id renders as plain text rather than throwing, so a typo
 // degrades to the label it was already showing. scripts/test-help-coverage.mjs
@@ -35,7 +36,13 @@ export function GameTerm({
     return <>{children}</>;
   }
   const label = locale === "fr" && entry.fr ? entry.fr : (children ?? entry.term);
-  const body = [entry.short, entry.long].filter(Boolean).join("\n\n");
+  const french = locale === "fr";
+  const body = [
+    french && entry.shortFr ? entry.shortFr : entry.short,
+    french && entry.longFr ? entry.longFr : entry.long,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   return (
     <>
       <button

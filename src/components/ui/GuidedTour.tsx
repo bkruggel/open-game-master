@@ -3,6 +3,7 @@
 import { ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { useLocale, useT } from "@/lib/locale";
 import type { TourEnd } from "@/lib/tours/account-logic";
 import { placeCard, resolveSteps, skipVanished, type ResolvedStep, type TourStep } from "@/lib/tours/logic";
 import { ui } from "@/lib/ui";
@@ -49,6 +50,8 @@ export function GuidedTour({
   const [card, setCard] = useState<{ top: number; left: number }>({ top: -9999, left: -9999 });
   const cardRef = useRef<HTMLDivElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const locale = useLocale();
+  const t = useT();
   // Which way the reader last moved, so a step whose target has gone is
   // skipped onward rather than bouncing them back.
   const direction = useRef<1 | -1>(1);
@@ -194,7 +197,7 @@ export function GuidedTour({
         ref={cardRef}
         data-guided-tour
         role="dialog"
-        aria-label="Guided tour"
+        aria-label={t("tour.aria")}
         // Which step is showing, for scripts/browser/scenarios that walk a
         // tour and check each step found its target.
         data-tour-step={current.step.id}
@@ -203,23 +206,27 @@ export function GuidedTour({
       >
         <div className="flex items-center justify-between gap-2">
           <span className={ui.sectionEyebrow}>
-            {index + 1} of {total}
+            {t("tour.stepOf", { n: index + 1, total })}
           </span>
           <button
             type="button"
             onClick={() => onClose("ended")}
-            aria-label="End the tour"
+            aria-label={t("tour.end")}
             className="rounded-md p-1 text-stone-500 transition-colors hover:bg-stone-800 hover:text-stone-200"
           >
             <X className="size-4" />
           </button>
         </div>
-        <h3 className="mt-1.5 font-display text-base tracking-wide text-amber-50">{current.step.title}</h3>
-        <p className="mt-1.5 text-sm leading-relaxed text-stone-300">{current.step.body}</p>
+        <h3 className="mt-1.5 font-display text-base tracking-wide text-amber-50">
+          {locale === "fr" && current.step.titleFr ? current.step.titleFr : current.step.title}
+        </h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-stone-300">
+          {locale === "fr" && current.step.bodyFr ? current.step.bodyFr : current.step.body}
+        </p>
         <div className="mt-3 flex justify-end gap-2">
           {index > 0 ? (
             <button type="button" onClick={() => step(-1)} className={ui.btnSmall}>
-              Back
+              {t("tour.back")}
             </button>
           ) : null}
           <button
@@ -228,7 +235,7 @@ export function GuidedTour({
             onClick={() => step(1)}
             className={cn(ui.btnPrimary, "h-9 px-3.5")}
           >
-            {last ? "Done" : "Next"}
+            {last ? t("tour.done") : t("tour.next")}
             {last ? null : <ChevronRight className="size-4" />}
           </button>
         </div>

@@ -27,10 +27,15 @@ export type GlossaryTerm = {
   id: string;
   term: string;
   // The official French name, from Wizards of the Coast's own French SRD 5.1
-  // (CC-BY-4.0); present on every entry. The explanations stay English.
+  // (CC-BY-4.0); present on every entry. The explanation bodies below are
+  // this fork's own translations written with that vocabulary, not WotC text.
   fr?: string;
   short: string;
+  // The French of `short`, present on every entry.
+  shortFr?: string;
   long?: string;
+  // The French of `long`, present wherever `long` is.
+  longFr?: string;
 };
 
 const TERMS = (glossaryJson as { terms: GlossaryTerm[] }).terms;
