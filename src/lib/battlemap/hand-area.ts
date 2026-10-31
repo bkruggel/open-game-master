@@ -17,6 +17,7 @@
 // engine catches creatures in (src/lib/dm/aoe-shape.ts creaturesInBlast).
 //
 // Pure: the Hand, the board and the console's form all import it.
+import { translate } from "@/lib/messages-logic";
 import { layZone, type ZoneLayout, type ZoneMap } from "@/lib/battlemap/zones";
 import { zoneRowFor, type ZoneNamed, type ZoneShape, type ZoneTone } from "@/lib/battlemap/zones-spells";
 import { blastPickOf, blastShape, blastSummary, blastTemplate, type AreaShape } from "@/lib/battlemap/area-shape";
@@ -167,39 +168,54 @@ export function areaCells(area: HandArea, pick: AreaPick, map: ZoneMap, caster: 
   return layZone(row, { origin, toward, caster, slotLevel: area.slotLevel }, map);
 }
 
-// The pick in words, for the aim bar and the sentence the engine reads.
-export function describePick(area: HandArea, pick: AreaPick): string {
+// The pick in words. `pickWords` reads the table's language (table.hand.area.*)
+// for the aim bar and the board; `describePick` is the English line the composed
+// sentence carries to the engine (hand-play.ts composeSentence), so it reads the
+// dictionary bound to English and never moves with the interface's language.
+export function pickWords(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  area: HandArea,
+  pick: AreaPick,
+): string {
   const square = (point: XY) => `(${point.x},${point.y})`;
-  if (area.pick === "none") return area.blast ? "around me" : "centred on you";
-  if (area.pick === "direction") return pick.toward ? `toward ${square(pick.toward)}` : "";
+  if (area.pick === "none") return t(area.blast ? "table.hand.area.pickAround" : "table.hand.area.pickNone");
+  if (area.pick === "direction") return pick.toward ? t("table.hand.area.pickToward", { square: square(pick.toward) }) : "";
   if (area.pick === "wall") {
     if (!pick.at) return "";
     return pick.toward && !same(pick.at, pick.toward)
-      ? `from ${square(pick.at)} toward ${square(pick.toward)}`
-      : `from ${square(pick.at)}`;
+      ? t("table.hand.area.pickFromToward", { at: square(pick.at), toward: square(pick.toward) })
+      : t("table.hand.area.pickFrom", { square: square(pick.at) });
   }
-  return pick.at ? `centred on ${square(pick.at)}` : "";
+  return pick.at ? t("table.hand.area.pickAt", { square: square(pick.at) }) : "";
+}
+
+export function describePick(area: HandArea, pick: AreaPick): string {
+  return pickWords((key, vars) => translate("en", key, vars), area, pick);
 }
 
 // What the board asks for next, in the aim bar's words.
-export function pickHint(area: HandArea, pick: AreaPick): string {
+export function pickHint(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  area: HandArea,
+  pick: AreaPick,
+): string {
   switch (area.pick) {
     case "none":
-      return area.blast ? "It bursts around you." : "It is laid around you.";
+      return t(area.blast ? "table.hand.area.hintBurst" : "table.hand.area.hintLaid");
     case "direction":
       return pick.toward
-        ? "Tap another square to turn it."
+        ? t("table.hand.area.hintTurn")
         : area.blast
-          ? `Tap the board where the ${area.blast.shape} points.`
-          : "Tap the board where the line blows toward.";
+          ? t("table.hand.area.hintCone", { shape: area.blast.shape })
+          : t("table.hand.area.hintLineBlows");
     case "wall":
       return !pick.at
-        ? "Tap the board where the wall begins."
+        ? t("table.hand.area.hintWallStart")
         : pick.toward
-          ? "Tap again to start the wall over."
-          : "Tap where it runs toward, or leave it across your view.";
+          ? t("table.hand.area.hintWallRestart")
+          : t("table.hand.area.hintWallToward");
     case "point":
-      return pick.at ? "Tap another square to move it." : "Tap the board where it is centred.";
+      return pick.at ? t("table.hand.area.hintMove") : t("table.hand.area.hintCentre");
   }
 }
 

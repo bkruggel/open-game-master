@@ -5,6 +5,7 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import { cardArtwork } from "@/lib/battlemap/card-art";
 import { Sheet } from "@/components/ui/Sheet";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import type { HandCard } from "@/lib/battlemap/hand";
 import {
   GROUP_SEARCH_OVER,
@@ -77,6 +78,7 @@ export function HandMoreSheet({
   genre?: string | null;
 }) {
   const [filter, setFilter] = useState<HandFilter>(NO_FILTER);
+  const t = useT();
   const all = useMemo(() => units.flatMap((unit) => (isGroup(unit) ? unit.cards : [unit])), [units]);
   const chips = useMemo(() => (all.length > GROUP_SEARCH_OVER ? filterChips(all) : []), [all]);
   const searching = filtering(filter);
@@ -108,43 +110,45 @@ export function HandMoreSheet({
         if (!next) setFilter(NO_FILTER);
         onOpenChange(next);
       }}
-      title={arranging ? "Customize your hand" : "The rest of your hand"}
+      title={arranging ? t("table.hand.customize.aria") : t("table.hand.more.title")}
     >
       {arranging ? (
         arrange
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs text-stone-400">Choose which cards stay in your hand, for this character.</span>
+            <span className="text-xs text-stone-400">{t("table.hand.more.chooseLine")}</span>
             <button type="button" onClick={() => onArrange(true)} className="hand-arrange-move motion-press">
-              Customize Hand
+              {t("table.hand.more.customizeButton")}
             </button>
           </div>
           {displaced.length ? (
             <p role="status" className="reveal mb-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-sm text-amber-100/90">
-              {urgent.map((card) => card.name).join(" and ")} took a seat for now; {displaced.map((card) => card.name).join(", ")}{" "}
-              {displaced.length === 1 ? "waits" : "wait"} here until {urgent.length === 1 ? "it is" : "they are"} no longer needed. Your arrangement is kept.
+              {t(displaced.length === 1 ? "table.hand.more.displaced_one" : "table.hand.more.displaced_other", {
+                urgent: urgent.map((card) => card.name).join(t("table.hand.join.and")),
+                displaced: displaced.map((card) => card.name).join(", "),
+              })}
             </p>
           ) : null}
           {waitingNote ? (
             <p role="status" className="reveal mb-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-sm text-amber-100/90">
-              {waitingNote} Read them over and plan your turn in the meantime.
+              {t("table.hand.more.waiting", { note: waitingNote })}
             </p>
           ) : (
-            <p className="mb-3 text-sm text-stone-400">Pick one and it takes a seat in your hand, ready to aim.</p>
+            <p className="mb-3 text-sm text-stone-400">{t("table.hand.more.pickHint")}</p>
           )}
           <HandFindTools
             chips={chips}
             filter={filter}
             onFilter={setFilter}
             search={all.length > GROUP_SEARCH_OVER}
-            label="your cards"
+            label={t("table.hand.more.findLabel")}
             className="mb-3"
           />
           {searching ? (
             <>
               <p role="status" className="mb-2 text-xs text-stone-400">
-                {found.length ? `${found.length} of ${all.length} cards` : "No card matches."}
+                {found.length ? t("table.hand.more.found", { found: found.length, total: all.length }) : t("table.hand.more.noMatch")}
               </p>
               <ul className="-mx-1 flex min-h-0 flex-col gap-1.5 px-1 pb-1">{found.map(row)}</ul>
             </>
@@ -199,6 +203,7 @@ function MoreRow({
   conditions: string[];
   onPick: (card: HandCard) => void;
 }) {
+  const t = useT();
   const artwork = cardArtwork(card.icon, genre);
   const rows = previewRows(card, card.intent.card === "reaction" ? null : aim, conditions);
   const facts = [card.dice, card.roll, card.range].filter(Boolean).join(" · ");
@@ -217,10 +222,10 @@ function MoreRow({
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline gap-2">
             <span className="truncate font-display text-sm font-semibold text-stone-100">{card.name}</span>
-            <span className="shrink-0 text-[10px] uppercase tracking-wider text-stone-500">{typeLabel(card.type)}</span>
+            <span className="shrink-0 text-[10px] uppercase tracking-wider text-stone-500">{typeLabel(t, card.type)}</span>
             {fresh ? (
               <span className="shrink-0 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-1.5 py-px text-[10px] uppercase tracking-wider text-emerald-200">
-                New
+                {t("table.hand.card.new")}
               </span>
             ) : null}
             <span className="hand-cost ml-auto shrink-0" data-cost={card.cost}>

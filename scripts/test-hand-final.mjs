@@ -277,7 +277,7 @@ test("Absorb Elements is not offered after an elemental hit (not SRD 5.1, not re
     class: "wizard",
     spellcasting: { ability: "int", slots: { 1: { max: 4, used: 0 } }, prepared: ["Absorb Elements", "Shield"], known: [] },
   });
-  const cards = reactionCards(wizard, { ...FRESH_TURN, myTurn: false }, [hit()], [wizard]);
+  const cards = reactionCards(t, wizard, { ...FRESH_TURN, myTurn: false }, [hit()], [wizard]);
   assert.equal(cards.some((card) => card.name === "Absorb Elements"), false);
   assert.ok(cards.some((card) => card.name === "Shield"));
 });
@@ -285,12 +285,12 @@ test("Absorb Elements is not offered after an elemental hit (not SRD 5.1, not re
 test("a subclass reaction answers an ally's hit while its gate holds (Spirit Shield while raging)", () => {
   const barbarian = sheet({ id: "s2", name: "Bruna", class: "barbarian", level: 6, features: [feature("Spirit Shield")], conditions: ["raging"] });
   const ally = { id: "s1", name: "Kael" };
-  const cards = reactionCards(barbarian, { ...FRESH_TURN, myTurn: false }, [hit()], [ally, barbarian]);
+  const cards = reactionCards(t, barbarian, { ...FRESH_TURN, myTurn: false }, [hit()], [ally, barbarian]);
   const shield = cards.find((card) => card.name === "Spirit Shield");
   assert.ok(shield);
   assert.equal(shield.target, "ally");
   const calm = { ...barbarian, conditions: [] };
-  assert.equal(reactionCards(calm, { ...FRESH_TURN, myTurn: false }, [hit()], [ally, calm]).some((card) => card.name === "Spirit Shield"), false);
+  assert.equal(reactionCards(t, calm, { ...FRESH_TURN, myTurn: false }, [hit()], [ally, calm]).some((card) => card.name === "Spirit Shield"), false);
 });
 
 // ---- conditions ----

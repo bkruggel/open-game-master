@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/locale";
 import type { TurnPip } from "@/lib/battlemap/hand-table";
 
 // The Hand's turn pips, the engine's count (src/lib/battlemap/hand-table.ts
@@ -16,6 +17,7 @@ export function HandPips({
   pips: TurnPip[];
   flurryStrikes?: number;
 }) {
+  const t = useT();
   return (
     <>
       {pips.map((pip) => (
@@ -25,7 +27,7 @@ export function HandPips({
           data-used={pip.used ? "true" : undefined}
           // The strike through a spent pip is drawn by hand-motion.css, which eases it in.
           className="hand-pip rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider"
-          aria-label={`${pip.label} ${pip.used ? "spent" : "available"}`}
+          aria-label={t(pip.used ? "table.hand.pip.spent" : "table.hand.pip.available", { label: pip.label })}
         >
           {pip.label}
         </span>
@@ -34,9 +36,9 @@ export function HandPips({
         <span
           key={`flurry-${flurryStrikes}`}
           className="hand-pip motion-pop rounded-full border border-amber-500/45 bg-amber-500/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-amber-200"
-          aria-label={`${flurryStrikes} Flurry of Blows strikes left`}
+          aria-label={t("table.hand.pip.flurry", { count: flurryStrikes })}
         >
-          Flurry {flurryStrikes}
+          {t("table.hand.pip.flurryChip", { count: flurryStrikes })}
         </span>
       ) : null}
     </>

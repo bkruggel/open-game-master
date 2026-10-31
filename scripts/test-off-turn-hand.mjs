@@ -29,6 +29,8 @@ const { gmCompanionTurn } = await import("../src/lib/dm/companion-command.ts");
 const { gmTurnCompanion, offTurnReactors } = await import("../src/lib/player-characters.ts");
 const { offTurnReactionCards, reactionAim, reactionCards } = await import("../src/lib/battlemap/hand-react.ts");
 const { turnFromEncounter } = await import("../src/lib/battlemap/hand-table.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+const t = (key, vars) => translate("en", key, vars);
 const { characterAwaitingPlayer, declaredThisTurn } = await import("../src/lib/dm/player-word.ts");
 const { turnOverFor } = await import("../src/lib/dm/claims.ts");
 
@@ -67,8 +69,9 @@ function handReactions(world, acting, multiCharacter) {
   const encounter = activePublicEncounter(world.campaignId);
   const sheets = world.sheets();
   const hits = encounter.lastHits ?? [];
-  const own = reactionCards(acting, turnFromEncounter(encounter, acting, { myTurn: true }), hits, sheets);
+  const own = reactionCards(t, acting, turnFromEncounter(encounter, acting, { myTurn: true }), hits, sheets);
   const others = offTurnReactionCards(
+    t,
     offTurnReactors(sheets, acting.userId, acting.id, multiCharacter).map((sheet) => ({
       sheet,
       turn: turnFromEncounter(encounter, sheet, { myTurn: false }),
@@ -226,6 +229,7 @@ await test("In the GM seat, a reaction card for a hero the GM plays is resolved 
   assert.ok(hurt < 30, "the goblin hit Poppy");
   const encounter = activePublicEncounter(world.campaignId);
   const [dodge] = offTurnReactionCards(
+    t,
     [{ sheet: world.sheet(poppy.id), turn: turnFromEncounter(encounter, world.sheet(poppy.id), { myTurn: false }) }],
     encounter.lastHits ?? [],
     world.sheets(),

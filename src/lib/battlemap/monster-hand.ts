@@ -10,7 +10,10 @@ import { monsterAttackIcon } from "@/lib/battlemap/attack-art";
 // the reach, the conditions and the audit trail are the engine's exactly as
 // they are when the form is used.
 //
-// Pure and database-free: scripts/test-monster-hand.mjs drives every branch.
+// Like composerGate, the cards' own words (names, rules, refusal reasons,
+// the aim bar's sentence; table.hand.monster.*) are read with the translator
+// of the component that draws the hand. Pure and database-free otherwise:
+// scripts/test-monster-hand.mjs drives every branch.
 
 export type MonsterHandEnemy = {
   id: string;
@@ -21,6 +24,8 @@ export type MonsterHandEnemy = {
 };
 
 export type MonsterAdvantage = "none" | "advantage" | "disadvantage";
+
+type Translator = (key: string, vars?: Record<string, string | number>) => string;
 
 const SAVE_WORDS: Record<string, string> = { str: "STR", dex: "DEX", con: "CON", int: "INT", wis: "WIS", cha: "CHA" };
 
@@ -33,7 +38,7 @@ function cardKey(name: string): string {
 }
 
 // "Multiattack: 2 Claw, 1 Bite" from the swings one call makes.
-export function swingsLine(swings: string[]): string {
+export function swingsLine(t: Translator, swings: string[]): string {
   if (swings.length <= 1) {
     return "";
   }
@@ -41,7 +46,7 @@ export function swingsLine(swings: string[]): string {
   for (const name of swings) {
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
-  return `Multiattack: ${[...counts.entries()].map(([name, count]) => `${count} ${name}`).join(", ")}. One card plays the whole routine.`;
+  return t("table.hand.monster.multiattack", { swings: [...counts.entries()].map(([name, count]) => `${count} ${name}`).join(", ") });
 }
 
 const BASE = {
@@ -52,7 +57,7 @@ const BASE = {
   compose: false,
 };
 
-function attackCard(enemy: MonsterHandEnemy, actions: PublicEnemyActions, attack: PublicEnemyAttack): HandCard {
+function attackCard(t: Translator, enemy: MonsterHandEnemy, actions: PublicEnemyActions, attack: PublicEnemyAttack): HandCard {
   return {
     ...BASE,
     id: `monster:${enemy.id}:attack:${cardKey(attack.name)}`,
@@ -60,8 +65,8 @@ function attackCard(enemy: MonsterHandEnemy, actions: PublicEnemyActions, attack
     name: attack.name,
     range: attack.range,
     dice: `${attack.damage} ${attack.type}`.trim(),
-    roll: `${signed(attack.toHit)} to hit`,
-    rules: [swingsLine(attack.swings), attack.spellAttack ? "A spell attack." : ""].filter(Boolean).join(" "),
+    roll: t("table.hand.monster.toHit", { bonus: signed(attack.toHit) }),
+    rules: [swingsLine(t, attack.swings), attack.spellAttack ? t("table.hand.monster.spellAttack") : ""].filter(Boolean).join(" "),
     condition: attack.onHit ?? "",
     icon: monsterAttackIcon(enemy.name, attack.name, Boolean(attack.spellAttack)),
     target: "enemy",
@@ -76,7 +81,7 @@ function attackCard(enemy: MonsterHandEnemy, actions: PublicEnemyActions, attack
   };
 }
 
-function abilityCard(enemy: MonsterHandEnemy, actions: PublicEnemyActions, ability: PublicEnemyAbility): HandCard {
+function abilityCard(t: Translator, enemy: MonsterHandEnemy, actions: PublicEnemyActions, ability: PublicEnemyAbility): HandCard {
   const use: MonsterAbilityUse = {
     name: ability.name,
     save: ability.save,
@@ -88,9 +93,9 @@ function abilityCard(enemy: MonsterHandEnemy, actions: PublicEnemyActions, abili
     ...(ability.rounds ? { rounds: ability.rounds } : {}),
   };
   const rules = [
-    ability.halfOnSave ? "Half damage on a save." : "",
-    ability.rounds ? `Lasts ${ability.rounds} round${ability.rounds === 1 ? "" : "s"}.` : "",
-    "Pick everyone caught in it.",
+    ability.halfOnSave ? t("table.hand.monster.halfOnSave") : "",
+    ability.rounds ? t("table.hand.monster.lasts", { count: ability.rounds }) : "",
+    t("table.hand.monster.hintMany"),
   ]
     .filter(Boolean)
     .join(" ");
@@ -101,7 +106,7 @@ function abilityCard(enemy: MonsterHandEnemy, actions: PublicEnemyActions, abili
     name: ability.name,
     range: "",
     dice: ability.damage ? `${ability.damage} ${ability.damageType ?? ""}`.trim() : (ability.condition ?? ""),
-    roll: `${saveWord(ability.save)} save DC ${ability.dc}`,
+    roll: t("table.hand.monster.saveRoll", { ability: saveWord(ability.save), dc: ability.dc }),
     rules,
     resource: ability.resource,
     condition: ability.condition ?? "",
@@ -119,17 +124,17 @@ function abilityCard(enemy: MonsterHandEnemy, actions: PublicEnemyActions, abili
   };
 }
 
-function fleeCard(enemy: MonsterHandEnemy): HandCard {
+function fleeCard(t: Translator, enemy: MonsterHandEnemy): HandCard {
   return {
     ...BASE,
     id: `monster:${enemy.id}:flee`,
     type: "basic",
-    name: "Flee",
+    name: t("table.hand.monster.nameFlee"),
     cost: "free",
     range: "",
     dice: "",
-    roll: "no roll",
-    rules: "Leaves the fight alive. The party still earns it.",
+    roll: t("table.hand.react.noRoll"),
+    rules: t("table.hand.monster.fleeRules"),
     icon: { kind: "action", key: "escape" },
     target: "none",
     toHit: null,
@@ -137,32 +142,32 @@ function fleeCard(enemy: MonsterHandEnemy): HandCard {
     damageType: "",
     save: null,
     melee: false,
-    disabled: enemy.status === "alive" ? null : `${enemy.name} is ${enemy.status}.`,
+    disabled: enemy.status === "alive" ? null : t("table.hand.monster.statusHeld", { name: enemy.name, status: enemy.status }),
     spent: false,
     intent: { card: "monster", enemyId: enemy.id, action: "flee" },
   };
 }
 
-const MOVE_CARDS: Array<{ move: MonsterMove; name: string; rules: (left: number) => string }> = [
-  { move: "dash", name: "Dash", rules: (left) => `Adds its speed to its movement this turn (${left} ft left now). Then move its token.` },
-  { move: "disengage", name: "Disengage", rules: () => "Its moves this turn draw no opportunity attacks. A bonus action with Nimble Escape." },
-  { move: "dodge", name: "Dodge", rules: () => "Attacks against it have disadvantage and it has advantage on DEX saves until its next turn." },
+const MOVE_CARDS: Array<{ move: MonsterMove; nameKey: string; rulesKey: string }> = [
+  { move: "dash", nameKey: "table.hand.monster.nameDash", rulesKey: "table.hand.monster.dashRules" },
+  { move: "disengage", nameKey: "table.hand.monster.nameDisengage", rulesKey: "table.hand.monster.disengageRules" },
+  { move: "dodge", nameKey: "table.hand.monster.nameDodge", rulesKey: "table.hand.monster.dodgeRules" },
 ];
 
 // Dash, Disengage and Dodge (issue #621): its action, played with no target,
 // as take_action with its enemyId. Only from a host that resolves them and
 // says how far the creature may still walk.
-function moveCards(enemy: MonsterHandEnemy, actions: PublicEnemyActions): HandCard[] {
+function moveCards(t: Translator, enemy: MonsterHandEnemy, actions: PublicEnemyActions): HandCard[] {
   const movement = actions.movement;
   if (!movement) {
     return [];
   }
-  return MOVE_CARDS.map(({ move, name, rules }) => {
+  return MOVE_CARDS.map(({ move, nameKey, rulesKey }) => {
     const disabled =
       move === "dash" && movement.speedFeet === 0
-        ? `${enemy.name}'s speed is 0 right now.`
+        ? t("table.hand.monster.speedHeld", { name: enemy.name })
         : move === "disengage" && movement.disengaged
-          ? `${enemy.name} already Disengaged this turn.`
+          ? t("table.hand.monster.disengaged", { name: enemy.name })
           : move === "disengage"
             ? null
             : actions.refusal;
@@ -170,11 +175,11 @@ function moveCards(enemy: MonsterHandEnemy, actions: PublicEnemyActions): HandCa
       ...BASE,
       id: `monster:${enemy.id}:${move}`,
       type: "basic",
-      name,
+      name: t(nameKey),
       range: "",
       dice: "",
-      roll: "no roll",
-      rules: rules(movement.leftFeet),
+      roll: t("table.hand.react.noRoll"),
+      rules: t(rulesKey, { left: movement.leftFeet }),
       icon: { kind: "action", key: move },
       target: "none",
       toHit: null,
@@ -184,7 +189,7 @@ function moveCards(enemy: MonsterHandEnemy, actions: PublicEnemyActions): HandCa
       melee: false,
       // Disengage may still be its bonus action (Nimble Escape): the server
       // says no if neither is left.
-      disabled: enemy.status === "alive" ? disabled : `${enemy.name} is ${enemy.status}.`,
+      disabled: enemy.status === "alive" ? disabled : t("table.hand.monster.statusHeld", { name: enemy.name, status: enemy.status }),
       spent: move !== "disengage" && actions.acted,
       intent: { card: "monster", enemyId: enemy.id, action: move },
     };
@@ -195,16 +200,16 @@ function moveCards(enemy: MonsterHandEnemy, actions: PublicEnemyActions): HandCa
 // and Dodge when the host resolves them (`enemyActions`), and breaking off.
 // Empty for an enemy the projection carries no actions for (a player's view,
 // or an older server).
-export function deriveMonsterHand(enemy: MonsterHandEnemy, options: { enemyActions?: boolean } = {}): HandCard[] {
+export function deriveMonsterHand(t: Translator, enemy: MonsterHandEnemy, options: { enemyActions?: boolean } = {}): HandCard[] {
   const actions = enemy.actions;
   if (!actions) {
     return [];
   }
   return [
-    ...actions.attacks.map((attack) => attackCard(enemy, actions, attack)),
-    ...actions.abilities.map((ability) => abilityCard(enemy, actions, ability)),
-    ...(options.enemyActions ? moveCards(enemy, actions) : []),
-    fleeCard(enemy),
+    ...actions.attacks.map((attack) => attackCard(t, enemy, actions, attack)),
+    ...actions.abilities.map((ability) => abilityCard(t, enemy, actions, ability)),
+    ...(options.enemyActions ? moveCards(t, enemy, actions) : []),
+    fleeCard(t, enemy),
   ];
 }
 
@@ -214,36 +219,41 @@ export function takesManyTargets(card: HandCard): boolean {
   return card.intent.card === "monster" && card.intent.action === "ability";
 }
 
-function listNames(names: string[]): string {
+function listNames(t: Translator, names: string[]): string {
   if (names.length <= 1) {
     return names[0] ?? "";
   }
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  // The joiner's own spaces come with the key's value (" and " / " et ").
+  return `${names.slice(0, -1).join(", ")}${t("table.hand.join.and")}${names[names.length - 1]}`;
 }
 
 // The line the aim bar shows for the raised card.
-export function monsterSentence(enemyName: string, card: HandCard, targetNames: string[]): string {
+export function monsterSentence(t: Translator, enemyName: string, card: HandCard, targetNames: string[]): string {
   const intent = card.intent;
   if (intent.card !== "monster") {
     return "";
   }
-  const who = listNames(targetNames);
+  const who = listNames(t, targetNames);
   if (intent.action === "attack") {
-    return who ? `${enemyName} attacks ${who} with its ${card.name}.` : `${enemyName} attacks with its ${card.name}.`;
+    return who
+      ? t("table.hand.monster.attackLine", { name: enemyName, who, attack: card.name })
+      : t("table.hand.monster.attackLineNoOne", { name: enemyName, attack: card.name });
   }
   if (intent.action === "ability") {
-    return who ? `${enemyName} uses ${card.name} on ${who}.` : `${enemyName} uses ${card.name}.`;
+    return who
+      ? t("table.hand.monster.abilityLine", { name: enemyName, who, ability: card.name })
+      : t("table.hand.monster.abilityLineNoOne", { name: enemyName, ability: card.name });
   }
   if (intent.action === "dash") {
-    return `${enemyName} takes the Dash action.`;
+    return t("table.hand.monster.dashLine", { name: enemyName });
   }
   if (intent.action === "disengage") {
-    return `${enemyName} disengages.`;
+    return t("table.hand.monster.disengageLine", { name: enemyName });
   }
   if (intent.action === "dodge") {
-    return `${enemyName} takes the Dodge action.`;
+    return t("table.hand.monster.dodgeLine", { name: enemyName });
   }
-  return `${enemyName} breaks off and flees.`;
+  return t("table.hand.monster.fleeLine", { name: enemyName });
 }
 
 // The console call a played card makes: the same adjudication the form

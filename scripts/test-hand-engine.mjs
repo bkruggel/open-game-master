@@ -320,21 +320,21 @@ const HIT = { characterId: "s1", attacker: "Goblin 2", attackerId: "e2", attack:
 
 test("a fresh hit offers the reactions the character holds, off their turn, as use_reaction cards", () => {
   const lys = caster({ id: "s1" });
-  const cards = reactionCards(lys, talias(), [HIT], [{ id: "s1", name: "Lys" }]);
+  const cards = reactionCards(t, lys, talias(), [HIT], [{ id: "s1", name: "Lys" }]);
   const shield = byId(cards, "reaction:shield");
   assert.equal(shield.disabled, null);
   assert.equal(shield.prompt, "Goblin 2's Scimitar hit you for 7 slashing");
   assert.deepEqual(shield.intent, { card: "reaction", feature: "Shield", spell: "Shield", slotLevel: 1 });
   const rogue = sheet({ class: "rogue", level: 5, features: [feature("Uncanny Dodge")] });
-  assert.ok(byId(reactionCards(rogue, talias(), [HIT], []), "reaction:uncanny-dodge:s1"));
+  assert.ok(byId(reactionCards(t, rogue, talias(), [HIT], []), "reaction:uncanny-dodge:s1"));
   // Deflect Missiles answers a ranged hit only.
   const monk = sheet({ class: "monk", level: 3, features: [feature("Deflect Missiles")] });
-  assert.equal(reactionCards(monk, talias(), [HIT], []).length, 0);
-  assert.equal(reactionCards(monk, talias(), [{ ...HIT, ranged: true }], []).length, 1);
+  assert.equal(reactionCards(t, monk, talias(), [HIT], []).length, 0);
+  assert.equal(reactionCards(t, monk, talias(), [{ ...HIT, ranged: true }], []).length, 1);
   // Answered already, spent reaction, or no fresh record: nothing, or refused.
-  assert.equal(reactionCards(rogue, talias(), [{ ...HIT, answered: ["Uncanny Dodge"] }], []).length, 0);
-  assert.match(byId(reactionCards(rogue, talias({ reactionUsed: true }), [HIT], []), "reaction:uncanny-dodge:s1").disabled, /already used their reaction/);
-  assert.equal(reactionCards(rogue, talias(), [], []).length, 0);
+  assert.equal(reactionCards(t, rogue, talias(), [{ ...HIT, answered: ["Uncanny Dodge"] }], []).length, 0);
+  assert.match(byId(reactionCards(t, rogue, talias({ reactionUsed: true }), [HIT], []), "reaction:uncanny-dodge:s1").disabled, /already used their reaction/);
+  assert.equal(reactionCards(t, rogue, talias(), [], []).length, 0);
 });
 
 // Issue 662: a multiattack's prompt states the one hit Uncanny Dodge halves,
@@ -342,14 +342,14 @@ test("a fresh hit offers the reactions the character holds, off their turn, as u
 test("a multiattack's reaction prompt names the heaviest hit and its own damage, and counts the rest", () => {
   const rogue = sheet({ class: "rogue", level: 5, features: [feature("Uncanny Dodge")] });
   const twice = { ...HIT, attacker: "Raider Captain", attack: "Dagger", type: "piercing", damage: 6, hits: 2 };
-  const dodge = byId(reactionCards(rogue, talias(), [twice], []), "reaction:uncanny-dodge:s1");
+  const dodge = byId(reactionCards(t, rogue, talias(), [twice], []), "reaction:uncanny-dodge:s1");
   assert.equal(dodge.prompt, "Raider Captain's Dagger hit you for 6 piercing, the heaviest of 2 hits");
 });
 
 test("Cutting Words answers an ally's hit, aimed at that ally", () => {
   const bard = sheet({ id: "s3", name: "Wren", class: "bard", features: [feature("Cutting Words")], resources: { bardic_inspiration: { max: 3, used: 0 } } });
   const party = [{ id: "s1", name: "Kael" }, { id: "s3", name: "Wren" }];
-  const cards = reactionCards(bard, talias(), [HIT], party);
+  const cards = reactionCards(t, bard, talias(), [HIT], party);
   const words = byId(cards, "reaction:cutting-words:s1");
   assert.equal(words.target, "ally");
   assert.deepEqual(reactionAim(words, [HIT], "s3", party), { id: "s1", name: "Kael", kind: "ally" });

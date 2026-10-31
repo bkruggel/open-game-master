@@ -1323,13 +1323,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/MonsterHand.tsx#str-list": [
-      [
-        "key",
-        3,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
     "app/campaigns/[campaignId]/NarrationNote.tsx#str-eq": [
       [
         "key",
