@@ -75,6 +75,7 @@ export function modelLine(
               !model.tested.stages.streaming && t("admin.models.tested.noStream"),
               !model.tested.stages.toolCall && t("admin.models.tested.noToolCall"),
               !model.tested.stages.toolContinuation && t("admin.models.tested.noContinuation"),
+              model.tested.stages.turn === false && t("admin.models.tested.noTurn"),
             ]
               .filter(Boolean)
               .join(", "),

@@ -216,12 +216,12 @@ export function HelpDialog({
         <p>{t("help.memory.p1")}</p>
         <ul className="list-none space-y-1.5">
           <li>
-            <span className="text-stone-300">{t("help.memory.remember.label")}</span>
-            {t("help.memory.remember.body")}
+            <span className="text-stone-300">{t("help.memory.pin.label")}</span>
+            {t("help.memory.pin.body")}
           </li>
           <li>
-            <span className="text-stone-300">{t("help.memory.canon.label")}</span>
-            {t("help.memory.canon.body")}
+            <span className="text-stone-300">{t("help.memory.saveFact.label")}</span>
+            {t("help.memory.saveFact.body")}
           </li>
           <li>
             <span className="text-stone-300">{t("help.memory.facts.label")}</span>

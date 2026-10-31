@@ -4,6 +4,7 @@ import { Heart, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useT } from "@/lib/locale";
+import { unquoted } from "@/lib/language/text-logic";
 import { CharacterPortrait } from "@/lib/ui";
 import { characterPlaceholder, npcPlaceholder } from "@/lib/placeholders";
 import { KitButton } from "./PanelKit";
@@ -151,7 +152,7 @@ function AdvanceOfferCard({
               <span className="min-w-0">{proposal.summary}</span>
             </p>
             {proposal.reason ? (
-              <p className="mt-1 text-sm italic leading-snug text-stone-200">&ldquo;{proposal.reason}&rdquo;</p>
+              <p className="mt-1 text-sm italic leading-snug text-stone-200">&ldquo;{unquoted(proposal.reason)}&rdquo;</p>
             ) : null}
             {mine ? (
               <p className="mt-1 text-[11px] text-stone-400">

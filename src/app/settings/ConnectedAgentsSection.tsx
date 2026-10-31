@@ -15,6 +15,8 @@ import { AgentConnectLines } from "@/components/AgentConnectLines";
 import { AssistantLink } from "@/components/AssistantLink";
 import { PlayerReceiverSetup, type ReceiverInfo } from "@/app/settings/PlayerReceiverSetup";
 import { PlayerPollLinkSetup } from "@/app/settings/PlayerPollLinkSetup";
+import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
+import { stopWordsForPlayer, type StopReason } from "@/lib/agents/webhook-seat-logic";
 
 type Grant = {
   id: string;
@@ -33,6 +35,19 @@ type Campaign = { id: string; title: string };
 export const AGENT_SCOPE_IDS = ["read", "play", "characters", "campaigns", "dm"] as const;
 export type AgentScopeId = (typeof AGENT_SCOPE_IDS)[number];
 export const AGENT_SCOPE_CHOICES: ReadonlyArray<{ id: AgentScopeId }> = AGENT_SCOPE_IDS.map((id) => ({ id }));
+
+// What a connection's receiver or poll link wakes, and one that stopped on
+// its own and why (issue 654). From hosts that send `agentLinks`.
+type AgentLink = { id: string; grantId: string; campaignId: string; delivery: "poll" | "push"; characterName: string; pending: number; failed: number };
+type StoppedLink = { grantId: string; campaignId: string; delivery: "poll" | "push"; reason: StopReason; stoppedAt: string; characterName: string };
+
+function linkLine(link: AgentLink): string {
+  const what = link.delivery === "poll" ? "Poll link" : "Receiver";
+  const trouble = link.failed > 0
+    ? ` · ${link.failed} wake-up${link.failed === 1 ? "" : "s"} could not be delivered`
+    : link.pending > 0 ? ` · ${link.pending} waiting to be delivered` : "";
+  return `${what}: wakes the agent for ${link.characterName}${trouble}`;
+}
 
 export function agentScopeLabel(t: (key: string) => string, id: AgentScopeId): string {
   return t(`agents.scope.${id}.label`);
@@ -74,12 +89,17 @@ export function ConnectedAgentsSection() {
   const [error, setError] = useState("");
   const [fresh, setFresh] = useState<{ id: string; token: string; name: string; receiver: ReceiverInfo | null } | null>(null);
   const [leaving, setLeaving] = useState<string | null>(null);
+  const [links, setLinks] = useState<AgentLink[]>([]);
+  const [stoppedLinks, setStoppedLinks] = useState<StoppedLink[]>([]);
+  const showsLinks = hostOffers(useCapabilities(), "agentLinks");
 
   useEffect(() => {
-    readLoad<{ grants?: Grant[]; mcpUrl?: string; assistantUrl?: string; pollLinks?: boolean }>(fetch("/api/profile/agents"), "The connected agents").then((outcome) => {
+    readLoad<{ grants?: Grant[]; mcpUrl?: string; assistantUrl?: string; pollLinks?: boolean; links?: AgentLink[]; stoppedLinks?: StoppedLink[] }>(fetch("/api/profile/agents"), "The connected agents").then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setGrants(outcome.payload.grants ?? []);
+        setLinks(Array.isArray(outcome.payload.links) ? outcome.payload.links : []);
+        setStoppedLinks(Array.isArray(outcome.payload.stoppedLinks) ? outcome.payload.stoppedLinks : []);
         setMcpUrl(outcome.payload.mcpUrl ?? "");
         setPollLinks(outcome.payload.pollLinks === true);
         setAssistantUrl(outcome.payload.assistantUrl ?? "");
@@ -185,6 +205,20 @@ export function ConnectedAgentsSection() {
                   {grant.campaignId ? ` · ${campaignTitle(grant.campaignId)}` : ""} ·{" "}
                   {t("agents.rowMeta", { last: when(grant.lastUsedAt), expires: when(grant.expiresAt) })}
                 </span>
+                {showsLinks
+                  ? links.filter((link) => link.grantId === grant.id).map((link) => (
+                    <span key={link.id} className="block text-xs text-stone-400">
+                      {linkLine(link)}
+                    </span>
+                  ))
+                  : null}
+                {showsLinks
+                  ? stoppedLinks.filter((stop) => stop.grantId === grant.id).slice(0, 1).map((stop) => (
+                    <span key={`${stop.grantId}-${stop.stoppedAt}`} role="status" className="block text-xs text-amber-200">
+                      {stopWordsForPlayer(stop.reason, stop.delivery, { character: stop.characterName, date: when(stop.stoppedAt) })}
+                    </span>
+                  ))
+                  : null}
               </span>
               {pollLinks && grant.campaignId && grant.scopes.includes("read") && grant.scopes.includes("play") ? (
                 <button type="button" className={ui.btnSmall} onClick={() => setPollFor(pollFor === grant.id ? null : grant.id)}>
@@ -196,7 +230,11 @@ export function ConnectedAgentsSection() {
               </button>
               {pollFor === grant.id ? (
                 <div className="basis-full pt-2">
-                  <PlayerPollLinkSetup key={grant.id} grantId={grant.id} characterName="your character" />
+                  <PlayerPollLinkSetup
+                    key={grant.id}
+                    grantId={grant.id}
+                    characterName={links.find((link) => link.grantId === grant.id)?.characterName ?? "your character"}
+                  />
                 </div>
               ) : null}
             </li>

@@ -24,6 +24,14 @@ const STAGES = [
   { key: "toolContinuation" },
 ] as const;
 
+// Then one turn of a campaign's own shape, once those three pass
+// (src/lib/backend-trial.ts): a backend can pass them and still fail here.
+const TRIAL_STAGES = [
+  { key: "toolTurn", label: "Calls a tool under the storyteller's full prompt" },
+  { key: "narration", label: "Streams its narration after the tool result" },
+] as const;
+
+type TrialStage = { ok: boolean; detail?: string };
 type ProbeStage = { ok?: boolean; sample?: string; name?: string | null };
 type ProbeResult = {
   ok: boolean;
@@ -36,6 +44,7 @@ type ProbeResult = {
   // campaign on this model runs the same way.
   route?: "chat" | "chat-no-reasoning" | "responses";
   stages?: Record<string, ProbeStage>;
+  trial?: { ok: boolean; toolCount: number; stages: Record<string, TrialStage> };
   // The story window a campaign on it packs against; `reported` is false
   // when the server named no size.
   window?: { tokens: number; reported: boolean };
@@ -109,7 +118,7 @@ export function BackendProbe({
       </div>
       {testing ? (
         <p role="status" className="live-in mt-2 text-sm text-stone-400">
-          {t("admin.probe.asking")}
+          {t("admin.probe.asking", { tail: which === "story" ? t("admin.probe.askingTurn") : "" })}
         </p>
       ) : null}
       {result ? (
@@ -126,6 +135,23 @@ export function BackendProbe({
                 )}
                 <span className={state.ok ? "text-stone-300" : "text-red-400"}>{t(STAGE_KEYS[stage.key])}</span>
               </p>
+            );
+          })}
+          {TRIAL_STAGES.map((stage) => {
+            const state = result.trial?.stages[stage.key];
+            if (!state) return null;
+            return (
+              <div key={stage.key}>
+                <p className="flex items-center gap-2">
+                  {state.ok ? (
+                    <Check className="size-4 shrink-0 text-emerald-400" />
+                  ) : (
+                    <X className="size-4 shrink-0 text-red-400" />
+                  )}
+                  <span className={state.ok ? "text-stone-300" : "text-red-400"}>{stage.label}</span>
+                </p>
+                {state.detail ? <p className="ml-6 text-xs leading-5 text-stone-400">{state.detail}</p> : null}
+              </div>
             );
           })}
           {result.ok ? (

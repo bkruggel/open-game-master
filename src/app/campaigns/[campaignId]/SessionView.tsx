@@ -1,7 +1,7 @@
 "use client";
 
 import { romanceCueAllowed } from "@/lib/dm/director-logic";
-import { initiativeCharacter, selectedCharacter } from "@/lib/player-characters";
+import { gmTurnCompanion, initiativeCharacter, selectedCharacter } from "@/lib/player-characters";
 import { useThemePrefs } from "@/lib/theme-mode";
 import { LevelUpMoment, LootMoment, MomentVeil, RestMoment, TravelBanner } from "@/app/campaigns/[campaignId]/Moments";
 import { CoordinationPanel } from "@/app/campaigns/[campaignId]/CoordinationPanel";
@@ -478,8 +478,17 @@ export function SessionView({
     () => selectedCharacter(sheets, me?.id ?? "", state.activeSheetId) ?? sheets.find((sheet) => sheet.userId === me?.id) ?? null,
     [sheets, me?.id, state.activeSheetId],
   );
-  const turnSheet = initiativeCharacter(sheets, me?.id ?? "", turnCharacterId(state.encounter));
+  // In the GM seat, the turn of a companion nobody commands is the GM's to
+  // play (player-characters.ts gmTurnCompanion), with its Hand and its Do,
+  // on a host that takes them (capabilities.ts gmCompanionTurns).
+  const capabilities = useCapabilities();
+  const gmCompanions = caps.role === "dm" && !state.encounter?.enemyTurns && hostOffers(capabilities, "gmCompanionTurns");
+  const turnSheet =
+    initiativeCharacter(sheets, me?.id ?? "", turnCharacterId(state.encounter)) ??
+    (gmCompanions ? gmTurnCompanion(sheets, turnCharacterId(state.encounter)) : null);
   const actingSheet = turnSheet ?? mySheet;
+  // The GM seat holds a companion's turn the floor names the companion for.
+  const gmPlaysTurn = Boolean(gmCompanions && turnSheet?.isCompanion);
   // The server's notice opens the level-up dialog once, when the experience
   // lands. Closing it only puts it off: the sheet's experience still earns
   // the level, so the party card offers a Level up button until it is done.
@@ -606,8 +615,8 @@ export function SessionView({
   const t = useT();
   const gate = useMemo(
     () =>
-      composerGate(t, { floor, sheets, meUserId: meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns }),
-    [t, floor, sheets, meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns],
+      composerGate(t, { floor, sheets, meUserId: meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns, playsTurn: gmPlaysTurn }),
+    [t, floor, sheets, meId, kind, myName, leadPrivate, openingNarrationPlaying, enemyTurns, gmPlaysTurn],
   );
   // A mid-game joiner without a character is gated to creation first. The DM
   // runs no character, so the gate must never catch them.
@@ -683,7 +692,6 @@ export function SessionView({
   const turnEnforcement = voiceSettings?.turnEnforcement ?? "soft";
   const sayRangeRule = Boolean(voiceSettings?.rules?.sayRange);
   // Nothing records or announces a transcript the server cannot write.
-  const capabilities = useCapabilities();
   const transcribe = Boolean(voiceSettings?.transcribe) && transcribesVoice(capabilities);
   // End the session, or start the next (issue 586), for whoever steers the
   // story or the party lead, at a campaign in play on a host that has it.
@@ -1052,6 +1060,7 @@ export function SessionView({
       // the enlarged board's dialog covers the story, so it only says so.
       onShowStory={composer ? undefined : toggleStage}
       composer={composer}
+      meUserId={meId}
     />
   );
   const chronicle = chronicleFor(false);
@@ -1097,6 +1106,7 @@ export function SessionView({
     notes: state.notes,
     facts: state.facts,
     characterEvents: state.characterEvents,
+    clockTurns: state.clockTurns,
     refreshNotes,
     refreshFacts,
     sideThreads: state.sideThreads,
@@ -1348,7 +1358,9 @@ export function SessionView({
                   ) : null}
                   <Composer
                     campaignId={campaign.id}
+                    genre={campaign.gameSettings?.genre ?? null}
                     trackAmmo={campaign.gameSettings?.variantRules?.ammunition ?? false}
+                    multiCharacter={campaign.gameSettings?.multiCharacter}
                     romanceCue={romanceCueAllowed(campaign.gameSettings)}
                     edges={state.battleMap?.edges}
                     drops={state.battleMap?.drops}
@@ -1444,7 +1456,7 @@ export function SessionView({
 
       {prep && (prepOpen || prepLeaving) ? <PrepLayer leaving={!prepOpen}>{prep.screen}</PrepLayer> : null}
 
-      {dice3d ? <DiceOverlay latestRoll={state.latestRoll} enabled /> : null}
+      {dice3d ? <DiceOverlay rolls={state.recentRolls} enabled /> : null}
       <SceneTitle card={state.titleCard} onShown={markTitleCardShown} />
       <TableBreakBanner tableBreak={tableBreak} meUserId={me.id} mayResume={mayResumeTable} onResume={resumeTable} />
       <SessionHoldBanner

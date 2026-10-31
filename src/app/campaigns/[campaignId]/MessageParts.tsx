@@ -14,6 +14,7 @@ import {
   ADVENTURE_BEGINS_NOTE,
   JOIN_NOTE_PREFIX,
   LEAD_NOTE_PREFIX,
+  RECAP_PREFIX,
   systemNoteWords,
   type CampaignMember,
 } from "@/lib/campaign-types";
@@ -29,6 +30,7 @@ import {
 import type { SystemGlyph } from "@/lib/system-glyphs";
 import { PACT_REVEAL_PREFIX } from "@/lib/dm/pact-logic";
 import { kitButtonClass } from "@/app/campaigns/[campaignId]/PanelKit";
+import { CardReturnedNote } from "@/app/campaigns/[campaignId]/CardReturnedNote";
 
 // The transcript's smaller voices: the table's own notices and what the
 // players say. The DM's passage, the hero of the screen, is MessageItem.tsx.
@@ -107,6 +109,17 @@ export function SystemMessage({ content, glyph }: { content: string; glyph?: Sys
         </p>
         <p className="mt-0.5 text-sm leading-snug text-violet-50">{content.slice(PACT_REVEAL_PREFIX.length)}</p>
       </div>
+    );
+  }
+  // The "Previously" that opens a session reads as part of the story, at
+  // narration weight under its own heading, not as a faint system line
+  // (issue 668).
+  if (content.startsWith(RECAP_PREFIX)) {
+    return (
+      <section aria-label="Previously" className="panel session-banner-card session-recap rounded-xl">
+        <SectionHead title="Previously" glyph="cue-bell" level="h4" className="mb-1" />
+        <p className="session-recap-text">{content.slice(RECAP_PREFIX.length)}</p>
+      </section>
     );
   }
   const join = content.startsWith(JOIN_NOTE_PREFIX);
@@ -218,6 +231,7 @@ export function PlayerMessage({
         <div className={cn("session-bubble", ooc && "session-bubble-ooc")}>
           <p className="whitespace-pre-wrap text-pretty">{message.content}</p>
         </div>
+        {message.cardReturned ? <CardReturnedNote message={message} mine={mine} name={sheet?.name ?? "the player"} /> : null}
       </div>
     </ContextMenu>
   );
