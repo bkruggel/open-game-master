@@ -16,6 +16,7 @@ import { isBound, movedText, OutOfStep, PinRegionActions, RegionBar, RegionNotic
 import { PlaceBattleMaps, type OpenPrep } from "./PlaceBattleMaps";
 import { CornerEditor, DeleteReview, MapSettings, NotSaved, PointFields, useAtlasDelete } from "./AtlasEdit";
 import { PartyBar } from "./AtlasParty";
+import { useT } from "@/lib/locale";
 import type { WorldEntity } from "@/lib/db/world-forge";
 
 // The atlas, after WorldForge's map tab: pictures of the world with pins on
@@ -61,6 +62,7 @@ export function AtlasView({
   atTable?: boolean;
 }) {
   const { doc } = world;
+  const t = useT();
   const [mapId, setMapId] = useState(doc.maps[0]?.id ?? "");
   const [mode, setMode] = useState<Mode>("look");
   const [selected, setSelected] = useState<{ kind: "pin" | "region"; id: string } | null>(null);
@@ -227,7 +229,7 @@ export function AtlasView({
             ))}
           </nav>
           <div className="ml-auto flex gap-1" role="radiogroup" aria-label="What a click does">
-            {([["look", MousePointer2, "Look"], ["pin", MapPin, "Place a pin"], ["region", Hexagon, "Draw a region"]] as const).map(([value, Icon, label]) => (
+            {([["look", MousePointer2, t("atlas.mode.look")], ["pin", MapPin, t("atlas.mode.pin")], ["region", Hexagon, t("atlas.mode.region")]] as const).map(([value, Icon, label]) => (
               <button key={value} type="button" role="radio" aria-checked={mode === value} onClick={() => { setMode(value); setDrawing([]); }} className={cn(ui.btnSmall, "px-2 py-1 text-xs", mode === value && "border-amber-500/60 bg-amber-400/10 text-amber-100")}>
                 <Icon className="size-3.5" /> {label}
               </button>

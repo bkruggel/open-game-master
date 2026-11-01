@@ -5007,6 +5007,20 @@ export const en = {
   "tour.back": "Back",
   "tour.next": "Next",
   "tour.done": "Done",
+
+  // Overworld tool buttons (OverworldTools.tsx)
+  "overworld.mode.pin": "Add pin",
+  "overworld.mode.party": "Place the party",
+  "overworld.mode.place": "Move a place",
+  "overworld.mode.paint": "Paint terrain",
+  "overworld.mode.line": "Draw a line",
+  "overworld.mode.label": "Write a label",
+  "overworld.mode.erase": "Erase",
+
+  // Atlas mode labels (AtlasView.tsx)
+  "atlas.mode.look": "Look",
+  "atlas.mode.pin": "Place a pin",
+  "atlas.mode.region": "Draw a region",
 } as const;
 
 export type MessageDictionary = typeof en;

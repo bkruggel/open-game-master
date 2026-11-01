@@ -40,6 +40,7 @@ import {
   type OverworldSize,
   type PathKind,
 } from "@/lib/overworld/features";
+import { useT } from "@/lib/locale";
 
 // The region map's toolbars (docs/workshop-parity-audit.md phase 15). Each
 // is a small stateless strip; OverworldPanel holds the state and decides
@@ -126,16 +127,6 @@ const chip = kitButtonClass("small");
 const idle = "";
 const active = "border-amber-500/60 bg-amber-400/10 text-amber-100";
 
-const MODES = [
-  ["pin", "Add pin", MapPin],
-  ["party", "Place the party", Users],
-  ["place", "Move a place", Move],
-  ["paint", "Paint terrain", Brush],
-  ["line", "Draw a line", PenLine],
-  ["label", "Write a label", Type],
-  ["erase", "Erase", Eraser],
-] as const;
-
 export function ModeBar({
   mode,
   onMode,
@@ -158,6 +149,16 @@ export function ModeBar({
   regenBusy: boolean;
   onRegenerate: () => void;
 }) {
+  const t = useT();
+  const MODES = [
+    ["pin", t("overworld.mode.pin"), MapPin],
+    ["party", t("overworld.mode.party"), Users],
+    ["place", t("overworld.mode.place"), Move],
+    ["paint", t("overworld.mode.paint"), Brush],
+    ["line", t("overworld.mode.line"), PenLine],
+    ["label", t("overworld.mode.label"), Type],
+    ["erase", t("overworld.mode.erase"), Eraser],
+  ] as const;
   return (
     <div className="flex flex-wrap items-center gap-1.5" data-tour="region-modes">
       {MODES.filter(([value]) => partyTool || value !== "party").map(([value, label, Icon]) => (

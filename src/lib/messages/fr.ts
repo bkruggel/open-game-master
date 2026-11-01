@@ -5028,4 +5028,18 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "tour.back": "Retour",
   "tour.next": "Suivant",
   "tour.done": "Terminé",
+
+  // Boutons d'outils Overworld (OverworldTools.tsx)
+  "overworld.mode.pin": "Ajouter un point",
+  "overworld.mode.party": "Placer le groupe",
+  "overworld.mode.place": "Déplacer un lieu",
+  "overworld.mode.paint": "Peindre le terrain",
+  "overworld.mode.line": "Tracer une ligne",
+  "overworld.mode.label": "Écrire une étiquette",
+  "overworld.mode.erase": "Effacer",
+
+  // Étiquettes de mode Atlas (AtlasView.tsx)
+  "atlas.mode.look": "Voir",
+  "atlas.mode.pin": "Placer un point",
+  "atlas.mode.region": "Tracer une région",
 };

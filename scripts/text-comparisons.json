@@ -1351,13 +1351,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/OverworldTools.tsx#str-list": [
-      [
-        "key",
-        7,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
     "app/campaigns/[campaignId]/PactOfferCard.tsx#str-eq": [
       [
         "key",
@@ -3308,13 +3301,6 @@
         "key",
         1,
         "KeyboardEvent key names"
-      ]
-    ],
-    "app/workshop/world/AtlasView.tsx#str-list": [
-      [
-        "key",
-        3,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
     "app/workshop/world/EntityEditor.tsx#str-key": [
