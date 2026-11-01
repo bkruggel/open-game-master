@@ -390,17 +390,24 @@ export const SMALL_CONTEXT_TOKENS = RECOMMENDED_WINDOW;
 
 // `tools` is the backend's own word on tool calls where it gives one
 // (Ollama's capabilities); it outranks the catalog's.
-export function assessModel(input: {
-  role: ModelRole;
-  id: string;
-  catalog: CatalogModel | null;
-  listed: boolean | null;
-  local?: boolean;
-  tools?: boolean | null;
-  // The weights' size on disk against what this machine can hold
-  // (src/lib/model-registry/hardware.ts), for a model that runs here.
-  memory?: { sizeGb: number; budgetGb: number } | null;
-}): ModelVerdict {
+//
+// The warnings are full sentences the admin's model pickers show; they live
+// in the dictionaries (admin.models.*), and the verdict takes the
+// translator from its caller, as home/types.ts's agoLabel does.
+export function assessModel(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  input: {
+    role: ModelRole;
+    id: string;
+    catalog: CatalogModel | null;
+    listed: boolean | null;
+    local?: boolean;
+    tools?: boolean | null;
+    // The weights' size on disk against what this machine can hold
+    // (src/lib/model-registry/hardware.ts), for a model that runs here.
+    memory?: { sizeGb: number; budgetGb: number } | null;
+  },
+): ModelVerdict {
   const warnings: string[] = [];
   let fit: ModelFit = "ok";
   const unfit = (why: string) => {
@@ -414,58 +421,58 @@ export function assessModel(input: {
   const { catalog, role } = input;
   const writes = role === "story" || role === "utility";
   if (input.listed === false) {
-    warn("Not listed by the server right now. Load it there, or pick one it lists.");
+    warn(t("admin.models.notListedNow"));
   }
   const noTools = (why: string) => {
-    if (role === "story") unfit(`${why} The storyteller runs on them: dice, sheets and scenes are all tool calls.`);
-    else warn(`${why} Lore checks and bookkeeping that use them will fall back to plain text.`);
+    if (role === "story") unfit(t("admin.models.tools.story", { why }));
+    else warn(t("admin.models.tools.fallback", { why }));
   };
   if (writes && input.tools === false) {
-    noTools("Takes no tool calls, by the server's own account.");
+    noTools(t("admin.models.tools.serverRefused"));
   }
   if (input.memory && input.memory.sizeGb && input.memory.budgetGb && input.memory.sizeGb * 1.1 > input.memory.budgetGb) {
-    unfit(`Too big for this machine: ${input.memory.sizeGb} GB of weights against ${Math.round(input.memory.budgetGb)} GB of memory.`);
+    unfit(t("admin.models.tooBig", { size: input.memory.sizeGb, budget: Math.round(input.memory.budgetGb) }));
   }
   if (!catalog) {
     if (role === "image" && !isImageModelId(input.id)) {
-      warn("Not in the catalog, and its name does not say it paints. ODM will try it as a picture model.");
+      warn(t("admin.models.imageUnknown"));
     }
     return { fit: fit === "ok" ? "unknown" : fit, warnings, summary: describeCatalogModel(null) };
   }
   if (input.local) {
     // Weights on the admin's own disk are nobody's to retire.
   } else if (catalog.status === "deprecated") {
-    warn("Deprecated by its provider. It may stop answering; pick a newer model when you can.");
+    warn(t("admin.models.deprecated"));
   } else if (catalog.status === "alpha" || catalog.status === "beta") {
-    warn(`Marked ${catalog.status} by its provider; it may change or go away.`);
+    warn(t("admin.models.preRelease", { status: catalog.status }));
   }
   if (role === "image") {
     if (!catalog.output.includes("image")) {
-      unfit("Does not paint pictures: it answers in text only.");
+      unfit(t("admin.models.noPaint"));
     }
   } else if (writes) {
     if (!catalog.output.includes("text")) {
-      unfit("Does not write text, so it cannot narrate.");
+      unfit(t("admin.models.noText"));
     }
     if (!catalog.toolCall && input.tools !== false) {
       if (input.tools === true) {
         // The server says it does; the catalog's row was another host's.
       } else if (input.local) {
         // A loosely matched row for weights on this machine: a doubt, not a verdict.
-        warn("The catalog's row for these weights takes no tool calls; test the backend to be sure.");
+        warn(t("admin.models.localRowNoTools"));
       } else {
-        noTools("Takes no tool calls.");
+        noTools(t("admin.models.tools.none"));
       }
     }
     if (catalog.contextTokens && role === "story") {
       // The storyteller's own minimums (src/lib/story-window.ts). Too small
       // to narrate rules a hosted model out; a local row is a loose match
       // for the weights, so it only warns.
-      const verdict = storyWindowVerdict(catalog.contextTokens);
+      const verdict = storyWindowVerdict(t, catalog.contextTokens);
       if (verdict.level === "short" && !input.local) unfit(verdict.text);
       else if (verdict.text) warn(verdict.text);
     } else if (catalog.contextTokens && catalog.contextTokens < SMALL_CONTEXT_TOKENS) {
-      warn(`A ${formatTokens(catalog.contextTokens)} window is small for a campaign; the table will forget recent turns often.`);
+      warn(t("admin.models.smallWindow", { size: formatTokens(catalog.contextTokens) }));
     }
   }
   return { fit, warnings, summary: describeCatalogModel(catalog, { local: input.local }) };

@@ -196,11 +196,11 @@ function WindowLine({ size }: { size: { tokens: number; reported: boolean } }) {
       </p>
     );
   }
-  const verdict = storyWindowVerdict(size.tokens);
+  const verdict = storyWindowVerdict(t, size.tokens);
   if (verdict.level === "ok") {
     return (
       <p className="flex items-center gap-1 text-emerald-400">
-        <Check className="size-4 shrink-0" /> {t("admin.probe.window.ok", { window: aWindow(size.tokens) })}
+        <Check className="size-4 shrink-0" /> {t("admin.probe.window.ok", { window: aWindow(t, size.tokens) })}
       </p>
     );
   }

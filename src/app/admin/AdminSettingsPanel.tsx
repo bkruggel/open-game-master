@@ -565,7 +565,7 @@ export function AdminSettingsPanel() {
               label={t("admin.speed.label")}
               value={config.text.speed}
               onChange={(speed) => setConfig({ ...config, text: { ...config.text, speed } })}
-              eligibility={apiSpeedEligibility({
+              eligibility={apiSpeedEligibility(t, {
                 endpointKind: describeEndpoint(config.text.customBaseUrl || env.customBaseUrl || "").kind,
                 model: config.text.customModel || env.customModel || "",
               })}
@@ -657,7 +657,7 @@ export function AdminSettingsPanel() {
               label={t("admin.speed.label")}
               value={config.text.utilitySpeed}
               onChange={(utilitySpeed) => setConfig({ ...config, text: { ...config.text, utilitySpeed } })}
-              eligibility={apiSpeedEligibility({
+              eligibility={apiSpeedEligibility(t, {
                 endpointKind: describeEndpoint(config.text.utilityBaseUrl || config.text.customBaseUrl || env.customBaseUrl || "").kind,
                 model: config.text.utilityModel,
               })}

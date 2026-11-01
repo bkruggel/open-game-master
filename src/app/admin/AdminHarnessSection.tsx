@@ -380,14 +380,14 @@ export function AdminHarnessSection({
                     label={t("admin.harness.storySpeed")}
                     value={draft.speed}
                     onChange={(speed) => setDraft({ ...draft, speed })}
-                    eligibility={agentSpeedEligibility({ harnessId: chosen.id, model: draft.model, models })}
+                    eligibility={agentSpeedEligibility(t, { harnessId: chosen.id, model: draft.model, models })}
                     note={speedNotes["agent-story"]}
                   />
                   <SpeedField
                     label={t("admin.harness.utilitySpeed")}
                     value={draft.utilitySpeed}
                     onChange={(utilitySpeed) => setDraft({ ...draft, utilitySpeed })}
-                    eligibility={agentSpeedEligibility({ harnessId: chosen.id, model: draft.utilityModel || draft.model, models })}
+                    eligibility={agentSpeedEligibility(t, { harnessId: chosen.id, model: draft.utilityModel || draft.model, models })}
                     note={speedNotes["agent-utility"]}
                   />
                 </>

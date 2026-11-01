@@ -76,7 +76,7 @@ export function comfyModelOptions(
     const known = checkpointModel(name);
     if (!known) return undefined;
     const report = reports.find((entry) => entry.id === known.id);
-    return report?.verified ? `${known.label}. ${measuredLine(report, hardware)}` : t("admin.images.checkpoint.settings", { name: known.label });
+    return report?.verified ? `${known.label}. ${measuredLine(t, report, hardware)}` : t("admin.images.checkpoint.settings", { name: known.label });
   };
   const unpicked = saved.preset === CHECKPOINT_PRESET && !saved.checkpoint;
   const obvious = unpicked && discovery && succeeded ? obviousComfyChoice(discovery) : null;
@@ -89,7 +89,7 @@ export function comfyModelOptions(
       value: `${PRESET_PREFIX}${id}`,
       label: recommended(comfyModel(id)?.label ?? id, obvious?.preset === id),
       group: t("admin.images.group.models"),
-      ...(report ? { hint: measuredLine(report, hardware) } : succeeded ? { hint: t("admin.images.notAllFiles") } : {}),
+      ...(report ? { hint: measuredLine(t, report, hardware) } : succeeded ? { hint: t("admin.images.notAllFiles") } : {}),
     })),
     ...[saved.checkpoint, ...checkpoints]
       .filter((name, index, names) => name && names.indexOf(name) === index)
@@ -151,10 +151,10 @@ export function comfyModelStatus(
   if (!report || report.missing.length) {
     // No report to list from: the named-model variant says it whole.
     return report
-      ? t("admin.images.status.missing", { list: listWords(report.missing.map((file) => file.what)) })
+      ? t("admin.images.status.missing", { list: listWords(t, report.missing.map((file) => file.what)) })
       : t("admin.images.status.missingModel", { model: model.label });
   }
-  const files = listWords(Object.values(report.files).map(fileName));
+  const files = listWords(t, Object.values(report.files).map(fileName));
   return t("admin.images.status.paintsWith", {
     files,
     negative: honoursNegative(model) ? "" : t("admin.images.status.noNegative"),

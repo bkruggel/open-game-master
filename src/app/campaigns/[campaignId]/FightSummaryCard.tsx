@@ -26,7 +26,7 @@ export function FightSummaryCard({ summary, onDismiss, className }: { summary: E
   const t = useT();
   // The fight's length is game time, six seconds a round; the real minutes
   // it took read as time at the table, below (issue 668).
-  const tableTime = fightTableTime(summary.seconds);
+  const tableTime = fightTableTime(t, summary.seconds);
   const top = [...summary.fighters].sort((a, b) => b.dealt - a.dealt)[0];
   const tiles: Array<[string, number | string]> = [
     [t("table.fight.rounds"), summary.rounds],

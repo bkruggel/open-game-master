@@ -2438,15 +2438,15 @@
     "app/create-campaign/titles.ts#str-key": [
       [
         "english-source",
-        1,
-        "the campaign title generator's own English words (UI copy, not a reader)"
+        2,
+        "the campaign title generator's own English and French words (UI copy, not a reader)"
       ]
     ],
     "app/create-campaign/titles.ts#str-list": [
       [
         "english-source",
-        21,
-        "the campaign title generator's own English words (UI copy, not a reader)"
+        42,
+        "the campaign title generator's own English and French words (UI copy, not a reader)"
       ]
     ],
     "app/home/ContinueHero.tsx#str-eq": [
@@ -19085,6 +19085,13 @@
         "key",
         1,
         "the dictionary placeholder slot's own {name} syntax, matched in templates the code wrote, never in a person's text"
+      ]
+    ],
+    "app/create-campaign/titles.ts#toUpperCase": [
+      [
+        "display",
+        1,
+        "a rolled title's first letter, shown, never compared"
       ]
     ]
   },

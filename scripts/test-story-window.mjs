@@ -8,6 +8,9 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const windows = await import("../src/lib/story-window.ts");
+const { translate } = await import("../src/lib/messages-logic.ts");
+// The sentences are the dictionary's; the tests read them in English, the source.
+const t = (key, vars) => translate("en", key, vars);
 
 let passed = 0;
 async function test(name, fn) {
@@ -17,7 +20,7 @@ async function test(name, fn) {
 }
 
 await test("each window is told what it plays", () => {
-  const level = (tokens) => windows.storyWindowVerdict(tokens).level;
+  const level = (tokens) => windows.storyWindowVerdict(t, tokens).level;
   assert.equal(level(8_192), "short");
   assert.equal(level(windows.MIN_NARRATION_WINDOW - 1), "short");
   assert.equal(level(windows.MIN_NARRATION_WINDOW), "no-fights", "a model sold as 16K narrates");
@@ -26,10 +29,10 @@ await test("each window is told what it plays", () => {
   assert.equal(level(24_576), "tight");
   assert.equal(level(windows.RECOMMENDED_WINDOW), "ok");
   assert.equal(level(65_536), "ok");
-  assert.equal(windows.storyWindowVerdict(65_536).text, "", "enough says nothing");
-  assert.match(windows.storyWindowVerdict(8_192).text, /^An 8K window is too small to narrate/);
-  assert.match(windows.storyWindowVerdict(20_480).text, /^A 20K window narrates and explores, but fights need 24K/);
-  assert.match(windows.storyWindowVerdict(24_576).text, /^A 24K window plays, fights included/);
+  assert.equal(windows.storyWindowVerdict(t, 65_536).text, "", "enough says nothing");
+  assert.match(windows.storyWindowVerdict(t, 8_192).text, /^An 8K window is too small to narrate/);
+  assert.match(windows.storyWindowVerdict(t, 20_480).text, /^A 20K window narrates and explores, but fights need 24K/);
+  assert.match(windows.storyWindowVerdict(t, 24_576).text, /^A 24K window plays, fights included/);
 });
 
 await test("a size is named the way it was set", () => {
@@ -38,8 +41,8 @@ await test("a size is named the way it was set", () => {
   assert.equal(windows.windowLabel(128_000), "128K", "the catalog's thousands");
   assert.equal(windows.windowLabel(16_000), "16K");
   assert.equal(windows.windowLabel(1_050_000), "1.1M");
-  assert.equal(windows.aWindow(8_192), "An 8K");
-  assert.equal(windows.aWindow(65_536), "A 64K");
+  assert.equal(windows.aWindow(t, 8_192), "An 8K");
+  assert.equal(windows.aWindow(t, 65_536), "A 64K");
 });
 
 await test("llama-server's -c clears each minimum", () => {

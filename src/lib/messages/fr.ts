@@ -147,6 +147,24 @@ export const fr: Partial<Record<MessageKey, string>> = {
     "Tiens Ctrl ou Alt avec une lettre, ou appuie sur une touche qui n'écrit pas, comme F8 ou F9. Échap arrête l'écoute.",
   "dictation.holdHint":
     "Tiens-la à la table, dans la messagerie ou partout hors d'un autre champ, pour parler comme avec le bouton du micro. Relâche, et les mots attendent dans le champ ; seul Envoyer les envoie.",
+  "dictation.problem.meta":
+    "Les touches Windows, Command et Super appartiennent au système. Tiens plutôt Ctrl ou Alt.",
+  "dictation.problem.ptt":
+    "« ` » est la touche push-to-talk du vocal. Choisis-en une autre pour que les deux ne se gênent jamais.",
+  "dictation.problem.editing": "{name} déplace, modifie ou envoie dans la messagerie de la table. Choisis une autre touche.",
+  "dictation.problem.functionKeys":
+    "{name} appartient au navigateur ou à la fenêtre de l'appli (aide, recharger, plein écran, outils de développement). Choisis une autre touche, par exemple F8 ou F9.",
+  "dictation.problem.closes": "{name} ferme la fenêtre ou l'onglet. Choisis une autre touche.",
+  "dictation.problem.types":
+    "{name} écrit dans la messagerie de la table. Tiens Ctrl ou Alt en même temps, ou choisis une touche qui n'écrit pas, par exemple F8 ou F9.",
+  "dictation.problem.shortcut":
+    "{name} est un raccourci du navigateur ou du système (copier, rechercher, un nouvel onglet, le zoom, la langue de saisie). Ajoute Alt, ou choisis une autre touche.",
+  "dictation.problem.menu":
+    "{name} ouvre un menu du navigateur, la barre d'adresse ou le menu de la fenêtre. Choisis une autre touche.",
+  "dictation.problem.desktop":
+    "{name} est un raccourci du bureau sur beaucoup de systèmes (un terminal, l'écran de verrouillage, le bureau). Choisis une autre touche.",
+  "dictation.problem.altgr":
+    "Sur ce clavier, {name} écrit « {typed} ». Choisis une autre touche pour qu'il continue d'écrire.",
 
   // Blocked players.
   "blocked.title": "Joueurs bloqués",
@@ -2478,6 +2496,20 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.fight.top": "{name} a frappé le plus fort avec {dealt} dégâts",
   "table.fight.perFighter": " ; {list} (infligés/subis)",
   "table.fight.tableTime": "{time}.",
+  "table.fight.minute_one": "{count} minute",
+  "table.fight.minute_other": "{count} minutes",
+  "table.fight.second_one": "{count} seconde",
+  "table.fight.second_other": "{count} secondes",
+  "table.fight.tableTimeWords_one": "{count} minute à la table",
+  "table.fight.tableTimeWords_other": "{count} minutes à la table",
+  "table.fight.lineOutcome_one": "{outcome} après 1 tour ({time})",
+  "table.fight.lineOutcome_other": "{outcome} après {count} tours ({time})",
+  "table.fight.lineTotals": "{dealt} dégâts infligés, {taken} subis, {healed} soignés",
+  "table.fight.lineSlain_one": "{count} abattu",
+  "table.fight.lineSlain_other": "{count} abattus",
+  "table.fight.lineSpared_one": "{count} assommé et épargné",
+  "table.fight.lineSpared_other": "{count} assommés et épargnés",
+  "table.fight.lineTop": "{name} a frappé le plus fort",
 
   // Un joueur qui prend place dans le salon (arrival.ts, ArrivalBanner.tsx).
   "table.arrival.line": "{name} prend place",
@@ -3524,6 +3556,19 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "docs.licenses.sources": "Documents sources importés",
   "docs.licenses.plugins": "Plugins de campagne",
   "docs.licenses.sound": "Bibliothèque de sons",
+  // La fenêtre de contexte du narrateur (src/lib/story-window.ts) : les
+  // tailles et ce que chacune permet, dits à l'admin et à la mise en place.
+  "story.window": "Une fenêtre de {size}",
+  "story.window.an": "Une fenêtre de {size}",
+  "story.needs":
+    "Le narrateur a besoin d'une fenêtre de contexte d'au moins {min} jetons pour raconter et {combat} pour mener les combats ; {recommended} ou plus est recommandé.",
+  "story.window.short":
+    "{size} est trop petite pour raconter : les instructions du MJ et ses outils ne laissent pas de place pour l'histoire. {needs}",
+  "story.window.noFights":
+    "{size} raconte et explore, mais les combats demandent {combat} : en dessous, un tour de combat peut être refusé faute de place. {recommended} ou plus est recommandé.",
+  "story.window.tight":
+    "{size} joue, combats compris, mais ne garde que les derniers tours en vue ; {recommended} ou plus est recommandé.",
+
   // La mise en place guidée (src/app/setup) : les sept étapes de l'assistant
   // et les mots des pièces que le panneau admin partage avec lui.
   "setup.leaveAria": "Quitter la mise en place",
@@ -3966,6 +4011,14 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "admin.speed.reported": " (le fournisseur dit « {said} »)",
   "admin.speed.ranStandard": "Le dernier appel ({time}) a demandé Rapide mais a tourné à vitesse standard{reported}, et a été facturé standard.",
   "admin.speed.unknownSpeed": "Le dernier appel ({time}) a demandé Rapide ; le fournisseur n'a pas dit à quelle vitesse il a tourné.",
+  "admin.speed.costNote":
+    "Rapide répond plus tôt pour environ deux fois le prix par jeton (2x à 2,5x la consommation d'un plan Codex ou Claude, payée sur les crédits d'utilisation de Claude). Ça vaut pour chaque campagne que ce réglage dessert.",
+  "admin.speed.notOpenai":
+    "Rapide n'est offert que sur l'API d'OpenAI elle-même (api.openai.com). Les autres serveurs compatibles OpenAI, OpenRouter et les modèles locaux n'ont pas d'offre Rapide qu'ODM puisse demander.",
+  "admin.speed.nameModel": "Choisis d'abord le modèle ; Rapide en dépend.",
+  "admin.speed.pickModel": "Choisis d'abord le modèle ; {program} propose Rapide modèle par modèle.",
+  "admin.speed.noFastForModel": "{program} ne liste pas d'offre Rapide pour {model} sur cette connexion.",
+  "admin.speed.noAgentFast": "Ce programme agent n'a pas de réglage Rapide qu'ODM puisse choisir.",
   "admin.models.typeOwn": "Tape un identifiant de modèle…",
   "admin.models.lookAgain": "Relister",
   "admin.models.lookAgainTitle": "Relister les modèles du backend",
@@ -3999,6 +4052,29 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "admin.models.tested.noToolCall": "pas d'appel d'outil",
   "admin.models.tested.noContinuation": "pas de continuation",
   "admin.models.tested.noTurn": "a échoué au tour de test",
+  "admin.models.notListedNow": "Pas listé par le serveur pour le moment. Charge-le là-bas, ou choisis-en un qu'il liste.",
+  "admin.models.tools.serverRefused": "Ne prend pas d'appels d'outils, selon le serveur lui-même.",
+  "admin.models.tools.none": "Ne prend pas d'appels d'outils.",
+  "admin.models.tools.story": "{why} Le narrateur tourne avec : dés, fiches et scènes sont des appels d'outils.",
+  "admin.models.tools.fallback": "{why} Les vérifications de lore et la tenue des fiches qui s'en servent retomberont sur du texte brut.",
+  "admin.models.tooBig": "Trop gros pour cette machine : {size} Go de poids contre {budget} Go de mémoire.",
+  "admin.models.imageUnknown":
+    "Pas au catalogue, et son nom ne dit pas qu'il peint. ODM l'essaiera comme modèle d'images.",
+  "admin.models.deprecated":
+    "Retiré par son fournisseur. Il peut cesser de répondre ; choisis un modèle plus récent quand tu le peux.",
+  "admin.models.preRelease": "Marqué {status} par son fournisseur ; il peut changer ou disparaître.",
+  "admin.models.noPaint": "Ne peint pas d'images : il répond en texte seulement.",
+  "admin.models.noText": "N'écrit pas de texte, alors il ne peut pas raconter.",
+  "admin.models.localRowNoTools":
+    "La ligne du catalogue pour ces poids ne prend pas d'appels d'outils ; teste le backend pour en être sûr.",
+  "admin.models.smallWindow":
+    "Une fenêtre de {size} est petite pour une campagne ; la table oubliera souvent les derniers tours.",
+  "admin.models.noAgent": "Aucun programme agent n'est choisi.",
+  "admin.models.notReady": "{label} n'est pas prêt.",
+  "admin.models.machine.memory": "{ram} Go de mémoire",
+  "admin.models.machine.noGpu": "{memory}, aucune carte graphique trouvée",
+  "admin.models.machine.shared": "{gpu}, {memory} partagée",
+  "admin.models.machine.dedicated": "{gpu} avec {vram} Go, {memory}",
   "admin.users.fail": "Ça n'a pas marché.",
   "admin.users.deleteConfirm": "Son compte, les campagnes qu'il possède, ses personnages, ses images et ses discussions privées sont effacés aussitôt, sans délai de grâce. Les messages qu'il a écrits dans les campagnes d'autres gens restent dans ces transcriptions sans son nom.",
   "admin.users.deleteTitle": "Supprimer {name} ?",
@@ -4396,6 +4472,15 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "admin.images.checkpoint.savedMissing": "Sélection enregistrée ; non signalée par ce ComfyUI.",
   "admin.images.checkpoint.settings": "Réglages {name}.",
   "admin.images.notAllFiles": "Ses fichiers ne sont pas tous sur ce ComfyUI.",
+  "admin.images.measure.recommended": "Recommandé. ",
+  "admin.images.measure.line": "{verdict}{time} par image, pointe à {peak} Go sur {device}.",
+  "admin.images.measure.fails": "N'a pas tourné sur {device}.",
+  "admin.images.measure.failsHere": "N'a pas tourné sur ce matériel.",
+  "admin.images.measure.poor": "Tourne sur {device}, mais ses images y étaient médiocres.",
+  "admin.images.measure.peakElsewhere": "A pointé à {need} Go ailleurs, plus que ce GPU n'en a.",
+  "admin.images.measure.notMeasured": "Pas encore mesuré sur {device}.",
+  "admin.images.measure.notMeasuredHere": "Pas encore mesuré sur ce matériel.",
+  "admin.images.listAnd": "{list} et {last}",
   "admin.images.status.checking": "Vérification des modèles installés…",
   "admin.images.status.checkpointsListed": "Checkpoints installés signalés par ComfyUI.",
   "admin.images.status.noCheckpoints": "Aucun checkpoint signalé par ComfyUI.",

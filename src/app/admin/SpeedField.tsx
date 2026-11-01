@@ -3,7 +3,7 @@
 import { Zap } from "lucide-react";
 import { useT } from "@/lib/locale";
 import { Field, SelectField } from "@/app/admin/AdminSettingsFields";
-import { FAST_COST_NOTE, type Speed, type SpeedEligibility } from "@/lib/speed-tier";
+import type { Speed, SpeedEligibility } from "@/lib/speed-tier";
 import type { SpeedNote } from "@/lib/speed-status";
 
 // Processing speed for one model role (issue 255): the provider's default or
@@ -44,7 +44,7 @@ export function SpeedField({
           { value: "" as const, label: t("admin.speed.default") },
           { value: "fast" as const, label: t("admin.speed.fast") },
         ]}
-        hint={value === "fast" ? FAST_COST_NOTE : t("admin.speed.fastHint")}
+        hint={value === "fast" ? t("admin.speed.costNote") : t("admin.speed.fastHint")}
       />
       {value === "fast" ? <SpeedNoteLine note={note} /> : null}
     </div>

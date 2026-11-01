@@ -145,6 +145,24 @@ export const en = {
     "Hold Ctrl or Alt with a letter, or press a key that does not type, such as F8 or F9. Escape stops listening.",
   "dictation.holdHint":
     "Hold it at the table, in the message box or anywhere outside another field, to speak as the mic button does. Let go and the words wait in the box; only Send sends them.",
+  "dictation.problem.meta":
+    "The Windows, Command and Super keys belong to the system. Hold Ctrl or Alt instead.",
+  "dictation.problem.ptt":
+    "` is voice chat's push-to-talk key. Pick another so the two never fight.",
+  "dictation.problem.editing": "{name} moves, edits or sends in the message box. Pick another key.",
+  "dictation.problem.functionKeys":
+    "{name} belongs to the browser or the app window (help, reload, full screen, developer tools). Pick another key, such as F8 or F9.",
+  "dictation.problem.closes": "{name} closes the window or the tab. Pick another key.",
+  "dictation.problem.types":
+    "{name} types in the message box. Hold Ctrl or Alt with it, or pick a key that does not type, such as F8 or F9.",
+  "dictation.problem.shortcut":
+    "{name} is a browser or system shortcut (copy, find, a new tab, zoom, the input language). Add Alt, or pick another key.",
+  "dictation.problem.menu":
+    "{name} opens a browser menu, the address bar or the window menu. Pick another key.",
+  "dictation.problem.desktop":
+    "{name} is a desktop shortcut on many systems (a terminal, the lock screen, the desktop). Pick another key.",
+  "dictation.problem.altgr":
+    "On this keyboard {name} types \"{typed}\". Pick another key so it keeps typing.",
 
   // Blocked players.
   "blocked.title": "Blocked players",
@@ -2461,6 +2479,20 @@ export const en = {
   "table.fight.top": "{name} struck hardest with {dealt} damage",
   "table.fight.perFighter": "; {list} (dealt/taken)",
   "table.fight.tableTime": "{time}.",
+  "table.fight.minute_one": "{count} minute",
+  "table.fight.minute_other": "{count} minutes",
+  "table.fight.second_one": "{count} second",
+  "table.fight.second_other": "{count} seconds",
+  "table.fight.tableTimeWords_one": "{count} minute at the table",
+  "table.fight.tableTimeWords_other": "{count} minutes at the table",
+  "table.fight.lineOutcome_one": "{outcome} after 1 round ({time})",
+  "table.fight.lineOutcome_other": "{outcome} after {count} rounds ({time})",
+  "table.fight.lineTotals": "{dealt} damage dealt, {taken} taken, {healed} healed",
+  "table.fight.lineSlain_one": "{count} slain",
+  "table.fight.lineSlain_other": "{count} slain",
+  "table.fight.lineSpared_one": "{count} knocked out and spared",
+  "table.fight.lineSpared_other": "{count} knocked out and spared",
+  "table.fight.lineTop": "{name} struck hardest",
 
   // A player taking a seat in the lobby (arrival.ts, ArrivalBanner.tsx).
   "table.arrival.line": "{name} takes a seat",
@@ -3505,6 +3537,19 @@ export const en = {
   "docs.licenses.sources": "Imported source documents",
   "docs.licenses.plugins": "Campaign plugins",
   "docs.licenses.sound": "Sound library",
+  // The storyteller's context window (src/lib/story-window.ts): the sizes
+  // and what each can do, worded for the admin and the guided setup.
+  "story.window": "A {size}",
+  "story.window.an": "An {size}",
+  "story.needs":
+    "The storyteller needs a context window of at least {min} tokens to narrate and {combat} to run fights; {recommended} or more is recommended.",
+  "story.window.short":
+    "{size} window is too small to narrate: the GM's instructions and tools leave no room for the story. {needs}",
+  "story.window.noFights":
+    "{size} window narrates and explores, but fights need {combat}: below that a fight turn can be refused for room. {recommended} or more is recommended.",
+  "story.window.tight":
+    "{size} window plays, fights included, but keeps only the last few turns in view; {recommended} or more is recommended.",
+
   // The guided setup (src/app/setup): the wizard's seven steps and the
   // words of the pieces the admin panel shares with them.
   "setup.leaveAria": "Leave setup",
@@ -3946,6 +3991,14 @@ export const en = {
   "admin.speed.reported": " (the provider says \"{said}\")",
   "admin.speed.ranStandard": "Last call ({time}) asked for Fast but ran at standard speed{reported}, and was billed as standard.",
   "admin.speed.unknownSpeed": "Last call ({time}) asked for Fast; the provider did not say which speed ran.",
+  "admin.speed.costNote":
+    "Fast answers sooner for about twice the price per token (2x to 2.5x of a Codex or Claude plan's usage, paid from usage credits on Claude). It applies to every campaign this setting serves.",
+  "admin.speed.notOpenai":
+    "Fast is offered on OpenAI's own API (api.openai.com). Other OpenAI-compatible servers, OpenRouter and local models have no Fast tier ODM can ask for.",
+  "admin.speed.nameModel": "Name the model first; Fast depends on it.",
+  "admin.speed.pickModel": "Pick the model first; {program} offers Fast per model.",
+  "admin.speed.noFastForModel": "{program} does not list a Fast tier for {model} on this sign-in.",
+  "admin.speed.noAgentFast": "This agent program has no Fast setting ODM can choose.",
   "admin.models.typeOwn": "Type a model id…",
   "admin.models.lookAgain": "Look again",
   "admin.models.lookAgainTitle": "List the backend's models again",
@@ -3979,6 +4032,29 @@ export const en = {
   "admin.models.tested.noToolCall": "no tool call",
   "admin.models.tested.noContinuation": "no continuation",
   "admin.models.tested.noTurn": "failed the test turn",
+  "admin.models.notListedNow": "Not listed by the server right now. Load it there, or pick one it lists.",
+  "admin.models.tools.serverRefused": "Takes no tool calls, by the server's own account.",
+  "admin.models.tools.none": "Takes no tool calls.",
+  "admin.models.tools.story": "{why} The storyteller runs on them: dice, sheets and scenes are all tool calls.",
+  "admin.models.tools.fallback": "{why} Lore checks and bookkeeping that use them will fall back to plain text.",
+  "admin.models.tooBig": "Too big for this machine: {size} GB of weights against {budget} GB of memory.",
+  "admin.models.imageUnknown":
+    "Not in the catalog, and its name does not say it paints. ODM will try it as a picture model.",
+  "admin.models.deprecated":
+    "Deprecated by its provider. It may stop answering; pick a newer model when you can.",
+  "admin.models.preRelease": "Marked {status} by its provider; it may change or go away.",
+  "admin.models.noPaint": "Does not paint pictures: it answers in text only.",
+  "admin.models.noText": "Does not write text, so it cannot narrate.",
+  "admin.models.localRowNoTools":
+    "The catalog's row for these weights takes no tool calls; test the backend to be sure.",
+  "admin.models.smallWindow":
+    "A {size} window is small for a campaign; the table will forget recent turns often.",
+  "admin.models.noAgent": "No agent program is chosen.",
+  "admin.models.notReady": "{label} is not ready.",
+  "admin.models.machine.memory": "{ram} GB memory",
+  "admin.models.machine.noGpu": "{memory}, no graphics card found",
+  "admin.models.machine.shared": "{gpu}, {memory} shared",
+  "admin.models.machine.dedicated": "{gpu} with {vram} GB, {memory}",
   "admin.users.fail": "That didn't work.",
   "admin.users.deleteConfirm": "Their account, campaigns they own, characters, pictures and private chats are erased right now, with no grace period. Messages they wrote in other people's campaigns stay in those transcripts without their name.",
   "admin.users.deleteTitle": "Delete {name}?",
@@ -4376,6 +4452,15 @@ export const en = {
   "admin.images.checkpoint.savedMissing": "Saved selection; not reported by this ComfyUI.",
   "admin.images.checkpoint.settings": "{name} settings.",
   "admin.images.notAllFiles": "Its files are not all on this ComfyUI.",
+  "admin.images.measure.recommended": "Recommended. ",
+  "admin.images.measure.line": "{verdict}{time} a picture, peaks {peak} GB on {device}.",
+  "admin.images.measure.fails": "Did not run on {device}.",
+  "admin.images.measure.failsHere": "Did not run on this hardware.",
+  "admin.images.measure.poor": "Runs on {device}, but its pictures were poor there.",
+  "admin.images.measure.peakElsewhere": "Peaked at {need} GB elsewhere, more than this GPU has.",
+  "admin.images.measure.notMeasured": "Not measured on {device} yet.",
+  "admin.images.measure.notMeasuredHere": "Not measured on this hardware yet.",
+  "admin.images.listAnd": "{list} and {last}",
   "admin.images.status.checking": "Checking installed models…",
   "admin.images.status.checkpointsListed": "Installed checkpoints from ComfyUI.",
   "admin.images.status.noCheckpoints": "No checkpoints reported by ComfyUI.",

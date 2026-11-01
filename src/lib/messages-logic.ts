@@ -2,8 +2,8 @@
 // the dictionaries, filling placeholders, and picking a plural form by the
 // locale's own rule. The client store that components read lives in
 // locale.ts; this module exists so a test can import the rules directly.
-import { en, type MessageKey } from "./messages/en";
-import { fr } from "./messages/fr";
+import { en, type MessageKey } from "./messages/en.ts";
+import { fr } from "./messages/fr.ts";
 
 export type { MessageDictionary, MessageKey } from "./messages/en";
 

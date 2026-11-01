@@ -63,7 +63,7 @@ export function DictationShortcutField({ className }: { className?: string }) {
       if (event.repeat) {
         return;
       }
-      const why = chordProblem(next, event.key);
+      const why = chordProblem(t, next, event.key);
       if (why) {
         setProblem(why);
         setHeld("");
@@ -88,7 +88,7 @@ export function DictationShortcutField({ className }: { className?: string }) {
       window.removeEventListener("keyup", up, true);
       window.removeEventListener("blur", stopListening);
     };
-  }, [listening, mac]);
+  }, [listening, mac, t]);
 
   useEffect(() => {
     if (!saved) {

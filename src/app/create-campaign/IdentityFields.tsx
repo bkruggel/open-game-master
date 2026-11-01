@@ -9,7 +9,7 @@ import type { FranchiseGroup, WorldPackSummary } from "@/lib/worlds/types";
 import { FieldLabel, inputClass, ToggleCard } from "@/app/create-campaign/fields";
 import type { StepProps } from "@/app/create-campaign/draft";
 import { rollCampaignTitle } from "@/app/create-campaign/titles";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 // The campaign's name. The essentials step will not go on without one, and
 // its held Continue brings the cursor back here.
@@ -17,6 +17,7 @@ import { useT } from "@/lib/locale";
 // rather name the campaign once they know what it is; it stays editable.
 export function TitleField({ draft, patch, inputRef }: Pick<StepProps, "draft" | "patch"> & { inputRef?: Ref<HTMLInputElement> }) {
   const t = useT();
+  const locale = useLocale();
   return (
     <div>
       <label htmlFor="cc-title" className="block">
@@ -35,7 +36,7 @@ export function TitleField({ draft, patch, inputRef }: Pick<StepProps, "draft" |
         />
         <button
           type="button"
-          onClick={() => patch({ title: rollCampaignTitle(draft.genre, draft.title) })}
+          onClick={() => patch({ title: rollCampaignTitle(draft.genre, draft.title, Math.random, locale) })}
           title={t("creator.title.rollTooltip")}
           aria-label={t("creator.title.rollAria")}
           className="motion-press flex size-11 shrink-0 items-center justify-center rounded-lg border border-stone-700 text-amber-200 transition-colors hover:border-amber-500/50 hover:bg-amber-500/10"
