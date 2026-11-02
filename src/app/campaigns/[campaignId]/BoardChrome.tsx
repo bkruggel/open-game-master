@@ -11,6 +11,8 @@ import type { StageToken } from "@/app/campaigns/[campaignId]/BoardStage";
 import type { PublicEncounter } from "@/lib/db/encounter-view";
 import { offSide, SidePlateBand, sidesLine, SideSr } from "@/app/campaigns/[campaignId]/SideBadge";
 import type { TargetEdge } from "@/lib/battlemap/view-tactics";
+import { contentName } from "@/lib/content/names";
+import { useLocale } from "@/lib/locale";
 
 // The chrome on the board as a stage (docs/visual-overhaul-plan.md 5.1): the
 // initiative rail, the turn HUD, the turn banner, the hover plate and the
@@ -366,6 +368,10 @@ export function TokenPlate({
   // is tall now, and either way it clears the figure rather than covering it.
   const below = anchor ? (anchor[1] + anchor[2]) / 2 < 0.5 : token.y + footprint / 2 < boardHeight / 2;
   const cy = anchor ? (below ? anchor[2] : anchor[1]) * 100 : ((below ? token.y + footprint : token.y) / boardHeight) * 100;
+  // The name reads in the reader's language; the token's own name, which the
+  // board's moves and the DM's taps send, stays the stored English one.
+  const locale = useLocale();
+  const shown = contentName("monsters", token.name, locale);
   return (
     <div
       role="tooltip"
@@ -388,7 +394,7 @@ export function TokenPlate({
         className="size-[124px] rounded-md border border-[rgba(227,193,92,0.35)] text-3xl sm:size-[160px]"
       />
       <span className="mt-1 flex w-full min-w-0 flex-col items-center text-center">
-        <span className="block max-w-full truncate font-display text-xs font-semibold">{token.name}</span>
+        <span className="block max-w-full truncate font-display text-xs font-semibold">{shown}</span>
         {health ? <HealthWordChip word={health} /> : null}
       </span>
       {conditions?.length ? (

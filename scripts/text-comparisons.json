@@ -9,20 +9,6 @@
     "table-language": "English words read in text written in the table's language (the model's prose, a player's words, an author's free text): listed reader by reader until a structured field replaces it, never added to"
   },
   "sites": {
-    "lib/battlemap/card-art.ts#str-eq": [
-      [
-        "key",
-        1,
-        "Canonical unarmed-strike action id selects the genre fist asset; no player-authored text is compared"
-      ]
-    ],
-    "lib/battlemap/card-art.ts#str-list": [
-      [
-        "key",
-        2,
-        "Supported core-action asset ids and fixed campaign genre ids"
-      ]
-    ],
     "app/AuthForm.tsx#str-eq": [
       [
         "key",
@@ -660,6 +646,20 @@
         "route segment values"
       ]
     ],
+    "app/campaigns/[campaignId]/AddonBoardView.tsx#str-eq": [
+      [
+        "key",
+        1,
+        "fixed CSS visibility value gates native input behind an open visible dialog"
+      ]
+    ],
+    "app/campaigns/[campaignId]/AddonBoardView.tsx#str-list": [
+      [
+        "key",
+        1,
+        "native input message kinds gated while a native panel or dialog is active"
+      ]
+    ],
     "app/campaigns/[campaignId]/AskPanel.tsx#str-eq": [
       [
         "key",
@@ -1024,20 +1024,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/event-log-logic.ts#str-case": [
-      [
-        "key",
-        12,
-        "audit row kinds the server writes, and fields its rows store"
-      ]
-    ],
-    "app/campaigns/[campaignId]/event-log-logic.ts#str-eq": [
-      [
-        "key",
-        5,
-        "audit row kinds the server writes, and fields its rows store"
-      ]
-    ],
     "app/campaigns/[campaignId]/FactionsPanel.tsx#str-eq": [
       [
         "key",
@@ -1099,6 +1085,34 @@
         "key",
         1,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "app/campaigns/[campaignId]/HeroChooser.tsx#\\b": [
+      [
+        "display",
+        1,
+        "an id shown title-cased"
+      ]
+    ],
+    "app/campaigns/[campaignId]/HeroChooser.tsx#\\w": [
+      [
+        "display",
+        1,
+        "an id shown title-cased"
+      ]
+    ],
+    "app/campaigns/[campaignId]/HeroChooser.tsx#toLowerCase": [
+      [
+        "key",
+        3,
+        "class icon key; class ids folded to their stored case"
+      ]
+    ],
+    "app/campaigns/[campaignId]/HeroChooser.tsx#toUpperCase": [
+      [
+        "display",
+        1,
+        "an id shown title-cased"
       ]
     ],
     "app/campaigns/[campaignId]/HeroRoutes.tsx#str-eq": [
@@ -1288,20 +1302,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/OverworldPanel.tsx#str-eq": [
-      [
-        "key",
-        1,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
-    "app/campaigns/[campaignId]/moment-parts.tsx#str-eq": [
-      [
-        "key",
-        1,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
     "app/campaigns/[campaignId]/MonsterFields.tsx#str-list": [
       [
         "key",
@@ -1341,6 +1341,13 @@
       [
         "key",
         2,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "app/campaigns/[campaignId]/OverworldPanel.tsx#str-eq": [
+      [
+        "key",
+        1,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
@@ -1582,20 +1589,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/HeroChooser.tsx#\\b": [
-      [
-        "display",
-        1,
-        "an id shown title-cased"
-      ]
-    ],
-    "app/campaigns/[campaignId]/HeroChooser.tsx#\\w": [
-      [
-        "display",
-        1,
-        "an id shown title-cased"
-      ]
-    ],
     "app/campaigns/[campaignId]/character/page.tsx#str-eq": [
       [
         "key",
@@ -1603,18 +1596,18 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/HeroChooser.tsx#toLowerCase": [
+    "app/campaigns/[campaignId]/event-log-logic.ts#str-case": [
       [
         "key",
-        3,
-        "class icon key; class ids folded to their stored case"
+        12,
+        "audit row kinds the server writes, and fields its rows store"
       ]
     ],
-    "app/campaigns/[campaignId]/HeroChooser.tsx#toUpperCase": [
+    "app/campaigns/[campaignId]/event-log-logic.ts#str-eq": [
       [
-        "display",
-        1,
-        "an id shown title-cased"
+        "key",
+        5,
+        "audit row kinds the server writes, and fields its rows store"
       ]
     ],
     "app/campaigns/[campaignId]/level-up-preview.ts#str-eq": [
@@ -1653,6 +1646,13 @@
       ]
     ],
     "app/campaigns/[campaignId]/mapToolState.ts#str-list": [
+      [
+        "key",
+        1,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "app/campaigns/[campaignId]/moment-parts.tsx#str-eq": [
       [
         "key",
         1,
@@ -1841,6 +1841,34 @@
         "an id shown title-cased"
       ]
     ],
+    "app/characters/builder/AbilityEditor.tsx#toUpperCase": [
+      [
+        "display",
+        2,
+        "ability abbreviation shown"
+      ]
+    ],
+    "app/characters/builder/AbilityExplainers.tsx#toLowerCase": [
+      [
+        "display",
+        1,
+        "class name in a sentence"
+      ]
+    ],
+    "app/characters/builder/AbilitySummary.tsx#str-list": [
+      [
+        "key",
+        2,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "app/characters/builder/AbilitySummary.tsx#toUpperCase": [
+      [
+        "display",
+        1,
+        "ability abbreviation shown"
+      ]
+    ],
     "app/characters/builder/AbilityText.tsx#\\b": [
       [
         "display",
@@ -1862,48 +1890,6 @@
         "an ability code as its key, for its name"
       ]
     ],
-    "app/characters/builder/AbilityEditor.tsx#toUpperCase": [
-      [
-        "display",
-        2,
-        "ability abbreviation shown"
-      ]
-    ],
-    "app/characters/builder/AbilityExplainers.tsx#toLowerCase": [
-      [
-        "display",
-        1,
-        "class name in a sentence"
-      ]
-    ],
-    "app/characters/builder/buildMath.ts#toLowerCase": [
-      [
-        "display",
-        3,
-        "class name in a sentence (hit point and slot working)"
-      ]
-    ],
-    "app/characters/builder/buildMath.ts#toUpperCase": [
-      [
-        "display",
-        2,
-        "ability abbreviation shown (a casting class's DC and attack working)"
-      ]
-    ],
-    "app/characters/builder/AbilitySummary.tsx#str-list": [
-      [
-        "key",
-        2,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
-    "app/characters/builder/AbilitySummary.tsx#toUpperCase": [
-      [
-        "display",
-        1,
-        "ability abbreviation shown"
-      ]
-    ],
     "app/characters/builder/AsiFeatEditor.tsx#str-list": [
       [
         "key",
@@ -1916,20 +1902,6 @@
         "display",
         1,
         "label in a sentence"
-      ]
-    ],
-    "app/characters/builder/builderDraft.ts#str-eq": [
-      [
-        "key",
-        1,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
-    "app/characters/builder/builderDraft.ts#str-list": [
-      [
-        "key",
-        1,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
     "app/characters/builder/CharacterBuilder.tsx#str-eq": [
@@ -2030,6 +2002,13 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
+    "app/characters/builder/QuickBuildReadback.tsx#toLowerCase": [
+      [
+        "display",
+        1,
+        "pick label in a button's spoken name"
+      ]
+    ],
     "app/characters/builder/RacialCantripPicker.tsx#toLowerCase": [
       [
         "display",
@@ -2045,6 +2024,34 @@
       ]
     ],
     "app/characters/builder/abilityDice.ts#str-key": [
+      [
+        "key",
+        1,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "app/characters/builder/buildMath.ts#toLowerCase": [
+      [
+        "display",
+        3,
+        "class name in a sentence (hit point and slot working)"
+      ]
+    ],
+    "app/characters/builder/buildMath.ts#toUpperCase": [
+      [
+        "display",
+        2,
+        "ability abbreviation shown (a casting class's DC and attack working)"
+      ]
+    ],
+    "app/characters/builder/builderDraft.ts#str-eq": [
+      [
+        "key",
+        1,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "app/characters/builder/builderDraft.ts#str-list": [
       [
         "key",
         1,
@@ -2161,6 +2168,13 @@
         "skill id"
       ]
     ],
+    "app/characters/builder/quickBuild.ts#str-list": [
+      [
+        "key",
+        11,
+        "SRD ids: backgrounds, skills, spell lists and feats an answer leans to"
+      ]
+    ],
     "app/characters/builder/reconcile.ts#toLowerCase": [
       [
         "key",
@@ -2267,20 +2281,6 @@
         "class name as a CSS or lookup key"
       ]
     ],
-    "app/characters/builder/quickBuild.ts#str-list": [
-      [
-        "key",
-        11,
-        "SRD ids: backgrounds, skills, spell lists and feats an answer leans to"
-      ]
-    ],
-    "app/characters/builder/QuickBuildReadback.tsx#toLowerCase": [
-      [
-        "display",
-        1,
-        "pick label in a button's spoken name"
-      ]
-    ],
     "app/characters/builder/submit.ts#toLowerCase": [
       [
         "display",
@@ -2300,6 +2300,20 @@
         "key",
         1,
         "row source kinds"
+      ]
+    ],
+    "app/characters/builder/useBuilderOptions.ts#str-list": [
+      [
+        "key",
+        1,
+        "the option lists the builder asks for, by route kind"
+      ]
+    ],
+    "app/characters/builder/useBuilderState.ts#toLowerCase": [
+      [
+        "display",
+        1,
+        "a species choice's label in the set-aside notice"
       ]
     ],
     "app/characters/builder/useContentSearch.ts#str-eq": [
@@ -2426,6 +2440,13 @@
         "english-source",
         42,
         "the campaign title generator's own English and French words (UI copy, not a reader)"
+      ]
+    ],
+    "app/create-campaign/titles.ts#toUpperCase": [
+      [
+        "display",
+        1,
+        "a rolled title's first letter, shown, never compared"
       ]
     ],
     "app/home/ContinueHero.tsx#str-eq": [
@@ -2618,6 +2639,13 @@
         "english-source",
         1,
         "UI copy: the page title"
+      ]
+    ],
+    "app/workshop/BundlePreview.tsx#str-eq": [
+      [
+        "key",
+        2,
+        "bundle kinds"
       ]
     ],
     "app/workshop/RulesetLibrary.tsx#str-list": [
@@ -2900,6 +2928,13 @@
         "class slug"
       ]
     ],
+    "app/workshop/homebrew/HomebrewEditor.tsx#toUpperCase": [
+      [
+        "display",
+        1,
+        "a subclass's class id capitalised as its name in the availability line"
+      ]
+    ],
     "app/workshop/homebrew/HomebrewIcon.tsx#str-eq": [
       [
         "key",
@@ -2996,6 +3031,13 @@
         "display",
         1,
         "ability abbreviations shown"
+      ]
+    ],
+    "app/workshop/homebrew/SpeciesChoiceFields.tsx#toLowerCase": [
+      [
+        "key",
+        1,
+        "tool proficiencies (the workshop's pickers)"
       ]
     ],
     "app/workshop/homebrew/SpeciesFields.tsx#\\b": [
@@ -3310,14 +3352,21 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/workshop/world/PaintJobs.tsx#str-eq": [
+    "app/workshop/world/EntryList.tsx#str-key": [
+      [
+        "key",
+        1,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "app/workshop/world/LinkEditor.tsx#str-eq": [
       [
         "key",
         2,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/workshop/world/LinkEditor.tsx#str-eq": [
+    "app/workshop/world/PaintJobs.tsx#str-eq": [
       [
         "key",
         2,
@@ -3335,13 +3384,6 @@
       [
         "key",
         5,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
-    "app/workshop/world/EntryList.tsx#str-key": [
-      [
-        "key",
-        1,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
@@ -3402,6 +3444,13 @@
       ]
     ],
     "components/CommandPalette.tsx#toLowerCase": [
+      [
+        "key",
+        1,
+        "keyboard key"
+      ]
+    ],
+    "components/CorrectionReasonChips.tsx#str-eq": [
       [
         "key",
         1,
@@ -3614,6 +3663,11 @@
         "key",
         1,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ],
+      [
+        "key",
+        1,
+        "the story feature's fixed source mark, set by the grant that made it"
       ]
     ],
     "components/sheet/SheetParts.tsx#toLowerCase": [
@@ -3819,377 +3873,6 @@
         "a short id"
       ]
     ],
-    "lib/addons/store.ts#str-includes": [
-      [
-        "key",
-        1,
-        "a permission id"
-      ]
-    ],
-    "lib/backend-trial.ts#str-eq": [
-      [
-        "key",
-        2,
-        "provider ids and the backend finish_reason"
-      ]
-    ],
-    "lib/battlemap/hand-groups.ts#re-word": [
-      [
-        "key",
-        1,
-        "a subclass counter's id prefix (sub_) dropped for its shown name"
-      ]
-    ],
-    "lib/battlemap/hand-groups.ts#str-eq": [
-      [
-        "key",
-        4,
-        "card ids, card types, costs and a route id"
-      ]
-    ],
-    "lib/battlemap/hand-groups.ts#str-key": [
-      [
-        "key",
-        1,
-        "a counter's id or a cost read in a fixed table"
-      ]
-    ],
-    "lib/battlemap/hand-groups.ts#str-list": [
-      [
-        "key",
-        15,
-        "the basic actions' ids, the costs and the group keys: the engine's own vocabulary"
-      ]
-    ],
-    "lib/battlemap/hand-groups.ts#toUpperCase": [
-      [
-        "display",
-        1,
-        "a counter's id capitalised as its group's shown name"
-      ]
-    ],
-    "lib/battlemap/hand-layout.ts#str-eq": [
-      [
-        "key",
-        1,
-        "End turn's card id"
-      ]
-    ],
-    "lib/characters/fallen-logic.ts#str-eq": [
-      [
-        "key",
-        2,
-        "the table's multiCharacter setting, a fixed choice"
-      ]
-    ],
-    "lib/characters/seat-picks.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "skill ids"
-      ]
-    ],
-    "lib/characters/class-words.ts#\\b": [
-      [
-        "display",
-        1,
-        "an id shown title-cased"
-      ]
-    ],
-    "lib/characters/class-words.ts#\\w": [
-      [
-        "display",
-        1,
-        "an id shown title-cased"
-      ]
-    ],
-    "lib/characters/class-words.ts#re-word": [
-      [
-        "key",
-        1,
-        "the homebrew id prefix"
-      ]
-    ],
-    "lib/characters/class-words.ts#toUpperCase": [
-      [
-        "display",
-        1,
-        "an id shown title-cased"
-      ]
-    ],
-    "lib/compressed-json.ts#str-includes": [
-      [
-        "key",
-        2,
-        "HTTP Accept-Encoding content codings (protocol)"
-      ]
-    ],
-    "lib/content/entry-labels.ts#str-key": [
-      [
-        "key",
-        1,
-        "content kinds, sources and document slugs as stored"
-      ]
-    ],
-    "lib/content/feat-reading-logic.ts#\\b": [
-      [
-        "english-source",
-        20,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/feat-reading-logic.ts#re-word": [
-      [
-        "english-source",
-        4,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/feat-reading-logic.ts#str-eq": [
-      [
-        "english-source",
-        1,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/feat-reading-logic.ts#toLowerCase": [
-      [
-        "english-source",
-        1,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/levelup.ts#str-key": [
-      [
-        "key",
-        1,
-        "document slugs, needs and table names"
-      ]
-    ],
-    "lib/content/monster-reading-logic.ts#\\b": [
-      [
-        "english-source",
-        5,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/monster-reading-logic.ts#re-affix": [
-      [
-        "english-source",
-        1,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/monster-reading-logic.ts#re-word": [
-      [
-        "english-source",
-        1,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/monster-reading-logic.ts#str-list": [
-      [
-        "key",
-        1,
-        "reading sources, sections and field names"
-      ]
-    ],
-    "lib/content/needs-logic.ts#[a-z]": [
-      [
-        "english-source",
-        2,
-        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
-      ]
-    ],
-    "lib/content/needs-logic.ts#\\b": [
-      [
-        "english-source",
-        40,
-        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
-      ]
-    ],
-    "lib/content/needs-logic.ts#\\w": [
-      [
-        "english-source",
-        5,
-        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
-      ]
-    ],
-    "lib/content/needs-logic.ts#re-word": [
-      [
-        "english-source",
-        8,
-        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
-      ]
-    ],
-    "lib/content/needs-logic.ts#str-list": [
-      [
-        "key",
-        1,
-        "the pack's document slugs and data field names"
-      ]
-    ],
-    "lib/content/option-reading-logic.ts#\\b": [
-      [
-        "english-source",
-        3,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/option-reading-logic.ts#re-affix": [
-      [
-        "english-source",
-        2,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/option-reading-logic.ts#re-word": [
-      [
-        "english-source",
-        1,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/option-reading-logic.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "slugs and class ids"
-      ]
-    ],
-    "lib/content/reading-logic.ts#str-list": [
-      [
-        "key",
-        1,
-        "reading sources, sections and field names"
-      ]
-    ],
-    "lib/content/spell-reading-logic.ts#RegExp i": [
-      [
-        "english-source",
-        3,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/spell-reading-logic.ts#\\b": [
-      [
-        "english-source",
-        21,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/spell-reading-logic.ts#re-word": [
-      [
-        "english-source",
-        8,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/content/spell-reading-logic.ts#str-alt": [
-      [
-        "english-source",
-        3,
-        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
-      ]
-    ],
-    "lib/db/home-glance.ts#str-eq": [
-      [
-        "key",
-        2,
-        "campaign status, a fixed choice"
-      ]
-    ],
-    "lib/dm/action-price.ts#str-eq": [
-      [
-        "key",
-        1,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/action-price.ts#str-list": [
-      [
-        "key",
-        2,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/action-price.ts#toLowerCase": [
-      [
-        "key",
-        1,
-        "condition label (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/intent-logic.ts#str-list": [
-      [
-        "key",
-        3,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/intent-logic.ts#str-eq": [
-      [
-        "key",
-        2,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/party-bonds-logic.ts#str-eq": [
-      [
-        "key",
-        1,
-        "fixed choices: a companion's kind and a bond's status"
-      ]
-    ],
-    "lib/dm/session-hold-logic.ts#str-eq": [
-      [
-        "key",
-        1,
-        "an RSVP's stored answer"
-      ]
-    ],
-    "lib/dm/sheet-view.ts#str-key": [
-      [
-        "key",
-        1,
-        "a sheet's private field names (the notes and the opt-ins) the audit delta blanks (engine vocabulary)"
-      ]
-    ],
-    "lib/language/player-text.ts#[a-z]": [
-      [
-        "english-source",
-        4,
-        "ODM's own rules lines: a GM tool's snake_case name as ODM's rows write it (issue 659)"
-      ]
-    ],
-    "lib/language/player-text.ts#\\b": [
-      [
-        "english-source",
-        3,
-        "ODM's own rules lines: a GM tool's snake_case name, \"via\"/\"with\"/\"through\" before it, and \"weapon '...'\" as ODM's rows write them (issue 659)"
-      ]
-    ],
-    "lib/language/player-text.ts#re-word": [
-      [
-        "english-source",
-        3,
-        "ODM's own rules lines: \"via\", \"weapon\" and \"resolve\" as ODM's rows write them beside a tool name (issue 659)"
-      ]
-    ],
-    "lib/narrator-quality.ts#str-list": [
-      [
-        "key",
-        1,
-        "the narration guard's outcomes (fixed choices, stored values)"
-      ]
-    ],
-    "lib/correction-reasons.ts#str-list": [
-      [
-        "key",
-        1,
-        "the correction ledger's kinds of fix and its reason chips (fixed choices, stored values)"
-      ]
-    ],
     "lib/addons/board-bridge.ts#str-case": [
       [
         "key",
@@ -4202,6 +3885,13 @@
         "key",
         1,
         "addon board message types and view names (protocol)"
+      ]
+    ],
+    "lib/addons/board-bridge.ts#str-list": [
+      [
+        "key",
+        2,
+        "native action and control message keys; not player-written names"
       ]
     ],
     "lib/addons/catalog-entry.ts#str-list": [
@@ -4321,6 +4011,20 @@
         "display",
         1,
         "a label in a sentence"
+      ]
+    ],
+    "lib/addons/native-board-client.ts#str-eq": [
+      [
+        "key",
+        3,
+        "fixed DOM menu role and CSS pointer-events/visibility values used for native occlusion"
+      ]
+    ],
+    "lib/addons/native-board-client.ts#str-list": [
+      [
+        "key",
+        1,
+        "fixed DOM mutation attributes observed for native layout and occlusion updates"
       ]
     ],
     "lib/addons/offered.ts#re-affix": [
@@ -4461,6 +4165,13 @@
         "key",
         1,
         "file extension"
+      ]
+    ],
+    "lib/addons/store.ts#str-includes": [
+      [
+        "key",
+        1,
+        "a permission id"
       ]
     ],
     "lib/addons/support.ts#str-eq": [
@@ -4795,11 +4506,70 @@
         "hostname"
       ]
     ],
+    "lib/backend-trial.ts#str-eq": [
+      [
+        "key",
+        2,
+        "provider ids and the backend finish_reason"
+      ]
+    ],
     "lib/backgrounds/index.ts#toLowerCase": [
       [
         "key",
         1,
         "background id"
+      ]
+    ],
+    "lib/battlemap/area-shape.ts#\\b": [
+      [
+        "table-language",
+        5,
+        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
+      ],
+      [
+        "english-source",
+        2,
+        "the content pack's spell text: whether a blast lets its caster choose the creatures it catches (\"of your choice\", \"you choose\"), issue 570"
+      ]
+    ],
+    "lib/battlemap/area-shape.ts#\\w": [
+      [
+        "table-language",
+        1,
+        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
+      ]
+    ],
+    "lib/battlemap/area-shape.ts#re-word": [
+      [
+        "table-language",
+        5,
+        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
+      ],
+      [
+        "english-source",
+        1,
+        "the content pack's spell text: whether a blast lets its caster choose the creatures it catches (\"of your choice\", \"you choose\"), issue 570"
+      ]
+    ],
+    "lib/battlemap/area-shape.ts#str-eq": [
+      [
+        "table-language",
+        1,
+        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
+      ]
+    ],
+    "lib/battlemap/area-shape.ts#str-key": [
+      [
+        "english-source",
+        1,
+        "reference: SRD spell and ability names with their areas"
+      ]
+    ],
+    "lib/battlemap/area-shape.ts#toLowerCase": [
+      [
+        "table-language",
+        3,
+        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
       ]
     ],
     "lib/battlemap/attack-art.ts#str-key": [
@@ -4821,6 +4591,20 @@
         "key",
         11,
         "beat kinds"
+      ]
+    ],
+    "lib/battlemap/card-art.ts#str-eq": [
+      [
+        "key",
+        1,
+        "Canonical unarmed-strike action id selects the genre fist asset; no player-authored text is compared"
+      ]
+    ],
+    "lib/battlemap/card-art.ts#str-list": [
+      [
+        "key",
+        2,
+        "Supported core-action asset ids and fixed campaign genre ids"
       ]
     ],
     "lib/battlemap/condition-glyphs.ts#str-key": [
@@ -4991,6 +4775,20 @@
         "scene kinds (ambience bed ids)"
       ]
     ],
+    "lib/battlemap/hand-area.ts#str-key": [
+      [
+        "key",
+        1,
+        "a spell's damage type (engine vocabulary), keying the colour its blast is drawn in"
+      ]
+    ],
+    "lib/battlemap/hand-area.ts#toLowerCase": [
+      [
+        "key",
+        1,
+        "a spell's damage type (engine vocabulary), keying the colour its blast is drawn in"
+      ]
+    ],
     "lib/battlemap/hand-class.ts#str-eq": [
       [
         "english-source",
@@ -5033,11 +4831,53 @@
         "ability ids"
       ]
     ],
+    "lib/battlemap/hand-groups.ts#re-word": [
+      [
+        "key",
+        1,
+        "a subclass counter's id prefix (sub_) dropped for its shown name"
+      ]
+    ],
+    "lib/battlemap/hand-groups.ts#str-eq": [
+      [
+        "key",
+        4,
+        "card ids, card types, costs and a route id"
+      ]
+    ],
+    "lib/battlemap/hand-groups.ts#str-key": [
+      [
+        "key",
+        1,
+        "a counter's id or a cost read in a fixed table"
+      ]
+    ],
+    "lib/battlemap/hand-groups.ts#str-list": [
+      [
+        "key",
+        15,
+        "the basic actions' ids, the costs and the group keys: the engine's own vocabulary"
+      ]
+    ],
+    "lib/battlemap/hand-groups.ts#toUpperCase": [
+      [
+        "display",
+        1,
+        "a counter's id capitalised as its group's shown name"
+      ]
+    ],
     "lib/battlemap/hand-intent.ts#str-list": [
       [
         "key",
         5,
         "hand action ids and fields (fixed choice)"
+      ]
+    ],
+    "lib/battlemap/hand-layout.ts#str-eq": [
+      [
+        "key",
+        1,
+        "End turn's card id"
       ]
     ],
     "lib/battlemap/hand-options.ts#re-word": [
@@ -5287,6 +5127,13 @@
         "brush ids"
       ]
     ],
+    "lib/battlemap/passage.ts#str-eq": [
+      [
+        "key",
+        1,
+        "token kinds (engine vocabulary)"
+      ]
+    ],
     "lib/battlemap/passage.ts#str-list": [
       [
         "key",
@@ -5299,13 +5146,6 @@
         "key",
         1,
         "creature size, SRD feature name"
-      ]
-    ],
-    "lib/battlemap/passage.ts#str-eq": [
-      [
-        "key",
-        1,
-        "token kinds (engine vocabulary)"
       ]
     ],
     "lib/battlemap/scene.ts#[a-z]": [
@@ -5647,76 +5487,6 @@
         "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
       ]
     ],
-    "lib/bestiary/multiattack-text.ts#RegExp i": [
-      [
-        "english-source",
-        19,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#[a-z]": [
-      [
-        "english-source",
-        3,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#\\b": [
-      [
-        "english-source",
-        32,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#\\w": [
-      [
-        "english-source",
-        9,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#re-affix": [
-      [
-        "english-source",
-        1,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#re-word": [
-      [
-        "english-source",
-        37,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#str-alt": [
-      [
-        "english-source",
-        1,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#str-eq": [
-      [
-        "english-source",
-        5,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#str-key": [
-      [
-        "english-source",
-        3,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/multiattack-text.ts#toLowerCase": [
-      [
-        "english-source",
-        7,
-        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
     "lib/bestiary/block-check.ts#str-eq": [
       [
         "key",
@@ -5746,6 +5516,55 @@
         "key",
         1,
         "an alternative blow's damage type in an authored block"
+      ]
+    ],
+    "lib/bestiary/block-fields.ts#RegExp i": [
+      [
+        "english-source",
+        1,
+        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/block-fields.ts#\\b": [
+      [
+        "english-source",
+        10,
+        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/block-fields.ts#re-word": [
+      [
+        "english-source",
+        17,
+        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/block-fields.ts#str-eq": [
+      [
+        "key",
+        4,
+        "movement modes and a pack document's slug"
+      ]
+    ],
+    "lib/bestiary/block-fields.ts#str-key": [
+      [
+        "english-source",
+        1,
+        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/block-fields.ts#str-list": [
+      [
+        "english-source",
+        1,
+        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/block-fields.ts#toLowerCase": [
+      [
+        "english-source",
+        2,
+        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
       ]
     ],
     "lib/bestiary/block-sections.ts#re-word": [
@@ -5790,6 +5609,27 @@
         "ability abbreviations shown"
       ]
     ],
+    "lib/bestiary/creature-type.ts#str-eq": [
+      [
+        "english-source",
+        1,
+        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/creature-type.ts#str-list": [
+      [
+        "key",
+        1,
+        "creature types (engine vocabulary)"
+      ]
+    ],
+    "lib/bestiary/creature-type.ts#toLowerCase": [
+      [
+        "key",
+        1,
+        "creature types (engine vocabulary)"
+      ]
+    ],
     "lib/bestiary/defences.ts#RegExp i": [
       [
         "english-source",
@@ -5804,13 +5644,6 @@
         "content-pack defence lines and the Black Flag defence traits they name (Open5e rows), read when a pack row becomes a stored block"
       ]
     ],
-    "lib/bestiary/defences.ts#toLowerCase": [
-      [
-        "english-source",
-        7,
-        "content-pack defence lines and the Black Flag defence traits they name (Open5e rows), read when a pack row becomes a stored block"
-      ]
-    ],
     "lib/bestiary/defences.ts#\\b": [
       [
         "english-source",
@@ -5818,7 +5651,7 @@
         "content-pack defence lines and the Black Flag defence traits they name (Open5e rows), read when a pack row becomes a stored block"
       ]
     ],
-    "lib/bestiary/defences.ts#str-list": [
+    "lib/bestiary/defences.ts#re-affix": [
       [
         "english-source",
         2,
@@ -5832,17 +5665,24 @@
         "content-pack defence lines and the Black Flag defence traits they name (Open5e rows), read when a pack row becomes a stored block"
       ]
     ],
-    "lib/bestiary/defences.ts#re-affix": [
+    "lib/bestiary/defences.ts#str-key": [
       [
         "english-source",
         2,
         "content-pack defence lines and the Black Flag defence traits they name (Open5e rows), read when a pack row becomes a stored block"
       ]
     ],
-    "lib/bestiary/defences.ts#str-key": [
+    "lib/bestiary/defences.ts#str-list": [
       [
         "english-source",
         2,
+        "content-pack defence lines and the Black Flag defence traits they name (Open5e rows), read when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/defences.ts#toLowerCase": [
+      [
+        "english-source",
+        7,
         "content-pack defence lines and the Black Flag defence traits they name (Open5e rows), read when a pack row becomes a stored block"
       ]
     ],
@@ -5865,6 +5705,65 @@
         "key",
         1,
         "damage types (engine vocabulary) in a block's resistance list"
+      ]
+    ],
+    "lib/bestiary/enemy-numbers.ts#[a-z]": [
+      [
+        "english-source",
+        1,
+        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
+      ]
+    ],
+    "lib/bestiary/enemy-numbers.ts#re-word": [
+      [
+        "english-source",
+        1,
+        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
+      ]
+    ],
+    "lib/bestiary/enemy-numbers.ts#str-includes": [
+      [
+        "english-source",
+        1,
+        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
+      ]
+    ],
+    "lib/bestiary/enemy-numbers.ts#str-indexOf": [
+      [
+        "key",
+        1,
+        "creature sizes (engine vocabulary)"
+      ]
+    ],
+    "lib/bestiary/enemy-numbers.ts#str-list": [
+      [
+        "key",
+        1,
+        "creature sizes (engine vocabulary)"
+      ],
+      [
+        "english-source",
+        1,
+        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
+      ]
+    ],
+    "lib/bestiary/enemy-numbers.ts#str-startsWith": [
+      [
+        "english-source",
+        1,
+        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
+      ]
+    ],
+    "lib/bestiary/enemy-numbers.ts#toLowerCase": [
+      [
+        "key",
+        1,
+        "creature sizes (engine vocabulary)"
+      ],
+      [
+        "english-source",
+        1,
+        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
       ]
     ],
     "lib/bestiary/half-dragon.ts#\\b": [
@@ -5954,6 +5853,83 @@
         "a subtype's tags in an authored block"
       ]
     ],
+    "lib/bestiary/multiattack-text.ts#RegExp i": [
+      [
+        "english-source",
+        19,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#[a-z]": [
+      [
+        "english-source",
+        3,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#\\b": [
+      [
+        "english-source",
+        32,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#\\w": [
+      [
+        "english-source",
+        9,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#re-affix": [
+      [
+        "english-source",
+        1,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#re-word": [
+      [
+        "english-source",
+        37,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#str-alt": [
+      [
+        "english-source",
+        1,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#str-eq": [
+      [
+        "english-source",
+        5,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#str-key": [
+      [
+        "english-source",
+        3,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/multiattack-text.ts#toLowerCase": [
+      [
+        "english-source",
+        7,
+        "content-pack attack and Multiattack text (Open5e rows), parsed when a pack row becomes a stored block"
+      ]
+    ],
+    "lib/bestiary/pack-corrections.ts#RegExp i": [
+      [
+        "english-source",
+        1,
+        "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
+      ]
+    ],
     "lib/bestiary/pack-corrections.ts#[a-z]": [
       [
         "english-source",
@@ -5978,6 +5954,13 @@
         "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
       ]
     ],
+    "lib/bestiary/pack-corrections.ts#re-affix": [
+      [
+        "english-source",
+        1,
+        "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
+      ]
+    ],
     "lib/bestiary/pack-corrections.ts#re-word": [
       [
         "english-source",
@@ -5987,6 +5970,13 @@
       [
         "english-source",
         7,
+        "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
+      ]
+    ],
+    "lib/bestiary/pack-corrections.ts#str-alt": [
+      [
+        "english-source",
+        1,
         "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
       ]
     ],
@@ -6028,27 +6018,6 @@
         "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
       ]
     ],
-    "lib/bestiary/pack-corrections.ts#RegExp i": [
-      [
-        "english-source",
-        1,
-        "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
-      ]
-    ],
-    "lib/bestiary/pack-corrections.ts#str-alt": [
-      [
-        "english-source",
-        1,
-        "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
-      ]
-    ],
-    "lib/bestiary/pack-corrections.ts#re-affix": [
-      [
-        "english-source",
-        1,
-        "Tome of Beasts 3's bracketed saves (Open5e rows: \"(DC 16 Con half)\"), spelled out when a pack row is read"
-      ]
-    ],
     "lib/bestiary/printed-block.ts#\\b": [
       [
         "english-source",
@@ -6075,135 +6044,6 @@
         "english-source",
         1,
         "the SRD 5.1 OGL Product Identity creatures and ODM's art watch list (docs/art/creature-art-guidance.md), by their English names, read in a model's creature names; the prompt's own rule asks for SRD or original creatures in every language"
-      ]
-    ],
-    "lib/bestiary/block-fields.ts#RegExp i": [
-      [
-        "english-source",
-        1,
-        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/block-fields.ts#\\b": [
-      [
-        "english-source",
-        10,
-        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/block-fields.ts#re-word": [
-      [
-        "english-source",
-        17,
-        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/block-fields.ts#str-eq": [
-      [
-        "key",
-        4,
-        "movement modes and a pack document's slug"
-      ]
-    ],
-    "lib/bestiary/block-fields.ts#str-key": [
-      [
-        "english-source",
-        1,
-        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/block-fields.ts#str-list": [
-      [
-        "english-source",
-        1,
-        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/block-fields.ts#toLowerCase": [
-      [
-        "english-source",
-        2,
-        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/creature-type.ts#str-eq": [
-      [
-        "english-source",
-        1,
-        "content-pack stat block text (Open5e rows), parsed when a pack row becomes a stored block"
-      ]
-    ],
-    "lib/bestiary/creature-type.ts#str-list": [
-      [
-        "key",
-        1,
-        "creature types (engine vocabulary)"
-      ]
-    ],
-    "lib/bestiary/creature-type.ts#toLowerCase": [
-      [
-        "key",
-        1,
-        "creature types (engine vocabulary)"
-      ]
-    ],
-    "lib/bestiary/enemy-numbers.ts#[a-z]": [
-      [
-        "english-source",
-        1,
-        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
-      ]
-    ],
-    "lib/bestiary/enemy-numbers.ts#re-word": [
-      [
-        "english-source",
-        1,
-        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
-      ]
-    ],
-    "lib/bestiary/enemy-numbers.ts#str-includes": [
-      [
-        "english-source",
-        1,
-        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
-      ]
-    ],
-    "lib/bestiary/enemy-numbers.ts#str-indexOf": [
-      [
-        "key",
-        1,
-        "creature sizes (engine vocabulary)"
-      ]
-    ],
-    "lib/bestiary/enemy-numbers.ts#str-list": [
-      [
-        "key",
-        1,
-        "creature sizes (engine vocabulary)"
-      ],
-      [
-        "english-source",
-        1,
-        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
-      ]
-    ],
-    "lib/bestiary/enemy-numbers.ts#str-startsWith": [
-      [
-        "english-source",
-        1,
-        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
-      ]
-    ],
-    "lib/bestiary/enemy-numbers.ts#toLowerCase": [
-      [
-        "key",
-        1,
-        "creature sizes (engine vocabulary)"
-      ],
-      [
-        "english-source",
-        1,
-        "Keen senses found by a trait name's words (Keen Sight, Keen Hearing and Smell, Keen Senses, Tome of Beasts 2's Keen Scent)"
       ]
     ],
     "lib/bestiary/statblock.ts#re-word": [
@@ -6358,6 +6198,41 @@
         "class ids"
       ]
     ],
+    "lib/characters/class-words.ts#\\b": [
+      [
+        "display",
+        1,
+        "an id shown title-cased"
+      ]
+    ],
+    "lib/characters/class-words.ts#\\w": [
+      [
+        "display",
+        1,
+        "an id shown title-cased"
+      ]
+    ],
+    "lib/characters/class-words.ts#re-word": [
+      [
+        "key",
+        1,
+        "the homebrew id prefix"
+      ]
+    ],
+    "lib/characters/class-words.ts#toUpperCase": [
+      [
+        "display",
+        1,
+        "an id shown title-cased"
+      ]
+    ],
+    "lib/characters/fallen-logic.ts#str-eq": [
+      [
+        "key",
+        2,
+        "the table's multiCharacter setting, a fixed choice"
+      ]
+    ],
     "lib/characters/options.ts#\\b": [
       [
         "english-source",
@@ -6377,6 +6252,13 @@
         "key",
         1,
         "pack slug"
+      ]
+    ],
+    "lib/characters/seat-picks.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "skill ids"
       ]
     ],
     "lib/chat-roles-logic.ts#re-word": [
@@ -6421,6 +6303,13 @@
         "ODM's own error line, written in English by ODM"
       ]
     ],
+    "lib/compressed-json.ts#str-includes": [
+      [
+        "key",
+        2,
+        "HTTP Accept-Encoding content codings (protocol)"
+      ]
+    ],
     "lib/content/archetype-tables.ts#toLowerCase": [
       [
         "key",
@@ -6447,6 +6336,48 @@
         "key",
         1,
         "slug from an ODM feat name"
+      ]
+    ],
+    "lib/content/edition.ts#str-list": [
+      [
+        "english-source",
+        1,
+        "the 2024-only spells by their printed names, read by textKey"
+      ]
+    ],
+    "lib/content/entry-labels.ts#str-key": [
+      [
+        "key",
+        1,
+        "content kinds, sources and document slugs as stored"
+      ]
+    ],
+    "lib/content/feat-reading-logic.ts#\\b": [
+      [
+        "english-source",
+        20,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/feat-reading-logic.ts#re-word": [
+      [
+        "english-source",
+        4,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/feat-reading-logic.ts#str-eq": [
+      [
+        "english-source",
+        1,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/feat-reading-logic.ts#toLowerCase": [
+      [
+        "english-source",
+        1,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
       ]
     ],
     "lib/content/index.ts#\\b": [
@@ -6482,6 +6413,13 @@
         "key",
         4,
         "class slug and school"
+      ]
+    ],
+    "lib/content/levelup.ts#str-key": [
+      [
+        "key",
+        1,
+        "document slugs, needs and table names"
       ]
     ],
     "lib/content/mechanics.ts#[a-z]": [
@@ -6574,6 +6512,111 @@
         "pack trait type codes"
       ]
     ],
+    "lib/content/monster-reading-logic.ts#\\b": [
+      [
+        "english-source",
+        5,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/monster-reading-logic.ts#re-affix": [
+      [
+        "english-source",
+        1,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/monster-reading-logic.ts#re-word": [
+      [
+        "english-source",
+        1,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/monster-reading-logic.ts#str-list": [
+      [
+        "key",
+        1,
+        "reading sources, sections and field names"
+      ]
+    ],
+    "lib/content/names.ts#[a-z]": [
+      [
+        "key",
+        1,
+        "the key's slug shape: every run of characters outside the key becomes one hyphen"
+      ]
+    ],
+    "lib/content/names.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "an official name, a class id or a feature name made into a lookup key for the generated French-name tables (names-fr.ts), whose keys are lowercase slugs"
+      ]
+    ],
+    "lib/content/needs-logic.ts#[a-z]": [
+      [
+        "english-source",
+        2,
+        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
+      ]
+    ],
+    "lib/content/needs-logic.ts#\\b": [
+      [
+        "english-source",
+        40,
+        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
+      ]
+    ],
+    "lib/content/needs-logic.ts#\\w": [
+      [
+        "english-source",
+        5,
+        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
+      ]
+    ],
+    "lib/content/needs-logic.ts#re-word": [
+      [
+        "english-source",
+        8,
+        "Level Up's and Deep Magic's own rules as content-pack text names them (strife, fatigue, rattled, expertise dice, exertion, maneuvers, bloodied, ley lines), read to say what an entry needs"
+      ]
+    ],
+    "lib/content/needs-logic.ts#str-list": [
+      [
+        "key",
+        1,
+        "the pack's document slugs and data field names"
+      ]
+    ],
+    "lib/content/option-reading-logic.ts#\\b": [
+      [
+        "english-source",
+        3,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/option-reading-logic.ts#re-affix": [
+      [
+        "english-source",
+        2,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/option-reading-logic.ts#re-word": [
+      [
+        "english-source",
+        1,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/option-reading-logic.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "slugs and class ids"
+      ]
+    ],
     "lib/content/race-options.ts#re-word": [
       [
         "english-source",
@@ -6595,11 +6638,67 @@
         "document slugs and grant keys"
       ]
     ],
+    "lib/content/reading-logic.ts#str-list": [
+      [
+        "key",
+        1,
+        "reading sources, sections and field names"
+      ]
+    ],
     "lib/content/scope.ts#str-key": [
       [
         "key",
         1,
         "homebrew kinds"
+      ]
+    ],
+    "lib/content/scope.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "a subclass's class id, compared as stored"
+      ]
+    ],
+    "lib/content/species-variants.ts#[a-z]": [
+      [
+        "key",
+        3,
+        "option ids: lower-case letters and digits joined by dashes"
+      ]
+    ],
+    "lib/content/species-variants.ts#re-word": [
+      [
+        "english-source",
+        1,
+        "ODM's own feature-name words the table reads anywhere in a name (\"resistance\" in any form, \"breath weapon\"), refused in a species choice's label and option names"
+      ]
+    ],
+    "lib/content/species-variants.ts#str-eq": [
+      [
+        "display",
+        1,
+        "a skill id title-cased for display"
+      ]
+    ],
+    "lib/content/species-variants.ts#str-list": [
+      [
+        "key",
+        2,
+        "the field names an option holds"
+      ]
+    ],
+    "lib/content/species-variants.ts#toLowerCase": [
+      [
+        "key",
+        4,
+        "damage types and skill ids an option names"
+      ]
+    ],
+    "lib/content/species-variants.ts#toUpperCase": [
+      [
+        "display",
+        2,
+        "ability abbreviations, capitalised words"
       ]
     ],
     "lib/content/spell-overrides.ts#[a-z]": [
@@ -6637,6 +6736,34 @@
         "spell schools"
       ]
     ],
+    "lib/content/spell-reading-logic.ts#RegExp i": [
+      [
+        "english-source",
+        3,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/spell-reading-logic.ts#\\b": [
+      [
+        "english-source",
+        21,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/spell-reading-logic.ts#re-word": [
+      [
+        "english-source",
+        8,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
+    "lib/content/spell-reading-logic.ts#str-alt": [
+      [
+        "english-source",
+        3,
+        "content-pack text read for what its reader left unread (the pack's English rows), so the misses are counted and listed"
+      ]
+    ],
     "lib/content/weight.ts#[a-z]": [
       [
         "key",
@@ -6663,6 +6790,13 @@
         "key",
         2,
         "weight units"
+      ]
+    ],
+    "lib/correction-reasons.ts#str-list": [
+      [
+        "key",
+        1,
+        "the correction ledger's kinds of fix and its reason chips (fixed choices, stored values)"
       ]
     ],
     "lib/db/account-invites.ts#toUpperCase": [
@@ -6728,6 +6862,13 @@
         "character event kinds"
       ]
     ],
+    "lib/db/character-file.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "a subclass's class id, compared as stored"
+      ]
+    ],
     "lib/db/characters.ts#str-eq": [
       [
         "key",
@@ -6754,6 +6895,13 @@
         "key",
         7,
         "SQL table and column names"
+      ]
+    ],
+    "lib/db/content-import-refs.ts#str-key": [
+      [
+        "key",
+        5,
+        "import kinds and ref kinds, as stored"
       ]
     ],
     "lib/db/content-import.ts#str-key": [
@@ -6929,11 +7077,39 @@
         "out-of-character marker"
       ]
     ],
+    "lib/db/home-glance.ts#str-eq": [
+      [
+        "key",
+        2,
+        "campaign status, a fixed choice"
+      ]
+    ],
+    "lib/db/homebrew-rename.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "a subclass's class id, compared as stored"
+      ]
+    ],
     "lib/db/homebrew.ts#toLowerCase": [
       [
         "key",
         1,
         "homebrew slug"
+      ]
+    ],
+    "lib/db/import-monsters.ts#str-eq": [
+      [
+        "key",
+        4,
+        "a roll-table row's ref kind and a map pin's"
+      ]
+    ],
+    "lib/db/import-monsters.ts#str-startsWith": [
+      [
+        "key",
+        1,
+        "the homebrew ref prefix"
       ]
     ],
     "lib/db/item-proposals.ts#str-eq": [
@@ -7011,6 +7187,20 @@
         "key",
         1,
         "createdAt"
+      ]
+    ],
+    "lib/db/pacts.ts#str-eq": [
+      [
+        "key",
+        4,
+        "a stored pact's trigger and status"
+      ]
+    ],
+    "lib/db/prep-refs.ts#str-eq": [
+      [
+        "key",
+        3,
+        "a roll-table row's ref kind and a map pin's"
       ]
     ],
     "lib/db/prepared-maps.ts#toLowerCase": [
@@ -7118,10 +7308,31 @@
         "SQL table names"
       ]
     ],
+    "lib/db/workshop-bundle-refs.ts#str-eq": [
+      [
+        "key",
+        2,
+        "a map pin's ref kind"
+      ]
+    ],
+    "lib/db/workshop-bundle-refs.ts#str-key": [
+      [
+        "key",
+        1,
+        "a map pin's ref kind"
+      ]
+    ],
     "lib/db/workshop-bundle-shelf.ts#str-eq": [
       [
         "key",
         5,
+        "homebrew kinds"
+      ]
+    ],
+    "lib/db/workshop-bundle-shelf.ts#str-key": [
+      [
+        "key",
+        1,
         "homebrew kinds"
       ]
     ],
@@ -7335,6 +7546,27 @@
         "condition label (engine vocabulary)"
       ]
     ],
+    "lib/dm/action-price.ts#str-eq": [
+      [
+        "key",
+        1,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/action-price.ts#str-list": [
+      [
+        "key",
+        2,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/action-price.ts#toLowerCase": [
+      [
+        "key",
+        1,
+        "condition label (engine vocabulary)"
+      ]
+    ],
     "lib/dm/action-tools.ts#str-eq": [
       [
         "key",
@@ -7349,17 +7581,17 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/action-walk.ts#str-list": [
-      [
-        "key",
-        1,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
     "lib/dm/action-walk.ts#str-eq": [
       [
         "key",
         2,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/action-walk.ts#str-list": [
+      [
+        "key",
+        1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
@@ -7885,6 +8117,13 @@
         "weapon name in a sentence"
       ]
     ],
+    "lib/dm/authored-hooks.ts#re-word": [
+      [
+        "key",
+        1,
+        "creature types (engine vocabulary)"
+      ]
+    ],
     "lib/dm/authored-hooks.ts#str-eq": [
       [
         "key",
@@ -7904,13 +8143,6 @@
         "key",
         1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/authored-hooks.ts#re-word": [
-      [
-        "key",
-        1,
-        "creature types (engine vocabulary)"
       ]
     ],
     "lib/dm/authored-mote.ts#re-word": [
@@ -7969,6 +8201,13 @@
         "condition labels and damage types (engine vocabulary)"
       ]
     ],
+    "lib/dm/authored-spend-effects.ts#re-word": [
+      [
+        "key",
+        3,
+        "resource ids (the sub_ prefix of a subclass counter)"
+      ]
+    ],
     "lib/dm/authored-spend-effects.ts#str-eq": [
       [
         "key",
@@ -7993,13 +8232,6 @@
         "display",
         3,
         "ability abbreviation shown in a roll note"
-      ]
-    ],
-    "lib/dm/authored-spend-effects.ts#re-word": [
-      [
-        "key",
-        3,
-        "resource ids (the sub_ prefix of a subclass counter)"
       ]
     ],
     "lib/dm/authored-spend-more.ts#\\b": [
@@ -8630,11 +8862,11 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/combat-sides-logic.ts#toLowerCase": [
+    "lib/dm/combat-sides-logic.ts#str-eq": [
       [
         "key",
-        3,
-        "the charmed condition's label and the Dominate spells' names as a charm's meta stores them (engine vocabulary)"
+        4,
+        "combat sides, combatant kinds and the foe view's slug (engine vocabulary)"
       ]
     ],
     "lib/dm/combat-sides-logic.ts#str-list": [
@@ -8644,11 +8876,11 @@
         "combat sides and the Dominate spells' stored names (engine vocabulary)"
       ]
     ],
-    "lib/dm/combat-sides-logic.ts#str-eq": [
+    "lib/dm/combat-sides-logic.ts#toLowerCase": [
       [
         "key",
-        4,
-        "combat sides, combatant kinds and the foe view's slug (engine vocabulary)"
+        3,
+        "the charmed condition's label and the Dominate spells' names as a charm's meta stores them (engine vocabulary)"
       ]
     ],
     "lib/dm/combatant-targets.ts#\\w": [
@@ -8817,6 +9049,20 @@
         "ability abbreviation shown in a note"
       ]
     ],
+    "lib/dm/confusion.ts#str-eq": [
+      [
+        "key",
+        2,
+        "token kinds (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/confusion.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "the confused condition's label (engine vocabulary)"
+      ]
+    ],
     "lib/dm/conscience-logic.ts#str-eq": [
       [
         "key",
@@ -8836,20 +9082,6 @@
         "display",
         1,
         "a sentence's first letter in a companion's line"
-      ]
-    ],
-    "lib/dm/confusion.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "the confused condition's label (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/confusion.ts#str-eq": [
-      [
-        "key",
-        2,
-        "token kinds (engine vocabulary)"
       ]
     ],
     "lib/dm/consumables.ts#str-key": [
@@ -8906,6 +9138,13 @@
         "model ids a server lists"
       ]
     ],
+    "lib/dm/conversation-logic.ts#str-eq": [
+      [
+        "key",
+        4,
+        "a message's author type and an attributed speaker's kind (stored enums)"
+      ]
+    ],
     "lib/dm/cure-spell.ts#str-endsWith": [
       [
         "key",
@@ -8941,6 +9180,20 @@
         "reference: damage types (values the schema lists) found as whole words"
       ]
     ],
+    "lib/dm/damage-logic.ts#\\b": [
+      [
+        "english-source",
+        10,
+        "a block's resistance line (pack rows; the workshop writes it from its toggles)"
+      ]
+    ],
+    "lib/dm/damage-logic.ts#re-word": [
+      [
+        "english-source",
+        6,
+        "a block's resistance line (pack rows; the workshop writes it from its toggles)"
+      ]
+    ],
     "lib/dm/damage-logic.ts#str-includes": [
       [
         "english-source",
@@ -8965,20 +9218,6 @@
         "english-source",
         2,
         "reference: damage types (values the schema lists) and a block's resistance line"
-      ]
-    ],
-    "lib/dm/damage-logic.ts#\\b": [
-      [
-        "english-source",
-        10,
-        "a block's resistance line (pack rows; the workshop writes it from its toggles)"
-      ]
-    ],
-    "lib/dm/damage-logic.ts#re-word": [
-      [
-        "english-source",
-        6,
-        "a block's resistance line (pack rows; the workshop writes it from its toggles)"
       ]
     ],
     "lib/dm/damage-parts.ts#toLowerCase": [
@@ -9196,18 +9435,18 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/encounter-tools.ts#toLowerCase": [
-      [
-        "key",
-        1,
-        "condition labels (engine vocabulary)"
-      ]
-    ],
     "lib/dm/encounter-tools.ts#str-list": [
       [
         "key",
         1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/encounter-tools.ts#toLowerCase": [
+      [
+        "key",
+        1,
+        "condition labels (engine vocabulary)"
       ]
     ],
     "lib/dm/enemy-actions-view.ts#toUpperCase": [
@@ -9259,11 +9498,11 @@
         "ability abbreviation shown in a roll note"
       ]
     ],
-    "lib/dm/enemy-turn-logic.ts#str-list": [
+    "lib/dm/enemy-blow.ts#re-word": [
       [
         "key",
         1,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+        "damage type (engine vocabulary): a part of a blow that is radiant"
       ]
     ],
     "lib/dm/enemy-casting.ts#str-includes": [
@@ -9315,20 +9554,6 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/foe-carry-logic.ts#str-eq": [
-      [
-        "key",
-        5,
-        "enemy statuses and fight outcomes (engine vocabulary), issue #667"
-      ]
-    ],
-    "lib/dm/foe-carry-logic.ts#str-list": [
-      [
-        "key",
-        1,
-        "fight outcomes (engine vocabulary), issue #667"
-      ]
-    ],
     "lib/dm/enemy-damage.ts#str-eq": [
       [
         "key",
@@ -9371,13 +9596,6 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/enemy-hit-rows.ts#toUpperCase": [
-      [
-        "display",
-        1,
-        "ability abbreviation shown"
-      ]
-    ],
     "lib/dm/enemy-hit-rows.ts#str-eq": [
       [
         "key",
@@ -9390,6 +9608,13 @@
         "key",
         1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/enemy-hit-rows.ts#toUpperCase": [
+      [
+        "display",
+        1,
+        "ability abbreviation shown"
       ]
     ],
     "lib/dm/enemy-hit.ts#re-word": [
@@ -9565,6 +9790,13 @@
       [
         "key",
         2,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/enemy-turn-logic.ts#str-list": [
+      [
+        "key",
+        1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
@@ -9755,13 +9987,6 @@
         "ability abbreviation shown"
       ]
     ],
-    "lib/dm/flee-logic.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "condition labels (engine vocabulary)"
-      ]
-    ],
     "lib/dm/flee-logic.ts#str-eq": [
       [
         "key",
@@ -9769,11 +9994,25 @@
         "the spell a condition's meta records, as the engine writes it (engine vocabulary)"
       ]
     ],
-    "lib/dm/forced-save.ts#toUpperCase": [
+    "lib/dm/flee-logic.ts#toLowerCase": [
       [
-        "display",
-        3,
-        "ability abbreviation shown"
+        "key",
+        2,
+        "condition labels (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/foe-carry-logic.ts#str-eq": [
+      [
+        "key",
+        5,
+        "enemy statuses and fight outcomes (engine vocabulary), issue #667"
+      ]
+    ],
+    "lib/dm/foe-carry-logic.ts#str-list": [
+      [
+        "key",
+        1,
+        "fight outcomes (engine vocabulary), issue #667"
       ]
     ],
     "lib/dm/forced-save.ts#toLowerCase": [
@@ -9781,6 +10020,13 @@
         "key",
         3,
         "condition names (engine vocabulary) and a block's condition resistances"
+      ]
+    ],
+    "lib/dm/forced-save.ts#toUpperCase": [
+      [
+        "display",
+        3,
+        "ability abbreviation shown"
       ]
     ],
     "lib/dm/formation-logic.ts#str-eq": [
@@ -9923,11 +10169,39 @@
         "ability abbreviation shown"
       ]
     ],
+    "lib/dm/intent-logic.ts#str-case": [
+      [
+        "key",
+        1,
+        "a card's first tool call by name, to share a casting out (issue 570)"
+      ]
+    ],
+    "lib/dm/intent-logic.ts#str-eq": [
+      [
+        "key",
+        2,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/intent-logic.ts#str-list": [
+      [
+        "key",
+        3,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
     "lib/dm/intent-queue.ts#str-eq": [
       [
         "key",
         1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/intent-tools.ts#str-eq": [
+      [
+        "key",
+        1,
+        "the charmed condition's label (engine vocabulary)"
       ]
     ],
     "lib/dm/intent-tools.ts#str-list": [
@@ -9938,13 +10212,6 @@
       ]
     ],
     "lib/dm/intent-tools.ts#toLowerCase": [
-      [
-        "key",
-        1,
-        "the charmed condition's label (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/intent-tools.ts#str-eq": [
       [
         "key",
         1,
@@ -10250,18 +10517,18 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/map-tools.ts#str-list": [
-      [
-        "key",
-        2,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
     "lib/dm/map-tools.ts#str-eq": [
       [
         "key",
         2,
         "token kinds (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/map-tools.ts#str-list": [
+      [
+        "key",
+        2,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
     "lib/dm/march-state.ts#str-eq": [
@@ -10453,6 +10720,13 @@
         "titleCase: capital letters"
       ]
     ],
+    "lib/dm/monster-traits.ts#[a-z]": [
+      [
+        "english-source",
+        1,
+        "the trait names a block prints that the engine runs (stat-block text)"
+      ]
+    ],
     "lib/dm/monster-traits.ts#\\b": [
       [
         "english-source",
@@ -10489,13 +10763,6 @@
         "english-source",
         1,
         "reference: SRD trait names at the start of a block's line"
-      ]
-    ],
-    "lib/dm/monster-traits.ts#[a-z]": [
-      [
-        "english-source",
-        1,
-        "the trait names a block prints that the engine runs (stat-block text)"
       ]
     ],
     "lib/dm/mount-tools.ts#str-list": [
@@ -10688,10 +10955,10 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/opportunity-sides.ts#toLowerCase": [
+    "lib/dm/opportunity-sides.ts#str-eq": [
       [
         "key",
-        2,
+        1,
         "condition labels (engine vocabulary)"
       ]
     ],
@@ -10702,10 +10969,10 @@
         "condition labels (engine vocabulary)"
       ]
     ],
-    "lib/dm/opportunity-sides.ts#str-eq": [
+    "lib/dm/opportunity-sides.ts#toLowerCase": [
       [
         "key",
-        1,
+        2,
         "condition labels (engine vocabulary)"
       ]
     ],
@@ -10833,6 +11100,13 @@
         "key",
         1,
         "secret action kinds, the engine vocabulary"
+      ]
+    ],
+    "lib/dm/party-bonds-logic.ts#str-eq": [
+      [
+        "key",
+        1,
+        "fixed choices: a companion's kind and a bond's status"
       ]
     ],
     "lib/dm/party-conduct.ts#str-case": [
@@ -11186,6 +11460,20 @@
         "key",
         1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/personality-labels.ts#str-key": [
+      [
+        "key",
+        1,
+        "a stock personality's seeded English name maps to its message key; a user-authored name passes through unkeyed"
+      ]
+    ],
+    "lib/dm/pet-build.ts#str-list": [
+      [
+        "key",
+        2,
+        "tool schema enums and field names: a drake's essences and the features that name one"
       ]
     ],
     "lib/dm/pet-tools.ts#str-includes": [
@@ -11674,6 +11962,13 @@
         "resource variant (tool argument) against the engine's variant list; condition labels (engine vocabulary)"
       ]
     ],
+    "lib/dm/rest-logic.ts#re-word": [
+      [
+        "key",
+        1,
+        "the engine's own recovery condition label"
+      ]
+    ],
     "lib/dm/rest-logic.ts#str-startsWith": [
       [
         "key",
@@ -11686,13 +11981,6 @@
         "key",
         3,
         "condition labels (engine vocabulary)"
-      ]
-    ],
-    "lib/dm/rest-logic.ts#re-word": [
-      [
-        "key",
-        1,
-        "the engine's own recovery condition label"
       ]
     ],
     "lib/dm/rest-tools.ts#str-list": [
@@ -12031,13 +12319,6 @@
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
       ]
     ],
-    "lib/dm/scheme-tools.ts#str-list": [
-      [
-        "key",
-        2,
-        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
-      ]
-    ],
     "lib/dm/scene-tools.ts#toLowerCase": [
       [
         "key",
@@ -12057,6 +12338,20 @@
         "display",
         1,
         "tracker kind label in a sentence"
+      ]
+    ],
+    "lib/dm/scheme-tools.ts#str-list": [
+      [
+        "key",
+        2,
+        "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/session-hold-logic.ts#str-eq": [
+      [
+        "key",
+        1,
+        "an RSVP's stored answer"
       ]
     ],
     "lib/dm/set-condition.ts#re-word": [
@@ -12092,6 +12387,13 @@
         "key",
         1,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/sheet-view.ts#str-key": [
+      [
+        "key",
+        1,
+        "a sheet's private field names (the notes and the opt-ins) the audit delta blanks (engine vocabulary)"
       ]
     ],
     "lib/dm/shop-logic.ts#\\b": [
@@ -12146,6 +12448,13 @@
         "key",
         5,
         "tool schema enums and field names, statuses, condition labels and ids (engine vocabulary)"
+      ]
+    ],
+    "lib/dm/slotless-cast-logic.ts#str-eq": [
+      [
+        "key",
+        1,
+        "tool names (engine vocabulary)"
       ]
     ],
     "lib/dm/slow-cast.ts#toLowerCase": [
@@ -13663,6 +13972,41 @@
         "communication kinds (fixed choice)"
       ]
     ],
+    "lib/homebrew/sheet-refs.ts#re-word": [
+      [
+        "english-source",
+        1,
+        "the feature line the builder writes for a non-caster's racial cantrip (\"Racial cantrip: X\")"
+      ]
+    ],
+    "lib/homebrew/sheet-refs.ts#str-eq": [
+      [
+        "key",
+        3,
+        "homebrew kinds, an improvement's mode and a feature's source"
+      ]
+    ],
+    "lib/homebrew/sheet-refs.ts#str-list": [
+      [
+        "key",
+        1,
+        "a sheet's spell list field names"
+      ]
+    ],
+    "lib/homebrew/sheet-refs.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "a subclass's class id, compared as stored"
+      ]
+    ],
+    "lib/homebrew/species-choice-server.ts#re-word": [
+      [
+        "english-source",
+        2,
+        "ODM's own feature-name words two engine readers find anywhere in a feature's name (\"see invisibility\", \"true seeing\", \"multiattack defense\"), refused in a species choice's label and option names on the server"
+      ]
+    ],
     "lib/homebrew/spell-mech-schema.ts#toLowerCase": [
       [
         "key",
@@ -13845,6 +14189,27 @@
         "the language helper"
       ]
     ],
+    "lib/language/player-text.ts#[a-z]": [
+      [
+        "english-source",
+        4,
+        "ODM's own rules lines: a GM tool's snake_case name as ODM's rows write it (issue 659)"
+      ]
+    ],
+    "lib/language/player-text.ts#\\b": [
+      [
+        "english-source",
+        3,
+        "ODM's own rules lines: a GM tool's snake_case name, \"via\"/\"with\"/\"through\" before it, and \"weapon '...'\" as ODM's rows write them (issue 659)"
+      ]
+    ],
+    "lib/language/player-text.ts#re-word": [
+      [
+        "english-source",
+        3,
+        "ODM's own rules lines: \"via\", \"weapon\" and \"resolve\" as ODM's rows write them beside a tool name (issue 659)"
+      ]
+    ],
     "lib/language/text-logic.ts#.normalize(": [
       [
         "human",
@@ -13885,6 +14250,20 @@
         "human",
         1,
         "the shared helpers themselves"
+      ]
+    ],
+    "lib/locale.ts#str-eq": [
+      [
+        "key",
+        4,
+        "BCP 47 language tags and the stored choice (auto, en, fr): fixed tokens, never a person's text"
+      ]
+    ],
+    "lib/locale.ts#toLowerCase": [
+      [
+        "key",
+        1,
+        "BCP 47 language tags from the browser (navigator.languages), parsed for the language prefix, never compared"
       ]
     ],
     "lib/login-throttle.ts#str-eq": [
@@ -13934,6 +14313,13 @@
         "key",
         1,
         "queue lane id"
+      ]
+    ],
+    "lib/messages-logic.ts#\\w": [
+      [
+        "key",
+        1,
+        "the dictionary placeholder slot's own {name} syntax, matched in templates the code wrote, never in a person's text"
       ]
     ],
     "lib/model-client.ts#re-word": [
@@ -14121,6 +14507,13 @@
         "key",
         2,
         "CSS property names and effect modes"
+      ]
+    ],
+    "lib/narrator-quality.ts#str-list": [
+      [
+        "key",
+        1,
+        "the narration guard's outcomes (fixed choices, stored values)"
       ]
     ],
     "lib/navigation.ts#[a-z]": [
@@ -14800,6 +15193,20 @@
         "log level shown"
       ]
     ],
+    "lib/report-setup-server.ts#str-eq": [
+      [
+        "key",
+        2,
+        "backend and engine kinds, the DM mode, the picture preset sentinel and the agent program's sign-in and availability states: fixed codes, never text a person writes"
+      ]
+    ],
+    "lib/report-setup-server.ts#str-key": [
+      [
+        "key",
+        1,
+        "the image backend's and text server's labels, looked up by their fixed code"
+      ]
+    ],
     "lib/roll-labels.ts#str-key": [
       [
         "key",
@@ -15055,34 +15462,6 @@
         "prototype-pollution keys"
       ]
     ],
-    "lib/sheet-audit-logic.ts#[a-z]": [
-      [
-        "key",
-        2,
-        "a sheet field's camelCase name split into words for the undo's conflict warning (field names are ASCII identifiers by design, issue #622)"
-      ]
-    ],
-    "lib/sheet-audit-logic.ts#str-key": [
-      [
-        "key",
-        1,
-        "sheet field names (schema keys, not text a person writes) mapped to the words the undo's conflict warning shows (issue #622)"
-      ]
-    ],
-    "lib/sheet-audit-logic.ts#toLowerCase": [
-      [
-        "display",
-        1,
-        "a sheet field's name in a sentence, the undo's conflict warning (issue #622)"
-      ]
-    ],
-    "lib/sheet-undo.ts#str-eq": [
-      [
-        "key",
-        1,
-        "an audit row's actor, so only the AI's change undone is a correction (stored value)"
-      ]
-    ],
     "lib/serve-file.ts#re-word": [
       [
         "key",
@@ -15223,18 +15602,32 @@
         "origin, invite codes"
       ]
     ],
-    "lib/report-setup-server.ts#str-key": [
-      [
-        "key",
-        1,
-        "the image backend's and text server's labels, looked up by their fixed code"
-      ]
-    ],
-    "lib/report-setup-server.ts#str-eq": [
+    "lib/sheet-audit-logic.ts#[a-z]": [
       [
         "key",
         2,
-        "backend and engine kinds, the DM mode, the picture preset sentinel and the agent program's sign-in and availability states: fixed codes, never text a person writes"
+        "a sheet field's camelCase name split into words for the undo's conflict warning (field names are ASCII identifiers by design, issue #622)"
+      ]
+    ],
+    "lib/sheet-audit-logic.ts#str-key": [
+      [
+        "key",
+        1,
+        "sheet field names (schema keys, not text a person writes) mapped to the words the undo's conflict warning shows (issue #622)"
+      ]
+    ],
+    "lib/sheet-audit-logic.ts#toLowerCase": [
+      [
+        "display",
+        1,
+        "a sheet field's name in a sentence, the undo's conflict warning (issue #622)"
+      ]
+    ],
+    "lib/sheet-undo.ts#str-eq": [
+      [
+        "key",
+        1,
+        "an audit row's actor, so only the AI's change undone is a correction (stored value)"
       ]
     ],
     "lib/shell-host.ts#toUpperCase": [
@@ -15350,6 +15743,20 @@
         "key",
         7,
         "condition labels (engine vocabulary)"
+      ]
+    ],
+    "lib/srd/alignment.ts#str-includes": [
+      [
+        "english-extra",
+        5,
+        "an alignment's English words beside the two-letter code the builder stores at every table; a miss reads as no alignment, as one written in another language does"
+      ]
+    ],
+    "lib/srd/alignment.ts#str-key": [
+      [
+        "key",
+        1,
+        "the builder's alignment codes"
       ]
     ],
     "lib/srd/ammunition.ts#str-key": [
@@ -15525,18 +15932,18 @@
         "ODM's authored effect rows (bundled data)"
       ]
     ],
-    "lib/srd/authored-effects-more.ts#str-key": [
-      [
-        "key",
-        1,
-        "creature sizes"
-      ]
-    ],
     "lib/srd/authored-effects-genre.ts#str-list": [
       [
         "english-source",
         1,
         "ODM's authored effect rows (bundled data)"
+      ]
+    ],
+    "lib/srd/authored-effects-more.ts#str-key": [
+      [
+        "key",
+        1,
+        "creature sizes"
       ]
     ],
     "lib/srd/authored-effects.ts#\\b": [
@@ -16470,6 +16877,13 @@
         "the problem line ODM writes"
       ]
     ],
+    "lib/srd/legality/species-variant.ts#toLowerCase": [
+      [
+        "display",
+        1,
+        "a species choice's label in a sentence"
+      ]
+    ],
     "lib/srd/legality/types.ts#str-key": [
       [
         "key",
@@ -16566,11 +16980,25 @@
         "pack slug"
       ]
     ],
+    "lib/srd/magic-item-value.ts#\\b": [
+      [
+        "english-source",
+        2,
+        "a spell scroll's level and a bare Spell Scroll row's name, as the content pack writes them"
+      ]
+    ],
     "lib/srd/magic-item-value.ts#re-word": [
       [
         "english-source",
         7,
         "content-pack magic item rows (Open5e): the rarity and category fields priced by the 2014 rarity values, and the consumables and spell scrolls it prices apart"
+      ]
+    ],
+    "lib/srd/magic-item-value.ts#str-eq": [
+      [
+        "key",
+        1,
+        "the content pack's scroll category"
       ]
     ],
     "lib/srd/magic-item-value.ts#str-key": [
@@ -17637,6 +18065,13 @@
         "model reasoning and channel markup, and a Harmony tool recipient"
       ]
     ],
+    "lib/story-prompt.ts#\\W": [
+      [
+        "key",
+        1,
+        "a Harmony tool recipient held back from the stream only where a word starts"
+      ]
+    ],
     "lib/story-prompt.ts#\\b": [
       [
         "key",
@@ -17649,13 +18084,6 @@
         "key",
         2,
         "a Harmony tool recipient: the tool name and the format after it"
-      ]
-    ],
-    "lib/story-prompt.ts#\\W": [
-      [
-        "key",
-        1,
-        "a Harmony tool recipient held back from the stream only where a word starts"
       ]
     ],
     "lib/story-prompt.ts#re-word": [
@@ -18004,6 +18432,20 @@
         "key",
         1,
         "data URL format"
+      ]
+    ],
+    "lib/workshop/bundle.ts#\\w": [
+      [
+        "key",
+        1,
+        "the portable \"homebrew:@kind:Name\" ref"
+      ]
+    ],
+    "lib/workshop/bundle.ts#re-word": [
+      [
+        "key",
+        1,
+        "the portable \"homebrew:@kind:Name\" ref"
       ]
     ],
     "lib/workshop/bundle.ts#str-eq": [
@@ -18372,32 +18814,6 @@
         "import slices, and the fields a campaign keeps as its own"
       ]
     ],
-    "lib/worldforge/outline.ts#str-key": [
-      [
-        "key",
-        1,
-        "fields of the outline reply format ODM's prompt asks for"
-      ]
-    ],
-    "lib/worldforge/outline.ts#str-list": [
-      [
-        "key",
-        1,
-        "item kinds (Homebrew's fixed choices)"
-      ],
-      [
-        "display",
-        6,
-        "nouns counted in the outline's notes"
-      ]
-    ],
-    "lib/worldforge/scenes.ts#localeCompare": [
-      [
-        "key",
-        1,
-        "WorldForge story ids, for the scenes' order"
-      ]
-    ],
     "lib/worldforge/model.ts#[a-z]": [
       [
         "key",
@@ -18454,11 +18870,37 @@
         "slice ids made singular for a label"
       ]
     ],
+    "lib/worldforge/outline.ts#str-key": [
+      [
+        "key",
+        1,
+        "fields of the outline reply format ODM's prompt asks for"
+      ]
+    ],
+    "lib/worldforge/outline.ts#str-list": [
+      [
+        "key",
+        1,
+        "item kinds (Homebrew's fixed choices)"
+      ],
+      [
+        "display",
+        6,
+        "nouns counted in the outline's notes"
+      ]
+    ],
     "lib/worldforge/play-fields.ts#str-list": [
       [
         "key",
         1,
         "link labels (fixed choice)"
+      ]
+    ],
+    "lib/worldforge/scenes.ts#localeCompare": [
+      [
+        "key",
+        1,
+        "WorldForge story ids, for the scenes' order"
       ]
     ],
     "lib/worldforge/text.ts#re-affix": [
@@ -18648,429 +19090,6 @@
         "key",
         1,
         "HTTP method"
-      ]
-    ],
-    "app/characters/builder/useBuilderOptions.ts#str-list": [
-      [
-        "key",
-        1,
-        "the option lists the builder asks for, by route kind"
-      ]
-    ],
-    "app/characters/builder/useBuilderState.ts#toLowerCase": [
-      [
-        "display",
-        1,
-        "a species choice's label in the set-aside notice"
-      ]
-    ],
-    "app/workshop/BundlePreview.tsx#str-eq": [
-      [
-        "key",
-        2,
-        "bundle kinds"
-      ]
-    ],
-    "app/workshop/homebrew/HomebrewEditor.tsx#toUpperCase": [
-      [
-        "display",
-        1,
-        "a subclass's class id capitalised as its name in the availability line"
-      ]
-    ],
-    "app/workshop/homebrew/SpeciesChoiceFields.tsx#toLowerCase": [
-      [
-        "key",
-        1,
-        "tool proficiencies (the workshop's pickers)"
-      ]
-    ],
-    "lib/content/scope.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "a subclass's class id, compared as stored"
-      ]
-    ],
-    "lib/db/character-file.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "a subclass's class id, compared as stored"
-      ]
-    ],
-    "lib/db/content-import-refs.ts#str-key": [
-      [
-        "key",
-        5,
-        "import kinds and ref kinds, as stored"
-      ]
-    ],
-    "lib/db/homebrew-rename.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "a subclass's class id, compared as stored"
-      ]
-    ],
-    "lib/db/import-monsters.ts#str-eq": [
-      [
-        "key",
-        4,
-        "a roll-table row's ref kind and a map pin's"
-      ]
-    ],
-    "lib/db/import-monsters.ts#str-startsWith": [
-      [
-        "key",
-        1,
-        "the homebrew ref prefix"
-      ]
-    ],
-    "lib/db/pacts.ts#str-eq": [
-      [
-        "key",
-        4,
-        "a stored pact's trigger and status"
-      ]
-    ],
-    "lib/db/prep-refs.ts#str-eq": [
-      [
-        "key",
-        3,
-        "a roll-table row's ref kind and a map pin's"
-      ]
-    ],
-    "lib/db/workshop-bundle-refs.ts#str-eq": [
-      [
-        "key",
-        2,
-        "a map pin's ref kind"
-      ]
-    ],
-    "lib/db/workshop-bundle-refs.ts#str-key": [
-      [
-        "key",
-        1,
-        "a map pin's ref kind"
-      ]
-    ],
-    "lib/db/workshop-bundle-shelf.ts#str-key": [
-      [
-        "key",
-        1,
-        "homebrew kinds"
-      ]
-    ],
-    "lib/homebrew/sheet-refs.ts#re-word": [
-      [
-        "english-source",
-        1,
-        "the feature line the builder writes for a non-caster's racial cantrip (\"Racial cantrip: X\")"
-      ]
-    ],
-    "lib/homebrew/sheet-refs.ts#str-eq": [
-      [
-        "key",
-        3,
-        "homebrew kinds, an improvement's mode and a feature's source"
-      ]
-    ],
-    "lib/homebrew/sheet-refs.ts#str-list": [
-      [
-        "key",
-        1,
-        "a sheet's spell list field names"
-      ]
-    ],
-    "lib/homebrew/sheet-refs.ts#toLowerCase": [
-      [
-        "key",
-        2,
-        "a subclass's class id, compared as stored"
-      ]
-    ],
-    "lib/workshop/bundle.ts#\\w": [
-      [
-        "key",
-        1,
-        "the portable \"homebrew:@kind:Name\" ref"
-      ]
-    ],
-    "lib/workshop/bundle.ts#re-word": [
-      [
-        "key",
-        1,
-        "the portable \"homebrew:@kind:Name\" ref"
-      ]
-    ],
-    "lib/srd/magic-item-value.ts#\\b": [
-      [
-        "english-source",
-        2,
-        "a spell scroll's level and a bare Spell Scroll row's name, as the content pack writes them"
-      ]
-    ],
-    "lib/srd/magic-item-value.ts#str-eq": [
-      [
-        "key",
-        1,
-        "the content pack's scroll category"
-      ]
-    ],
-    "lib/content/edition.ts#str-list": [
-      [
-        "english-source",
-        1,
-        "the 2024-only spells by their printed names, read by textKey"
-      ]
-    ],
-    "lib/srd/alignment.ts#str-includes": [
-      [
-        "english-extra",
-        5,
-        "an alignment's English words beside the two-letter code the builder stores at every table; a miss reads as no alignment, as one written in another language does"
-      ]
-    ],
-    "lib/srd/alignment.ts#str-key": [
-      [
-        "key",
-        1,
-        "the builder's alignment codes"
-      ]
-    ],
-    "lib/dm/pet-build.ts#str-list": [
-      [
-        "key",
-        2,
-        "tool schema enums and field names: a drake's essences and the features that name one"
-      ]
-    ],
-    "lib/dm/enemy-blow.ts#re-word": [
-      [
-        "key",
-        1,
-        "damage type (engine vocabulary): a part of a blow that is radiant"
-      ]
-    ],
-    "components/CorrectionReasonChips.tsx#str-eq": [
-      [
-        "key",
-        1,
-        "keyboard key"
-      ]
-    ],
-    "lib/content/species-variants.ts#[a-z]": [
-      [
-        "key",
-        3,
-        "option ids: lower-case letters and digits joined by dashes"
-      ]
-    ],
-    "lib/content/species-variants.ts#re-word": [
-      [
-        "english-source",
-        1,
-        "ODM's own feature-name words the table reads anywhere in a name (\"resistance\" in any form, \"breath weapon\"), refused in a species choice's label and option names"
-      ]
-    ],
-    "lib/content/species-variants.ts#str-eq": [
-      [
-        "display",
-        1,
-        "a skill id title-cased for display"
-      ]
-    ],
-    "lib/content/species-variants.ts#str-list": [
-      [
-        "key",
-        2,
-        "the field names an option holds"
-      ]
-    ],
-    "lib/content/species-variants.ts#toLowerCase": [
-      [
-        "key",
-        4,
-        "damage types and skill ids an option names"
-      ]
-    ],
-    "lib/content/species-variants.ts#toUpperCase": [
-      [
-        "display",
-        2,
-        "ability abbreviations, capitalised words"
-      ]
-    ],
-    "lib/dm/conversation-logic.ts#str-eq": [
-      [
-        "key",
-        4,
-        "a message's author type and an attributed speaker's kind (stored enums)"
-      ]
-    ],
-    "lib/srd/legality/species-variant.ts#toLowerCase": [
-      [
-        "display",
-        1,
-        "a species choice's label in a sentence"
-      ]
-    ],
-    "lib/homebrew/species-choice-server.ts#re-word": [
-      [
-        "english-source",
-        2,
-        "ODM's own feature-name words two engine readers find anywhere in a feature's name (\"see invisibility\", \"true seeing\", \"multiattack defense\"), refused in a species choice's label and option names on the server"
-      ]
-    ],
-    "lib/addons/board-bridge.ts#str-list": [
-      [
-        "key",
-        2,
-        "native action and control message keys; not player-written names"
-      ]
-    ],
-    "lib/addons/native-board-client.ts#str-eq": [
-      [
-        "key",
-        3,
-        "fixed DOM menu role and CSS pointer-events/visibility values used for native occlusion"
-      ]
-    ],
-    "lib/addons/native-board-client.ts#str-list": [
-      [
-        "key",
-        1,
-        "fixed DOM mutation attributes observed for native layout and occlusion updates"
-      ]
-    ],
-    "app/campaigns/[campaignId]/AddonBoardView.tsx#str-list": [
-      [
-        "key",
-        1,
-        "native input message kinds gated while a native panel or dialog is active"
-      ]
-    ],
-    "app/campaigns/[campaignId]/AddonBoardView.tsx#str-eq": [
-      [
-        "key",
-        1,
-        "fixed CSS visibility value gates native input behind an open visible dialog"
-      ]
-    ],
-    "lib/battlemap/area-shape.ts#\\b": [
-      [
-        "table-language",
-        5,
-        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
-      ],
-      [
-        "english-source",
-        2,
-        "the content pack's spell text: whether a blast lets its caster choose the creatures it catches (\"of your choice\", \"you choose\"), issue 570"
-      ]
-    ],
-    "lib/battlemap/area-shape.ts#\\w": [
-      [
-        "table-language",
-        1,
-        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
-      ]
-    ],
-    "lib/battlemap/area-shape.ts#re-word": [
-      [
-        "table-language",
-        5,
-        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
-      ],
-      [
-        "english-source",
-        1,
-        "the content pack's spell text: whether a blast lets its caster choose the creatures it catches (\"of your choice\", \"you choose\"), issue 570"
-      ]
-    ],
-    "lib/battlemap/area-shape.ts#str-eq": [
-      [
-        "table-language",
-        1,
-        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
-      ]
-    ],
-    "lib/battlemap/area-shape.ts#toLowerCase": [
-      [
-        "table-language",
-        3,
-        "meaning reader: an ability's range and area read from its text (pack rows, and the traits a workshop author writes)"
-      ]
-    ],
-    "lib/battlemap/area-shape.ts#str-key": [
-      [
-        "english-source",
-        1,
-        "reference: SRD spell and ability names with their areas"
-      ]
-    ],
-    "lib/battlemap/hand-area.ts#toLowerCase": [
-      [
-        "key",
-        1,
-        "a spell's damage type (engine vocabulary), keying the colour its blast is drawn in"
-      ]
-    ],
-    "lib/battlemap/hand-area.ts#str-key": [
-      [
-        "key",
-        1,
-        "a spell's damage type (engine vocabulary), keying the colour its blast is drawn in"
-      ]
-    ],
-    "lib/dm/intent-logic.ts#str-case": [
-      [
-        "key",
-        1,
-        "a card's first tool call by name, to share a casting out (issue 570)"
-      ]
-    ],
-    "lib/dm/slotless-cast-logic.ts#str-eq": [
-      [
-        "key",
-        1,
-        "tool names (engine vocabulary)"
-      ]
-    ],
-    "lib/locale.ts#toLowerCase": [
-      [
-        "key",
-        1,
-        "BCP 47 language tags from the browser (navigator.languages), parsed for the language prefix, never compared"
-      ]
-    ],
-    "lib/locale.ts#str-eq": [
-      [
-        "key",
-        4,
-        "BCP 47 language tags and the stored choice (auto, en, fr): fixed tokens, never a person's text"
-      ]
-    ],
-    "lib/messages-logic.ts#\\w": [
-      [
-        "key",
-        1,
-        "the dictionary placeholder slot's own {name} syntax, matched in templates the code wrote, never in a person's text"
-      ]
-    ],
-    "app/create-campaign/titles.ts#toUpperCase": [
-      [
-        "display",
-        1,
-        "a rolled title's first letter, shown, never compared"
-      ]
-    ],
-    "lib/dm/personality-labels.ts#str-key": [
-      [
-        "key",
-        1,
-        "a stock personality's seeded English name maps to its message key; a user-authored name passes through unkeyed"
       ]
     ]
   },

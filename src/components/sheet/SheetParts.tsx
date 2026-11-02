@@ -16,7 +16,8 @@ import { formatModifier, skillLabel, SRD_SKILLS } from "@/lib/srd";
 import { useLocale, useT } from "@/lib/locale";
 import { wearingIsExplicit } from "@/lib/srd/armor";
 import { oneOfKind, wornButIdle } from "@/lib/srd/wear-slots";
-import { rowName, srdNameWithBonus } from "@/lib/srd/item-row";
+import { magicItemBonus, rowName, srdNameWithBonus } from "@/lib/srd/item-row";
+import { classFeatureName, contentName } from "@/lib/content/names";
 
 // The pieces of the character sheet (docs/visual-overhaul-plan.md 8b.5), one
 // implementation drawn by both the session's sheet dialog and the character
@@ -322,6 +323,7 @@ export function EquipmentChips({
   // A worn second cloak (or pair of boots...) is marked as not in effect
   // (src/lib/srd/wear-slots.ts); one the DM let stand beside another says so.
   const t = useT();
+  const locale = useLocale();
   const explicit = wearingIsExplicit(equipment);
   const wornNote = (item: (typeof equipment)[number]) => {
     const idle = explicit ? wornButIdle(item, equipment) : null;
@@ -332,7 +334,15 @@ export function EquipmentChips({
   return (
     <InfoChipList
       items={equipment.map((item, index) => ({
-        name: item.qty > 1 ? `${item.name} x${item.qty}` : item.name,
+        // The name reads in the reader's language (gear, weapons, armor),
+        // the magic bonus riding on the translated base ("Épée longue +1");
+        // the reference and the icon stay keyed by the English row.
+        name:
+          (() => {
+            const shown = contentName("items", rowName(item), locale);
+            const bonus = magicItemBonus(item.name);
+            return `${bonus ? `${shown} +${bonus}` : shown}${item.qty > 1 ? ` x${item.qty}` : ""}`;
+          })(),
         icon: { kind: "item" as const, key: item.name, family: "item-gear" },
         note:
           [
@@ -361,11 +371,17 @@ export function FeatureChips({
 }) {
   // A genre class's feature text arrives on demand (issue 411).
   const t = useT();
+  const locale = useLocale();
   useClassFeatureText([classId, ...features.map((feature) => feature.classId)]);
   return (
     <InfoChipList
       items={features.map((feature) => ({
-        name: feature.name,
+        // The class's own features read in the reader's language; a story
+        // feature stays as the DM wrote it.
+        name:
+          feature.source === "story"
+            ? feature.name
+            : classFeatureName(feature.classId ?? classId, feature.name, locale),
         icon: { kind: "feature" as const, key: feature.name, family: `class-${classId.toLowerCase()}` },
         note: feature.source === "story" ? t("sheet.featureStory") : undefined,
         meta: feature.level ? t("sheet.featureLevel", { level: feature.level }) : undefined,
@@ -401,6 +417,7 @@ export function ConditionChips({
   // replaces the rounds tail, which it already includes.
   detail?: (condition: string) => string;
 }) {
+  const locale = useLocale();
   return (
     <div className="stagger-pop flex flex-wrap gap-1.5">
       {conditions.map((condition) => {
@@ -408,7 +425,7 @@ export function ConditionChips({
         return (
           <span key={condition} className="sheet-condition motion-pop" title={said || undefined}>
             <GameIcon icon={{ kind: "condition", key: conditionIconKey(condition) }} size="size-5" />
-            {condition}
+            {contentName("conditions", condition, locale)}
             {detail
               ? said
                 ? ` (${said})`

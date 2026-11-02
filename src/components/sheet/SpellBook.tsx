@@ -7,12 +7,13 @@ import { InfoButton } from "@/components/ui/InfoDialog";
 import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { contentSlug, describeContentEntry, spellRowConcentrates, spellSummary } from "@/lib/help";
 import { bundledSpellFacts } from "@/lib/srd/spell-facts";
 import { replayAnimation } from "@/lib/motion/replay";
 import { spellSupportFor, spellSupportWord } from "@/lib/srd/spell-support";
 import { compareNames, textKey } from "@/lib/language/text-logic";
+import { contentName } from "@/lib/content/names";
 import {
   ANY_SPELL_FILTER,
   NO_SPELL_FILTER,
@@ -156,6 +157,12 @@ export function SpellBook({
   prompt?: ReactNode;
 }) {
   const t = useT();
+  const locale = useLocale();
+  // A tile reads in the reader's language: an official spell in the maps,
+  // a pack's reskin (label) and a homebrew name as they were written. The
+  // tile's key, its icon and every pick sent stay the stored English name.
+  const shownName = (tile: SpellTile) =>
+    tile.label ?? (tile.homebrew ? tile.name : contentName("spells", tile.name, locale));
   const empty = emptyText ?? t("sheet.spells.none");
   const levelLabel = (key: string) =>
     key === "0" ? t("sheet.spells.cantrips") : key === "other" ? t("sheet.spells.otherLevels") : t("sheet.spells.levelSpells", { level: romanOf(key) });
@@ -427,8 +434,8 @@ export function SpellBook({
                     <StateMark state={tile.state} />
                   </span>
                   <span className="min-w-0">
-                    <span className="line-clamp-2 text-xs leading-tight [overflow-wrap:anywhere]" title={tile.label ?? tile.name}>
-                      {tile.label ?? tile.name}
+                    <span className="line-clamp-2 text-xs leading-tight [overflow-wrap:anywhere]" title={shownName(tile)}>
+                      {shownName(tile)}
                       {tileConcentrates(tile) ? <ConcentrationMark /> : null}
                       {tile.suggested ? (
                         <Star className="ml-1 inline size-3 fill-amber-300 text-amber-300" aria-label={t("sheet.spells.suggestedAria")} />
@@ -442,7 +449,7 @@ export function SpellBook({
                   </span>
                 </button>
                 <InfoButton
-                  label={tile.label ?? tile.name}
+                  label={shownName(tile)}
                   meta={summary}
                   text={described ?? undefined}
                   note={support ? `**${support.kind === "partial" ? "Partly by hand" : "Narrated"}.** ${support.manual}` : undefined}

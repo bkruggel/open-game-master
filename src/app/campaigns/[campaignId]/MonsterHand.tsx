@@ -5,7 +5,8 @@ import { memo, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { HandCardFace, HandPreviewRows, typeLabel, typeTone } from "@/app/campaigns/[campaignId]/HandCardFace";
 import type { HandCard } from "@/lib/battlemap/hand";
@@ -88,6 +89,10 @@ function MonsterHandInner({
   genre?: string | null;
 }) {
   const t = useT();
+  const locale = useLocale();
+  // A foe's stored name reads in the reader's language when the official
+  // maps carry it; everything sent (ids, invokes) keeps the stored name.
+  const shown = (name: string) => contentName("monsters", name, locale);
   const due = useMemo(() => encounter.enemiesDue ?? [], [encounter.enemiesDue]);
   const dueIds = useMemo(() => new Set(due.map((entry) => entry.id)), [due]);
   // The living enemies with actions to play, the due ones first, in the
@@ -147,7 +152,7 @@ function MonsterHandInner({
   const conditions = selected?.conditions ?? EMPTY;
   // Cheap enough to work out each render; the compiler memoizes what it can.
   const rows = picked ? previewRows(picked, picked.target === "none" ? null : defaultAim, conditions) : [];
-  const sentence = picked && selected ? monsterSentence(t, selected.name, picked, aimed.map((chip) => chip.name)) : "";
+  const sentence = picked && selected ? monsterSentence(t, shown(selected.name), picked, aimed.map((chip) => chip.name)) : "";
   const needsTarget = Boolean(picked && picked.target !== "none");
   const ready = Boolean(picked) && (!needsTarget || aimed.length > 0);
 
@@ -270,7 +275,7 @@ function MonsterHandInner({
         </span>
         <span className="hidden text-[11px] text-stone-500 sm:inline">
           {due.length
-            ? t("table.hand.monster.turnsHint", { name: current?.name ?? t("table.hand.monster.nextTurn") })
+            ? t("table.hand.monster.turnsHint", { name: current ? shown(current.name) : t("table.hand.monster.nextTurn") })
             : t("table.hand.monster.idleHint")}
         </span>
         <span className="ml-auto flex items-center gap-1">
@@ -334,7 +339,7 @@ function MonsterHandInner({
                 >
                   <span className={cn("text-[13px] leading-tight text-stone-200", acted && "text-stone-500 line-through")}>
                     {isDue ? <span className="mr-1 inline-block size-1.5 rounded-full bg-red-400 align-middle" aria-label={t("table.hand.monster.due")} /> : null}
-                    {enemy.name}
+                    {shown(enemy.name)}
                   </span>
                   <span className="font-mono text-[10px] leading-tight text-stone-500">
                     {enemy.currentHp !== undefined ? t("table.hand.target.hpNote", { hp: enemy.currentHp, max: enemy.maxHp ?? 0 }) : enemy.health}
@@ -354,7 +359,7 @@ function MonsterHandInner({
             data-aiming={picked ? "true" : undefined}
             data-folding={leaving ? "true" : undefined}
             role="group"
-            aria-label={t("table.hand.monster.cardsAria", { name: selected.name })}
+            aria-label={t("table.hand.monster.cardsAria", { name: shown(selected.name) })}
           >
             {cards.map((card, index) => (
               <HandCardFace
@@ -387,13 +392,13 @@ function MonsterHandInner({
                   {typeLabel(t, picked.type)}
                 </span>
                 <span className="min-w-0 truncate font-display text-sm font-semibold text-amber-100">
-                  {selected.name} · {picked.name}
+                  {shown(selected.name)} · {picked.name}
                 </span>
                 <span className="ml-auto min-w-0 truncate text-xs text-stone-400">
                   {!needsTarget
                     ? t("table.hand.bar.hintReady")
                     : aimed.length
-                      ? t("table.hand.bar.hintAim", { name: aimed.map((chip) => chip.name).join(", ") })
+                      ? t("table.hand.bar.hintAim", { name: aimed.map((chip) => shown(chip.name)).join(", ") })
                       : many
                         ? t("table.hand.monster.hintMany")
                         : t("table.hand.monster.hintTarget")}
@@ -412,7 +417,7 @@ function MonsterHandInner({
                         onClick={() => toggleTarget(chip.id)}
                         className={cn(ui.btnSmall, "hand-target min-h-11 flex-col items-start gap-0 px-3 py-1 text-left sm:min-h-9")}
                       >
-                        <span className="text-[13px] leading-tight text-stone-200">{chip.name}</span>
+                        <span className="text-[13px] leading-tight text-stone-200">{shown(chip.name)}</span>
                         <span className="font-mono text-[10px] leading-tight text-stone-500">{chip.note}</span>
                       </button>
                     ))

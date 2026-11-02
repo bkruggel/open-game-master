@@ -13,7 +13,8 @@ import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { cn } from "@/lib/cn";
 import { downloadBlob } from "@/lib/download";
 import { downloadCharacterSheetPdf } from "@/lib/pdf/download";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
 import { CharacterPortrait, ui } from "@/lib/ui";
 import { offersImages, useCapabilities } from "@/lib/use-capabilities";
@@ -68,6 +69,7 @@ export default function CharacterDetailPage({
 }) {
   const { characterId } = use(params);
   const t = useT();
+  const locale = useLocale();
   const [character, setCharacter] = useState<LibraryCharacter | null>(null);
   const [events, setEvents] = useState<CharacterEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -396,10 +398,14 @@ export default function CharacterDetailPage({
                 <GameIcon icon={{ kind: "glyph", key: "rest-level-up" }} size="size-5" />
                 {t("characters.levelBadge", { level: character.level })}
               </span>
-              {character.raceLabel ?? titleCase(character.race)}{" "}
-              {classWordsAfterLevel({ ...character, classes: character.sheet?.classes }, (id) => workshopClassName(id) ?? titleCase(id))}
+              {contentName("species", character.raceLabel ?? titleCase(character.race), locale)}{" "}
+              {classWordsAfterLevel({ ...character, classes: character.sheet?.classes }, (id) =>
+                workshopClassName(id) ?? contentName("classes", titleCase(id), locale),
+              )}
               {character.subclass ? ` (${character.subclass})` : ""}
-              {character.background ? ` · ${character.backgroundLabel ?? titleCase(character.background)}` : ""}
+              {character.background
+                ? ` · ${contentName("backgrounds", character.backgroundLabel ?? titleCase(character.background), locale)}`
+                : ""}
             </p>
             {!sheet.portrait && character.portraitStatus === "failed" ? (
               <p className="reveal mt-1 text-xs text-stone-500">{t("characters.portraitNotGenerated")}</p>

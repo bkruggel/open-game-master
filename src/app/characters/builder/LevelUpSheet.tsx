@@ -15,7 +15,8 @@ import { subclassBlurb, subclassLevelFor } from "@/lib/srd/features";
 import { racialFeatCount } from "@/lib/srd/race-id";
 import { withSpeciesVariant } from "@/lib/content/species-variants";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import { applyClassReskins, applyIdReskins } from "@/lib/worlds/reskin-logic";
 import AsiFeatEditor from "./AsiFeatEditor";
 import FeatChoicesFields, { knownTraining } from "./FeatChoicesFields";
@@ -100,6 +101,7 @@ function LevelUpSheetForm({
 }) {
   useEffectsRoot();
 const t = useT();
+  const locale = useLocale();
     const nextLevel = Math.min(20, initialLevel + 1);
   const { races: rawRaces, classes: rawClasses, backgrounds: rawBackgrounds, loaded } = useBuilderOptions(initial.race);
   // The library builds with no world pack: names as the rows hold them.
@@ -379,7 +381,7 @@ const t = useT();
                 ) : (
                   <span className="grow">
                     <span className="text-amber-300">{t("builder.levelup.stillToChoose")}</span>
-                    {t("builder.levelup.subclassWhy", { class: klass.name.toLowerCase(), level: pickLevel ?? 0 })}
+                    {t("builder.levelup.subclassWhy", { class: contentName("classes", klass.name, locale).toLowerCase(), level: pickLevel ?? 0 })}
                   </span>
                 )}
               </span>
@@ -429,7 +431,7 @@ const t = useT();
         {showSpells && klass ? <SpellsSection state={state} derived={derived} klass={klass} pack={null} /> : null}
 
         {showRacialCantrips && race ? (
-          <StepPanel title={t("builder.levelup.raceChoices", { race: race.name })}>
+          <StepPanel title={t("builder.levelup.raceChoices", { race: contentName("species", race.name, locale) })}>
             <RacialCantripPicker race={race} cantrips={state.racialCantrips} onChange={state.setRacialCantrips} />
           </StepPanel>
         ) : null}

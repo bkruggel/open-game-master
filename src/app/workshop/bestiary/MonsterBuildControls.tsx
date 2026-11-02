@@ -12,6 +12,8 @@ import { crLabel } from "@/lib/bestiary/derive-cr";
 import { CR_CHOICES, type Found } from "@/app/workshop/bestiary/types";
 import { needsLabel } from "@/lib/content/levelup-logic";
 import { BEST_EFFORT_CHIP } from "@/lib/content/reading-logic";
+import { contentName } from "@/lib/content/names";
+import { useLocale } from "@/lib/locale";
 
 const CR_OPTIONS = CR_CHOICES.map((cr) => ({ value: String(cr), label: crLabel(cr) }));
 
@@ -50,6 +52,10 @@ export function MonsterBuildControls({
 }) {
   const [newName, setNewName] = useState("");
   const [newCr, setNewCr] = useState(1);
+  // A found row's official name reads in the reader's language; the copy the
+  // press makes is still named from the row, in English (a bestiary name is
+  // the author's own from there on).
+  const locale = useLocale();
 
   async function create(body: Record<string, unknown>) {
     if (await onCreate(body)) {
@@ -135,7 +141,8 @@ export function MonsterBuildControls({
                 name={entry.name}
                 size="size-7"
               />
-              {entry.name} <span className="text-stone-600">CR {crLabel(entry.cr)}</span>
+              {contentName("monsters", { slug: entry.slug, name: entry.name }, locale)}{" "}
+              <span className="text-stone-600">CR {crLabel(entry.cr)}</span>
               {/* Built on rules this game does not play: copy it to change
                   that part (issue #570). */}
               {entry.needs?.length ? <span className="text-orange-300/90">{needsLabel(entry.needs)}</span> : null}

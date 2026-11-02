@@ -8,6 +8,9 @@ import { armorChangeMinutes } from "@/lib/dm/don-doff";
 import { matchArmor } from "@/lib/srd/armor";
 import { matchMagicItem } from "@/lib/srd/magic-items";
 import { swapQuestion, wearConflict, type WearConflict } from "@/lib/srd/wear-slots";
+import { contentName } from "@/lib/content/names";
+import { magicItemBonus, rowName } from "@/lib/srd/item-row";
+import { useLocale } from "@/lib/locale";
 import type { CharacterSheet, EquipmentItem } from "@/lib/schemas/sheet";
 
 // One wearable item on the character sheet: its charges, whether it is
@@ -53,6 +56,15 @@ export function SheetGearRow({
   // Magic gear works only while worn, so every row here can
   // be put on; only body armor is barred in a fight.
   const t = useT();
+  const locale = useLocale();
+  // The row reads in the reader's language (gear, weapons, armor), the magic
+  // bonus riding on the translated base; the row's own key, the icon and
+  // every patch sent stay the stored English name.
+  const shownName = (() => {
+    const shown = contentName("items", { slug: item.slug, name: rowName(item) }, locale);
+    const bonus = magicItemBonus(item.name);
+    return bonus ? `${shown} +${bonus}` : shown;
+  })();
   const isArmor = matchArmor(item) !== null;
   const isShield = matchArmor(item)?.category === "shield";
   const armorLocked = inCombat && isArmor && !isShield;
@@ -72,7 +84,7 @@ export function SheetGearRow({
     <>
     <div data-gear-row={item.name} className="flex items-center gap-2 text-xs text-stone-300">
       <GameIcon icon={{ kind: "item", key: item.name, family: "item-gear" }} size="size-6" />
-      <span className="min-w-0 grow truncate">{item.name}</span>
+      <span className="min-w-0 grow truncate">{shownName}</span>
       {idle ? (
         <span className="motion-pop shrink-0 rounded-full border border-stone-700 px-1.5 text-[10px] text-stone-400" title={t("sheet.gear.idleTitle", { kind: idle })}>
           {t("sheet.gear.idle")}
@@ -156,11 +168,11 @@ export function SheetGearRow({
       ) : null}
     </div>
     {conflict ? (
-      <div role="group" aria-label={t("sheet.gear.wearAsk", { name: item.name })} className="reveal ml-8 space-y-1.5 rounded border border-amber-800/60 bg-amber-950/30 px-2 py-1.5 text-[11px] text-amber-100">
+      <div role="group" aria-label={t("sheet.gear.wearAsk", { name: shownName })} className="reveal ml-8 space-y-1.5 rounded border border-amber-800/60 bg-amber-950/30 px-2 py-1.5 text-[11px] text-amber-100">
         <p>{swapQuestion(conflict)}</p>
         <div className="flex flex-wrap gap-1.5">
           <button type="button" disabled={busy} onClick={onSwap} className="motion-press rounded border border-amber-700/70 bg-amber-950/40 px-1.5 py-0.5 text-amber-200 disabled:opacity-40">
-            {t("sheet.gear.swap", { off: conflict.wearing.join(" and "), name: item.name })}
+            {t("sheet.gear.swap", { off: conflict.wearing.join(" and "), name: shownName })}
           </button>
           {canLayer ? (
             <button type="button" disabled={busy} onClick={onLayer} title={t("sheet.gear.wearBothTitle")} className="motion-press rounded border border-stone-600 px-1.5 py-0.5 text-stone-200 disabled:opacity-40">

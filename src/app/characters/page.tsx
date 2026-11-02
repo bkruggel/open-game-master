@@ -18,7 +18,8 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import { Ribbon } from "@/components/ui/Ribbon";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import { navigateTo } from "@/lib/navigation";
 import { prefersReducedMotion, useLowEffects } from "@/lib/effects-mode";
 import { PortraitToast, RosterPortraitSlot, RosterPortraitStatus } from "@/app/characters/RosterPortrait";
@@ -478,6 +479,7 @@ function CharacterCard({
 }) {
   const router = useRouter();
   const t = useT();
+  const locale = useLocale();
   // Everything the card can do, once: the kebab in its corner, a right-click
   // and a long press all raise this list.
   const menu: ContextMenuItem[] = [
@@ -517,17 +519,21 @@ function CharacterCard({
             <span className="inline-flex rounded-full border border-amber-500/30 bg-amber-400/10 px-2 py-0.5 text-[11px] text-amber-200">
               {t("characters.card.level", { level: character.level })}{" "}
               {classWordsAfterLevel({ ...character, classes: character.sheet?.classes }, (id) =>
-                id === character.class ? (character.className ?? titleCase(id)) : titleCase(id),
+                id === character.class
+                  ? (character.className ?? contentName("classes", titleCase(id), locale))
+                  : contentName("classes", titleCase(id), locale),
               )}
             </span>
           </div>
         </div>
         <p className="mt-2 text-sm text-stone-400">
-          {character.raceLabel ?? titleCase(character.race)}
+          {contentName("species", character.raceLabel ?? titleCase(character.race), locale)}
           {character.subclass ? ` (${character.subclass})` : ""}
         </p>
         {character.background ? (
-          <p className="reveal text-xs text-stone-500">{character.backgroundLabel ?? titleCase(character.background)}</p>
+          <p className="reveal text-xs text-stone-500">
+            {contentName("backgrounds", character.backgroundLabel ?? titleCase(character.background), locale)}
+          </p>
         ) : null}
       </Link>
       <RosterPortraitStatus

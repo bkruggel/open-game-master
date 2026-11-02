@@ -16,10 +16,11 @@ import {
   type CasterView,
 } from "@/lib/srd/spell-prep";
 import { SpellBook, type SpellTile } from "./SpellBook";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { useSpellLookups, useSpellPool, type PoolSpell } from "./useSpellPool";
 import { textKey } from "@/lib/language/text-logic";
 import { revisedOnlySpellProblem } from "@/lib/content/edition";
+import { contentName } from "@/lib/content/names";
 
 // A character's spells as a spell book, one per caster class. The owner of a
 // prepared caster can change what is prepared right here: unpreparing takes
@@ -96,6 +97,7 @@ function CasterBook({
   showClass: boolean;
 }) {
   const t = useT();
+  const locale = useLocale();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "note" | "error"; text: string } | null>(null);
@@ -185,7 +187,7 @@ function CasterBook({
   return (
     <div>
       {showClass ? (
-        <p className="eyebrow mb-1.5 text-[10px] text-amber-400/80">{titleCase(view.classId)}</p>
+        <p className="eyebrow mb-1.5 text-[10px] text-amber-400/80">{contentName("classes", titleCase(view.classId), locale)}</p>
       ) : null}
       <SpellBook
         tiles={tiles}

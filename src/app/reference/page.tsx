@@ -27,6 +27,7 @@ import { BEST_EFFORT_NOTE } from "@/lib/content/reading-logic";
 import { MAX_COMPARE, type CompareKind } from "@/lib/reference/compare";
 import { textKey } from "@/lib/language/text-logic";
 import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import type { MessageKey } from "@/lib/messages/en";
 
 // Which painted icon set a reference category draws from (src/lib/icons.ts).
@@ -110,6 +111,26 @@ function categoryGlyph(kind: Kind): string {
 // The two kinds compare.ts knows how to put side by side.
 function comparableKind(kind: Kind): CompareKind | null {
   return kind === "spells" || kind === "monsters" ? kind : null;
+}
+
+// A tab's table in the official-name maps, for the row titles: the races'
+// tab reads the species' names, items the carried gear's. Glossary terms and
+// house rules are not rows and carry their own French where they have it.
+function kindTable(kind: Kind): "spells" | "monsters" | "species" | "backgrounds" | "conditions" | "items" {
+  switch (kind) {
+    case "spells":
+      return "spells";
+    case "monsters":
+      return "monsters";
+    case "races":
+      return "species";
+    case "backgrounds":
+      return "backgrounds";
+    case "conditions":
+      return "conditions";
+    default:
+      return "items";
+  }
 }
 
 // The plate at the head of a result. GameIcon draws nothing when a thing has
@@ -263,7 +284,7 @@ export default function ReferencePage() {
     const notes = [needsNote(row.needs ?? []), row.bestEffort ? BEST_EFFORT_NOTE : null].filter(Boolean);
     const text = describeContentEntry(row.data) ?? t("docs.ref.noDescription");
     setOpen({
-      title: row.name,
+      title: contentName(kindTable(kind), row, locale),
       meta: kind === "spells" ? spellSummary(row.data) : undefined,
       text: notes.length ? `${notes.join("\n\n")}\n\n${text}` : text,
     });
@@ -457,7 +478,7 @@ export default function ReferencePage() {
                       <button
                         type="button"
                         onClick={() => toggleCompare(row)}
-                        aria-label={t("docs.ref.compareAria", { name: row.name })}
+                        aria-label={t("docs.ref.compareAria", { name: contentName(kindTable(rowsKind), row, locale) })}
                         aria-pressed={picked.has(row.slug)}
                         title={picked.has(row.slug) ? t("docs.ref.compareOn") : t("docs.ref.compareOff")}
                         className={cn(
@@ -479,7 +500,7 @@ export default function ReferencePage() {
                             row.source === "homebrew" ? "text-amber-300" : "text-stone-100",
                           )}
                         >
-                          {row.name}
+                          {contentName(kindTable(rowsKind), row, locale)}
                         </span>
                         {/* The spell level that sat here is the first chip now. */}
                         <ResultBadges category={rowsKind} row={row} />

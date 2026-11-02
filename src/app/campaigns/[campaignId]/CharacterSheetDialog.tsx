@@ -48,6 +48,8 @@ import { namesLookup } from "@/lib/battlemap/condition-notes";
 import { workshopClassName } from "@/lib/classes/workshop-registry";
 import { StoryHopes } from "@/app/campaigns/[campaignId]/StoryHopes";
 import { classWordsAfterLevel, isSplit } from "@/lib/characters/class-words";
+import { contentName } from "@/lib/content/names";
+import { useLocale } from "@/lib/locale";
 
 function titleCase(value: string) {
   return value.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -111,6 +113,15 @@ export function CharacterSheetDialog({
   onClose: () => void;
 }) {
   const t = useT();
+  const locale = useLocale();
+  // The sheet line reads its official names in the reader's language: a
+  // species, one of the twelve classes, a background it carries. A workshop
+  // class or a homebrew label stays as it was written.
+  const speciesShown = contentName("species", sheet.raceLabel ?? titleCase(sheet.race), locale);
+  const classShown = (id: string) => workshopClassName(id) ?? contentName("classes", titleCase(id), locale);
+  const backgroundShown = sheet.background
+    ? contentName("backgrounds", sheet.backgroundLabel ?? titleCase(sheet.background), locale)
+    : "";
   const derived = computeSheetDerived(sheet);
   const armor = acBreakdownFor(sheet);
   const attunedCount = sheet.equipment.filter((item) => item.attuned).length;
@@ -235,11 +246,11 @@ export function CharacterSheetDialog({
                   {sheet.name}
                 </Dialog.Title>
                 <p className="text-xs text-stone-400">
-                  {t("table.sheet.level", { level: sheet.level })} {sheet.raceLabel ?? titleCase(sheet.race)}{" "}
+                  {t("table.sheet.level", { level: sheet.level })} {speciesShown}{" "}
                   {isSplit(sheet)
-                    ? classWordsAfterLevel(sheet, (id) => workshopClassName(id) ?? titleCase(id))
-                    : `${workshopClassName(sheet.class) ?? titleCase(sheet.class)}${sheet.subclass ? ` (${titleCase(sheet.subclass)})` : ""}`}
-                  {sheet.background ? ` · ${sheet.backgroundLabel ?? titleCase(sheet.background)}` : ""}
+                    ? classWordsAfterLevel(sheet, classShown)
+                    : `${classShown(sheet.class)}${sheet.subclass ? ` (${titleCase(sheet.subclass)})` : ""}`}
+                  {backgroundShown ? ` · ${backgroundShown}` : ""}
                   {sheet.alignment ? ` · ${sheet.alignment}` : ""}
                 </p>
               </div>
@@ -325,7 +336,7 @@ export function CharacterSheetDialog({
           {sheet.wildShape ? (
             <div className="reveal mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-lime-800/60 bg-lime-950/40 px-3 py-2 text-sm text-lime-200">
               <span className="flex items-center gap-1.5 font-medium capitalize">
-                <PawPrint className="size-4" /> {t("table.sheet.wildShape", { form: sheet.wildShape.form })}
+                <PawPrint className="size-4" /> {t("table.sheet.wildShape", { form: contentName("monsters", sheet.wildShape.form, locale) })}
               </span>
               <span className="font-mono text-xs">
                 {t("table.sheet.beastHp", { hp: sheet.wildShape.beastHp, max: sheet.wildShape.beastMaxHp })}

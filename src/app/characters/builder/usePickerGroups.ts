@@ -10,6 +10,9 @@ import { subclassBlurb, subclassGate, subclassNamesFor } from "@/lib/srd/feature
 import { packRecommends, type Reskinned } from "@/lib/worlds/reskin-logic";
 import type { WorldPack } from "@/lib/worlds/types";
 import type { PickerGroup, PickerOption } from "./OptionPicker";
+import { contentName } from "@/lib/content/names";
+import { useLocale } from "@/lib/locale";
+import type { Locale } from "@/lib/messages-logic";
 import type {
   ArchetypeOption,
   BackgroundOption,
@@ -192,6 +195,17 @@ export function backgroundInfoText(entry: {
   return parts.length ? parts.join("\n\n") : undefined;
 }
 
+// An option's own name reads in the reader's language when the official
+// maps carry it; a pack's reskin (packName) is its author's words and
+// stays. The id picked stays whatever it always was.
+function shownOption<T extends { name: string; packName?: string }>(
+  entry: T,
+  table: "species" | "classes" | "backgrounds",
+  locale: Locale,
+): string {
+  return entry.packName ? entry.name : contentName(table, entry.name, locale);
+}
+
 export function usePickerGroups({
   races,
   rawRaces,
@@ -217,6 +231,7 @@ export function usePickerGroups({
   effectiveLevel: number;
   archetypes: ArchetypeOption[];
 }) {
+  const locale = useLocale();
   const steered = genre && genre !== "custom" && genre !== "high_fantasy" ? genre : null;
 
   const raceTier = useMemo(
@@ -278,7 +293,7 @@ export function usePickerGroups({
     // not: a pack's recommended tier mixes books.
     const toOption = (entry: Reskinned<RaceOption>, showSource: boolean): PickerOption => ({
       id: entry.id,
-      name: entry.name,
+      name: shownOption(entry, "species", locale),
       // Under a reskin the canonical name goes in the meta column, so a
       // player always knows which SRD race they are actually taking.
       meta: entry.packName ? canonicalName(rawRaces, entry.id) : undefined,
@@ -306,12 +321,12 @@ export function usePickerGroups({
       return books.map((book) => ({ label: book.label, options: book.options.map((entry) => toOption(entry, false)) }));
     }
     return [{ label: null, options: races.map((entry) => toOption(entry, false)) }];
-  }, [races, rawRaces, raceTier, pack]);
+  }, [races, rawRaces, raceTier, pack, locale]);
 
   const classGroups = useMemo<PickerGroup[]>(() => {
     const toOption = (entry: Reskinned<ClassOption>, showSource: boolean): PickerOption => ({
       id: entry.id,
-      name: entry.name,
+      name: shownOption(entry, "classes", locale),
       meta: entry.packName
         ? `d${entry.hitDie} · ${canonicalName(rawClasses, entry.id)}`
         : entry.spellAbility
@@ -349,7 +364,7 @@ export function usePickerGroups({
       ];
     }
     return [{ label: null, options: classTier.other.map((entry) => toOption(entry, false)) }];
-  }, [classTier, rawClasses, pack]);
+  }, [classTier, rawClasses, pack, locale]);
 
   // The subclasses we have real feature tables for, offered once the chosen
   // level reaches the class's subclass level. The workshop's subclasses come
@@ -436,7 +451,7 @@ export function usePickerGroups({
   const backgroundGroups = useMemo<PickerGroup[]>(() => {
     const toOption = (entry: Reskinned<BackgroundOption>, showSource: boolean): PickerOption => ({
       id: entry.id,
-      name: entry.name,
+      name: shownOption(entry, "backgrounds", locale),
       meta: entry.skills
         .map((skillId) => SRD_SKILLS.find((skill) => skill.id === skillId)?.name ?? skillId)
         .join(", "),
@@ -472,7 +487,7 @@ export function usePickerGroups({
       ];
     }
     return [{ label: null, options: backgroundTier.other.map((entry) => toOption(entry, false)) }];
-  }, [backgroundTier, pack]);
+  }, [backgroundTier, pack, locale]);
 
   return {
     alignmentGroups,

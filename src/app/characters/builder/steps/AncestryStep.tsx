@@ -335,6 +335,9 @@ export function lineageSlidesFor(
     return [
       {
         ...entry,
+        // The name as the picker shows it, in the reader's language; the art
+        // and the heritage reads keep the English entry name.
+        name: option.name,
         art: lineageArt(entry.id, `${option.meta ?? ""} ${entry.name}`, gender),
         canonical: option.meta,
         // Named on the card only where the group heading is not the book.

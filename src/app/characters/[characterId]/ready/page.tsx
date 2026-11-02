@@ -12,6 +12,8 @@ import { freshPlaySheet, revealLine, threeThingsToTry } from "@/lib/characters/h
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
 import { classLevelWords, isSplit } from "@/lib/characters/class-words";
 import { workshopClassName } from "@/lib/classes/workshop-registry";
+import { contentName } from "@/lib/content/names";
+import { useLocale } from "@/lib/locale";
 import { CharacterPortrait, ui } from "@/lib/ui";
 import { UseInCampaignDialog } from "../UseInCampaignDialog";
 
@@ -49,6 +51,7 @@ function spaced(value: string) {
 
 export default function HeroReadyPage({ params }: { params: Promise<{ characterId: string }> }) {
   const { characterId } = use(params);
+  const locale = useLocale();
   const [character, setCharacter] = useState<ReadyCharacter | null>(null);
   const [loading, setLoading] = useState(true);
   const [seating, setSeating] = useState(false);
@@ -150,13 +153,13 @@ export default function HeroReadyPage({ params }: { params: Promise<{ characterI
   }
 
   const portraitUrl = character.sheet.portrait?.url;
-  const ancestry = character.raceLabel ?? spaced(character.race);
+  const ancestry = contentName("species", character.raceLabel ?? spaced(character.race), locale);
   // A split names each class's levels (backlog F9); one class reads the
   // server's name for it, a workshop class's included.
   const split = { ...character, classes: character.sheet.classes };
   const classWords = isSplit(split)
-    ? classLevelWords(split, (id) => workshopClassName(id) ?? spaced(id))
-    : (character.className ?? spaced(character.class));
+    ? classLevelWords(split, (id) => workshopClassName(id) ?? contentName("classes", spaced(id), locale))
+    : (character.className ?? contentName("classes", spaced(character.class), locale));
   const calling = `${classWords}${character.subclass ? ` (${spaced(character.subclass)})` : ""}`;
   const motion = lowEffects ? "" : "reveal";
 

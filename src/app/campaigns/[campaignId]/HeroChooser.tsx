@@ -17,6 +17,8 @@ import type { Genre } from "@/lib/schemas/game-settings";
 import { findClass } from "@/lib/srd";
 import { workshopClassName } from "@/lib/classes/workshop-registry";
 import { classWordsAfterLevel } from "@/lib/characters/class-words";
+import { contentName } from "@/lib/content/names";
+import { useLocale } from "@/lib/locale";
 
 export type ChooserCharacter = {
   id: string;
@@ -86,6 +88,7 @@ export function HeroChooser({
   onHelpMeBuild: () => void;
   onSeated: () => void;
 }) {
+  const locale = useLocale();
   const [workshops, setWorkshops] = useState<Record<string, string>>({});
   // Which of a library character's classes come from another setting than
   // the table's: said on the card before it joins, never refused (issue
@@ -168,8 +171,10 @@ export function HeroChooser({
             ) : null}
           </div>
           <p className="mt-1 text-sm text-stone-400">
-            Level {character.level} {character.raceLabel ?? titleCase(character.race)}{" "}
-            {classWordsAfterLevel({ ...character, classes: character.sheet?.classes }, (id) => workshopClassName(id) ?? titleCase(id))}
+            Level {character.level} {contentName("species", character.raceLabel ?? titleCase(character.race), locale)}{" "}
+            {classWordsAfterLevel({ ...character, classes: character.sheet?.classes }, (id) =>
+              workshopClassName(id) ?? contentName("classes", titleCase(id), locale),
+            )}
             {character.subclass ? ` (${character.subclass})` : ""}
           </p>
           {from ? <p className="mt-0.5 text-xs text-stone-500">From {from}</p> : null}
@@ -222,7 +227,8 @@ export function HeroChooser({
                     <GameIcon icon={{ kind: "family", key: `class-${pregen.class.toLowerCase()}` }} size="size-7" className="ml-auto" />
                   </div>
                   <p className="mt-1 text-sm text-stone-400">
-                    Level {pregen.level} {titleCase(pregen.race)} {workshopClassName(pregen.class) ?? titleCase(pregen.class)}
+                    Level {pregen.level} {contentName("species", titleCase(pregen.race), locale)}{" "}
+                    {workshopClassName(pregen.class) ?? contentName("classes", titleCase(pregen.class), locale)}
                     {pregen.subclass ? ` (${pregen.subclass})` : ""}
                   </p>
                   {pregen.taken === "mine" ? (

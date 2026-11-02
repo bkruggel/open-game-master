@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Ability } from "@/lib/schemas/sheet";
 import { useLowEffects } from "@/lib/effects-mode";
@@ -216,6 +217,7 @@ function PicksSoFar({
   gender: BuilderState["gender"];
 }) {
   const t = useT();
+  const locale = useLocale();
   const headingId = useId();
   const slide = useMemo(
     () => (race ? lineageSlidesFor(raceGroups, races, gender).find((entry) => entry.id === race.id) : undefined),
@@ -266,7 +268,7 @@ function PicksSoFar({
       </table>
       {klass ? (
         <div data-picked="class">
-          <h3 className={title}>{klass.name}</h3>
+          <h3 className={title}>{contentName("classes", klass.name, locale)}</h3>
           <InfoBody
             large
             meta={classDetailsMeta(t, { id: klass.id, saves: klass.saves, reading: classRoles(klass) }).join(" · ")}
