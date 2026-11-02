@@ -219,9 +219,9 @@ export const MessageItem = memo(function MessageItem({
     // The DM's out-of-character answer to table talk put to it
     // (src/lib/dm/ooc-question.ts): an aside, not a passage, so none of a
     // passage's actions and none of its type.
-    const asideActions: MessageAction[] = [copyAction(message)];
+    const asideActions: MessageAction[] = [copyAction(t, message)];
     if (onReport) {
-      asideActions.push(reportAction(message, onReport, true));
+      asideActions.push(reportAction(t, message, onReport, true));
     }
     return (
       <ContextMenu items={toContextItems(asideActions)} label={t("table.author.gm")} className="session-dm-aside group max-w-[92%] animate-fade-up sm:max-w-2xl">
@@ -341,12 +341,12 @@ export const MessageItem = memo(function MessageItem({
         },
       });
     }
-    actions.push(copyAction(message));
+    actions.push(copyAction(t, message));
     if (onDispute) {
-      actions.push(disputeAction(message, onDispute));
+      actions.push(disputeAction(t, message, onDispute));
     }
     if (onReport) {
-      actions.push(reportAction(message, onReport, true));
+      actions.push(reportAction(t, message, onReport, true));
     }
     const menuActions = actions.map((action) => ({
       ...action,

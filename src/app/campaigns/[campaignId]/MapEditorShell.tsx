@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Minus, Plus, Redo2, Undo2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import type { CanvasControls } from "@/app/campaigns/[campaignId]/TerrainCanvas";
 import { MapRail } from "@/app/campaigns/[campaignId]/MapRail";
 import { hasDials } from "@/app/campaigns/[campaignId]/MapOptions";
@@ -91,6 +92,7 @@ export function MapEditorShell({
   closeGap?: boolean;
   className?: string;
 }) {
+  const t = useT();
   const rootRef = useRef<HTMLDivElement>(null);
   const [wide, setWide] = useState(false);
   const [sheet, setSheet] = useState<"tool" | "layers" | null>(null);
@@ -147,10 +149,10 @@ export function MapEditorShell({
   );
   const zoomer = (
     <span className="flex shrink-0 items-center gap-1">
-      <button type="button" aria-label="Zoom out" onClick={() => controls.current?.zoomOut()} className="flex size-8 items-center justify-center rounded-md border border-stone-700 text-stone-400 hover:text-amber-200">
+      <button type="button" aria-label={t("map.zoomOut")} onClick={() => controls.current?.zoomOut()} className="flex size-8 items-center justify-center rounded-md border border-stone-700 text-stone-400 hover:text-amber-200">
         <Minus className="size-3.5" />
       </button>
-      <button type="button" aria-label="Zoom in" onClick={() => controls.current?.zoomIn()} className="flex size-8 items-center justify-center rounded-md border border-stone-700 text-stone-400 hover:text-amber-200">
+      <button type="button" aria-label={t("map.zoomIn")} onClick={() => controls.current?.zoomIn()} className="flex size-8 items-center justify-center rounded-md border border-stone-700 text-stone-400 hover:text-amber-200">
         <Plus className="size-3.5" />
       </button>
       <button

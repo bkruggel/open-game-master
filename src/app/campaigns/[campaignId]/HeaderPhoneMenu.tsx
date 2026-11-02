@@ -13,6 +13,7 @@ import type { SessionControl } from "@/app/campaigns/[campaignId]/SessionHoldBan
 import type { PrepControl } from "@/app/campaigns/[campaignId]/SessionHeader";
 import { RulebookDialog } from "@/components/rulebook/RulebookDialog";
 import { Slider } from "@/components/ui/Slider";
+import { useT } from "@/lib/locale";
 
 // The table menu on a phone. Below sm the header has room for the way out,
 // the title and four buttons; the rest of the table-wide controls (a break,
@@ -44,6 +45,7 @@ export function HeaderPhoneMenu({
   // story or the party lead.
   session?: SessionControl;
 }) {
+  const t = useT();
   const [soundOpen, setSoundOpen] = useState(false);
   const [rulebookOpen, setRulebookOpen] = useState(false);
   const row = "session-menu-row";
@@ -67,7 +69,7 @@ export function HeaderPhoneMenu({
   const notePress = () => {
     enablingRef.current = !narration.unlocked && !narration.muted;
   };
-  const soundState = ambienceEnabled ? soundSummary(ambience) : null;
+  const soundState = ambienceEnabled ? soundSummary(t, ambience) : null;
   return (
     <div className="relative sm:hidden">
       <DropdownMenu.Root>

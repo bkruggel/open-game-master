@@ -24,10 +24,11 @@ import { Select } from "@/components/ui/Select";
 import { Slider } from "@/components/ui/Slider";
 import { PanelError, kitButtonClass, panelField } from "./PanelKit";
 import type { OverworldTile, TileSkin } from "@/lib/overworld/logic";
+import { DEFAULT_SKIN } from "@/lib/overworld/logic";
 import {
+  brushLabelKey,
   MAX_BRUSH_RADIUS,
   OVERWORLD_BRUSHES,
-  OVERWORLD_BRUSH_LABELS,
   OVERWORLD_BRUSH_TILES,
   type OverworldBrush,
 } from "@/lib/overworld/paint";
@@ -35,7 +36,7 @@ import {
   FEATURE_LIMITS,
   OVERWORLD_SIZES,
   PATH_KINDS,
-  PATH_KIND_LABELS,
+  sizeLabelKey,
   type LabelSize,
   type OverworldSize,
   type PathKind,
@@ -53,37 +54,38 @@ export type OverworldAsk =
   | { kind: "label"; at: { x: number; y: number } };
 
 export function askCopy(
+  t: (key: string, vars?: Record<string, string | number>) => string,
   ask: OverworldAsk | null,
   labelSize: LabelSize,
   heldName: string,
 ): { title: string; label: string; defaultValue: string; maxLength: number; allowEmpty: boolean; submitLabel: string } {
   if (ask?.kind === "rename") {
     return {
-      title: "Rename this place",
-      label: "What is this place called?",
+      title: t("overworld.ask.renameTitle"),
+      label: t("overworld.ask.renameLabel"),
       defaultValue: heldName,
       maxLength: 80,
       allowEmpty: false,
-      submitLabel: "Rename",
+      submitLabel: t("overworld.ask.renameSubmit"),
     };
   }
   if (ask?.kind === "label") {
     return {
-      title: labelSize === "large" ? "Name the region" : "Name the place",
-      label: "The words written on the map here.",
+      title: labelSize === "large" ? t("overworld.ask.regionTitle") : t("overworld.ask.placeTitle"),
+      label: t("overworld.ask.labelText"),
       defaultValue: "",
       maxLength: FEATURE_LIMITS.labelLength,
       allowEmpty: false,
-      submitLabel: "Write it",
+      submitLabel: t("overworld.ask.labelSubmit"),
     };
   }
   return {
-    title: "Label the pin",
-    label: "Leave it empty for a plain marker.",
+    title: t("overworld.ask.pinTitle"),
+    label: t("overworld.ask.pinLabel"),
     defaultValue: "",
     maxLength: 60,
     allowEmpty: true,
-    submitLabel: "Place the pin",
+    submitLabel: t("overworld.ask.pinSubmit"),
   };
 }
 
@@ -91,6 +93,7 @@ type ImportSummary = { cells: number; places: number; rivers: number; routes: nu
 
 // Sends the GeoJSON texts to the import route and says what it read.
 export async function importAzgaarFiles<Data extends { map: { width: number; height: number } }>(
+  t: (key: string, vars?: Record<string, string | number>) => string,
   campaignId: string,
   files: string[],
   size: OverworldSize,
@@ -102,7 +105,7 @@ export async function importAzgaarFiles<Data extends { map: { width: number; hei
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    return { error: (payload as { error?: string }).error ?? "That map could not be read." };
+    return { error: (payload as { error?: string }).error ?? t("overworld.error.mapRead") };
   }
   const { summary, ...data } = payload as Data & { summary: ImportSummary };
   return {
@@ -169,7 +172,7 @@ export function ModeBar({
           onClick={() => onMode(mode === value ? "look" : value)}
           className={cn(chip, mode === value ? active : idle)}
         >
-          <Icon className="size-3.5" /> {mode === value ? "Tap the map..." : label}
+          <Icon className="size-3.5" /> {mode === value ? t("overworld.mode.tap") : label}
         </button>
       ))}
       {partyPlaced ? (
@@ -186,23 +189,26 @@ export function ModeBar({
         type="button"
         onClick={onRegenerate}
         disabled={regenBusy}
-        title="Reroll the terrain. Locations keep their spots where the new ground allows."
+        title={t("overworld.regenTip")}
         className={cn(chip, idle, "disabled:opacity-50")}
       >
         {regenBusy ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
-        Regenerate
+        {t("overworld.regen")}
       </button>
     </div>
   );
 }
 
 export function TileLegend({ skin }: { skin: Record<OverworldTile, TileSkin> }) {
+  const t = useT();
   return (
     <div className="stagger-pop flex flex-wrap gap-x-3 gap-y-1">
       {(Object.keys(skin) as OverworldTile[]).map((tile) => (
         <span key={tile} className="flex items-center gap-1 text-[11px] text-stone-400">
           <span className="inline-block size-3 rounded-sm border border-black/30" style={{ backgroundColor: skin[tile].fill }} />
-          {skin[tile].label}
+          {/* A genre's own skin names its tiles (Black water, Moors); the
+              default skin's words are the interface's to translate. */}
+          {skin[tile] === DEFAULT_SKIN[tile] ? t(`overworld.tile.${tile}`) : skin[tile].label}
         </span>
       ))}
     </div>
@@ -226,10 +232,11 @@ export function PaintTools({
   stranded: Array<{ id: string; name: string }>;
   undo?: { canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void };
 }) {
+  const t = useT();
   return (
     <div className="panel reveal space-y-2 rounded-lg p-2.5">
-      <SectionHead title="Paint terrain" glyph="climate-temperate" level="h4" />
-      <div data-pill-group="" role="group" aria-label="Brush" className="flex flex-wrap items-center gap-1">
+      <SectionHead title={t("overworld.mode.paint")} glyph="climate-temperate" level="h4" />
+      <div data-pill-group="" role="group" aria-label={t("overworld.brushAria")} className="flex flex-wrap items-center gap-1">
         {OVERWORLD_BRUSHES.map((value) => (
           <button data-on={brush === value ? "" : undefined}
             key={value}
@@ -242,13 +249,13 @@ export function PaintTools({
               className="size-2.5 rounded-sm"
               style={{ backgroundColor: skin[OVERWORLD_BRUSH_TILES[value]].fill }}
             />
-            {OVERWORLD_BRUSH_LABELS[value]}
+            {t(brushLabelKey(value))}
           </button>
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400">
-        Brush size
-        <Slider min={0} max={MAX_BRUSH_RADIUS} value={radius} onChange={onRadius} label="Brush size" className="pk-w-28" />
+        {t("overworld.brushSize")}
+        <Slider min={0} max={MAX_BRUSH_RADIUS} value={radius} onChange={onRadius} label={t("overworld.brushSize")} className="pk-w-28" />
         <span className="text-stone-500">{radius === 0 ? "one tile" : `${radius * 2 + 1} across`}</span>
         {undo ? (
           <span className="ml-auto flex items-center gap-1">
@@ -256,24 +263,24 @@ export function PaintTools({
               type="button"
               onClick={undo.onUndo}
               disabled={!undo.canUndo}
-              title="Undo (Ctrl+Z)"
+              title={t("overworld.undoTip")}
               className={cn(chip, undo.canUndo ? idle : "border-stone-800 text-stone-700")}
             >
-              Undo
+              {t("overworld.undo")}
             </button>
             <button
               type="button"
               onClick={undo.onRedo}
               disabled={!undo.canRedo}
-              title="Redo (Ctrl+Shift+Z)"
+              title={t("overworld.redoTip")}
               className={cn(chip, undo.canRedo ? idle : "border-stone-800 text-stone-700")}
             >
-              Redo
+              {t("overworld.redo")}
             </button>
           </span>
         ) : null}
       </div>
-      <p className="text-xs text-stone-500">Press and drag to paint; the tiles land when you let go.</p>
+      <p className="text-xs text-stone-500">{t("overworld.paintHint")}</p>
       {stranded.length ? (
         <p role="status" className="live-in text-xs text-amber-300/90">
           {stranded.map((place) => place.name).filter(Boolean).join(", ")}{" "}
@@ -306,10 +313,11 @@ export function LineTools({
   onUndo: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   return (
     <div className="panel reveal space-y-2 rounded-lg p-2.5">
-      <SectionHead title="Draw a line" glyph="pace-normal" level="h4" />
-      <div data-pill-group="" role="group" aria-label="Kind of line" className="flex flex-wrap items-center gap-1">
+      <SectionHead title={t("overworld.mode.line")} glyph="pace-normal" level="h4" />
+      <div data-pill-group="" role="group" aria-label={t("overworld.lineKindAria")} className="flex flex-wrap items-center gap-1">
         {PATH_KINDS.map((value) => (
           <button data-on={kind === value ? "" : undefined}
             key={value}
@@ -319,7 +327,7 @@ export function LineTools({
             onClick={() => onKind(value)}
             className={cn(chip, kind === value ? active : idle, "disabled:opacity-40")}
           >
-            {PATH_KIND_LABELS[value]}
+            {t(`overworld.kind.${value}`)}
           </button>
         ))}
         <input
@@ -334,7 +342,7 @@ export function LineTools({
       <div className="flex flex-wrap items-center gap-1.5 text-xs text-stone-500">
         <span>
           {pendingCount === 0
-            ? "Tap where it starts, then along its course."
+            ? t("overworld.lineHint")
             : `${pendingCount} point${pendingCount === 1 ? "" : "s"} so far.`}
         </span>
         <button
@@ -357,9 +365,10 @@ export function LineTools({
 }
 
 export function LabelTools({ size, onSize }: { size: LabelSize; onSize: (size: LabelSize) => void }) {
+  const t = useT();
   return (
     <div data-pill-group="" className="panel reveal flex flex-wrap items-center gap-1.5 rounded-lg p-2.5 text-xs text-stone-500">
-      <span>Tap where the words go.</span>
+      <span>{t("overworld.labelHint")}</span>
       <button data-on={size === "small" ? "" : undefined} type="button" aria-pressed={size === "small"} onClick={() => onSize("small")} className={cn(chip, size === "small" ? active : idle)}>
         Place name
       </button>
@@ -392,6 +401,7 @@ export function FileTools({
   importNote: string;
   mapSize: OverworldSize;
 }) {
+  const t = useT();
   const imageRef = useRef<HTMLInputElement>(null);
   const geoRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -410,12 +420,12 @@ export function FileTools({
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(payload.error || "That image would not upload.");
+        setError(payload.error || t("table.map.error.upload"));
         return;
       }
       onBackdrop(payload.url);
     } catch {
-      setError("That image would not upload.");
+      setError(t("table.map.error.upload"));
     } finally {
       setUploading(false);
     }
@@ -433,7 +443,7 @@ export function FileTools({
 
   return (
     <div className="panel space-y-2 rounded-lg p-2.5">
-      <SectionHead title="The map as a file" glyph="tab-handout" level="h4" />
+      <SectionHead title={t("overworld.fileHead")} glyph="tab-handout" level="h4" />
       <input
         ref={imageRef}
         type="file"
@@ -466,7 +476,7 @@ export function FileTools({
           className={cn(chip, idle, "disabled:opacity-50")}
         >
           {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <ImageIcon className="size-3.5" />}
-          {backdropPath ? "Replace the picture" : "Use a picture instead of tiles"}
+          {backdropPath ? t("overworld.file.replace") : t("overworld.file.picture")}
         </button>
         {backdropPath ? (
           <button type="button" onClick={() => onBackdrop("")} className={cn(chip, idle)}>
@@ -480,7 +490,7 @@ export function FileTools({
           className={cn(chip, idle, "disabled:opacity-50")}
         >
           {exporting ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
-          Save as PNG
+          {t("overworld.file.savePng")}
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -491,21 +501,24 @@ export function FileTools({
           className={cn(chip, idle, "disabled:opacity-50")}
         >
           {importing ? <Loader2 className="size-3.5 animate-spin" /> : <FileUp className="size-3.5" />}
-          Read an Azgaar map
+          {t("overworld.file.readAzgaar")}
         </button>
         <Select
           size="sm"
           value={sizeId}
           onChange={setSizeId}
-          label="Grid size for the imported map"
+          label={t("overworld.file.gridSize")}
           options={[
-            { value: "current", label: `At this size (${mapSize.width} by ${mapSize.height})` },
-            ...OVERWORLD_SIZES.map((entry) => ({ value: entry.id as string, label: `${entry.label} (${entry.width} by ${entry.height})` })),
+            { value: "current", label: t("overworld.size.current", { width: mapSize.width, height: mapSize.height }) },
+            ...OVERWORLD_SIZES.map((entry) => ({
+              value: entry.id as string,
+              label: t("overworld.size.preset", { label: t(sizeLabelKey(entry.id)), width: entry.width, height: entry.height }),
+            })),
           ]}
           className="min-w-0 max-w-full"
         />
         <span className="text-[11px] leading-4 text-stone-500">
-          Fantasy Map Generator: export Cells as GeoJSON, plus Burgs, Rivers and Routes if you like.
+          {t("overworld.file.azgaarNote")}
         </span>
       </div>
       {importNote ? <p role="status" className="live-in text-xs text-emerald-300/90">{importNote}</p> : null}

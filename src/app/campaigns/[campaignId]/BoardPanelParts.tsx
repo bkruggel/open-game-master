@@ -5,6 +5,7 @@ import { Keyboard, LocateFixed, Lock, Maximize2, Unlock, Users, ZoomIn, ZoomOut 
 import { useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { TILE_FEET } from "@/lib/battlemap/types";
 import { playingSheet } from "@/lib/battlemap/hand-table";
 
@@ -19,18 +20,6 @@ import type { PublicEncounter } from "@/lib/db/encounter-view";
 
 const CAMERA_BUTTON =
   "motion-press rounded-md border border-stone-700/80 bg-stone-950/85 p-1 text-stone-300 hover:text-stone-100";
-
-// What the board does with the keyboard and the mouse (issue 90). The keys
-// only reach the board while it has focus, so the list says that first.
-const BOARD_KEYS: Array<{ keys: string[]; does: string }> = [
-  { keys: ["←", "↑", "↓", "→"], does: "Move the view" },
-  { keys: ["+", "−"], does: "Zoom in and out" },
-  { keys: ["0"], does: "Fit the whole board" },
-  { keys: ["Esc"], does: "Cancel an aim or a drag" },
-  { keys: ["Ctrl", "Z"], does: "Take back your last move" },
-  { keys: ["Scroll"], does: "Zoom at the pointer" },
-  { keys: ["Drag"], does: "Move the view" },
-];
 
 // The short form, shown for a few seconds each time the board takes the
 // keyboard (board.css fades it), so the keys are learned by using the board
@@ -76,6 +65,18 @@ export function BoardCameraControls({
   onDirect?: (mode: "pull" | "lock" | "free") => void;
 }) {
   const [keysOpen, setKeysOpen] = useState(false);
+  const t = useT();
+  // What the board does with the keyboard and the mouse (issue 90). The keys
+  // only reach the board while it has focus, so the list says that first.
+  const BOARD_KEYS: Array<{ keys: string[]; does: string }> = [
+    { keys: ["←", "↑", "↓", "→"], does: "Move the view" },
+    { keys: ["+", "−"], does: t("board.keys.zoom") },
+    { keys: ["0"], does: "Fit the whole board" },
+    { keys: ["Esc"], does: "Cancel an aim or a drag" },
+    { keys: ["Ctrl", "Z"], does: "Take back your last move" },
+    { keys: ["Scroll"], does: "Zoom at the pointer" },
+    { keys: ["Drag"], does: "Move the view" },
+  ];
   return (
     <div className={cn("board-cam absolute bottom-2 right-2 z-10 flex flex-col gap-1", onDirect && "board-cam-long")}>
       {keysOpen ? (
@@ -121,10 +122,10 @@ export function BoardCameraControls({
       >
         <Keyboard className="size-4" />
       </button>
-      <button type="button" onClick={onZoomIn} aria-label="Zoom in" className={CAMERA_BUTTON}>
+      <button type="button" onClick={onZoomIn} aria-label={t("map.zoomIn")} className={CAMERA_BUTTON}>
         <ZoomIn className="size-4" />
       </button>
-      <button type="button" onClick={onZoomOut} aria-label="Zoom out" className={CAMERA_BUTTON}>
+      <button type="button" onClick={onZoomOut} aria-label={t("map.zoomOut")} className={CAMERA_BUTTON}>
         <ZoomOut className="size-4" />
       </button>
       <button type="button" onClick={onFit} aria-label="Fit the board" className={CAMERA_BUTTON}>

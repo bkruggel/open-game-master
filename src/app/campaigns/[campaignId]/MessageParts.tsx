@@ -35,12 +35,14 @@ import { CardReturnedNote } from "@/app/campaigns/[campaignId]/CardReturnedNote"
 // The transcript's smaller voices: the table's own notices and what the
 // players say. The DM's passage, the hero of the screen, is MessageItem.tsx.
 
-export function copyAction(message: CampaignMessage): MessageAction {
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+export function copyAction(t: T, message: CampaignMessage): MessageAction {
   return {
     id: "copy",
-    name: "Copy text",
-    label: "Copy this message's text",
-    hint: "Copy: put this message's words on the clipboard",
+    name: t("table.message.copy"),
+    label: t("table.message.copyLabel"),
+    hint: t("table.message.copyHint"),
     glyph: "ui-duplicate",
     icon: <Copy className="size-3.5" />,
     onSelect: () => {
@@ -51,26 +53,26 @@ export function copyAction(message: CampaignMessage): MessageAction {
 
 // A player's objection to a narrated ruling (DisputeDialog.tsx): the
 // steerer upholds or overrules it, or the table votes.
-export function disputeAction(message: CampaignMessage, onDispute: (message: CampaignMessage) => void): MessageAction {
+export function disputeAction(t: T, message: CampaignMessage, onDispute: (message: CampaignMessage) => void): MessageAction {
   return {
     id: "dispute",
-    name: "Dispute",
-    label: "Dispute this ruling",
-    hint: "Dispute: object to what the narrator ruled here; whoever steers the story settles it, or the table votes",
+    name: t("table.message.dispute"),
+    label: t("table.message.disputeLabel"),
+    hint: t("table.message.disputeHint"),
     glyph: "system-rules",
     icon: <Scale className="size-3.5" />,
     onSelect: () => onDispute(message),
   };
 }
 
-export function reportAction(message: CampaignMessage, onReport: (message: CampaignMessage) => void, dm: boolean): MessageAction {
+export function reportAction(t: T, message: CampaignMessage, onReport: (message: CampaignMessage) => void, dm: boolean): MessageAction {
   return {
     id: "report",
-    name: "Report",
-    label: dm ? "Report this passage" : "Report this message",
+    name: t("table.message.report"),
+    label: dm ? t("table.message.reportDmLabel") : t("table.message.reportLabel"),
     hint: dm
-      ? "Report: flag this passage to the admins of this server"
-      : "Report: flag this message to the admins of this server, or block the player",
+      ? t("table.message.reportDmHint")
+      : t("table.message.reportHint"),
     glyph: "system-rules",
     icon: <Flag className="size-3.5" />,
     tone: "danger",
@@ -93,7 +95,7 @@ export function SystemMessage({ content, glyph }: { content: string; glyph?: Sys
   if (content.startsWith(LEAD_NOTE_PREFIX)) {
     return (
       <div data-tone="ember" className="panel session-banner-card rounded-xl border-ember-500/40">
-        <SectionHead title="Party Lead" glyph="tab-lead" level="h4" className="mb-1" />
+        <SectionHead title={t("table.party.lead")} glyph="tab-lead" level="h4" className="mb-1" />
         <p className="text-sm text-amber-100/90">{content.slice(LEAD_NOTE_PREFIX.length)}</p>
       </div>
     );
@@ -116,8 +118,8 @@ export function SystemMessage({ content, glyph }: { content: string; glyph?: Sys
   // (issue 668).
   if (content.startsWith(RECAP_PREFIX)) {
     return (
-      <section aria-label="Previously" className="panel session-banner-card session-recap rounded-xl">
-        <SectionHead title="Previously" glyph="cue-bell" level="h4" className="mb-1" />
+      <section aria-label={t("table.recap.previously")} className="panel session-banner-card session-recap rounded-xl">
+        <SectionHead title={t("table.recap.previously")} glyph="cue-bell" level="h4" className="mb-1" />
         <p className="session-recap-text">{content.slice(RECAP_PREFIX.length)}</p>
       </section>
     );
@@ -187,6 +189,10 @@ export function PlayerMessage({
   // that names its character never borrows the author's: a card the player
   // played for a companion who has since left read as the player's own
   // (0.31.1 playtest).
+  // A message without a character to its name still has its actions and its
+  // speaker line: "Player" is the stand-in, read in the interface's language.
+  const t = useT();
+  const fallbackName = t("table.message.player");
   const sheet: TranscriptSheet | undefined = message.characterId
     ? sheetsById.get(message.characterId)
     : message.userId
@@ -197,9 +203,9 @@ export function PlayerMessage({
   const [portraitUrl, onFaceError] = useFaceChain(
     playerFaces({ sheet, avatarUrl: message.userId ? membersById.get(message.userId)?.avatar?.url : undefined, userId: message.userId }),
   );
-  const actions: MessageAction[] = [copyAction(message)];
+  const actions: MessageAction[] = [copyAction(t, message)];
   if (onReport && !mine && message.userId) {
-    actions.push(reportAction(message, onReport, false));
+    actions.push(reportAction(t, message, onReport, false));
   }
   // eslint-disable-next-line @next/next/no-img-element
   const face = portraitUrl ? <img src={portraitUrl} alt="" onError={onFaceError} /> : null;
@@ -209,7 +215,7 @@ export function PlayerMessage({
   return (
     <ContextMenu
       items={toContextItems(actions)}
-      label={sheet?.name ?? "Player"}
+      label={sheet?.name ?? fallbackName}
       className="session-player group ml-auto max-w-[92%] animate-fade-up sm:max-w-2xl"
     >
       {face ? (
@@ -225,8 +231,8 @@ export function PlayerMessage({
       ) : null}
       <div ref={textColumn} className="min-w-0">
         <p className="mb-1 flex items-center justify-end gap-1.5 text-right">
-          <MessageActions actions={actions} menuLabel={`${sheet?.name ?? "Player"}: message actions`} quiet />
-          <span className="session-speaker truncate">{sheet?.name ?? "Player"}</span>
+          <MessageActions actions={actions} menuLabel={t("table.message.actions", { name: sheet?.name ?? fallbackName })} quiet />
+          <span className="session-speaker truncate">{sheet?.name ?? fallbackName}</span>
         </p>
         <div className={cn("session-bubble", ooc && "session-bubble-ooc")}>
           <p className="whitespace-pre-wrap text-pretty">{message.content}</p>
