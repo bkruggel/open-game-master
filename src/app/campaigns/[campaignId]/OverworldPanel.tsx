@@ -585,7 +585,7 @@ export function OverworldPanel({
       >
         {loading ? (
           <p role="status" className="skeleton-block reveal flex aspect-[4/3] items-center justify-center gap-1.5 text-xs text-stone-400">
-            <Loader2 className="size-3.5 animate-spin" /> Charting the region...
+            <Loader2 className="size-3.5 animate-spin" /> {t("overworld.charting")}
           </p>
         ) : (
           <canvas
@@ -652,9 +652,13 @@ export function OverworldPanel({
           >
             <span className="font-semibold text-amber-200">{focusedPlace.name}</span>
             {" · "}
-            {focusedPlace.isCurrent ? "the party is here" : focusedPlace.visited ? "visited" : "not reached yet"}
+            {focusedPlace.isCurrent
+              ? t("overworld.caption.here")
+              : focusedPlace.visited
+                ? t("overworld.caption.visited")
+                : t("overworld.caption.unreached")}
             {focusedPlace.parts.length ? (
-              <span className="block text-stone-400">Inside: {focusedPlace.parts.join(", ")}</span>
+              <span className="block text-stone-400">{t("overworld.caption.inside", { names: focusedPlace.parts.join(", ") })}</span>
             ) : null}
           </p>
         ) : null}
@@ -670,7 +674,7 @@ export function OverworldPanel({
         ) : null}
         {strokeCount ? (
           <span key={strokeCount} className="count-pop pointer-events-none absolute left-2 top-2 rounded-md border border-amber-500/30 bg-stone-950/85 px-1.5 py-0.5 text-[11px] text-amber-200">
-            {strokeCount} {strokeCount === 1 ? "tile" : "tiles"}
+            {t("overworld.strokeCount", { count: strokeCount, n: strokeCount })}
           </span>
         ) : null}
       </div>
@@ -690,13 +694,15 @@ export function OverworldPanel({
           />
           {held ? (
             <p className="reveal flex flex-wrap items-center gap-2 text-xs text-amber-200">
-              Holding {heldName}. Tap where it belongs.
+              {t("overworld.holding", { name: heldName })}
               <KitButton onClick={() => setAsking({ kind: "rename", locationId: held })}>{t("overworld.renameIt")}</KitButton>
             </p>
           ) : null}
           {followed ? (
             <p role="status" className="reveal flex flex-wrap items-center gap-2 text-xs text-emerald-200" data-testid="region-pin-followed">
-              {followed.pins.length === 1 ? `${followed.name}'s pin on the Atlas moved with it.` : `${followed.pins.length} Atlas pins moved with ${followed.name}.`}
+              {followed.pins.length === 1
+                ? t("overworld.pinFollowedOne", { name: followed.name })
+                : t("overworld.pinFollowedMany", { n: followed.pins.length, name: followed.name })}
               {followed.before ? (
                 <KitButton
                   onClick={() => {
@@ -706,10 +712,10 @@ export function OverworldPanel({
                     void patch({ anchor: { locationId: back.locationId, x: back.before!.x, y: back.before!.y } });
                   }}
                 >
-                  Undo
+                  {t("overworld.undo")}
                 </KitButton>
               ) : null}
-              <KitButton onClick={() => setFollowed(null)}>Dismiss</KitButton>
+              <KitButton onClick={() => setFollowed(null)}>{t("action.dismiss")}</KitButton>
             </p>
           ) : null}
           {mode === "paint" && skin ? (

@@ -79,7 +79,7 @@ export function LorePanel({
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ entries?: LoreEntryView[] }>(fetch(`/api/campaigns/${campaignId}/lore`), "The lore").then((outcome) => {
+    readLoad<{ entries?: LoreEntryView[] }>(t, fetch(`/api/campaigns/${campaignId}/lore`), t("load.label.lore")).then((outcome) => {
       if (cancelled) {
         return;
       }
@@ -92,7 +92,7 @@ export function LorePanel({
     return () => {
       cancelled = true;
     };
-  }, [campaignId, reload, refreshKey, settle]);
+  }, [ campaignId, reload, refreshKey, settle, t ]);
   const retry = () => {
     setLoading(true);
     setReload((current) => current + 1);
@@ -174,7 +174,7 @@ export function LorePanel({
         attachmentPath: draft.attachmentPath,
         style: draft.style,
       };
-      const sent = await readWrite<{ entry?: LoreEntryView }>(
+      const sent = await readWrite<{ entry?: LoreEntryView }>(t,
         fetch(editingId ? `/api/campaigns/${campaignId}/lore/${editingId}` : `/api/campaigns/${campaignId}/lore`, {
           method: editingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -219,7 +219,7 @@ export function LorePanel({
   // The list read again outside the load effect, for a create whose answer
   // was lost: the entries it found, or null when it could not read them.
   const reread = () =>
-    readLoad<{ entries?: LoreEntryView[] }>(fetch(`/api/campaigns/${campaignId}/lore`), "The lore").then((outcome) => {
+    readLoad<{ entries?: LoreEntryView[] }>(t, fetch(`/api/campaigns/${campaignId}/lore`), t("load.label.lore")).then((outcome) => {
       if (!outcome.payload || !Array.isArray(outcome.payload.entries)) {
         return null;
       }
@@ -231,7 +231,7 @@ export function LorePanel({
   // not reached, where the editor's own refusals show.
   async function togglePin(entry: LoreEntryView) {
     setSaveError("");
-    const sent = await readWrite<{ entry?: LoreEntryView }>(
+    const sent = await readWrite<{ entry?: LoreEntryView }>(t,
       fetch(`/api/campaigns/${campaignId}/lore/${entry.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -252,7 +252,7 @@ export function LorePanel({
 
   async function remove(entryId: string): Promise<boolean> {
     setSaveError("");
-    const sent = await readWrite(fetch(`/api/campaigns/${campaignId}/lore/${entryId}`, { method: "DELETE" }), t("table.lore.error.delete"));
+    const sent = await readWrite(t, fetch(`/api/campaigns/${campaignId}/lore/${entryId}`, { method: "DELETE" }), t("table.lore.error.delete"));
     if (sent.error !== null) {
       setSaveError(sent.error);
       if (sent.unanswered) void reread();
@@ -269,7 +269,7 @@ export function LorePanel({
     setSaveError("");
     try {
       const title = `${entry.title} ${t("table.lore.copySuffix")}`;
-      const sent = await readWrite<{ entry?: LoreEntryView }>(
+      const sent = await readWrite<{ entry?: LoreEntryView }>(t,
         fetch(`/api/campaigns/${campaignId}/lore`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -361,7 +361,7 @@ export function LorePanel({
   // refusal, or a request that never arrived, is said rather than dropped.
   async function showNow(entry: LoreEntryView) {
     setSaveError("");
-    const sent = await readWrite(
+    const sent = await readWrite(t,
       fetch(`/api/campaigns/${campaignId}/dm/invoke`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

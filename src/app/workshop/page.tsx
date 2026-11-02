@@ -72,7 +72,7 @@ export default function WorkshopListPage() {
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ workshops?: WorkshopSummary[] }>(fetch("/api/workshops"), "Your workshops").then((outcome) => {
+    readLoad<{ workshops?: WorkshopSummary[] }>(t, fetch("/api/workshops"), t("load.label.workshops")).then((outcome) => {
       if (cancelled) {
         return;
       }
@@ -85,8 +85,7 @@ export default function WorkshopListPage() {
     return () => {
       cancelled = true;
     };
-  }, [reloads, settle]);
-
+  }, [ reloads, settle, t ]);
   async function create(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) {

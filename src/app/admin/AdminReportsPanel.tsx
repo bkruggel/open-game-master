@@ -58,14 +58,13 @@ export function AdminReportsPanel() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(() => {
-    readLoad<{ reports?: Report[] }>(fetch(`/api/admin/reports${showAll ? "?status=all" : ""}`), "The reports").then((outcome) => {
+    readLoad<{ reports?: Report[] }>(t, fetch(`/api/admin/reports${showAll ? "?status=all" : ""}`), t("load.label.reports")).then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setReports(outcome.payload.reports ?? []);
       }
     });
-  }, [showAll, settle]);
-
+  }, [ showAll, settle, t ]);
   useEffect(() => {
     refresh();
   }, [refresh]);

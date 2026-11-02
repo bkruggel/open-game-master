@@ -10,6 +10,7 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import { Select } from "@/components/ui/Select";
 import { LoadFailed } from "@/app/campaigns/[campaignId]/PanelKit";
 import { readLoad } from "@/lib/load-state";
+import { useT } from "@/lib/locale";
 
 // A row that IS a thing: "@monster: wolf", "@table: Gems". The table body
 // takes them typed, which means knowing the exact name of everything in the
@@ -55,6 +56,7 @@ export function RefPicker({
   editingId: string;
   onInsert: (line: string) => void;
 }) {
+  const t = useT();
   const [kind, setKind] = useState<RollRefKind>("table");
   const [npcs, setNpcs] = useState<Named[] | null>(null);
   const [lore, setLore] = useState<Named[] | null>(null);
@@ -70,26 +72,26 @@ export function RefPicker({
   useEffect(() => {
     const failed = (which: RollRefKind, error: string) => setLoadErrors((current) => ({ ...current, [which]: error }));
     if (kind === "table" && !tables && fetchedTables === null && !loadErrors.table) {
-      readLoad<{ tables?: RollTable[] }>(fetch(`/api/campaigns/${campaignId}/dm/roll-tables`), "The tables").then((outcome) =>
+      readLoad<{ tables?: RollTable[] }>(t, fetch(`/api/campaigns/${campaignId}/dm/roll-tables`), t("load.label.tables")).then((outcome) =>
         outcome.payload ? setFetchedTables(outcome.payload.tables ?? []) : failed("table", outcome.error),
       );
     }
     if (kind === "npc" && npcs === null && !loadErrors.npc) {
-      readLoad<{ npcs?: Named[] }>(fetch(`/api/campaigns/${campaignId}/dm/npcs`), "The cast").then((outcome) =>
+      readLoad<{ npcs?: Named[] }>(t, fetch(`/api/campaigns/${campaignId}/dm/npcs`), t("load.label.cast")).then((outcome) =>
         outcome.payload ? setNpcs(outcome.payload.npcs ?? []) : failed("npc", outcome.error),
       );
     }
     if (kind === "lore" && lore === null && !loadErrors.lore) {
-      readLoad<{ entries?: Array<{ title: string }> }>(fetch(`/api/campaigns/${campaignId}/lore`), "The lore").then((outcome) =>
+      readLoad<{ entries?: Array<{ title: string }> }>(t, fetch(`/api/campaigns/${campaignId}/lore`), t("load.label.lore")).then((outcome) =>
         outcome.payload ? setLore((outcome.payload.entries ?? []).map((entry) => ({ name: entry.title }))) : failed("lore", outcome.error),
       );
     }
     if (kind === "monster" && monsters === null && !loadErrors.monster) {
-      readLoad<{ monsters?: Array<{ draft: { name: string } }> }>(fetch(`/api/campaigns/${campaignId}/dm/bestiary`), "The bestiary").then((outcome) =>
+      readLoad<{ monsters?: Array<{ draft: { name: string } }> }>(t, fetch(`/api/campaigns/${campaignId}/dm/bestiary`), t("load.label.bestiary")).then((outcome) =>
         outcome.payload ? setMonsters((outcome.payload.monsters ?? []).map((monster) => ({ name: monster.draft.name }))) : failed("monster", outcome.error),
       );
     }
-  }, [kind, campaignId, npcs, lore, monsters, tables, fetchedTables, loadErrors, retries]);
+  }, [ kind, campaignId, npcs, lore, monsters, tables, fetchedTables, loadErrors, retries, t ]);
   const retry = () => {
     setLoadErrors((current) => ({ ...current, [kind]: undefined }));
     setRetries((current) => current + 1);

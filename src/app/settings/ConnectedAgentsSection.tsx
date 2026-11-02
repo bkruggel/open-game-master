@@ -97,7 +97,7 @@ export function ConnectedAgentsSection() {
   const showsLinks = hostOffers(useCapabilities(), "agentLinks");
 
   useEffect(() => {
-    readLoad<{ grants?: Grant[]; mcpUrl?: string; assistantUrl?: string; pollLinks?: boolean; links?: AgentLink[]; stoppedLinks?: StoppedLink[] }>(fetch("/api/profile/agents"), "The connected agents").then((outcome) => {
+    readLoad<{ grants?: Grant[]; mcpUrl?: string; assistantUrl?: string; pollLinks?: boolean; links?: AgentLink[]; stoppedLinks?: StoppedLink[] }>(t, fetch("/api/profile/agents"), t("load.label.agents")).then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setGrants(outcome.payload.grants ?? []);
@@ -115,8 +115,7 @@ export function ConnectedAgentsSection() {
         setCampaigns(list.map((campaign) => ({ id: campaign.id, title: campaign.title })));
       })
       .catch(() => undefined);
-  }, [reloads, settle]);
-
+  }, [ reloads, settle, t ]);
   async function create() {
     setBusy(true);
     setError("");

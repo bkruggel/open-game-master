@@ -26,6 +26,7 @@ import { appendLine } from "@/lib/workshop/pickers";
 import { RefPicker } from "@/app/workshop/tables/RefPicker";
 import { inputClass, StatblockFinder } from "@/app/workshop/tables/StatblockFinder";
 import { TableRows, type RollResult } from "@/app/workshop/tables/TableRows";
+import { useT } from "@/lib/locale";
 
 // The DM's random tables, and the monster lookup beside them. Both are the
 // DM's own reference: rolling a table writes an ordinary roll everyone can
@@ -50,6 +51,7 @@ export function DmTablesPanel({
   campaignId: string;
   layout?: "list" | "rows";
 }) {
+  const t = useT();
   const [tables, setTables] = useState<RollTable[]>([]);
   // Loaded only once the server has answered yes; a no is kept in its own
   // words (issue 140), so "No tables yet" is never drawn over a refusal.
@@ -74,14 +76,13 @@ export function DmTablesPanel({
 
   const load = useCallback(
     () =>
-      readLoad<{ tables?: RollTable[] }>(fetch(`/api/campaigns/${campaignId}/dm/roll-tables`), "The tables").then((outcome) => {
+      readLoad<{ tables?: RollTable[] }>(t, fetch(`/api/campaigns/${campaignId}/dm/roll-tables`), t("load.label.tables")).then((outcome) => {
         if (outcome.payload) {
           setTables(outcome.payload.tables ?? []);
         }
         settle(outcome);
       }),
-    [campaignId, settle],
-  );
+    [ campaignId, settle, t ],  );
 
   // Refetches on mount and after every edit, the same shape as BondsPanel.
   useEffect(() => {

@@ -19511,6 +19511,13 @@
         1,
         "request paths against the data roots"
       ]
+    ],
+    "components/rulebook/RulebookContents.tsx#keyed": [
+      [
+        "key",
+        2,
+        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
+      ]
     ]
   }
 }

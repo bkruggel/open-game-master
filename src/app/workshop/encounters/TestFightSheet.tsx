@@ -11,6 +11,7 @@ import { navigateTo } from "@/lib/navigation";
 import { ui } from "@/lib/ui";
 import { TARGET_PARTY_LIMITS } from "@/lib/workshop/kind";
 import type { PreparedEncounter } from "@/app/workshop/encounters/types";
+import { useT } from "@/lib/locale";
 
 // Test fight (issue 553): who fights the prepared fight, then the table
 // (src/lib/workshop/test-fight.ts). Each question has a default that needs
@@ -63,6 +64,7 @@ export function TestFightSheet({
   info: TestFightInfo | null;
   onClose: () => void;
 }) {
+  const t = useT();
   const [who, setWho] = useState<Who>("stand-ins");
   const [runner, setRunner] = useState<"ai" | "person">("ai");
   const [picked, setPicked] = useState<string[]>([]);
@@ -79,8 +81,8 @@ export function TestFightSheet({
     if (!open) return;
     let cancelled = false;
     Promise.all([
-      readLoad<{ pregens?: Character[] }>(fetch(`/api/workshops/${workshopId}/pregens`), "The roster"),
-      readLoad<{ characters?: Character[] }>(fetch("/api/characters"), "Your characters"),
+      readLoad<{ pregens?: Character[] }>(t, fetch(`/api/workshops/${workshopId}/pregens`), t("load.label.roster")),
+      readLoad<{ characters?: Character[] }>(t, fetch("/api/characters"), t("load.label.characters")),
     ]).then(([roster, shelf]) => {
       if (cancelled) return;
       setLoadError(roster.error ?? shelf.error ?? "");
@@ -90,8 +92,7 @@ export function TestFightSheet({
     return () => {
       cancelled = true;
     };
-  }, [open, workshopId]);
-
+  }, [ open, workshopId, t ]);
   function close(next: boolean) {
     if (next) return;
     setError("");
@@ -107,7 +108,7 @@ export function TestFightSheet({
     if (!encounter) return;
     setBusy(true);
     setError("");
-    const sent = await readWrite<{ campaignId: string }>(
+    const sent = await readWrite<{ campaignId: string }>(t,
       fetch(`/api/workshops/${workshopId}/test-fight`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,7 +118,7 @@ export function TestFightSheet({
           runner: info?.ready ? runner : "person",
         }),
       }),
-      "The test fight could not be set up.",
+      t("load.write.testFight"),
     );
     if (sent.error !== null) {
       setError(

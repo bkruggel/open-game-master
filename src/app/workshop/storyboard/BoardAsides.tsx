@@ -10,6 +10,7 @@ import { ui } from "@/lib/ui";
 import { PanelError } from "@/app/campaigns/[campaignId]/PanelKit";
 import { BEAT_LABELS, type BeatKind, type Suggestion } from "@/lib/workshop/board";
 import type { CompileSummary } from "@/lib/workshop/board-compile";
+import { useT } from "@/lib/locale";
 
 // What sits beside the workshop board: what the board is missing and what
 // it becomes. Both are collapsible cards so a phone can fold them away under
@@ -105,6 +106,7 @@ export function SharedWorkshopCard({
   };
   onChanged: () => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -114,13 +116,13 @@ export function SharedWorkshopCard({
     setBusy(true);
     setError("");
     try {
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/workshops/${workshopId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ commonWorkshopId }),
         }),
-        "That could not be changed.",
+        t("load.write.change"),
       );
       if (sent.error !== null) {
         setError(sent.error);

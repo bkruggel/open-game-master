@@ -39,14 +39,13 @@ export function AdminInvitesSection() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    readLoad<{ invites?: AccountInvite[] }>(fetch("/api/admin/invites"), "The invite codes").then((outcome) => {
+    readLoad<{ invites?: AccountInvite[] }>(t, fetch("/api/admin/invites"), t("load.label.invites")).then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setInvites(outcome.payload.invites ?? []);
       }
     });
-  }, [reloads, settle]);
-
+  }, [ reloads, settle, t ]);
   async function create() {
     setCreating(true);
     setError("");

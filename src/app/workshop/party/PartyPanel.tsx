@@ -17,6 +17,7 @@ import { readLoad, readWrite, useLoadStatus } from "@/lib/load-state";
 import { DraftPregensCard } from "@/app/workshop/party/DraftPregens";
 import type { TargetParty } from "@/lib/workshop/kind";
 import { classDisplayName, speciesName } from "@/lib/characters/class-words";
+import { useT } from "@/lib/locale";
 
 // The Party system (docs/workshop-parity-audit.md phase 15): the party a
 // workshop is built for, already declared in the pinned bar above, and the
@@ -72,6 +73,7 @@ export function PartyPanel({
   targetParty: TargetParty;
   onChanged: () => void;
 }) {
+  const t = useT();
   const [pregens, setPregens] = useState<Pregen[] | null>(null);
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
   const [picked, setPicked] = useState("");
@@ -86,8 +88,8 @@ export function PartyPanel({
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      readLoad<{ pregens?: Pregen[] }>(fetch(`/api/workshops/${workshopId}/pregens`), "The roster"),
-      readLoad<{ characters?: LibraryEntry[] }>(fetch("/api/characters"), "Your characters"),
+      readLoad<{ pregens?: Pregen[] }>(t, fetch(`/api/workshops/${workshopId}/pregens`), t("load.label.roster")),
+      readLoad<{ characters?: LibraryEntry[] }>(t, fetch("/api/characters"), t("load.label.characters")),
     ]).then(([roster, shelf]) => {
       if (cancelled) {
         return;
@@ -103,8 +105,7 @@ export function PartyPanel({
     return () => {
       cancelled = true;
     };
-  }, [workshopId, version, settle]);
-
+  }, [ workshopId, version, settle, t ]);
   // POST files a character, DELETE takes it off, PATCH ticks or unticks
   // "Offer to players" (src/lib/db/pregen-offers.ts). All three are safe to
   // send twice, so one that dies on the connection is said (WA-05) and the
@@ -113,13 +114,13 @@ export function PartyPanel({
     setBusy(true);
     setError("");
     try {
-      const sent = await readWrite<{ pregens: Pregen[] }>(
+      const sent = await readWrite<{ pregens: Pregen[] }>(t,
         fetch(`/api/workshops/${workshopId}/pregens`, {
           method,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(method === "PATCH" ? { characterId, offered } : { characterId }),
         }),
-        "That did not work.",
+        t("load.write.fallback"),
       );
       if (sent.error !== null) {
         setError(sent.error);

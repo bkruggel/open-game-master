@@ -19091,6 +19091,13 @@
         1,
         "HTTP method"
       ]
+    ],
+    "components/rulebook/RulebookContents.tsx#str-key": [
+      [
+        "key",
+        2,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
     ]
   },
   "humanTextIn": [

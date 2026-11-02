@@ -35,6 +35,7 @@ import { WorldEntryLink, useOpenOnArrival } from "@/app/workshop/world/WorldEntr
 import { useUnsavedDraft } from "@/app/workshop/unsaved";
 import { NpcEditorFields } from "@/app/workshop/cast/NpcEditorFields";
 import { compareNames, textKey } from "@/lib/language/text-logic";
+import { useT } from "@/lib/locale";
 
 // The NPC forge.
 //
@@ -72,6 +73,7 @@ export function DmNpcForgePanel({
   openId?: string | null;
   onWorldEntry?: (id: string) => void;
 }) {
+  const t = useT();
   const [npcs, setNpcs] = useState<Npc[]>([]);
   const [graph, setGraph] = useState<RelationGraph>({ nodes: [], edges: [] });
   const [showGraph, setShowGraph] = useState(false);
@@ -115,7 +117,7 @@ export function DmNpcForgePanel({
   const { loaded, loadError, settle } = useLoadStatus();
   const load = useCallback(
     () =>
-      readLoad<{ npcs: Npc[]; graph: RelationGraph; genre?: string }>(fetch(`/api/campaigns/${campaignId}/dm/npcs`), "The cast").then(
+      readLoad<{ npcs: Npc[]; graph: RelationGraph; genre?: string }>(t, fetch(`/api/campaigns/${campaignId}/dm/npcs`), t("load.label.cast")).then(
         (outcome) => {
           if (outcome.payload) {
             setNpcs(outcome.payload.npcs);
@@ -125,8 +127,7 @@ export function DmNpcForgePanel({
           settle(outcome);
         },
       ),
-    [campaignId, settle],
-  );
+    [ campaignId, settle, t ],  );
 
   useEffect(() => {
     void load();
@@ -207,13 +208,13 @@ export function DmNpcForgePanel({
       const url = selected
         ? `/api/campaigns/${campaignId}/dm/npcs/${selected.id}`
         : `/api/campaigns/${campaignId}/dm/npcs`;
-      const sent = await readWrite<{ npc?: { id: string } }>(
+      const sent = await readWrite<{ npc?: { id: string } }>(t,
         fetch(url, {
           method: selected ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ draft }),
         }),
-        "That did not save.",
+        t("load.write.unsaved"),
       );
       if (sent.error !== null) {
         failed(sent);
@@ -235,13 +236,13 @@ export function DmNpcForgePanel({
     setBusy(true);
     setError("");
     try {
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/dm/npcs/${selected.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         }),
-        "That did not save.",
+        t("load.write.unsaved"),
       );
       if (sent.error !== null) {
         failed(sent);
@@ -260,7 +261,7 @@ export function DmNpcForgePanel({
     setBusy(true);
     setError("");
     try {
-      const sent = await readWrite(fetch(`/api/campaigns/${campaignId}/dm/npcs/${selected.id}`, { method: "DELETE" }), "That could not be deleted.");
+      const sent = await readWrite(t, fetch(`/api/campaigns/${campaignId}/dm/npcs/${selected.id}`, { method: "DELETE" }), t("load.write.delete"));
       if (sent.error !== null) {
         failed(sent);
         return;
@@ -285,13 +286,13 @@ export function DmNpcForgePanel({
     setError("");
     try {
       const base = draftFrom(selected as Parameters<typeof draftFrom>[0]);
-      const sent = await readWrite<{ npc?: Parameters<typeof draftFrom>[0] & { id: string } }>(
+      const sent = await readWrite<{ npc?: Parameters<typeof draftFrom>[0] & { id: string } }>(t,
         fetch(`/api/campaigns/${campaignId}/dm/npcs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ draft: { ...base, name: `${base.name} (copy)`.slice(0, 80) } }),
         }),
-        "That could not be copied.",
+        t("load.write.copy"),
       );
       if (sent.error !== null) {
         failed(sent);

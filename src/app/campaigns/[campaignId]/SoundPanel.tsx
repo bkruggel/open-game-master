@@ -41,6 +41,9 @@ export type SoundSteering = {
 
 // The layer's spoken name, read in the interface's own language at render.
 const LAYER_LABEL: Record<AmbienceLayerName, string> = { bed: "sound.layer.bed", music: "sound.layer.music" };
+// The layer's level slider, said whole ("Room level"), so French keeps its
+// elisions without composing.
+const LAYER_LEVEL: Record<AmbienceLayerName, string> = { bed: "sound.layerLevel.bed", music: "sound.layerLevel.music" };
 
 async function steer(t: T, campaignId: string, body: Record<string, unknown>): Promise<string | null> {
   try {
@@ -96,7 +99,7 @@ function LayerRow({ layer, ambience }: { layer: AmbienceLayerName; ambience: Amb
             {noFile
               ? t("sound.noAudio")
               : take
-                ? `${take.title}${takes.length > 1 ? ` · take ${snapshot.take} of ${takes.length}` : ""}`
+                ? `${take.title}${takes.length > 1 ? ` · ${t("sound.takeOf", { n: snapshot.take, total: takes.length })}` : ""}`
                 : cue
                   ? cue.blurb
                   : t("sound.nothingHere")}
@@ -109,9 +112,9 @@ function LayerRow({ layer, ambience }: { layer: AmbienceLayerName; ambience: Amb
         ) : null}
       </div>
       <div className="mt-2 flex items-center gap-3">
-        <span className="sound-caption">Level</span>
+        <span className="sound-caption">{t("sound.level")}</span>
         <Slider
-          label={`${t(LAYER_LABEL[layer])} level`}
+          label={t(LAYER_LEVEL[layer])}
           value={level}
           min={0}
           max={1}
@@ -147,8 +150,9 @@ function CueTile({
   busy: boolean;
   onPick: () => void;
 }) {
+  const t = useT();
   return (
-    <Tooltip content={available ? label : `${label}: no audio on this server yet`}>
+    <Tooltip content={available ? label : t("sound.tileMissing", { label })}>
       <button
         type="button"
         onClick={onPick}
@@ -192,7 +196,7 @@ function Pickers({ ambience, steering }: { ambience: AmbienceAudio; steering: So
   return (
     <section className="mt-5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <span className={ui.sectionEyebrow}>Change the sound</span>
+        <span className={ui.sectionEyebrow}>{t("sound.change")}</span>
         <SegmentedControl
           size="sm"
           label={t("sound.whatToChange")}
@@ -214,7 +218,7 @@ function Pickers({ ambience, steering }: { ambience: AmbienceAudio; steering: So
               disabled={!current || busy}
               onChange={(on) => void send({ [tab]: current, hold: on })}
             />
-            <span className="text-sm text-stone-300">Hold</span>
+            <span className="text-sm text-stone-300">{t("sound.hold")}</span>
           </span>
           <span className="text-xs text-stone-500">
             {steering.auto
@@ -225,7 +229,7 @@ function Pickers({ ambience, steering }: { ambience: AmbienceAudio; steering: So
           </span>
         </div>
       ) : (
-        <p className="mb-2 text-xs text-stone-500">One sound, once, over whatever is playing.</p>
+        <p className="mb-2 text-xs text-stone-500">{t("sound.stingBlurb")}</p>
       )}
       <div key={tab} className="motion-tab sound-grid">
         {tab !== "sting" ? (
@@ -256,12 +260,13 @@ function Pickers({ ambience, steering }: { ambience: AmbienceAudio; steering: So
 }
 
 function LibraryNote({ ambience, steering }: { ambience: AmbienceAudio; steering: SoundSteering }) {
+  const t = useT();
   const counts = ambience.counts;
   if (!ambience.installed) {
     return steering.isAdmin ? (
       <LibraryInstall ambience={ambience} />
     ) : (
-      <p className="sound-note">This server has no sound library yet, so every cue is silence. The server admin can install it from the admin panel.</p>
+      <p className="sound-note">{t("sound.library.playerNone")}</p>
     );
   }
   if (!counts || !steering.canSteer) {
@@ -269,8 +274,14 @@ function LibraryNote({ ambience, steering }: { ambience: AmbienceAudio; steering
   }
   return (
     <p className="sound-note">
-      This server has audio for {counts.bed.installed} of {counts.bed.total} rooms, {counts.music.installed} of{" "}
-      {counts.music.total} moods and {counts.sting.installed} of {counts.sting.total} sounds.
+      {t("sound.library.counts", {
+        bedDone: counts.bed.installed,
+        bedTotal: counts.bed.total,
+        musicDone: counts.music.installed,
+        musicTotal: counts.music.total,
+        stingDone: counts.sting.installed,
+        stingTotal: counts.sting.total,
+      })}
     </p>
   );
 }
@@ -289,10 +300,7 @@ function LibraryInstall({ ambience }: { ambience: AmbienceAudio }) {
   }, [landed, ambience]);
   return (
     <div className="sound-note">
-      <p>
-        This server has no sound library yet, so every cue is silence. The rooms, music and sounds are a download of about 75 MB, kept across
-        updates and credited on the licenses page.
-      </p>
+      <p>{t("sound.library.adminNone")}</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => install()} disabled={!status || installing} className={ui.btnSmall}>
           {installing ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
@@ -301,7 +309,7 @@ function LibraryInstall({ ambience }: { ambience: AmbienceAudio }) {
         {landed && status.result ? (
           <span className="inline-flex items-center gap-1 text-emerald-300">
             <Check className="size-4" aria-hidden="true" />
-            {status.result.installed} tracks installed
+            {t("sound.tracksInstalled", { count: status.result.installed, n: status.result.installed })}
           </span>
         ) : null}
         {status?.status === "error" ? <span className="text-red-300">{status.error}</span> : null}
@@ -339,7 +347,7 @@ export function SoundDialog({
           <span className="text-sm text-stone-300">{ambience.muted ? t("sound.offForYou") : t("sound.on")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="sound-caption">Volume</span>
+          <span className="sound-caption">{t("sound.volumeShort")}</span>
           <Slider
             label={t("sound.volume")}
             value={ambience.volume}
@@ -355,7 +363,7 @@ export function SoundDialog({
         </div>
       </div>
       {ambience.playing.blocked ? (
-        <p className="sound-note text-amber-200">Your browser is holding the sound back until you tap something on the page.</p>
+        <p className="sound-note text-amber-200">{t("sound.blocked")}</p>
       ) : null}
       <div className="mt-4 space-y-3">
         <LayerRow layer="bed" ambience={ambience} />

@@ -30,6 +30,7 @@ import { findLostCreate, readLoad, readWrite, useLoadStatus } from "@/lib/load-s
 import { FACTION_ATTITUDES, REPUTATION_MAX, REPUTATION_MIN, reputationLabel, type FactionAttitude } from "@/lib/dm/faction-logic";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
+import { useT } from "@/lib/locale";
 
 // Factions (docs/vtt-parity-implementation-plan.md section 6): a card per
 // faction with its crest, its stance, the party's standing on a ladder
@@ -79,6 +80,7 @@ export function FactionsPanel({
   // how prep says where it starts, and that travels.
   workshop?: boolean;
 }) {
+  const t = useT();
   const showsStanding = !workshop;
   const [factions, setFactions] = useState<FactionView[] | null>(null);
   const [editing, setEditing] = useState<string | "new" | null>(null);
@@ -92,7 +94,7 @@ export function FactionsPanel({
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ factions?: FactionView[] }>(fetch(`/api/campaigns/${campaignId}/factions`), "The factions").then((outcome) => {
+    readLoad<{ factions?: FactionView[] }>(t, fetch(`/api/campaigns/${campaignId}/factions`), t("load.label.factions")).then((outcome) => {
       if (cancelled) {
         return;
       }
@@ -104,8 +106,7 @@ export function FactionsPanel({
     return () => {
       cancelled = true;
     };
-  }, [campaignId, refreshKey, reload, settle]);
-
+  }, [ campaignId, refreshKey, reload, settle, t ]);
   function startEdit(faction: FactionView) {
     setError("");
     setDraft(draftOf(faction));
@@ -134,7 +135,7 @@ export function FactionsPanel({
     try {
       const body = { ...draft, tags: draft.tags.split(",").map((tag) => tag.trim()).filter(Boolean) };
       const creating = editing === "new";
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(creating ? `/api/campaigns/${campaignId}/factions` : `/api/campaigns/${campaignId}/factions/${editing}`, {
           method: creating ? "POST" : "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -149,7 +150,7 @@ export function FactionsPanel({
         if (sent.unanswered && creating) {
           const name = draft.name.trim();
           const reread = async () =>
-            (await readLoad<{ factions?: FactionView[] }>(fetch(`/api/campaigns/${campaignId}/factions`), "The factions")).payload?.factions ?? null;
+            (await readLoad<{ factions?: FactionView[] }>(t, fetch(`/api/campaigns/${campaignId}/factions`), t("load.label.factions"))).payload?.factions ?? null;
           const found = await findLostCreate(loaded ? factions : null, reread, (faction) => faction.name === name);
           setReload((current) => current + 1);
           if (found === "made") {
@@ -179,20 +180,20 @@ export function FactionsPanel({
       return;
     }
     setError("");
-    const sent = await readWrite(fetch(`/api/campaigns/${campaignId}/factions/${faction.id}`, { method: "DELETE" }), "That faction could not be taken out.");
+    const sent = await readWrite(t, fetch(`/api/campaigns/${campaignId}/factions/${faction.id}`, { method: "DELETE" }), t("load.write.factionOut"));
     setError(sent.error ?? "");
     setReload((current) => current + 1);
   }
 
   async function setStanding(faction: FactionView, standing: number) {
     setError("");
-    const sent = await readWrite(
+    const sent = await readWrite(t,
       fetch(`/api/campaigns/${campaignId}/factions/${faction.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ standing }),
       }),
-      "The standing could not be changed.",
+      t("load.write.standing"),
     );
     setError(sent.error ?? "");
     setReload((current) => current + 1);

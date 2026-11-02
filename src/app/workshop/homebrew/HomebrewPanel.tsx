@@ -32,6 +32,7 @@ import {
 } from "@/app/workshop/homebrew/types";
 import { textKey } from "@/lib/language/text-logic";
 import { workshopClassId } from "@/lib/homebrew/class-data";
+import { useT } from "@/lib/locale";
 
 // The Homebrew system: the user's items, spells and character options, one
 // kind at a time, with the editor in a sheet. User-scoped like the bestiary,
@@ -54,6 +55,7 @@ export function HomebrewPanel({
   openOnArrival?: string | null;
   onWorldEntry?: (ref: string) => void;
 }) {
+  const t = useT();
   const [entries, setEntries] = useState<HomebrewEntryView[]>([]);
   const [kind, setKind] = useState<EditorKind>("item");
   const [query, setQuery] = useState("");
@@ -89,14 +91,13 @@ export function HomebrewPanel({
 
   const load = useCallback(
     () =>
-      readLoad<{ entries?: HomebrewEntryView[] }>(fetch("/api/homebrew"), "Your homebrew").then((outcome) => {
+      readLoad<{ entries?: HomebrewEntryView[] }>(t, fetch("/api/homebrew"), t("load.label.homebrew")).then((outcome) => {
         settle(outcome);
         if (outcome.payload?.entries) {
           setEntries(outcome.payload.entries.filter((entry) => entry.kind !== "monster"));
         }
       }),
-    [settle],
-  );
+    [ settle, t ],  );
 
   const loadForgotten = useCallback(
     () =>

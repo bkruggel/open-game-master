@@ -650,7 +650,7 @@ export function TerrainCanvas({
         <div className="absolute right-1.5 top-1.5 flex flex-col gap-1">
           <ZoomButton label={t("map.zoomIn")} icon={Plus} onClick={() => zoomAt(ZOOM.step, null)} />
           <ZoomButton label={t("map.zoomOut")} icon={Minus} onClick={() => zoomAt(1 / ZOOM.step, null)} />
-          <ZoomButton label="Fit the whole map" icon={Maximize2} onClick={() => setView(FIT)} />
+          <ZoomButton label={t("map.fit")} icon={Maximize2} onClick={() => setView(FIT)} />
         </div>
       ) : null}
     </div>

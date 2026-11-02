@@ -62,15 +62,14 @@ export function AdminBackupSection() {
   }, [creating]);
 
   useEffect(() => {
-    readLoad<{ backups?: BackupEntry[]; dir?: string }>(fetch("/api/admin/backup"), "The backups").then((outcome) => {
+    readLoad<{ backups?: BackupEntry[]; dir?: string }>(t, fetch("/api/admin/backup"), t("load.label.backups")).then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setBackups(outcome.payload.backups ?? []);
         if (outcome.payload.dir) setDir(outcome.payload.dir);
       }
     });
-  }, [reloads, settle]);
-
+  }, [ reloads, settle, t ]);
   async function create() {
     setPhase("");
     setCreating(true);

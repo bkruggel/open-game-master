@@ -31,6 +31,7 @@ import { KIND_TONE } from "@/app/workshop/storyboard/beat-fields";
 import { BeatBoard } from "@/app/workshop/storyboard/BeatBoard";
 import { BeatEditor } from "@/app/workshop/storyboard/BeatEditor";
 import { CompileCard, SharedWorkshopCard, SuggestionsCard } from "@/app/workshop/storyboard/BoardAsides";
+import { useT } from "@/lib/locale";
 
 // The storyboard: cards for the things that are going to happen, and arrows
 // between them.
@@ -82,6 +83,7 @@ export function DmStoryboardPanel({
   campaignId: string;
   layout?: "list" | "board";
 }) {
+  const t = useT();
   const [data, setData] = useState<Payload | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [edit, setEdit] = useState<Beat | null>(null);
@@ -106,15 +108,14 @@ export function DmStoryboardPanel({
   const { loadError, settle } = useLoadStatus();
   const load = useCallback(
     () =>
-      readLoad<Payload>(fetch(`/api/campaigns/${campaignId}/dm/storyboard`), "The storyboard").then((outcome) => {
+      readLoad<Payload>(t, fetch(`/api/campaigns/${campaignId}/dm/storyboard`), t("load.label.storyboard")).then((outcome) => {
         if (outcome.payload) {
           setData(outcome.payload);
         }
         settle(outcome);
         return outcome.payload;
       }),
-    [campaignId, settle],
-  );
+    [ campaignId, settle, t ],  );
 
   useEffect(() => {
     void load();
@@ -132,13 +133,13 @@ export function DmStoryboardPanel({
     setError("");
     setNote("");
     try {
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/dm/storyboard`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ kind, title }),
         }),
-        "That card could not be added.",
+        t("load.write.addCard"),
       );
       if (sent.error !== null && sent.unanswered) {
         // As the server keeps it (src/lib/workshop/board.ts): trimmed, cut at TITLE_MAX.
@@ -175,13 +176,13 @@ export function DmStoryboardPanel({
     setBusy(true);
     setError("");
     try {
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/dm/storyboard/${beat.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(beat),
         }),
-        "That card could not be saved.",
+        t("load.write.saveCard"),
       );
       if (sent.error !== null) {
         setError(sent.unanswered ? `${sent.error} Your changes are kept here.` : sent.error);
@@ -197,7 +198,7 @@ export function DmStoryboardPanel({
     setBusy(true);
     setError("");
     try {
-      const sent = await readWrite(fetch(`/api/campaigns/${campaignId}/dm/storyboard/${id}`, { method: "DELETE" }), "That card could not be deleted.");
+      const sent = await readWrite(t, fetch(`/api/campaigns/${campaignId}/dm/storyboard/${id}`, { method: "DELETE" }), t("load.write.deleteCard"));
       if (sent.error !== null) {
         setError(sent.error);
         // No answer: it may be gone all the same, and the board says which.

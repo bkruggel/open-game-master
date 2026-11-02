@@ -14,6 +14,7 @@ import type { Quest, QuestStatus } from "@/lib/dm/quest-logic";
 import { GlyphChip, KitButton, LoadFailed, panelField, PanelLoading, panelRow, Tick, TickMark } from "./PanelKit";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
+import { useT } from "@/lib/locale";
 
 // The quest log (docs/vtt-parity-implementation-plan.md 5.7): what the
 // arc compiled and what the DM wrote, with objectives the DM ticks by
@@ -28,6 +29,7 @@ const STATUS_OPTIONS = (Object.keys(STATUS_LABEL) as QuestStatus[]).map((status)
 }));
 
 export function QuestsPanel({ campaignId, steersStory, refreshKey }: { campaignId: string; steersStory: boolean; refreshKey: number }) {
+  const t = useT();
   const [quests, setQuests] = useState<Quest[] | null>(null);
   // A refused or failed read is shown in the server's words with a way to
   // ask again, never as "nothing here yet" (issue 140).
@@ -43,7 +45,7 @@ export function QuestsPanel({ campaignId, steersStory, refreshKey }: { campaignI
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ quests?: Quest[] }>(fetch(`/api/campaigns/${campaignId}/quests`), "The quest log").then((outcome) => {
+    readLoad<{ quests?: Quest[] }>(t, fetch(`/api/campaigns/${campaignId}/quests`), t("load.label.questLog")).then((outcome) => {
       if (cancelled) {
         return;
       }
@@ -55,8 +57,7 @@ export function QuestsPanel({ campaignId, steersStory, refreshKey }: { campaignI
     return () => {
       cancelled = true;
     };
-  }, [campaignId, refreshKey, reload, settle]);
-
+  }, [ campaignId, refreshKey, reload, settle, t ]);
   async function patch(questId: string, body: Record<string, unknown>) {
     const response = await fetch(`/api/campaigns/${campaignId}/quests/${questId}`, {
       method: "PATCH",

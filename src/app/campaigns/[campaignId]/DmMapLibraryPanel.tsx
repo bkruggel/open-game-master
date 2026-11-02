@@ -18,6 +18,7 @@ import { MapEditor } from "@/app/workshop/maps/MapEditor";
 import { MapGallery } from "@/app/workshop/maps/MapGallery";
 import type { LibraryState, PreparedMap } from "@/app/workshop/maps/types";
 import { useOpenOnArrival } from "@/app/workshop/world/WorldEntryLink";
+import { useT } from "@/lib/locale";
 
 // The map library: maps built before anybody needed them.
 //
@@ -56,6 +57,7 @@ export function DmMapLibraryPanel({
   only?: boolean;
   onClose?: () => void;
 }) {
+  const t = useT();
   const [state, setState] = useState<LibraryState>({
     maps: [],
     board: null,
@@ -81,14 +83,13 @@ export function DmMapLibraryPanel({
   const { loaded, loadError, settle } = useLoadStatus();
   const load = useCallback(
     () =>
-      readLoad<LibraryState>(fetch(`/api/campaigns/${campaignId}/dm/maps`), "The maps").then((outcome) => {
+      readLoad<LibraryState>(t, fetch(`/api/campaigns/${campaignId}/dm/maps`), t("load.label.maps")).then((outcome) => {
         if (outcome.payload) {
           setState(outcome.payload);
         }
         settle(outcome);
       }),
-    [campaignId, settle],
-  );
+    [ campaignId, settle, t ],  );
 
   useEffect(() => {
     void load();
@@ -147,13 +148,13 @@ export function DmMapLibraryPanel({
     setBusy(true);
     setError("");
     try {
-      const sent = await readWrite<{ map?: PreparedMap; notes?: string[] }>(
+      const sent = await readWrite<{ map?: PreparedMap; notes?: string[] }>(t,
         fetch(`/api/campaigns/${campaignId}/dm/maps`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         }),
-        "That did not work.",
+        t("load.write.fallback"),
       );
       if (sent.error !== null) {
         setError(sent.unanswered ? `${sent.error} The library was read again; look for the map there before making it again.` : sent.error);
@@ -189,13 +190,13 @@ export function DmMapLibraryPanel({
         return false;
       }
       setError("");
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/dm/maps/${mapId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         }),
-        "That change was not saved.",
+        t("load.write.changeUnsaved"),
       );
       if (sent.error !== null) {
         // The server's own sentence, over the canvas where the eyes are.
@@ -205,8 +206,7 @@ export function DmMapLibraryPanel({
       await load();
       return true;
     },
-    [campaignId, load, push],
-  );
+    [ campaignId, load, push, t ],  );
 
   async function act(action: "deploy" | "open-scene") {
     if (!selected) {
@@ -216,13 +216,13 @@ export function DmMapLibraryPanel({
     setError("");
     setNote("");
     try {
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/dm/maps/${selected.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ do: action }),
         }),
-        "That did not work.",
+        t("load.write.fallback"),
       );
       if (sent.error !== null) {
         // With no answer it may be on the table already; a second press
@@ -279,13 +279,13 @@ export function DmMapLibraryPanel({
         carry.backdropPath = original.backdrop.path;
         carry.backdropTransform = original.backdrop.transform;
       }
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/dm/maps/${copy.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(carry),
         }),
-        "The copy could not be painted.",
+        t("load.write.copyPaint"),
       );
       if (sent.error !== null) {
         setError(sent.error);
@@ -310,7 +310,7 @@ export function DmMapLibraryPanel({
       // A refusal, or a request that never arrived, is said and the map
       // stays open (WA-05); with no answer it may be gone all the same, so
       // the library is read again.
-      const sent = await readWrite(fetch(`/api/campaigns/${campaignId}/dm/maps/${selected.id}`, { method: "DELETE" }), "That map could not be deleted.");
+      const sent = await readWrite(t, fetch(`/api/campaigns/${campaignId}/dm/maps/${selected.id}`, { method: "DELETE" }), t("load.write.deleteMap"));
       if (sent.error !== null) {
         setError(sent.error);
         if (sent.unanswered) await load();

@@ -110,7 +110,14 @@ export async function importAzgaarFiles<Data extends { map: { width: number; hei
   const { summary, ...data } = payload as Data & { summary: ImportSummary };
   return {
     data: data as unknown as Data,
-    note: `Read ${summary.cells} cells into a ${data.map.width} by ${data.map.height} map, with ${summary.places} places, ${summary.routes} roads and ${summary.rivers} rivers.`,
+    note: t("overworld.import.read", {
+      cells: summary.cells,
+      width: data.map.width,
+      height: data.map.height,
+      places: summary.places,
+      routes: summary.routes,
+      rivers: summary.rivers,
+    }),
   };
 }
 
@@ -177,12 +184,12 @@ export function ModeBar({
       ))}
       {partyPlaced ? (
         <button type="button" onClick={onPartyTransit} className={cn(chip, idle)}>
-          Party is in transit
+          {t("overworld.partyTransit")}
         </button>
       ) : null}
       {pinsCount ? (
         <button type="button" onClick={onClearPins} className={cn(chip, idle)}>
-          <X className="size-3.5" /> Clear pins
+          <X className="size-3.5" /> {t("overworld.clearPins")}
         </button>
       ) : null}
       <button
@@ -256,7 +263,7 @@ export function PaintTools({
       <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400">
         {t("overworld.brushSize")}
         <Slider min={0} max={MAX_BRUSH_RADIUS} value={radius} onChange={onRadius} label={t("overworld.brushSize")} className="pk-w-28" />
-        <span className="text-stone-500">{radius === 0 ? "one tile" : `${radius * 2 + 1} across`}</span>
+        <span className="text-stone-500">{radius === 0 ? t("overworld.brushOne") : t("overworld.brushAcross", { across: radius * 2 + 1 })}</span>
         {undo ? (
           <span className="ml-auto flex items-center gap-1">
             <button
@@ -283,9 +290,7 @@ export function PaintTools({
       <p className="text-xs text-stone-500">{t("overworld.paintHint")}</p>
       {stranded.length ? (
         <p role="status" className="live-in text-xs text-amber-300/90">
-          {stranded.map((place) => place.name).filter(Boolean).join(", ")}{" "}
-          {stranded.length === 1 ? "is" : "are"} now standing in sea or on a peak. The marker
-          stays where you put it; move it with Move a place if that was not the idea.
+          {t("overworld.stranded", { count: stranded.length, names: stranded.map((place) => place.name).filter(Boolean).join(", ") })}
         </p>
       ) : null}
     </div>
@@ -334,8 +339,8 @@ export function LineTools({
           value={label}
           maxLength={FEATURE_LIMITS.labelLength}
           onChange={(event) => onLabel(event.target.value)}
-          placeholder={`Name the ${kind} (optional)`}
-          aria-label={`Name the ${kind} (optional)`}
+          placeholder={t("overworld.ask.nameKind", { kind: t(`overworld.kind.${kind}`) })}
+          aria-label={t("overworld.ask.nameKind", { kind: t(`overworld.kind.${kind}`) })}
           className={cn(panelField, "w-auto min-w-32 flex-1")}
         />
       </div>
@@ -343,7 +348,7 @@ export function LineTools({
         <span>
           {pendingCount === 0
             ? t("overworld.lineHint")
-            : `${pendingCount} point${pendingCount === 1 ? "" : "s"} so far.`}
+            : t("overworld.linePoints", { count: pendingCount, n: pendingCount })}
         </span>
         <button
           type="button"
@@ -351,13 +356,13 @@ export function LineTools({
           onClick={onFinish}
           className={kitButtonClass("primary", "disabled:opacity-40")}
         >
-          Finish the {kind}
+          {t("overworld.finishKind", { kind: t(`overworld.kind.${kind}`) })}
         </button>
         <button type="button" disabled={pendingCount === 0} onClick={onUndo} className={cn(chip, idle, "disabled:opacity-40")}>
-          Undo a point
+          {t("overworld.undoPoint")}
         </button>
         <button type="button" disabled={pendingCount === 0} onClick={onCancel} className={cn(chip, idle, "disabled:opacity-40")}>
-          Cancel
+          {t("action.cancel")}
         </button>
       </div>
     </div>
@@ -370,10 +375,10 @@ export function LabelTools({ size, onSize }: { size: LabelSize; onSize: (size: L
     <div data-pill-group="" className="panel reveal flex flex-wrap items-center gap-1.5 rounded-lg p-2.5 text-xs text-stone-500">
       <span>{t("overworld.labelHint")}</span>
       <button data-on={size === "small" ? "" : undefined} type="button" aria-pressed={size === "small"} onClick={() => onSize("small")} className={cn(chip, size === "small" ? active : idle)}>
-        Place name
+        {t("overworld.labelSize.place")}
       </button>
       <button data-on={size === "large" ? "" : undefined} type="button" aria-pressed={size === "large"} onClick={() => onSize("large")} className={cn(chip, size === "large" ? active : idle)}>
-        Region name
+        {t("overworld.labelSize.region")}
       </button>
     </div>
   );
@@ -480,7 +485,7 @@ export function FileTools({
         </button>
         {backdropPath ? (
           <button type="button" onClick={() => onBackdrop("")} className={cn(chip, idle)}>
-            <Trash2 className="size-3.5" /> Back to the tiles
+            <Trash2 className="size-3.5" /> {t("overworld.file.backToTiles")}
           </button>
         ) : null}
         <button

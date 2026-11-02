@@ -31,6 +31,7 @@ import {
 import { useBoardCamera } from "@/app/campaigns/[campaignId]/useBoardCamera";
 import { DRAWING_TONE } from "@/app/campaigns/[campaignId]/BoardStage";
 import { TILE } from "@/app/campaigns/[campaignId]/battleMapCells";
+import { useT } from "@/lib/locale";
 import {
   DRAWING_KINDS,
   DRAWING_TONES,
@@ -201,6 +202,7 @@ export function BattleMapPanel({
   // Whether the panel is on screen; the sky's weather rests while it is not.
   visible?: boolean;
 }) {
+  const t = useT();
   // A face for every token: the character's plate by lineage and class (an
   // uploaded portrait overrides it in the grid), a monster's plate by creature
   // type and setting. The DM's ad hoc NPCs and props keep their initial.
@@ -1117,7 +1119,7 @@ export function BattleMapPanel({
     stats: [myTurn ? `${view.budgetLeft * TILE_FEET} ft left` : "", mySheet ? `HP ${mySheet.currentHp}/${effectiveMaxHp(mySheet)} · AC ${mySheet.ac}` : "",
       myTurn && turnBudget ? `Action ${turnBudget.action ? "ready" : "spent"} · Bonus ${turnBudget.bonus ? "ready" : "spent"} · Reaction ${turnBudget.reaction ? "ready" : "spent"}` : "",
       encounter?.orderReady ? `Order: ${encounter.order.map(entry => entry.name).join(" → ")}` : ""].filter(Boolean),
-    hint: [hudHint ?? (handAim?.active ? "Choose the card's target on the board or in your hand, then play the card." : cameraLocked ? "The DM is steering the view" : boardHintText({ canDirect, tool, teleporting: Boolean(teleporting), held: Boolean(held), liveOrigin: Boolean(liveOrigin), pointing, drawing, targeting: Boolean(targeting), canMove, moveAimed: Boolean(livePending), scene, budgetLeft: view.budgetLeft, hasToken: Boolean(view.myTokenId) })), moveModeHint(moveMode, view.moves), areaAim.hint].filter(Boolean).join("\n"),
+    hint: [hudHint ?? (handAim?.active ? "Choose the card's target on the board or in your hand, then play the card." : cameraLocked ? "The DM is steering the view" : boardHintText(t, { canDirect, tool, teleporting: Boolean(teleporting), held: Boolean(held), liveOrigin: Boolean(liveOrigin), pointing, drawing, targeting: Boolean(targeting), canMove, moveAimed: Boolean(livePending), scene, budgetLeft: view.budgetLeft, hasToken: Boolean(view.myTokenId) })), moveModeHint(moveMode, view.moves), areaAim.hint].filter(Boolean).join("\n"),
     notices: [...moveNotes.notes.map(note => note.text), ...(fieldRoll ? [fieldRoll.label] : []), ...(handStatus?.notice ? [handStatus.notice] : []), ...(areaAim.caught.length ? [`Area catches: ${areaAim.caught.join(", ")}`] : []), ...(liveMeasure?.caught.length ? [`Measured: ${liveMeasure.caught.map(entry => entry.name).join(", ")}`] : [])], error, pending: busy || endingTurn || Boolean(handStatus?.sending),
     controls: prompt && tokensById.has(prompt.tokenId) ? [{ id: "prompt-submit", label: "Apply", disabled: null }, { id: "prompt-cancel", label: "Cancel input", disabled: null }] : [
       ...(myTurn && !scene && !targeting ? [{ id: "end-turn" as const, label: "End turn", disabled: endingTurn ? "Ending turn…" : null }] : []),
@@ -1575,7 +1577,7 @@ export function BattleMapPanel({
         caught={areaAim.caught}
       />
       <p className="text-[11px] leading-4 text-stone-500">
-        {boardHintText({
+        {boardHintText(t, {
           canDirect,
           tool,
           teleporting: Boolean(teleporting),

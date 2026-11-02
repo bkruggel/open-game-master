@@ -127,7 +127,7 @@ export default function CharactersPage() {
   }, [toast]);
 
   useEffect(() => {
-    readLoad<{ characters?: LibraryCharacter[] }>(fetch("/api/characters"), t("characters.loadLabel")).then((outcome) => {
+    readLoad<{ characters?: LibraryCharacter[] }>(t, fetch("/api/characters"), t("characters.loadLabel")).then((outcome) => {
       // Signed out: the page says so itself, not as a failed load.
       if (outcome.error && /answered 401/.test(outcome.error)) {
         setAuthed(false);

@@ -66,7 +66,7 @@ export function AdminServerLogPanel() {
   const scroller = useRef<HTMLDivElement>(null);
 
   const pull = useCallback(async () => {
-    const outcome = await readLoad<ServerLogPage>(fetch(`/api/admin/logs?after=${latest.current}`, { cache: "no-store" }), "The server log");
+    const outcome = await readLoad<ServerLogPage>(t, fetch(`/api/admin/logs?after=${latest.current}`, { cache: "no-store" }), t("load.label.serverLog"));
     settle(outcome);
     const page = outcome.payload;
     if (!page) {
@@ -83,8 +83,7 @@ export function AdminServerLogPanel() {
     if (page.entries.length) {
       setEntries((kept) => [...kept, ...page.entries].slice(-KEEP));
     }
-  }, [settle]);
-
+  }, [ settle, t ]);
   useEffect(() => {
     void pull();
   }, [pull]);

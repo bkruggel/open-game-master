@@ -107,7 +107,7 @@ export function SystemMessage({ content, glyph }: { content: string; glyph?: Sys
       <div className="pact-reveal panel rounded-xl border-violet-500/45 px-3 py-2" data-pact-reveal="">
         <p className="eyebrow flex items-center gap-1.5 text-[10px] text-violet-300">
           <VenetianMask className="size-3.5" aria-hidden="true" />
-          Revealed
+          {t("table.pact.revealed")}
         </p>
         <p className="mt-0.5 text-sm leading-snug text-violet-50">{content.slice(PACT_REVEAL_PREFIX.length)}</p>
       </div>
@@ -146,6 +146,7 @@ export function SystemMessage({ content, glyph }: { content: string; glyph?: Sys
 // prices live in the Market, never in the narration. Every seat sees it.
 export function ShopOpenLine({ content, onBrowse }: { content: string; onBrowse?: () => void }) {
   const lineId = useId();
+  const t = useT();
   return (
     <p className="session-sysline">
       <GameIcon icon={{ kind: "glyph", key: "cue-coin" }} size="size-6" />
@@ -153,7 +154,7 @@ export function ShopOpenLine({ content, onBrowse }: { content: string; onBrowse?
       {onBrowse ? (
         <button type="button" onClick={onBrowse} aria-describedby={lineId} data-browse-wares="" className={kitButtonClass("small", "shrink-0 not-italic text-amber-100")}>
           <GameIcon icon={{ kind: "glyph", key: "tab-market" }} size="size-5" />
-          Browse wares
+          {t("table.market.browseWares")}
         </button>
       ) : null}
     </p>
@@ -161,10 +162,11 @@ export function ShopOpenLine({ content, onBrowse }: { content: string; onBrowse?
 }
 
 export function BlockedMessage() {
+  const t = useT();
   return (
     <p className="ml-auto flex max-w-[92%] items-center justify-end gap-1.5 text-right text-xs italic text-stone-600 sm:max-w-2xl">
       <EyeOff className="size-3.5 shrink-0" />
-      A message from a player you blocked
+      {t("table.message.blockedNote")}
     </p>
   );
 }
@@ -237,7 +239,7 @@ export function PlayerMessage({
         <div className={cn("session-bubble", ooc && "session-bubble-ooc")}>
           <p className="whitespace-pre-wrap text-pretty">{message.content}</p>
         </div>
-        {message.cardReturned ? <CardReturnedNote message={message} mine={mine} name={sheet?.name ?? "the player"} /> : null}
+        {message.cardReturned ? <CardReturnedNote message={message} mine={mine} name={sheet?.name ?? t("table.message.thePlayer")} /> : null}
       </div>
     </ContextMenu>
   );

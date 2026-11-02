@@ -25,7 +25,7 @@ export function AdminPlayerAgentsSection() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    readLoad<{ origins?: string[]; envOrigins?: string[]; pollLinks?: boolean }>(fetch("/api/admin/player-webhooks"), "The receiver addresses").then((outcome) => {
+    readLoad<{ origins?: string[]; envOrigins?: string[]; pollLinks?: boolean }>(t, fetch("/api/admin/player-webhooks"), t("load.label.receiverAddresses")).then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setOrigins(outcome.payload.origins ?? []);
@@ -33,8 +33,7 @@ export function AdminPlayerAgentsSection() {
         setPollLinks(outcome.payload.pollLinks === true);
       }
     });
-  }, [reloads, settle]);
-
+  }, [ reloads, settle, t ]);
   async function save(change: { origins: string[] } | { pollLinks: boolean }) {
     setBusy(true);
     setError("");

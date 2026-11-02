@@ -233,7 +233,7 @@ export function MapPanel({
                 {shown.name}
                 {shown.isCurrent ? (
                   <span className="ml-1.5 rounded-full border border-emerald-500/40 bg-emerald-950 px-1.5 py-0.5 align-middle font-sans text-[10px] normal-case tracking-normal text-emerald-300">
-                    here
+                    {t("table.map.here")}
                   </span>
                 ) : null}
               </>
@@ -293,7 +293,7 @@ export function MapPanel({
           />
           {parentOfShown ? (
             <p className="-mt-1 mb-1.5 text-xs text-stone-500">
-              Part of{" "}
+              {t("table.map.partOfLabel")}{" "}
               <button
                 type="button"
                 onClick={() => setSelectedId(parentOfShown.id)}
@@ -372,7 +372,7 @@ export function MapPanel({
           {shown.connections.length ? (
             <p className="mt-1 flex items-start gap-1 text-xs text-stone-500">
               <GameIcon icon={{ kind: "glyph", key: "pace-normal" }} size="size-4" className="mt-0.5 shrink-0" />
-              <span>Routes: {shown.connections.join(", ")}</span>
+              <span>{t("table.map.routes", { routes: shown.connections.join(", ") })}</span>
             </p>
           ) : null}
         </ContextMenu>
@@ -394,7 +394,11 @@ export function MapPanel({
                     setSelectedId(location.id === shown?.id ? null : location.id)
                   }
                   aria-pressed={location.id === shown?.id}
-                  aria-label={label === location.name ? undefined : `${location.name}${location.isCurrent ? " (here)" : ""}${location.mapImage ? "" : ", unmapped"}`}
+                  aria-label={
+                    label === location.name
+                      ? undefined
+                      : `${location.name}${location.isCurrent ? ` ${t("table.map.hereMark")}` : ""}${location.mapImage ? "" : t("table.map.unmappedMark")}`
+                  }
                   className={cn(
                     "pk-tap flex w-full items-center gap-1.5 rounded-md border border-transparent px-2 py-1.5 text-left text-xs motion-press",
                     location.id === shown?.id
@@ -404,11 +408,11 @@ export function MapPanel({
                 >
                   <GameIcon icon={{ kind: "glyph", key: location.mapImage ? "tab-map" : "quest-hidden" }} size="size-4" className="shrink-0" />
                   {label}
-                  {location.isCurrent ? " (here)" : ""}
-                  {location.mapImage ? "" : " · unmapped"}
+                  {location.isCurrent ? ` ${t("table.map.hereMark")}` : ""}
+                  {location.mapImage ? "" : ` · ${t("table.map.unmapped")}`}
                   {!depth && tree.childrenOf.get(location.id)?.length ? (
                     <span className="ml-auto shrink-0 rounded-full border border-stone-700 px-1.5 text-[10px] text-stone-500">
-                      {tree.descendantsOf(location.id).length} inside
+                      {t("table.map.inside", { count: tree.descendantsOf(location.id).length, n: tree.descendantsOf(location.id).length })}
                     </span>
                   ) : null}
                 </button>

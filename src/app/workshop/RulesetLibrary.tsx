@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { FieldLabel, GlyphPlate, RowMenu } from "@/app/workshop/kit";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import {
   activeVariantRules,
   describeRuleset,
@@ -74,6 +75,7 @@ export function RulesetLibrary({
   campaignId: string;
   onApplied?: () => void;
 }) {
+  const t = useT();
   const [rulesets, setRulesets] = useState<Ruleset[]>([]);
   const [loading, setLoading] = useState(true);
   // A refused or failed read is shown in the server's words with a way to
@@ -92,15 +94,14 @@ export function RulesetLibrary({
 
   const load = useCallback(
     () =>
-      readLoad<{ rulesets?: Ruleset[] }>(fetch("/api/rulesets"), "Your rulesets").then((outcome) => {
+      readLoad<{ rulesets?: Ruleset[] }>(t, fetch("/api/rulesets"), t("load.label.rulesets")).then((outcome) => {
         settle(outcome);
         if (outcome.payload) {
           setRulesets(outcome.payload.rulesets ?? []);
         }
         setLoading(false);
       }),
-    [settle],
-  );
+    [ settle, t ],  );
 
   useEffect(() => {
     void load();

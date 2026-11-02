@@ -8,6 +8,7 @@ import { SectionHead } from "@/components/ui/SectionHead";
 import { cn } from "@/lib/cn";
 import { LoadFailed, PanelLoading } from "./PanelKit";
 import type { TimelineKind, TimelineRow } from "@/lib/dm/timeline-logic";
+import { useT } from "@/lib/locale";
 
 // The campaign on one axis (docs/vtt-parity-implementation-plan.md 5.5):
 // chapters, facts, sessions and the world's arcs in story order with the
@@ -48,6 +49,7 @@ const KIND_TONE: Record<TimelineKind, string> = {
 // and the calendar (calendar_updated bumps the quests version). Keyed on the
 // chapter count alone, an open timeline missed everything else.
 export function TimelinePanel({ campaignId, refreshKey }: { campaignId: string; refreshKey: number | string }) {
+  const t = useT();
   const [rows, setRows] = useState<TimelineRow[] | null>(null);
   // A refused or failed read is shown in the server's words with a way to
   // ask again, never as "nothing here yet" (issue 140).
@@ -57,7 +59,7 @@ export function TimelinePanel({ campaignId, refreshKey }: { campaignId: string; 
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ rows?: TimelineRow[] }>(fetch(`/api/campaigns/${campaignId}/timeline`), "The timeline").then((outcome) => {
+    readLoad<{ rows?: TimelineRow[] }>(t, fetch(`/api/campaigns/${campaignId}/timeline`), t("load.label.timeline")).then((outcome) => {
       if (cancelled) {
         return;
       }
@@ -69,8 +71,7 @@ export function TimelinePanel({ campaignId, refreshKey }: { campaignId: string; 
     return () => {
       cancelled = true;
     };
-  }, [campaignId, refreshKey, reloads, settle]);
-
+  }, [ campaignId, refreshKey, reloads, settle, t ]);
   if (rows === null && loadError) {
 
     return <LoadFailed error={loadError} onRetry={() => setReloads((current) => current + 1)} />;

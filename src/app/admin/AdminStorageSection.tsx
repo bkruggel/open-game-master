@@ -59,15 +59,14 @@ export function AdminStorageSection() {
   const [done, setDone] = useState("");
 
   useEffect(() => {
-    readLoad<{ stats?: Stats; orphans?: Orphans }>(fetch("/api/admin/storage"), "Storage").then((outcome) => {
+    readLoad<{ stats?: Stats; orphans?: Orphans }>(t, fetch("/api/admin/storage"), t("load.label.storage")).then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setStats(outcome.payload.stats ?? null);
         setOrphans(outcome.payload.orphans ?? null);
       }
     });
-  }, [reloads, settle]);
-
+  }, [ reloads, settle, t ]);
   async function act(action: "tidy" | "compact" | "remove-orphans") {
     setBusy(action);
     setError("");

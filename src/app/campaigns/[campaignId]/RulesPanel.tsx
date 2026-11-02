@@ -169,7 +169,7 @@ export function RulesPanel({
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ text?: unknown; chunks?: unknown }>(fetch(`/api/campaigns/${campaignId}/rules`), "The house rules").then((outcome) => {
+    readLoad<{ text?: unknown; chunks?: unknown }>(t, fetch(`/api/campaigns/${campaignId}/rules`), t("load.label.houseRules")).then((outcome) => {
       if (cancelled) {
         return;
       }
@@ -185,8 +185,7 @@ export function RulesPanel({
     return () => {
       cancelled = true;
     };
-  }, [campaignId, reloads, settle]);
-
+  }, [ campaignId, reloads, settle, t ]);
   async function saveText() {
     setSaving(true);
     try {

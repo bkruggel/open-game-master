@@ -13,6 +13,7 @@ import { formatPrice, parseCoins, unreadCoins } from "@/lib/srd/currency";
 import { withoutBonus } from "@/lib/srd/item-row";
 import { KitButton, panelField, SettingToggle } from "./PanelKit";
 import { textKey } from "@/lib/language/text-logic";
+import { useT } from "@/lib/locale";
 
 // The Market's shop editor (#171), for whoever holds the prep: the DM seat,
 // the lead of an AI-narrated table, the workshop's author. Every field is
@@ -102,6 +103,7 @@ export function MarketShopEditor({
   onSaved: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState({
     name: shop.name,
     kind: shop.kind,
@@ -134,13 +136,13 @@ export function MarketShopEditor({
     try {
       // A PATCH sent twice lands the same, so a lost answer is only said,
       // and the shelf stays as typed to send again (audit WA-05).
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/shops/${shop.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         }),
-        "The shop could not be saved.",
+        t("load.write.saveShop"),
       );
       if (sent.error !== null) {
         setError(sent.unanswered ? `${sent.error} The shelf is kept here; save again.` : sent.error);

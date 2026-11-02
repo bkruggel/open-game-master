@@ -27,14 +27,13 @@ export function BlockedPlayersSection() {
   const [busyId, setBusyId] = useState("");
 
   useEffect(() => {
-    readLoad<{ blocked?: Blocked[] }>(fetch("/api/profile/blocks"), "The blocked list").then((outcome) => {
+    readLoad<{ blocked?: Blocked[] }>(t, fetch("/api/profile/blocks"), t("load.label.blocked")).then((outcome) => {
       settle(outcome);
       if (outcome.payload) {
         setBlocked(outcome.payload.blocked ?? []);
       }
     });
-  }, [reloads, settle]);
-
+  }, [ reloads, settle, t ]);
   async function unblock(userId: string) {
     setBusyId(userId);
     try {

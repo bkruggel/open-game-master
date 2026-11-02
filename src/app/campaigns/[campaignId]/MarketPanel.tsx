@@ -1,6 +1,6 @@
 "use client";
 
-import { findLostCreate, readLoad, readWrite, UNREACHABLE, useLoadStatus } from "@/lib/load-state";
+import { findLostCreate, readLoad, readWrite, useLoadStatus } from "@/lib/load-state";
 import { EmptyState } from "@/components/EmptyState";
 import { ChevronDown, Info, Pencil, Plus, Trash2 } from "lucide-react";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
@@ -21,6 +21,7 @@ import type { StockLine } from "@/lib/dm/shop-logic";
 import type { MarketRequest } from "@/lib/dm/table-tabs";
 import { GameTerm } from "@/components/ui/GameTerm";
 import { useTourPrepare } from "@/lib/tours/prepare";
+import { useT } from "@/lib/locale";
 
 // The market (docs/vtt-parity-implementation-plan.md 11.1): the shops at
 // the party's place, stock as tiles with a price chip in coin, a Buy on
@@ -125,6 +126,7 @@ export function MarketPanel({
   // Puts an action in the composer, for a sale only the DM can price.
   onAskKeeper?: (text: string) => void;
 }) {
+  const t = useT();
   const [shops, setShops] = useState<ShopView[] | null>(null);
   const [here, setHere] = useState<{ id: string; name: string } | null>(null);
   const [places, setPlaces] = useState<Named[]>([]);
@@ -156,9 +158,9 @@ export function MarketPanel({
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ shops?: ShopView[]; here?: { id: string; name: string } | null; places?: Named[]; keepers?: Named[]; canPrep?: boolean }>(
+    readLoad<{ shops?: ShopView[]; here?: { id: string; name: string } | null; places?: Named[]; keepers?: Named[]; canPrep?: boolean }>(t,
       fetch(`/api/campaigns/${campaignId}/shops`),
-      "The market",
+      t("load.label.market"),
     ).then((outcome) => {
       if (cancelled) {
         return;
@@ -175,8 +177,7 @@ export function MarketPanel({
     return () => {
       cancelled = true;
     };
-  }, [campaignId, refreshKey, reload, settle, isDm, viewerId]);
-
+  }, [ campaignId, refreshKey, reload, settle, isDm, viewerId, t ]);
   // Create's Shop and the palette's New shop (audit WA-10). The Market sits
   // below Lore's entries in a workshop, so the form comes into view with its
   // name field ready. Unanswered until the shops have loaded, so the asker
@@ -229,7 +230,7 @@ export function MarketPanel({
       } catch {
         // The trade may have gone through before the answer was lost: the
         // shelf and the purse are read again before anything is tried twice.
-        setWriteError(`${UNREACHABLE} The shelf is read again; check it before trying again.`);
+        setWriteError(`${t("load.unreachable")} ${t("table.market.shelfReread")}`);
         setReload((current) => current + 1);
         return;
       }
@@ -257,13 +258,13 @@ export function MarketPanel({
     setError("");
     setWriteError("");
     try {
-      const sent = await readWrite<{ shop?: { id?: string } }>(
+      const sent = await readWrite<{ shop?: { id?: string } }>(t,
         fetch(`/api/campaigns/${campaignId}/shops`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...draft, locationId: draft.locationId || here?.id || "" }),
         }),
-        "The shop could not be opened.",
+        t("load.write.shop"),
       );
       if (sent.error !== null) {
         // A shop whose answer was lost is looked for before anything is said,
@@ -271,7 +272,7 @@ export function MarketPanel({
         if (sent.unanswered) {
           const name = draft.name.trim();
           const reread = async () =>
-            (await readLoad<{ shops?: ShopView[] }>(fetch(`/api/campaigns/${campaignId}/shops`), "The market")).payload?.shops ?? null;
+            (await readLoad<{ shops?: ShopView[] }>(t, fetch(`/api/campaigns/${campaignId}/shops`), t("load.label.market"))).payload?.shops ?? null;
           const found = await findLostCreate(shops, reread, (shop) => shop.name === name);
           if (found === "made") {
             setOpening(false);
@@ -307,7 +308,7 @@ export function MarketPanel({
       return;
     }
     setWriteError("");
-    const sent = await readWrite(fetch(`/api/campaigns/${campaignId}/shops/${shop.id}`, { method: "DELETE" }), `${shop.name} could not be closed.`);
+    const sent = await readWrite(t, fetch(`/api/campaigns/${campaignId}/shops/${shop.id}`, { method: "DELETE" }), t("load.write.closeShop", { name: shop.name }));
     if (sent.error !== null) setWriteError(sent.error);
     setReload((current) => current + 1);
   }

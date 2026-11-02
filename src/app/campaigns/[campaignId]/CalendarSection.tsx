@@ -13,6 +13,7 @@ import { KitButton, LoadFailed, panelField, PanelLoading } from "./PanelKit";
 import type { CalendarDefinition, CampaignClock } from "@/lib/dm/calendar";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
+import { useT } from "@/lib/locale";
 
 // The Calendar section of the Rules panel (docs/vtt-parity-implementation-plan.md
 // 7.1 and 7.2): the year's months, the week's days, the sky's moons and the
@@ -39,6 +40,7 @@ function blankEvent(): EventDraft {
 }
 
 export function CalendarSection({ campaignId }: { campaignId: string }) {
+  const t = useT();
   const [clock, setClock] = useState<CampaignClock | null>(null);
   const [reads, setReads] = useState("");
   const [presets, setPresets] = useState<Preset[]>([]);
@@ -56,8 +58,8 @@ export function CalendarSection({ campaignId }: { campaignId: string }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      readLoad<{ clock?: CampaignClock; reads?: string; presets?: Preset[] }>(fetch(`/api/campaigns/${campaignId}/dm/clock`), "The clock"),
-      readLoad<{ events?: EventView[] }>(fetch(`/api/campaigns/${campaignId}/calendar/events`), "The calendar"),
+      readLoad<{ clock?: CampaignClock; reads?: string; presets?: Preset[] }>(t, fetch(`/api/campaigns/${campaignId}/dm/clock`), t("load.label.clock")),
+      readLoad<{ events?: EventView[] }>(t, fetch(`/api/campaigns/${campaignId}/calendar/events`), t("load.label.calendar")),
     ]).then(([clockLoad, eventLoad]) => {
       if (cancelled) {
         return;
@@ -77,8 +79,7 @@ export function CalendarSection({ campaignId }: { campaignId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [campaignId, reload, reloads, settle]);
-
+  }, [ campaignId, reload, reloads, settle, t ]);
   async function applyPreset(preset: string) {
     setSaving(true);
     try {

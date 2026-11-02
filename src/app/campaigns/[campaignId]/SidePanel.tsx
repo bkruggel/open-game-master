@@ -141,7 +141,7 @@ function SidePanelInner({
           ))
         ) : (
           <p className="motion-tab px-2 py-6 text-center font-serif text-sm italic text-stone-400">
-            Every tab has a pane of its own. Put one back from its bar to see it here again.
+            {t("table.panel.empty")}
           </p>
         )}
       </div>

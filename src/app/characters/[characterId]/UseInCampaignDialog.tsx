@@ -62,7 +62,7 @@ export function UseInCampaignDialog({
 
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ campaigns?: CampaignRow[] }>(fetch("/api/campaigns"), t("characters.use.loadLabel")).then((outcome) => {
+    readLoad<{ campaigns?: CampaignRow[] }>(t, fetch("/api/campaigns"), t("characters.use.loadLabel")).then((outcome) => {
       if (cancelled) return;
       settle(outcome);
       if (outcome.payload) {

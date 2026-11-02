@@ -22,6 +22,7 @@ import { NpcReviewPanel } from "./NpcReviewPanel";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
 import { storyPanelArcForCampaign, visibleStoryChapters } from "@/lib/dm/story-panel-logic";
+import { useT } from "@/lib/locale";
 
 // Confirmation for a chapter rewind (the server answered 409 with the
 // consequences). Rewinds are destructive: everything after the boundary is
@@ -814,6 +815,7 @@ export function StoryPanel({
   chapters: Chapter[];
   steersStory: boolean;
 }) {
+  const t = useT();
   const [closing, setClosing] = useState(false);
   const [rewindable, setRewindable] = useState<number[]>([]);
   // A refused or failed read is shown in the server's words with a way to
@@ -845,7 +847,7 @@ export function StoryPanel({
   // rewind to is lead-only UI and only arrives for the lead.
   useEffect(() => {
     let cancelled = false;
-    readLoad<{ acts?: unknown; rewindableChapters?: unknown; chapters?: unknown }>(fetch(`/api/campaigns/${campaignId}/chapters`), "The chapters").then((outcome) => {
+    readLoad<{ acts?: unknown; rewindableChapters?: unknown; chapters?: unknown }>(t, fetch(`/api/campaigns/${campaignId}/chapters`), t("load.label.chapters")).then((outcome) => {
       if (cancelled) {
         return;
       }
@@ -867,8 +869,7 @@ export function StoryPanel({
     return () => {
       cancelled = true;
     };
-  }, [campaignId, steersStory, tableChapters.length, reloads, settle]);
-
+  }, [ campaignId, steersStory, tableChapters.length, reloads, settle, t ]);
   async function postRewind(chapterIndex: number, confirm: boolean) {
     setRewindBusy(true);
     try {

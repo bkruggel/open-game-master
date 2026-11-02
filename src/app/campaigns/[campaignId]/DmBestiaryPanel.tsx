@@ -20,6 +20,7 @@ import { MonsterEditor } from "@/app/workshop/bestiary/MonsterEditor";
 import { MonsterRows } from "@/app/workshop/bestiary/MonsterRows";
 import type { Found, Monster } from "@/app/workshop/bestiary/types";
 import { textKey } from "@/lib/language/text-logic";
+import { useT } from "@/lib/locale";
 
 // The bestiary forge: build a monster, and see what it is actually worth.
 //
@@ -52,6 +53,7 @@ export function DmBestiaryPanel({
   openOnArrival?: string | null;
   onWorldEntry?: (ref: string) => void;
 }) {
+  const t = useT();
   const [monsters, setMonsters] = useState<Monster[]>([]);
   const [found, setFound] = useState<Found[]>([]);
   // The table's setting, for the boss plate on high-rating thumbnails.
@@ -78,9 +80,9 @@ export function DmBestiaryPanel({
   const { loaded, loadError, settle } = useLoadStatus();
   const load = useCallback(
     (search?: string) =>
-      readLoad<{ monsters: Monster[]; found: Found[]; genre?: string }>(
+      readLoad<{ monsters: Monster[]; found: Found[]; genre?: string }>(t,
         fetch(`/api/campaigns/${campaignId}/dm/bestiary${search ? `?q=${encodeURIComponent(search)}` : ""}`),
-        "The bestiary",
+        t("load.label.bestiary"),
       ).then((outcome) => {
         if (outcome.payload) {
           setMonsters(outcome.payload.monsters);
@@ -89,8 +91,7 @@ export function DmBestiaryPanel({
         }
         settle(outcome);
       }),
-    [campaignId, settle],
-  );
+    [ campaignId, settle, t ],  );
 
   useEffect(() => {
     void load();

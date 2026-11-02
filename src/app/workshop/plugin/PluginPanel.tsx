@@ -19,6 +19,7 @@ import { PublishSection } from "@/app/workshop/plugin/PublishSection";
 import { MagicSection, PeopleSection } from "@/app/workshop/plugin/ReskinSection";
 import { SettingSection } from "@/app/workshop/plugin/SettingSection";
 import { PLUGIN_SECTIONS, type Flushed, type SectionId } from "@/app/workshop/plugin/types";
+import { useT } from "@/lib/locale";
 
 // The Plugin system: a world pack written in the workshop.
 //
@@ -76,6 +77,7 @@ export function PluginPanel({
   workshopId: string;
   onChanged?: (count: number) => void;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState<WorldPackDraft | null>(null);
   const [section, setSection] = useState<SectionId>("identity");
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -120,7 +122,7 @@ export function PluginPanel({
     () =>
       // After any write still on its way from an earlier visit to this tool.
       (chains.get(workshopId) ?? Promise.resolve())
-        .then(() => readLoad<StoredReply>(fetch(`/api/workshops/${workshopId}/plugin`), "The draft"))
+        .then(() => readLoad<StoredReply>(t, fetch(`/api/workshops/${workshopId}/plugin`), t("load.label.draft")))
         .then((outcome) => {
           if (!mounted.current) return;
           if (outcome.error !== null) {
@@ -139,8 +141,7 @@ export function PluginPanel({
             setWizardOpen(true);
           }
         }),
-    [workshopId, adopt],
-  );
+    [ workshopId, adopt, t ],  );
 
   // Writes the draft on screen once the writes before it are done; true
   // when the server holds it after.
@@ -161,7 +162,7 @@ export function PluginPanel({
         const live = mounted.current;
         if (live) setSaveState("saving");
         const body = JSON.stringify({ draft: next });
-        const sent = await readWrite<StoredReply>(
+        const sent = await readWrite<StoredReply>(t,
           fetch(`/api/workshops/${workshopId}/plugin`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -169,7 +170,7 @@ export function PluginPanel({
             keepalive: !live && new TextEncoder().encode(body).length < KEEPALIVE_BYTES,
             signal: AbortSignal.timeout(SAVE_TIMEOUT_MS),
           }),
-          "The draft could not be saved.",
+          t("load.write.save"),
         );
         if (sent.error !== null) {
           if (mounted.current) {
@@ -188,8 +189,7 @@ export function PluginPanel({
         }
         return true;
       }),
-    [workshopId],
-  );
+    [ workshopId, t ],  );
 
   useEffect(() => {
     mounted.current = true;
@@ -255,9 +255,9 @@ export function PluginPanel({
         return;
       }
       const sent = await inTurn(workshopId, () =>
-        readWrite<StoredReply & { added?: number; omissions?: Array<{ assets: string[] }> }>(
+        readWrite<StoredReply & { added?: number; omissions?: Array<{ assets: string[] }> }>(t,
           fetch(`/api/workshops/${workshopId}/plugin/pull`, { method: "POST" }),
-          "Nothing could be pulled.",
+          t("load.write.pull"),
         ),
       );
       if (sent.error !== null) {
@@ -296,7 +296,7 @@ export function PluginPanel({
     }
     setError("");
     const sent = await inTurn(workshopId, () =>
-      readWrite<StoredReply>(fetch(`/api/workshops/${workshopId}/plugin`, { method: "DELETE" }), "The draft could not be thrown away."),
+      readWrite<StoredReply>(t, fetch(`/api/workshops/${workshopId}/plugin`, { method: "DELETE" }), t("load.write.discard")),
     );
     if (sent.error !== null) {
       setError(`${sent.error} The draft on screen is kept.`);

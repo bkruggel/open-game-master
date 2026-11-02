@@ -55,7 +55,7 @@ export function LengthNote({
       <span aria-live="polite">
         {over > 0 ? (
           <span key="over" className="live-in font-medium">
-            {formatCount(over)} over the limit: shorten it to send.
+            {t("text.limit.over", { count: over, over: formatCount(over) })}
           </span>
         ) : null}
       </span>

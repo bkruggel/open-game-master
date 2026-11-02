@@ -28,6 +28,7 @@ import {
 import { useOpenOnArrival } from "@/app/workshop/world/WorldEntryLink";
 import { OpenTestFightCard, useTestFight } from "@/app/workshop/encounters/OpenTestFight";
 import { TestFightSheet } from "@/app/workshop/encounters/TestFightSheet";
+import { useT } from "@/lib/locale";
 
 // Prepared encounters: the roster a DM writes down before the session and
 // deploys in one action.
@@ -115,6 +116,7 @@ export function DmEncounterPrepPanel({
   // src/lib/workshop/test-fight.ts).
   testFight?: { workshopId: string };
 }) {
+  const t = useT();
   const [testing, setTesting] = useState<PreparedEncounter | null>(null);
   const test = useTestFight(testFight?.workshopId ?? null);
   const [templates, setTemplates] = useState<PreparedEncounter[]>([]);
@@ -137,7 +139,7 @@ export function DmEncounterPrepPanel({
   const { loaded, loadError, settle } = useLoadStatus();
   const load = useCallback(
     () =>
-      readLoad<{ templates: PreparedEncounter[] }>(fetch(`/api/campaigns/${campaignId}/dm/encounter-templates`), "The prepared fights").then(
+      readLoad<{ templates: PreparedEncounter[] }>(t, fetch(`/api/campaigns/${campaignId}/dm/encounter-templates`), t("load.label.preparedFights")).then(
         (outcome) => {
           if (outcome.payload) {
             setTemplates(outcome.payload.templates);
@@ -146,8 +148,7 @@ export function DmEncounterPrepPanel({
           return outcome.payload?.templates ?? null;
         },
       ),
-    [campaignId, settle],
-  );
+    [ campaignId, settle, t ],  );
 
   // The map drawer, for the "On which map" link. Same load-once shape as the
   // templates themselves.
@@ -232,7 +233,7 @@ export function DmEncounterPrepPanel({
     setNote("");
     try {
       const base = `/api/campaigns/${campaignId}/dm/encounter-templates`;
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(editingId ? `${base}/${editingId}` : base, {
           method: editingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -245,7 +246,7 @@ export function DmEncounterPrepPanel({
             extras: draft.extras,
           }),
         }),
-        "That could not be saved.",
+        t("load.write.save"),
       );
       if (sent.error !== null) {
         if (sent.unanswered && !editingId) {
@@ -285,7 +286,7 @@ export function DmEncounterPrepPanel({
     setNote("");
     try {
       const name = `${template.name} (copy)`.slice(0, TEMPLATE_NAME_MAX);
-      const sent = await readWrite(
+      const sent = await readWrite(t,
         fetch(`/api/campaigns/${campaignId}/dm/encounter-templates`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -298,7 +299,7 @@ export function DmEncounterPrepPanel({
             extras: template.extras,
           }),
         }),
-        "That could not be copied.",
+        t("load.write.copy"),
       );
       if (sent.error !== null) {
         if (sent.unanswered) {
@@ -328,7 +329,7 @@ export function DmEncounterPrepPanel({
     }
     setError("");
     setNote("");
-    const sent = await readWrite(fetch(`/api/campaigns/${campaignId}/dm/encounter-templates/${id}`, { method: "DELETE" }), "That could not be deleted.");
+    const sent = await readWrite(t, fetch(`/api/campaigns/${campaignId}/dm/encounter-templates/${id}`, { method: "DELETE" }), t("load.write.delete"));
     if (sent.error !== null) {
       setError(sent.error);
       // No answer: it may be gone all the same, and the list says which.
@@ -347,13 +348,13 @@ export function DmEncounterPrepPanel({
     setError("");
     setNote("");
     try {
-      const sent = await readWrite<{ mapError?: string | null; cued?: boolean }>(
+      const sent = await readWrite<{ mapError?: string | null; cued?: boolean }>(t,
         fetch(`/api/campaigns/${campaignId}/dm/encounter-templates/${id}/deploy`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(cue ? { cue: cueIt } : {}),
         }),
-        "That could not be deployed.",
+        t("load.write.deploy"),
       );
       if (sent.error !== null) {
         // A deploy with no answer may have put the fight on the table; a
