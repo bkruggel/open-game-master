@@ -17,7 +17,7 @@ import { useLocale, useT } from "@/lib/locale";
 import { wearingIsExplicit } from "@/lib/srd/armor";
 import { oneOfKind, wornButIdle } from "@/lib/srd/wear-slots";
 import { magicItemBonus, rowName, srdNameWithBonus } from "@/lib/srd/item-row";
-import { classFeatureName, contentName } from "@/lib/content/names";
+import { backgroundFeatureName, classFeatureName, contentName, speciesTraitName } from "@/lib/content/names";
 
 // The pieces of the character sheet (docs/visual-overhaul-plan.md 8b.5), one
 // implementation drawn by both the session's sheet dialog and the character
@@ -364,10 +364,13 @@ export function FeatureChips({
   features,
   classId,
   subclass,
+  raceId,
 }: {
   features: Array<{ name: string; source?: string; level?: number; classId?: string }>;
   classId: string;
   subclass?: string | null;
+  // The sheet's species, so its racial traits read in the reader's language.
+  raceId?: string;
 }) {
   // A genre class's feature text arrives on demand (issue 411).
   const t = useT();
@@ -376,12 +379,17 @@ export function FeatureChips({
   return (
     <InfoChipList
       items={features.map((feature) => ({
-        // The class's own features read in the reader's language; a story
+        // The class's own features read in the reader's language, as do the
+        // species' trait lines and the background's granted feature; a story
         // feature stays as the DM wrote it.
         name:
           feature.source === "story"
             ? feature.name
-            : classFeatureName(feature.classId ?? classId, feature.name, locale),
+            : feature.source === "race" && raceId
+              ? speciesTraitName(raceId, feature.name, locale)
+              : feature.source === "background"
+                ? backgroundFeatureName(feature.name, locale)
+                : classFeatureName(feature.classId ?? classId, feature.name, locale),
         icon: { kind: "feature" as const, key: feature.name, family: `class-${classId.toLowerCase()}` },
         note: feature.source === "story" ? t("sheet.featureStory") : undefined,
         meta: feature.level ? t("sheet.featureLevel", { level: feature.level }) : undefined,

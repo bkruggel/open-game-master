@@ -3668,6 +3668,11 @@
         "key",
         1,
         "the story feature's fixed source mark, set by the grant that made it"
+      ],
+      [
+        "key",
+        2,
+        "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
     "components/sheet/SheetParts.tsx#toLowerCase": [
@@ -6545,9 +6550,19 @@
         "key",
         1,
         "the key's slug shape: every run of characters outside the key becomes one hyphen"
+      ],
+      [
+        "key",
+        1,
+        "the key's slug shape: every run of characters outside the key becomes one hyphen"
       ]
     ],
     "lib/content/names.ts#toLowerCase": [
+      [
+        "key",
+        2,
+        "an official name, a class id or a feature name made into a lookup key for the generated French-name tables (names-fr.ts), whose keys are lowercase slugs"
+      ],
       [
         "key",
         2,

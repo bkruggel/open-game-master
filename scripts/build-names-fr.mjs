@@ -12,9 +12,17 @@
 //   (src/lib/srd/adventuring-gear.ts) — lowercase words, punctuation and
 //   apostrophes dropped ("alchemists fire flask");
 // - conditions: the lowercase condition id ("blinded");
-// - classes: 12 bare class ids ("cleric") plus 229 class-feature keys of the
-//   form "<classSlug>:<FeatureNameSlugified>" ("cleric:channel-divinity-turn-undead"),
-//   the feature name slugified the way the v1 importer slugifies a heading.
+// - classes: 12 bare class ids ("cleric") plus class-feature keys of the
+//   canonical form the render helper slugs a display name to
+//   ("cleric:bonus-proficiency-heavy-armor", "cleric:channel-divinity-1-rest",
+//   "warlock:invocation-agonizing-blast"): lowercase, punctuation deleted,
+//   every other run of non-alphanumeric characters one hyphen;
+// - speciesTraits: "<speciesSlug>:<traitNameSlugified>" ("wood-elf:keen-senses"),
+//   the species the way srdRaceId spells it, hyphenated;
+// - backgroundFeatures: "<backgroundSlug>:<featureNameSlugified>"
+//   ("acolyte:shelter-of-the-faithful");
+// - subclasses: "<classSlug>:<subclassSlug>" ("cleric:life-domain"), whole
+//   name and bare form ("cleric:life").
 //
 // Run: node scripts/build-names-fr.mjs   (the generated file is committed, so
 // the app builds without running any script.)
@@ -39,6 +47,9 @@ const TABLES = {
   monsters: "MONSTER_NAMES_FR",
   classes: "CLASS_NAMES_FR",
   classFeatures: "CLASS_FEATURE_NAMES_FR",
+  speciesTraits: "SPECIES_TRAIT_NAMES_FR",
+  backgroundFeatures: "BACKGROUND_FEATURE_NAMES_FR",
+  subclasses: "SUBCLASS_NAMES_FR",
 };
 
 const read = (table) => JSON.parse(readFileSync(join(dataDir, `${table}-fr.json`), "utf8"));
@@ -67,11 +78,18 @@ for (const [key, name] of classEntries) {
   }
 }
 
-const tables = { ...raw, classes, classFeatures };
+const tables = {
+  ...raw,
+  classes,
+  classFeatures,
+  speciesTraits: read("species-traits"),
+  backgroundFeatures: read("background-features"),
+  subclasses: read("subclasses"),
+};
 
 const total = Object.values(tables).reduce((sum, entries) => sum + Object.keys(entries).length, 0);
-if (total !== 1110) {
-  throw new Error(`expected 1,110 name pairs, read ${total}`);
+if (total !== 1222) {
+  throw new Error(`expected 1,222 name pairs, read ${total}`);
 }
 
 const tsLiteral = (value) => JSON.stringify(value);
@@ -103,7 +121,7 @@ const body = [
   ...Object.keys(TABLES).map((table) => `  ${table}: ${TABLES[table]},`),
   `};`,
   ``,
-  `// 1,110 official pairs in total, by table.`,
+  `// 1,222 official pairs in total, by table.`,
   `export const FR_NAME_COUNTS: Record<string, number> = ${JSON.stringify(counts)};`,
 ].join("\n");
 

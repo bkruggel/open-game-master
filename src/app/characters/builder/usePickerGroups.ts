@@ -10,7 +10,7 @@ import { subclassBlurb, subclassGate, subclassNamesFor } from "@/lib/srd/feature
 import { packRecommends, type Reskinned } from "@/lib/worlds/reskin-logic";
 import type { WorldPack } from "@/lib/worlds/types";
 import type { PickerGroup, PickerOption } from "./OptionPicker";
-import { contentName } from "@/lib/content/names";
+import { contentName, subclassName } from "@/lib/content/names";
 import { useLocale } from "@/lib/locale";
 import type { Locale } from "@/lib/messages-logic";
 import type {
@@ -405,18 +405,21 @@ export function usePickerGroups({
     if (builtInSubclasses.length) {
       groups.push({
         label: "Full features",
-        options: builtInSubclasses.map((subclassName) => {
+        options: builtInSubclasses.map((name) => {
           const match = archetypes.find(
-            (entry) => textKey(entry.name) === textKey(subclassName),
+            (entry) => textKey(entry.name) === textKey(name),
           );
           return {
-            id: subclassName,
-            name: subclassName,
+            // The stored value stays the English name the sheet rules match
+            // by; the label reads in the reader's language where the maps
+            // carry it (the identity line reads the same way).
+            id: name,
+            name: subclassName(klass?.id ?? "", name, locale),
             // The pack's full write-up when it has the row, else the
             // bundled line, so no subclass is a bare name.
-            infoText: match?.desc || subclassBlurb(klass?.id ?? "", subclassName) || undefined,
+            infoText: match?.desc || subclassBlurb(klass?.id ?? "", name) || undefined,
             reference: match
-              ? { kind: "archetypes", slug: match.id, name: subclassName }
+              ? { kind: "archetypes", slug: match.id, name }
               : undefined,
           };
         }),
@@ -446,7 +449,7 @@ export function usePickerGroups({
       });
     }
     return groups;
-  }, [builtInSubclasses, packOnlyArchetypes, archetypes, klass]);
+  }, [builtInSubclasses, packOnlyArchetypes, archetypes, klass, locale]);
 
   const backgroundGroups = useMemo<PickerGroup[]>(() => {
     const toOption = (entry: Reskinned<BackgroundOption>, showSource: boolean): PickerOption => ({

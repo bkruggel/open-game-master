@@ -19,7 +19,7 @@ import { Ribbon } from "@/components/ui/Ribbon";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
 import { useLocale, useT } from "@/lib/locale";
-import { contentName } from "@/lib/content/names";
+import { contentName, subclassName } from "@/lib/content/names";
 import { navigateTo } from "@/lib/navigation";
 import { prefersReducedMotion, useLowEffects } from "@/lib/effects-mode";
 import { PortraitToast, RosterPortraitSlot, RosterPortraitStatus } from "@/app/characters/RosterPortrait";
@@ -480,6 +480,11 @@ function CharacterCard({
   const router = useRouter();
   const t = useT();
   const locale = useLocale();
+  // The subclass reads in the reader's language where the maps carry it; a
+  // miss keeps the stored string, cased the way the card has shown it.
+  const subclassShown = character.subclass
+    ? subclassName(character.class, character.subclass, locale)
+    : "";
   // Everything the card can do, once: the kebab in its corner, a right-click
   // and a long press all raise this list.
   const menu: ContextMenuItem[] = [
@@ -528,7 +533,7 @@ function CharacterCard({
         </div>
         <p className="mt-2 text-sm text-stone-400">
           {contentName("species", character.raceLabel ?? titleCase(character.race), locale)}
-          {character.subclass ? ` (${character.subclass})` : ""}
+          {subclassShown ? ` (${subclassShown === character.subclass ? character.subclass : subclassShown})` : ""}
         </p>
         {character.background ? (
           <p className="reveal text-xs text-stone-500">

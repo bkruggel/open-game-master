@@ -12,7 +12,7 @@ import { freshPlaySheet, revealLine, threeThingsToTry } from "@/lib/characters/h
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
 import { classLevelWords, isSplit } from "@/lib/characters/class-words";
 import { workshopClassName } from "@/lib/classes/workshop-registry";
-import { contentName } from "@/lib/content/names";
+import { contentName, subclassName } from "@/lib/content/names";
 import { useLocale } from "@/lib/locale";
 import { CharacterPortrait, ui } from "@/lib/ui";
 import { UseInCampaignDialog } from "../UseInCampaignDialog";
@@ -160,7 +160,12 @@ export default function HeroReadyPage({ params }: { params: Promise<{ characterI
   const classWords = isSplit(split)
     ? classLevelWords(split, (id) => workshopClassName(id) ?? contentName("classes", spaced(id), locale))
     : (character.className ?? contentName("classes", spaced(character.class), locale));
-  const calling = `${classWords}${character.subclass ? ` (${spaced(character.subclass)})` : ""}`;
+  // The subclass reads in the reader's language where the maps carry it,
+  // the stored string (spaced, as ever) beside every miss.
+  const subclassWords = character.subclass ? subclassName(character.class, character.subclass, locale) : "";
+  const calling = `${classWords}${
+    subclassWords ? ` (${subclassWords === character.subclass ? spaced(character.subclass) : subclassWords})` : ""
+  }`;
   const motion = lowEffects ? "" : "reveal";
 
   return (

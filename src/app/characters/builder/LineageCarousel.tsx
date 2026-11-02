@@ -5,6 +5,8 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { InfoButton, renderRules, type ContentRef } from "@/components/ui/InfoDialog";
 import { cn } from "@/lib/cn";
+import { useLocale } from "@/lib/locale";
+import { speciesTraitName } from "@/lib/content/names";
 import { ui } from "@/lib/ui";
 import { lineageFits } from "./lineageFits";
 import { AbilityText } from "./AbilityText";
@@ -45,6 +47,7 @@ const sectionLabel = "mb-1.5 block font-display text-[0.875rem] font-semibold up
 
 function Traits({ slide }: { slide: LineageSlide }) {
   const baseId = useId();
+  const locale = useLocale();
   const lines = traitLines(slide);
   // The first trait with something to say arrives open, so the panel never
   // opens onto a wall of closed rows.
@@ -61,9 +64,13 @@ function Traits({ slide }: { slide: LineageSlide }) {
     <div className="flex flex-col gap-[5px]">
       {lines.map((line, index) => {
         const parsed = parseTrait(line, slide);
+        // The trait's name reads in the reader's language where the official
+        // maps carry it; the shorthand around it ("adv. vs poison", "60 ft")
+        // is the app's own and stays as it was written.
+        const head = speciesTraitName(slide.id, parsed.head, locale);
         const open = openTrait === index && Boolean(parsed.body);
         const bodyId = `${baseId}-trait-${index}`;
-        const head = (
+        const headEl = (
           <span className="flex w-full items-center gap-2.5 px-3 py-2">
             <span
               className="flex size-[1.5rem] shrink-0 items-center justify-center rounded-full border border-amber-500/40 bg-amber-950/50 font-mono text-[0.875rem] text-amber-300"
@@ -71,7 +78,7 @@ function Traits({ slide }: { slide: LineageSlide }) {
             >
               {index + 1}
             </span>
-            <span className="min-w-0 flex-1 font-display text-base font-semibold text-amber-200">{parsed.head}</span>
+            <span className="min-w-0 flex-1 font-display text-base font-semibold text-amber-200">{head}</span>
             {parsed.body ? <ChevronDown className="creator-chevron size-3.5 shrink-0 text-stone-500" aria-hidden="true" /> : null}
           </span>
         );
@@ -92,10 +99,10 @@ function Traits({ slide }: { slide: LineageSlide }) {
                 aria-controls={bodyId}
                 className="creator-trait-toggle"
               >
-                {head}
+                {headEl}
               </button>
             ) : (
-              head
+              headEl
             )}
             {open ? (
               <div id={bodyId} className="creator-trait-body pb-2.5 pl-[42px] pr-3 font-serif text-base leading-normal text-stone-300">

@@ -48,7 +48,7 @@ import { namesLookup } from "@/lib/battlemap/condition-notes";
 import { workshopClassName } from "@/lib/classes/workshop-registry";
 import { StoryHopes } from "@/app/campaigns/[campaignId]/StoryHopes";
 import { classWordsAfterLevel, isSplit } from "@/lib/characters/class-words";
-import { contentName } from "@/lib/content/names";
+import { contentName, subclassName } from "@/lib/content/names";
 import { useLocale } from "@/lib/locale";
 
 function titleCase(value: string) {
@@ -115,10 +115,15 @@ export function CharacterSheetDialog({
   const t = useT();
   const locale = useLocale();
   // The sheet line reads its official names in the reader's language: a
-  // species, one of the twelve classes, a background it carries. A workshop
-  // class or a homebrew label stays as it was written.
+  // species, one of the twelve classes, its subclass, a background it
+  // carries. A workshop class or a homebrew label stays as it was written.
   const speciesShown = contentName("species", sheet.raceLabel ?? titleCase(sheet.race), locale);
   const classShown = (id: string) => workshopClassName(id) ?? contentName("classes", titleCase(id), locale);
+  // A subclass the maps carry reads whole ("Domaine de la Vie"); one they do
+  // not keeps the stored string, cased the way the line has always shown it.
+  const subclassShown = sheet.subclass
+    ? subclassName(sheet.class, sheet.subclass, locale)
+    : "";
   const backgroundShown = sheet.background
     ? contentName("backgrounds", sheet.backgroundLabel ?? titleCase(sheet.background), locale)
     : "";
@@ -249,7 +254,11 @@ export function CharacterSheetDialog({
                   {t("table.sheet.level", { level: sheet.level })} {speciesShown}{" "}
                   {isSplit(sheet)
                     ? classWordsAfterLevel(sheet, classShown)
-                    : `${classShown(sheet.class)}${sheet.subclass ? ` (${titleCase(sheet.subclass)})` : ""}`}
+                    : `${classShown(sheet.class)}${
+                        subclassShown
+                          ? ` (${subclassShown === sheet.subclass ? titleCase(sheet.subclass) : subclassShown})`
+                          : ""
+                      }`}
                   {backgroundShown ? ` · ${backgroundShown}` : ""}
                   {sheet.alignment ? ` · ${sheet.alignment}` : ""}
                 </p>
@@ -600,7 +609,12 @@ export function CharacterSheetDialog({
           ) : null}
           {sheet.features.length ? (
             <SheetBlock className="mt-4" title={t("table.sheet.features")}>
-              <FeatureChips features={sheet.features} classId={sheet.class} subclass={sheet.subclass} />
+              <FeatureChips
+                features={sheet.features}
+                classId={sheet.class}
+                subclass={sheet.subclass}
+                raceId={sheet.race}
+              />
               <FeatureChoicePicker sheet={sheet} mine={mine} inCombat={inCombat} />
             </SheetBlock>
           ) : null}

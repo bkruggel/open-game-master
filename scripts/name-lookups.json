@@ -4214,7 +4214,7 @@
       [
         "key",
         1,
-        "the magic bonus read off the stored item name (+1 Plate) — notation, not a record chosen; the display name goes to the French-name tables by the row's name"
+        "the magic bonus read off the stored item name (+1 Plate) \u2014 notation, not a record chosen; the display name goes to the French-name tables by the row's name"
       ]
     ],
     "components/sheet/SheetParts.tsx#bypass": [
@@ -6924,9 +6924,19 @@
         "key",
         3,
         "the generated French-name tables and the crossbow key bridge read by a table key or an official name's key; a miss is the English name back"
+      ],
+      [
+        "key",
+        3,
+        "the generated French-name tables and the crossbow key bridge read by a table key or an official name's key; a miss is the English name back"
       ]
     ],
     "lib/content/names.ts#normalizer": [
+      [
+        "key",
+        2,
+        "an official name, a class id or a feature name folded into the generated French-name tables' own key shape (lowercase slugs, \"class:feature\"); a miss is the English name back, never a near record"
+      ],
       [
         "key",
         2,
@@ -19517,6 +19527,20 @@
         "key",
         2,
         "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
+      ]
+    ],
+    "lib/content/names.ts#partial": [
+      [
+        "key",
+        3,
+        "a trait line's or a background feature's name cut from its trailing bracket note or its trailing measurement by a fixed pattern before the name's canonical key reads the generated French-name tables; a miss is the line as written, never a near record"
+      ]
+    ],
+    "app/characters/[characterId]/ready/page.tsx#whole-single": [
+      [
+        "parse",
+        1,
+        "tests the subclass helper's answer against the value the sheet stores, to case the label only (title-cased as stored beside a miss); names no record"
       ]
     ]
   }

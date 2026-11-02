@@ -12,6 +12,7 @@
 
 import { textKey } from "@/lib/language/text-logic";
 import type { Locale } from "@/lib/messages-logic";
+import { srdRaceId } from "@/lib/srd/race-id";
 import { FR_NAMES_BY_TABLE } from "./names-fr";
 
 // The tables the maps carry, as the helper's callers name them.
@@ -25,7 +26,10 @@ export type FrNamesTable =
   | "backgrounds"
   | "monsters"
   | "classes"
-  | "classFeatures";
+  | "classFeatures"
+  | "speciesTraits"
+  | "backgroundFeatures"
+  | "subclasses";
 
 // A content row as the API routes and the library send it, narrowed to the
 // fields a name lookup reads.
@@ -50,6 +54,22 @@ function gearKey(name: string): string {
 // (weapons, armor).
 function slugKey(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+// The canonical form the class-feature, species-trait, background-feature
+// and subclass keys are built from, on both sides of the maps: lowercase,
+// punctuation deleted (apostrophes, commas, periods, colons, parentheses —
+// a bracket note rides on many a display name), then every run of remaining
+// non-alphanumeric characters one hyphen. The generated maps key these
+// tables the same way (scripts/build-names-fr.mjs), so a name as it is
+// displayed ("Bonus Proficiency (heavy armor)", "Invocation: Agonizing
+// Blast") meets the key its table wrote for it.
+function canonicalKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['’,.;:!?()[\]"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 // The three crossbows: the app writes "Light Crossbow", Open5e's row slug
@@ -133,15 +153,97 @@ export function contentName(
   return row.name;
 }
 
-// A class feature's name ("Channel Divinity: Turn Undead") in the reader's
-// language: the maps key a feature by its class and the feature's name
-// slugified the way the v1 importer slugs a heading
-// ("cleric:channel-divinity-turn-undead"). A feature the class's map does
-// not carry (a subclass feature, a workshop class's) stays English.
+// A class feature's name ("Channel Divinity: Turn Undead", "Bonus
+// Proficiency (heavy armor)") in the reader's language: the maps key a
+// feature by its class and the feature's display name in the canonical form
+// ("cleric:bonus-proficiency-heavy-armor"). A feature the class's map does
+// not carry (an artificer's — the French SRD does not print the class —, a
+// workshop class's) stays English.
 export function classFeatureName(classId: string, featureName: string, locale: Locale): string {
   if (locale !== "fr" || !featureName) {
     return featureName;
   }
-  const key = `${classId.trim().toLowerCase()}:${slugKey(featureName)}`;
+  const key = `${classId.trim().toLowerCase()}:${canonicalKey(featureName)}`;
   return FR_NAMES_BY_TABLE.classFeatures[key] ?? featureName;
+}
+
+// A species trait line ("Darkvision 60 ft", "Perception proficiency (Keen
+// Senses)", "+1 HP per level (Dwarven Toughness)") in the reader's language:
+// the maps key a trait by its species and the trait's name
+// ("wood-elf:keen-senses"), and the line's name is the whole line, the words
+// before a trailing bracket note, or the note itself — whichever the map
+// carries. Whatever is not the name rides along untranslated ("60 ft",
+// "+1 HP per level"): it is the app's own shorthand, and only the official
+// name is translated. A trait the species's map does not carry (the French
+// SRD prints the subraces' own traits for some peoples only) stays English.
+export function speciesTraitName(raceId: string, traitLine: string, locale: Locale): string {
+  if (locale !== "fr" || !traitLine) {
+    return traitLine;
+  }
+  const traits = FR_NAMES_BY_TABLE.speciesTraits;
+  const species = canonicalKey(srdRaceId(raceId));
+  const carries = (name: string) => traits[`${species}:${canonicalKey(name)}`];
+  const whole = carries(traitLine);
+  if (whole) {
+    return whole;
+  }
+  const bracketed = /\s*\(([^()]*)\)\s*$/.exec(traitLine);
+  if (bracketed) {
+    const head = traitLine.slice(0, bracketed.index);
+    const after = traitLine.slice(bracketed.index);
+    const headHit = carries(head);
+    if (headHit) {
+      return `${headHit}${after}`;
+    }
+    const noted = carries(bracketed[1]);
+    if (noted) {
+      return `${head} (${noted})`;
+    }
+  }
+  // A trailing measurement the trait's name does not carry
+  // ("Darkvision 60 ft" is "Darkvision").
+  const measured = /\s+\d[^)]*$/.exec(traitLine);
+  if (measured) {
+    const bare = carries(traitLine.slice(0, measured.index));
+    if (bare) {
+      return `${bare}${traitLine.slice(measured.index)}`;
+    }
+  }
+  return traitLine;
+}
+
+// A background's granted feature as the sheet carries it — "Shelter of the
+// Faithful (Acolyte)" — in the reader's language: the maps key a feature by
+// its background and the feature's name ("acolyte:shelter-of-the-faithful"),
+// and the background's own name rides along through the backgrounds map. A
+// feature the map does not carry (the French SRD prints one background as an
+// example) stays English.
+export function backgroundFeatureName(featureName: string, locale: Locale): string {
+  if (locale !== "fr" || !featureName) {
+    return featureName;
+  }
+  const bracketed = /\s*\(([^()]*)\)\s*$/.exec(featureName);
+  if (!bracketed) {
+    return featureName;
+  }
+  const feature = featureName.slice(0, bracketed.index);
+  const background = bracketed[1];
+  const hit =
+    FR_NAMES_BY_TABLE.backgroundFeatures[`${canonicalKey(background)}:${canonicalKey(feature)}`];
+  if (!hit) {
+    return featureName;
+  }
+  return `${hit} (${contentName("backgrounds", background, locale)})`;
+}
+
+// A subclass as the sheet stores it — "Life Domain", "life", "Evocation" —
+// in the reader's language: the maps key a subclass by its class and its
+// name, whole or bare ("cleric:life-domain", "cleric:life"). A subclass the
+// map does not carry (a workshop or pack archetype) stays as it was stored.
+export function subclassName(classId: string, subclass: string, locale: Locale): string {
+  if (locale !== "fr" || !subclass) {
+    return subclass;
+  }
+  const key = `${classId.trim().toLowerCase()}:${canonicalKey(subclass)}`;
+  return FR_NAMES_BY_TABLE.subclasses[key] ?? subclass;
 }
