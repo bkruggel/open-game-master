@@ -1330,13 +1330,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/NotesPanel.tsx#str-list": [
-      [
-        "key",
-        1,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
     "app/campaigns/[campaignId]/NpcFields.tsx#str-list": [
       [
         "key",
@@ -1705,13 +1698,6 @@
       [
         "key",
         1,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
-    "app/campaigns/[campaignId]/table-settings-groups.ts#str-key": [
-      [
-        "key",
-        4,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
@@ -19078,6 +19064,13 @@
         "display",
         1,
         "a rolled title's first letter, shown, never compared"
+      ]
+    ],
+    "lib/dm/personality-labels.ts#str-key": [
+      [
+        "key",
+        1,
+        "a stock personality's seeded English name maps to its message key; a user-authored name passes through unkeyed"
       ]
     ]
   },

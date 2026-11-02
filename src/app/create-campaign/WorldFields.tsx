@@ -7,7 +7,6 @@ import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/cn";
 import { GENRE_PRESETS } from "@/lib/genres";
 import {
-  TABLE_LANGUAGE_HELP,
   TABLE_LANGUAGE_LABELS,
   TABLE_LANGUAGES,
   type Genre,
@@ -246,7 +245,7 @@ export function WorldDetailsFields({
           className="w-full"
           options={TABLE_LANGUAGES.map((value) => ({ value, label: TABLE_LANGUAGE_LABELS[value] }))}
         />
-        <p className="mt-1 text-xs text-stone-500">{TABLE_LANGUAGE_HELP}</p>
+        <p className="mt-1 text-xs text-stone-500">{t("creator.language.help")}</p>
       </div>
 
       <div className="flex items-start gap-3 rounded-lg border border-stone-800 bg-stone-950/40 p-3">

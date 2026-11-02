@@ -7,7 +7,6 @@ import { ui } from "@/lib/ui";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { PanelError } from "./PanelKit";
-import { genrePreset } from "@/lib/genres";
 import type { WorldPackSummary } from "@/lib/worlds/types";
 import { useTtsVoices, voiceLabel } from "@/components/VoicePicker";
 import { CharacterVoices } from "@/app/campaigns/[campaignId]/CharacterVoices";
@@ -16,7 +15,7 @@ import type { GameSettings } from "@/lib/schemas/game-settings";
 import { describeTableReroll } from "@/lib/srd/ability-rerolls";
 import { useServerRerollBelow } from "@/app/characters/builder/useTableRules";
 import { transcribesVoice, useCapabilities } from "@/lib/use-capabilities";
-import { COMPANION_LABELS, CAMPAIGN_LENGTH_LABELS, CONSCIENCE_LABELS } from "@/lib/schemas/game-settings-options";
+import { useT } from "@/lib/locale";
 import {
   AiGroup,
   AtmosphereGroup,
@@ -44,7 +43,9 @@ import {
 export { LIVING_WORLD_INFO } from "@/app/campaigns/[campaignId]/GameSettingsGroups";
 
 // The same explainers as this panel's tooltips, shared with the campaign
-// creator's info buttons so the two surfaces never drift apart.
+// creator's info buttons so the two surfaces never drift apart. The creator
+// reads these English lines; the table's settings read their keyed twins
+// (table.settings.info.*) so they answer in the interface's language.
 export const BONDS_INFO = [
   "How each NPC and AI companion feels about each character, tracked by the server on one meter from hostile through neutral to devoted.",
   "Deeds move it, and the same deed lands differently on different people: mercy wins over a kind healer and irritates a hard-bitten mercenary.",
@@ -122,6 +123,7 @@ export function GameSettingsPanel({
   heading?: boolean;
 }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const t = useT();
   const voices = useTtsVoices();
   // Narration switched off server-wide (Admin > Speech, or setup's text
   // only): the row reads Off and its switch is held, whatever the table's
@@ -213,113 +215,116 @@ export function GameSettingsPanel({
       });
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string };
-        setError(data.error ?? "That change was not saved.");
+        setError(data.error ?? t("table.settings.error.save"));
         setSaveState("error");
         return;
       }
       setSaveState("saved");
     } catch {
-      setError("Could not reach the server.");
+      setError(t("table.errors.unreachable"));
       setSaveState("error");
     }
   }
 
-  const preset = genrePreset(settings.genre);
   const selectedPack = packs.find((entry) => entry.id === settings.worldPack) ?? null;
 
   if (!steersStory) {
     return (
       <section className="panel mb-6 rounded-xl p-4" data-table-settings="read">
-        {heading ? <SectionHead title="Table settings" glyph="tab-settings" level="h2" /> : null}
+        {heading ? <SectionHead title={t("table.lobby.settings")} glyph="tab-settings" level="h2" /> : null}
         <p className="mb-2 text-xs text-stone-500">
-          {settings.dmMode === "ai" ? "The party lead" : "The GM"} sets these for everyone at this table.
+          {settings.dmMode === "ai" ? t("table.settings.readBy.lead") : t("table.settings.readBy.gm")}
         </p>
         <div className="stagger flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-stone-300">
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "system-region" }} size="size-5" />
-            {selectedPack?.name ?? preset.name}
-            {settings.dmMode === "human" ? " · human GM" : settings.dmMode === "steered" ? " · AI narrates, a person steers" : ""}
-            {settings.dmMode !== "human" && settings.aiStorySetup ? " · AI story setup" : ""}
+            {selectedPack?.name ?? t(`creator.genre.${settings.genre}`)}
+            {settings.dmMode === "human" ? ` · ${t("table.settings.read.humanGm")}` : settings.dmMode === "steered" ? ` · ${t("table.settings.read.steered")}` : ""}
+            {settings.dmMode !== "human" && settings.aiStorySetup ? ` · ${t("table.settings.read.storySetup")}` : ""}
             {settings.dmMode !== "human"
-              ? ` · ${CAMPAIGN_LENGTH_LABELS[settings.campaignLength].split(" (")[0]} campaign`
+              ? ` · ${t("table.settings.read.campaign", { length: t(`table.settings.length.${settings.campaignLength}`) })}`
               : ""}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "tab-dice" }} size="size-5" />
-            {settings.dicePolicy === "real_allowed" ? "Real dice allowed" : "Digital dice only"}
+            {settings.dicePolicy === "real_allowed" ? t("creator.dice.real") : t("creator.dice.digital")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "cue-bell" }} size="size-5" />
             {narrating
-              ? `Narration on (${voiceLabel(voices, settings.ttsVoice)})`
+              ? t("table.settings.read.narration.on", { voice: voiceLabel(voices, settings.ttsVoice) })
               : narrationOff
-                ? "Narration off on this server"
-                : "Narration off"}
+                ? t("table.settings.read.narration.offServer")
+                : t("table.settings.read.narration.off")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "tab-ambience" }} size="size-5" />
             {settings.ambienceEnabled
-              ? `Ambience on${settings.ambienceAuto ? " (follows the scene)" : ""}`
-              : "Ambience off"}
+              ? settings.ambienceAuto
+                ? t("table.settings.read.ambience.auto")
+                : t("table.settings.read.ambience.on")
+              : t("table.settings.read.ambience.off")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "tab-map" }} size="size-5" />
-            {settings.mapsEnabled ? "Maps on" : "Maps off"}
+            {settings.mapsEnabled ? t("table.settings.maps.on") : t("table.settings.maps.off")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "rest-level-up" }} size="size-5" />
-            {settings.multiclassingEnabled ? "Multiclassing allowed" : "Multiclassing off"}
+            {settings.multiclassingEnabled ? t("table.settings.read.multiclass.on") : t("table.settings.read.multiclass.off")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "rest-hp" }} size="size-5" />
-            {HP_METHOD_SHORT[settings.hpMethod ?? "average"]}
+            {t(HP_METHOD_SHORT[settings.hpMethod ?? "average"])}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "coin-gp" }} size="size-5" />
-            {WEALTH_SHORT[settings.startingWealth ?? "equipment"]}
+            {t(WEALTH_SHORT[settings.startingWealth ?? "equipment"])}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "die-d6" }} size="size-5" />
-            Stats: {describeTableReroll(settings.abilityRerollBelow, serverRerollBelow).toLowerCase()}
+            {t("table.settings.stats", { rule: describeTableReroll(settings.abilityRerollBelow, serverRerollBelow).toLowerCase() })}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "tab-friends" }} size="size-5" />
-            {settings.midGameJoinOpen ? "Mid-game joining open" : "Mid-game joining closed"}
+            {settings.midGameJoinOpen ? t("table.settings.join.on") : t("table.settings.join.off")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "rest-initiative" }} size="size-5" />
-            {settings.holdSubmissions ? "Lead opens responses each turn" : "Responses always open"}
+            {settings.holdSubmissions ? t("table.settings.read.hold.on") : t("table.settings.read.hold.off")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "system-storyboard" }} size="size-5" />
-            {settings.worldSimulation ? "Living world on" : "Living world off"}
+            {settings.worldSimulation ? t("table.settings.livingWorld.on") : t("table.settings.livingWorld.off")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "tab-loot" }} size="size-5" />
             {settings.inventoryApprovals && settings.vitalsApprovals
-              ? "Item and vitals changes need approval"
+              ? t("table.settings.read.approvals.both")
               : settings.inventoryApprovals
-                ? "Item offers need approval"
+                ? t("table.settings.read.approvals.items")
                 : settings.vitalsApprovals
-                  ? "Vitals changes need approval"
-                  : "Item changes auto-apply"}
+                  ? t("table.settings.read.approvals.vitals")
+                  : t("table.settings.read.approvals.none")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "tab-bonds" }} size="size-5" />
             {settings.relationships === "off"
-              ? "Bonds off"
+              ? t("creator.summary.bondsOff")
               : settings.romance !== "off"
-                ? "Bonds and romance tracked"
-                : "Bonds tracked, romance off"}
+                ? t("table.settings.read.bonds.romance")
+                : t("table.settings.read.bonds.only")}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "system-party" }} size="size-5" />
-            AI companions: {COMPANION_LABELS[settings.companions]}
+            {t("table.settings.read.companions", { allies: t(`table.settings.companions.${settings.companions}`) })}
           </span>
           {conscienceShown(settings, lastingCompanions) ? (
             <span className="flex items-center gap-1.5" data-conscience-setting>
               <GameIcon icon={{ kind: "glyph", key: "tab-bonds" }} size="size-5" />
-              Companion conscience: {CONSCIENCE_LABELS[settings.companionConscience ?? "leave"]}
+              {t("table.settings.read.conscience", {
+                mode: t(`table.settings.conscience.choice.${settings.companionConscience ?? "leave"}`),
+              })}
             </span>
           ) : null}
         </div>
@@ -330,22 +335,22 @@ export function GameSettingsPanel({
 
   const context = {
     packName: selectedPack?.name ?? null,
-    genreName: preset.name,
+    genreName: t(`creator.genre.${settings.genre}`),
     voiceName: voiceLabel(voices, settings.ttsVoice),
     narrationOff,
     statsRule: describeTableReroll(settings.abilityRerollBelow, serverRerollBelow).toLowerCase(),
     lastingCompanions,
   };
   const searching = find.trim().length > 0;
-  const visible = tableGroups(settings)
-    .map((group) => ({ ...group, summary: tableGroupSummary(group.id, settings, context) }))
+  const visible = tableGroups(t, settings)
+    .map((group) => ({ ...group, summary: tableGroupSummary(t, group.id, settings, context) }))
     .filter((group) => groupMatches(group, group.summary, find));
   const base = { settings, patch: (update: Partial<GameSettings>) => void patch(update) };
 
   function body(id: TableGroupId) {
     switch (id) {
       case "world":
-        return <WorldGroup {...base} packs={packs} selectedPack={selectedPack} preset={preset} />;
+        return <WorldGroup {...base} packs={packs} selectedPack={selectedPack} />;
       case "character":
         return <CharacterGroup {...base} serverRerollLabel={serverRerollLabel} />;
       case "narration":
@@ -373,16 +378,16 @@ export function GameSettingsPanel({
 
   return (
     <section className="panel mb-6 rounded-xl p-4" data-table-settings="edit">
-      {heading ? <SectionHead title="Table settings" glyph="tab-settings" level="h2" /> : null}
+      {heading ? <SectionHead title={t("table.lobby.settings")} glyph="tab-settings" level="h2" /> : null}
       <p className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone-500" aria-live="polite">
-        <span>Applies to everyone at this table. Each change saves as you make it.</span>
+        <span>{t("table.settings.savesAsYouGo")}</span>
         {saveState === "saving" ? (
           <span key="saving" className="live-in inline-flex items-center gap-1 text-stone-400">
-            <Loader2 className="size-3 animate-spin" /> Saving
+            <Loader2 className="size-3 animate-spin" /> {t("table.settings.saving")}
           </span>
         ) : saveState === "saved" ? (
           <span key="saved" className="live-in inline-flex items-center gap-1 text-emerald-400">
-            <Check className="tick-in size-3" /> Saved
+            <Check className="tick-in size-3" /> {t("table.settings.saved")}
           </span>
         ) : null}
       </p>
@@ -391,8 +396,8 @@ export function GameSettingsPanel({
         <input
           value={find}
           onChange={(event) => setFind(event.target.value)}
-          placeholder="Find a setting"
-          aria-label="Find a table setting"
+          placeholder={t("table.settings.find.placeholder")}
+          aria-label={t("table.settings.find.aria")}
           className={cn(ui.input, "h-9 pl-9 text-xs")}
         />
       </div>
@@ -412,7 +417,7 @@ export function GameSettingsPanel({
             {body(group.id)}
           </DetailGroup>
         ))}
-        {!visible.length ? <p className="text-stone-500">No setting by that name.</p> : null}
+        {!visible.length ? <p className="text-stone-500">{t("table.settings.find.none")}</p> : null}
       </div>
     </section>
   );

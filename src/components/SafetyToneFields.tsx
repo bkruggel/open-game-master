@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { VoicePreviewButton } from "@/components/VoicePreviewButton";
 import { InfoButton } from "@/components/ui/InfoDialog";
 import {
@@ -16,19 +17,21 @@ import {
   type Tone,
 } from "@/lib/dm/safety-logic";
 import type { Personality } from "@/lib/dm/personalities";
+import { personalityKey } from "@/lib/dm/personality-labels";
 
 // Safety, strictness and tone (docs/vtt-parity-implementation-plan.md
 // section 9), shared by the creation wizard's Feel step and the lobby's
 // settings. Lines and veils are typed as lists; the boundary, strictness
 // and tone are chips; a personality preset fills strictness, tone and the
-// narrator's voice at once.
+// narrator's voice at once. The words are the dictionaries' (creator.*),
+// except the tone chips, which are the GM brief's own vocabulary.
 
 const chip = "rounded-md border px-2 py-0.5 text-[11px]";
 const on = "border-amber-700 bg-amber-950/40 text-amber-100";
 const off = "border-stone-700 text-stone-400 hover:text-stone-200";
 
-export const BOUNDARY_LABELS: Record<Boundaries, string> = { family: "All ages", standard: "Standard", mature: "Mature" };
-export const STRICTNESS_LABELS: Record<Strictness, string> = { lenient: "Lenient", standard: "By the book", harsh: "Harsh" };
+export const BOUNDARY_LABELS: Record<Boundaries, string> = { family: "creator.summary.boundary.family", standard: "creator.summary.boundary.standard", mature: "creator.summary.boundary.mature" };
+export const STRICTNESS_LABELS: Record<Strictness, string> = { lenient: "creator.safety.strictness.lenient", standard: "creator.safety.strictness.standard", harsh: "creator.safety.strictness.harsh" };
 
 function ListField({ label, hint, value, onChange }: { label: string; hint: string; value: string[]; onChange: (next: string[]) => void }) {
   // Typed as one line and kept as a list on blur, so a half-typed entry is
@@ -56,9 +59,15 @@ function ListField({ label, hint, value, onChange }: { label: string; hint: stri
 }
 
 // Every personality and what it does, for the ⓘ beside them: a preset's
-// blurb was only ever a hover title.
-function personalitiesInfo(presets: Personality[], setsVoice: boolean): string {
-  return `${presets.map((preset) => `**${preset.name}**: ${preset.blurb}`).join("\n\n")}\n\nPicking one sets the strictness and tone above${setsVoice ? " and the narrator's voice" : ""} together; each can still be changed on its own afterwards.`;
+// blurb was only ever a hover title. A stock preset reads its keyed name and
+// blurb; a personality a user wrote reads its own words.
+function personalitiesInfo(t: (key: string, vars?: Record<string, string | number>) => string, presets: Personality[], setsVoice: boolean): string {
+  const lines = presets.map((preset) => {
+    const nameKey = personalityKey("name", preset.name);
+    const blurbKey = personalityKey("blurb", preset.name);
+    return `**${nameKey ? t(nameKey) : preset.name}**: ${blurbKey ? t(blurbKey) : preset.blurb}`;
+  });
+  return `${lines.join("\n\n")}\n\n${t("creator.personality.infoTail", { tail: setsVoice ? t("creator.safety.voiceTail") : "" })}`;
 }
 
 export function SafetyToneFields({
@@ -78,6 +87,7 @@ export function SafetyToneFields({
   onVoice?: (voice: string) => void;
   showPresets?: boolean;
 }) {
+  const t = useT();
   const [presets, setPresets] = useState<Personality[]>([]);
   useEffect(() => {
     if (!showPresets) {
@@ -109,28 +119,28 @@ export function SafetyToneFields({
   return (
     <div className="space-y-3 text-sm">
       <div>
-        <p className="mb-1 text-xs uppercase tracking-wide text-stone-500">Safety</p>
+        <p className="mb-1 text-xs uppercase tracking-wide text-stone-500">{t("creator.safety.heading")}</p>
         <div data-pill-group="" className="flex flex-wrap items-center gap-1.5">
           <button type="button" aria-pressed={safety.xCard} onClick={() => onSafety({ ...safety, xCard: !safety.xCard })} className={cn(chip, safety.xCard ? on : off)}>
-            X-card {safety.xCard ? "on" : "off"}
+            {safety.xCard ? t("creator.summary.xCard.on") : t("creator.summary.xCard.off")}
           </button>
           {BOUNDARIES.map((boundary) => (
             <button data-on={safety.boundaries === boundary ? "" : undefined} key={boundary} type="button" aria-pressed={safety.boundaries === boundary} onClick={() => onSafety({ ...safety, boundaries: boundary })} className={cn(chip, safety.boundaries === boundary ? on : off)}>
-              {BOUNDARY_LABELS[boundary]}
+              {t(BOUNDARY_LABELS[boundary])}
             </button>
           ))}
         </div>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
-          <ListField label="Lines (never in the story)" hint="spiders, harm to children" value={safety.lines} onChange={(lines) => onSafety({ ...safety, lines })} />
-          <ListField label="Veils (only off the page)" hint="torture, romance" value={safety.veils} onChange={(veils) => onSafety({ ...safety, veils })} />
+          <ListField label={t("creator.safety.linesLabel")} hint={t("creator.safety.linesHint")} value={safety.lines} onChange={(lines) => onSafety({ ...safety, lines })} />
+          <ListField label={t("creator.safety.veilsLabel")} hint={t("creator.safety.veilsHint")} value={safety.veils} onChange={(veils) => onSafety({ ...safety, veils })} />
         </div>
       </div>
       <div>
-        <p className="mb-1 text-xs uppercase tracking-wide text-stone-500">Strictness and tone</p>
+        <p className="mb-1 text-xs uppercase tracking-wide text-stone-500">{t("creator.safety.strictnessLabel")}</p>
         <div data-pill-group="" className="flex flex-wrap items-center gap-1.5">
           {STRICTNESS.map((level) => (
             <button data-on={gm.strictness === level ? "" : undefined} key={level} type="button" aria-pressed={gm.strictness === level} onClick={() => onGm({ ...gm, strictness: level })} className={cn(chip, gm.strictness === level ? on : off)}>
-              {STRICTNESS_LABELS[level]}
+              {t(STRICTNESS_LABELS[level])}
             </button>
           ))}
         </div>
@@ -140,23 +150,27 @@ export function SafetyToneFields({
               {tone}
             </button>
           ))}
-          <span className="text-[10px] text-stone-600">Up to three.</span>
+          <span className="text-[10px] text-stone-600">{t("creator.safety.upToThree")}</span>
         </div>
       </div>
       {showPresets && presets.length ? (
         <div>
           <p className="mb-1 flex items-center gap-1 text-xs uppercase tracking-wide text-stone-500">
-            Or pick a GM personality
-            <InfoButton label="GM personalities" text={personalitiesInfo(presets, Boolean(onVoice))} />
+            {t("creator.safety.orPick")}
+            <InfoButton label={t("creator.safety.personalities")} text={personalitiesInfo(t, presets, Boolean(onVoice))} />
           </p>
           <div className="stagger-pop flex flex-wrap items-center gap-1.5">
             {presets.map((preset) => {
               const active = preset.gm.strictness === gm.strictness && preset.gm.tone.join() === gm.tone.join() && (!ttsVoice || preset.ttsVoice === ttsVoice);
+              const nameKey = personalityKey("name", preset.name);
+              const blurbKey = personalityKey("blurb", preset.name);
+              const name = nameKey ? t(nameKey) : preset.name;
+              const blurb = blurbKey ? t(blurbKey) : preset.blurb;
               return (
                 <button
                   key={preset.id}
                   type="button"
-                  title={preset.blurb}
+                  title={blurb}
                   aria-pressed={active}
                   onClick={() => {
                     onGm({ strictness: preset.gm.strictness, tone: [...preset.gm.tone] });
@@ -164,7 +178,7 @@ export function SafetyToneFields({
                   }}
                   className={cn(chip, active ? on : off)}
                 >
-                  {preset.name}
+                  {name}
                 </button>
               );
             })}
@@ -172,7 +186,12 @@ export function SafetyToneFields({
           </div>
           {/* The chosen personality says what it is without a hover, which a
               finger never makes. */}
-          {chosenPreset ? <p className="mt-1 text-[11px] text-stone-500">{chosenPreset.name}: {chosenPreset.blurb}</p> : null}
+          {chosenPreset ? (
+            <p className="mt-1 text-[11px] text-stone-500">
+              {personalityKey("name", chosenPreset.name) ? t(personalityKey("name", chosenPreset.name)!) : chosenPreset.name}:{" "}
+              {personalityKey("blurb", chosenPreset.name) ? t(personalityKey("blurb", chosenPreset.name)!) : chosenPreset.blurb}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

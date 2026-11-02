@@ -906,13 +906,6 @@
         "a setting's select value (UI)"
       ]
     ],
-    "app/campaigns/[campaignId]/GameSettingsPanel.tsx#partial": [
-      [
-        "key",
-        1,
-        "UI keys, ids, refs, view choices and documented defaults (a palette, a tile, a peer volume, the first sheet)"
-      ]
-    ],
     "app/campaigns/[campaignId]/Hand.tsx#fallback": [
       [
         "key",
@@ -1764,11 +1757,6 @@
       ]
     ],
     "app/campaigns/[campaignId]/table-settings-groups.ts#partial": [
-      [
-        "key",
-        1,
-        "UI keys, ids, refs, view choices and documented defaults (a palette, a tile, a peer volume, the first sheet)"
-      ],
       [
         "search",
         2,
@@ -19487,6 +19475,13 @@
         "key",
         6,
         "the message dictionaries and a template's variables, read by a message key or placeholder name the code wrote (fixed keys, never a person's text naming a record)"
+      ]
+    ],
+    "lib/dm/personality-labels.ts#keyed": [
+      [
+        "key",
+        1,
+        "the stock personalities' seeded English names map to their message keys; a name the map does not carry (a user's own personality) is refused with null and reads its own words"
       ]
     ]
   }

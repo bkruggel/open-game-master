@@ -70,12 +70,22 @@ console.log("ok: where the server can read aloud, new tables start with narratio
 
 // The lobby's row and the table's header follow the server's speech.
 // The panel decides; its Narration group (GameSettingsGroups.tsx) draws the row.
+// The row's words are the dictionaries' (table.settings.narration.*), so the
+// source reads the keys and the assertions hold the English lines to their
+// wording through the English-bound translator.
+const { translate } = await import("../src/lib/messages-logic.ts");
+const tEn = (key) => translate("en", key);
 const panel = read("src/app/campaigns/[campaignId]/GameSettingsPanel.tsx") + read("src/app/campaigns/[campaignId]/GameSettingsGroups.tsx");
 assert.match(panel, /const narrationOff = capabilities\?\.tts\?\.provider === "off";/);
 assert.match(panel, /const narrating = settings\.ttsEnabled && !narrationOff;/);
-assert.match(panel, /<SettingToggle label="Narration" on=\{narrating\} disabled=\{narrationOff\}/, "the switch is held while speech is off");
-assert.match(panel, /\{narrating \? "On" : narrationOff \? "Off on this server" : "Off"\}/, "the row says why");
-assert.match(panel, /narrationOff\s*\? "Narration off on this server"/, "so does the read-only summary");
+assert.match(panel, /<SettingToggle label=\{t\("table\.settings\.row\.narration"\)\} on=\{narrating\} disabled=\{narrationOff\}/, "the switch is held while speech is off");
+assert.equal(tEn("table.settings.row.narration"), "Narration");
+assert.match(panel, /\{narrating \? t\("table\.settings\.narration\.on"\) : narrationOff \? t\("table\.settings\.narration\.offServer"\) : t\("table\.settings\.narration\.off"\)\}/, "the row says why");
+assert.equal(tEn("table.settings.narration.on"), "On");
+assert.equal(tEn("table.settings.narration.offServer"), "Off on this server");
+assert.equal(tEn("table.settings.narration.off"), "Off");
+assert.match(panel, /narrationOff\s*\?\s*t\("table\.settings\.read\.narration\.offServer"\)/, "so does the read-only summary");
+assert.equal(tEn("table.settings.read.narration.offServer"), "Narration off on this server");
 assert.match(panel, /\{narrating \|\| narrationOff \? <NarrationNote \/> : null\}/, "the note under the row explains the server's switch");
 assert.doesNotMatch(panel.replace(/const narrating = settings\.ttsEnabled && !narrationOff;/, ""), /\{settings\.ttsEnabled \?/, "no voice control reads the raw switch any more");
 const header = read("src/app/campaigns/[campaignId]/SessionHeader.tsx");
