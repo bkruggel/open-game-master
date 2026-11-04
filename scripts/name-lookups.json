@@ -4214,7 +4214,7 @@
       [
         "key",
         1,
-        "the magic bonus read off the stored item name (+1 Plate) \u2014 notation, not a record chosen; the display name goes to the French-name tables by the row's name"
+        "the magic bonus read off the stored item name (+1 Plate) — notation, not a record chosen; the display name goes to the French-name tables by the row's name"
       ]
     ],
     "components/sheet/SheetParts.tsx#bypass": [
@@ -19541,6 +19541,20 @@
         "parse",
         1,
         "tests the subclass helper's answer against the value the sheet stores, to case the label only (title-cased as stored beside a miss); names no record"
+      ]
+    ],
+    "lib/rulebook/book.ts#normalizer": [
+      [
+        "key",
+        1,
+        "Accept-Language language tags (protocol tokens, not a person's text) folded for the language prefix; no record is ever read by them"
+      ]
+    ],
+    "lib/rulebook/book.ts#partial": [
+      [
+        "pattern",
+        4,
+        "the Accept-Language header cut into its comma and semicolon parts and tag prefixes (header.split, tag.startsWith) — protocol tokens that read no record's name: their words are scripts/text-comparisons.json's to classify"
       ]
     ]
   }

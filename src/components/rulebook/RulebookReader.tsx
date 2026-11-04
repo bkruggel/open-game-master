@@ -4,7 +4,7 @@ import "@/app/styles/rulebook.css";
 import { Bookmark, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import type { RulebookContents as Contents, RulebookPageResponse } from "@/lib/rulebook/types";
 import { RulebookContents, type OpenFromContents } from "./RulebookContents";
 import { RulebookPage } from "./RulebookPage";
@@ -73,6 +73,9 @@ export function RulebookReader({
   const [arrive, setArrive] = useState<{ at?: string; nonce: number } | null>(null);
   const [turning, setTurning] = useState<Turn | null>(null);
   const t = useT();
+  // The book reads the reader's language: the fetches carry it in
+  // Accept-Language and the routes answer with that language's book.
+  const locale = useLocale();
   // The leaf in the air on a wide screen: the page it carries on its face,
   // scrolled where the reader had it. On a phone the incoming page swings
   // in instead (`enter`).
@@ -111,27 +114,30 @@ export function RulebookReader({
   const loadContents = useCallback(async () => {
     setContentsFailed(false);
     try {
-      const response = await fetch("/api/rulebook");
+      const response = await fetch("/api/rulebook", { headers: { "Accept-Language": locale } });
       if (!response.ok) throw new Error(String(response.status));
       setContents(await response.json());
     } catch {
       setContentsFailed(true);
     }
-  }, []);
+  }, [locale]);
 
-  const fetchPage = useCallback(async (id: string): Promise<RulebookPageResponse | null> => {
-    const cached = cache.current.get(id);
-    if (cached) return cached;
-    try {
-      const response = await fetch(`/api/rulebook/pages/${encodeURIComponent(id)}`);
-      if (!response.ok) return null;
-      const data: RulebookPageResponse = await response.json();
-      cache.current.set(id, data);
-      return data;
-    } catch {
-      return null;
-    }
-  }, []);
+  const fetchPage = useCallback(
+    async (id: string): Promise<RulebookPageResponse | null> => {
+      const cached = cache.current.get(`${locale}:${id}`);
+      if (cached) return cached;
+      try {
+        const response = await fetch(`/api/rulebook/pages/${encodeURIComponent(id)}`, { headers: { "Accept-Language": locale } });
+        if (!response.ok) return null;
+        const data: RulebookPageResponse = await response.json();
+        cache.current.set(`${locale}:${id}`, data);
+        return data;
+      } catch {
+        return null;
+      }
+    },
+    [locale],
+  );
 
   // Turns a leaf. Forward, the right-hand page itself lifts away (the leaf
   // carries its words) and the next page is already lying beneath it. Back,
@@ -218,6 +224,22 @@ export function RulebookReader({
     },
     [fetchPage, turn],
   );
+
+  // A reader who switches the table's language turns the same book over in
+  // the other tongue: the page cache empties, the contents reload, and the
+  // open page is fetched again in the new words.
+  const seenLocale = useRef(locale);
+  useEffect(() => {
+    if (seenLocale.current === locale) return;
+    seenLocale.current = locale;
+    cache.current.clear();
+    void loadContents();
+    const current = shownRef.current?.data.page.id;
+    if (current) void open(current, undefined, [], { animate: false, quiet: true });
+    // Only on a locale change: the reader's own navigation is not a handler
+    // of this effect, and the first locale needs no turn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
 
   // The contents, then the page to open on: a deep link, else where this
   // device left off. Neither turns a leaf; the book simply opens there.

@@ -21,6 +21,7 @@ export type FrNamesTable =
   | "weapons"
   | "armor"
   | "gear"
+  | "magicitems"
   | "conditions"
   | "species"
   | "backgrounds"
@@ -84,9 +85,11 @@ const WEAPON_KEY_OVERRIDES = new Map<string, string>(
 );
 
 // What a carried item is looked up as: the gear first (a rope, a backpack),
-// then the weapon and armor tables (a Mace carried is the weapon). An item
-// the maps do not carry stays English.
-const ITEM_TABLES: readonly FrNamesTable[] = ["gear", "weapons", "armor"];
+// then the weapon and armor tables (a Mace carried is the weapon), and at
+// the end the magic items (an Adamantine Armor or a Bag of Holding, keyed by
+// the SRD item slug the rulebook's item pages carry). An item the maps do
+// not carry stays English.
+const ITEM_TABLES: readonly FrNamesTable[] = ["gear", "weapons", "armor", "magicitems"];
 
 // One table's names, by its key. A Map rather than the generated record
 // itself: the lookup stays a data read, not a site the tables' key shape

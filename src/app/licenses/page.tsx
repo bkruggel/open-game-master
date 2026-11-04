@@ -53,10 +53,15 @@ export default function LicensesPage() {
         <p>
           The interface&rsquo;s French terms follow Wizards of the Coast&rsquo;s own
           French release of the SRD 5.1 (the « Document de Référence du Système
-          5.1 », CC-BY-4.0, from D&D Beyond&rsquo;s localized SRD downloads). Ce
-          travail comprend la documentation tirée du Document de Référence du
-          Système 5.1 (« SRD 5.1 ») par Wizards of the Coast LLC, distribué en
-          vertu de la licence Creative Commons Attribution 4.0 International.
+          5.1 », CC-BY-4.0, from D&D Beyond&rsquo;s localized SRD downloads), and the{" "}
+          <Link href="/rulebook" className="text-amber-200 hover:text-amber-100">rulebook</Link>, read in
+          French, is that document&rsquo;s own text, extracted page for page from the file
+          SRD_CC_v5.1_FR.pdf by <span className="font-mono">scripts/import-srd-rulebook-fr.mjs</span> under
+          the same page ids and order as the English conversion; the few pages the French
+          extraction does not carry read from the English conversion above. Ce travail
+          comprend la documentation tirée du Document de Référence du Système 5.1 (« SRD
+          5.1 ») par Wizards of the Coast LLC, distribué en vertu de la licence Creative
+          Commons Attribution 4.0 International.
         </p>
         <p>
           Expanded character options, spells, items, and monsters are imported from the{" "}

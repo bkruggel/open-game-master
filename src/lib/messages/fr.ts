@@ -5794,7 +5794,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "creator.length.option.short": "Courte (3 actes, une aventure resserrée)",
   "creator.length.option.standard": "Standard (4-5 actes)",
   "creator.length.option.epic": "Épique (6-8 actes, une saga démesurée)",
-  "creator.language.help": "Le Maître du jeu écrit l'histoire dans cette langue, et le serveur y lit l'histoire et tes messages. L'application, les règles et le livre de règles restent en anglais. Toute langue autre que l'anglais exige un modèle d'embedding multilingue sur le serveur (EMBEDDING_MODEL dans le README).",
+  "creator.language.help": "Le Maître du jeu écrit l'histoire dans cette langue, et le serveur y lit l'histoire et tes messages. L'application, les règles et le livre de règles se lisent en français. Toute langue autre que l'anglais exige un modèle d'embedding multilingue sur le serveur (EMBEDDING_MODEL dans le README).",
 
   // Les mots des personnalités de MJ livrées (personalities.ts) : la base de
   // données garde les noms anglais de la première sème ; l'interface les lit
@@ -5827,10 +5827,10 @@ export const fr: Partial<Record<MessageKey, string>> = {
   // Le propre du livre de règles (src/components/rulebook) : la couverture,
   // la page de titre, le sommaire, la recherche, les outils de tour de page
   // et de marque-page, et la ligne « comment la table l'applique ». Les pages
-  // du livre elles-mêmes (le texte du SRD, ses titres et les résumés de
-  // chapitres dans srd-5.1.json) restent en anglais ; seuls les résumés des
-  // trois livres, les liens rapides et le pourtour sont les mots de
-  // l'interface.
+  // du livre elles-mêmes sont désormais le texte de la traduction officielle
+  // (srd-5.1-fr.json, tiré de SRD_CC_v5.1_FR.pdf) que les routes servent à
+  // une demande en français ; les résumés des trois livres, les liens
+  // rapides et le pourtour restent les mots de l'interface.
   "rulebook.title": "Le livre de règles",
   "rulebook.editionLine": "Cinquième édition · System Reference Document 5.1",
   "rulebook.fifthEdition": "Cinquième édition",

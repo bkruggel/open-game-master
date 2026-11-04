@@ -15324,7 +15324,7 @@
       [
         "english-source",
         1,
-        "rulebook search: the query is stemmed as the English SRD text it is matched against is (the rulebook is English)"
+        "rulebook search: the query is stemmed as the book it is matched against (the English SRD or the French Document de Référence du Système 5.1), the index carries the book's language"
       ]
     ],
     "lib/rulesets/validate-options.ts#\\b": [
@@ -19112,6 +19112,27 @@
         "key",
         2,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
+      ]
+    ],
+    "lib/rulebook/book.ts#toLowerCase": [
+      [
+        "key",
+        1,
+        "Accept-Language language tags (protocol tokens, not a person's text), parsed for the language prefix, never compared"
+      ]
+    ],
+    "lib/rulebook/book.ts#str-eq": [
+      [
+        "key",
+        2,
+        "Accept-Language tags against the fixed tokens fr/en (protocol tokens, never a person's text)"
+      ]
+    ],
+    "lib/rulebook/book.ts#str-startsWith": [
+      [
+        "key",
+        2,
+        "the fr-/en- language-tag prefixes (protocol tokens, never a person's text)"
       ]
     ]
   },

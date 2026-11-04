@@ -11,6 +11,9 @@
 // - gear: the gearKey of the SRD gear's English name
 //   (src/lib/srd/adventuring-gear.ts) — lowercase words, punctuation and
 //   apostrophes dropped ("alchemists fire flask");
+// - magicItems: the SRD 5.1 magic item's slug ("adamantine-armor"), the same
+//   slug the rulebook's item pages carry (srd-5.1.json; "Ammunition, +1, +2,
+//   or +3" is "ammunition-1-2-or-3") and the sheet's item rows spell;
 // - conditions: the lowercase condition id ("blinded");
 // - classes: 12 bare class ids ("cleric") plus class-feature keys of the
 //   canonical form the render helper slugs a display name to
@@ -35,12 +38,15 @@ const here = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(here, "data", "fr-names");
 const outFile = join(here, "..", "src", "lib", "content", "names-fr.ts");
 
-// table -> generated export name.
+// table -> generated export name. The generated file commits every table
+// under the key the render helper (src/lib/content/names.ts) unions as a
+// FrNamesTable.
 const TABLES = {
   spells: "SPELL_NAMES_FR",
   weapons: "WEAPON_NAMES_FR",
   armor: "ARMOR_NAMES_FR",
   gear: "GEAR_NAMES_FR",
+  magicitems: "MAGIC_ITEM_NAMES_FR",
   conditions: "CONDITION_NAMES_FR",
   species: "SPECIES_NAMES_FR",
   backgrounds: "BACKGROUND_NAMES_FR",
@@ -59,6 +65,7 @@ const raw = {
   weapons: read("weapons"),
   armor: read("armor"),
   gear: read("gear"),
+  magicitems: read("magic-items"),
   conditions: read("conditions"),
   species: read("species"),
   backgrounds: read("backgrounds"),
@@ -88,8 +95,8 @@ const tables = {
 };
 
 const total = Object.values(tables).reduce((sum, entries) => sum + Object.keys(entries).length, 0);
-if (total !== 1222) {
-  throw new Error(`expected 1,222 name pairs, read ${total}`);
+if (total !== 1461) {
+  throw new Error(`expected 1,461 name pairs, read ${total}`);
 }
 
 const tsLiteral = (value) => JSON.stringify(value);
@@ -104,8 +111,9 @@ const header = `// NOMS OFFICIELS FRANÇAIS du Document de Référence du Systè
 // Wizards of the Coast (CC-BY-4.0), extraits de SRD_CC_v5.1_FR.pdf — la
 // traduction française officielle des noms du SRD 5.1 (sorts, monstres,
 // espèces, Historiques, classes et leurs aptitudes, conditions, armes,
-// armures et équipement d'aventurier). Généré par scripts/build-names-fr.mjs
-// depuis scripts/data/fr-names/ ; NE PAS ÉDITER À LA MAIN (regénérer).
+// armures, objets magiques et équipement d'aventurier). Généré par
+// scripts/build-names-fr.mjs depuis scripts/data/fr-names/ ; NE PAS ÉDITER
+// À LA MAIN (regénérer).
 //
 // Les clés suivent la convention de chaque table (voir le script) : le slug
 // de la ligne, ou le gearKey du nom anglais, ou "<classe>:<aptitude>" pour
@@ -121,7 +129,7 @@ const body = [
   ...Object.keys(TABLES).map((table) => `  ${table}: ${TABLES[table]},`),
   `};`,
   ``,
-  `// 1,222 official pairs in total, by table.`,
+  `// 1,461 official pairs in total, by table.`,
   `export const FR_NAME_COUNTS: Record<string, number> = ${JSON.stringify(counts)};`,
 ].join("\n");
 

@@ -66,6 +66,22 @@ chapters, drops each page's repeated title, and corrects the few conversion
 slips listed in the script's `ERRATA`. The rulebook shows the attribution on
 its contents page and ends with the SRD's legal notice as its last page.
 
+### The French rulebook
+
+`src/lib/rulebook/srd-5.1-fr.json` is the same book bound again from the
+official French release, Wizards of the Coast's « Document de Référence du
+Système 5.1 » (file `SRD_CC_v5.1_FR.pdf`, from D&D Beyond's "Localized SRD
+Downloads"; same CC-BY-4.0 licence, and the French attribution statement
+quoted under "The French interface's rules terms" above applies to it). The
+extraction (`scripts/import-srd-rulebook-fr.mjs`, from the two-column print's
+text) keeps the English book's page ids, order and chapter binding, so a
+bookmark or a folio holds in both; a request that reads French is served the
+French book, and the three pages the extraction does not cover (the magic
+items chapter's three rules pages) fall back to the English conversion above,
+per page. The rulebook shows the English attribution on its contents page in
+either language, and the French book ends with the French release's own
+« Informations juridiques » page.
+
 ### The SRD 5.1 goods in the content pack
 
 The seven equipment packs, ammunition bundles, mounts and tack the Open5e v1

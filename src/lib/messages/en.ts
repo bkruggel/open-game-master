@@ -5773,7 +5773,7 @@ export const en = {
   "creator.length.option.short": "Short (3 acts, a focused adventure)",
   "creator.length.option.standard": "Standard (4-5 acts)",
   "creator.length.option.epic": "Epic (6-8 acts, a sprawling saga)",
-  "creator.language.help": "The Game Master writes the story in this language, and the server reads the story and your messages in it. The app, the rules and the rulebook stay in English. Any language but English needs a multilingual embedding model on the server (EMBEDDING_MODEL in the README).",
+  "creator.language.help": "The Game Master writes the story in this language, and the server reads the story and your messages in it. The app, the rules reference and the rulebook read French. Any language but English needs a multilingual embedding model on the server (EMBEDDING_MODEL in the README).",
 
   // The stock GM personalities' words (personalities.ts): the database keeps
   // the English names it was seeded with; the interface reads these by the

@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import type { ContentsChapter, ContentsEntry, RulebookContents as Contents, RulebookPart, SearchHit } from "@/lib/rulebook/types";
 import { Digits } from "./RulebookPage";
 import { splitWords, textKey } from "@/lib/language/text-logic";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 // The left-hand page: the book's name, a search line, the rules a table
 // reaches for mid-session, the reader's bookmarks, and the contents, book by
@@ -138,6 +138,9 @@ export function RulebookContents({
   const [result, setResult] = useState<{ query: string; hits: SearchHit[] } | null>(null);
   const [searching, setSearching] = useState(false);
   const t = useT();
+  // The search asks for the book the reader reads (Accept-Language), so the
+  // server stems the query as that book's words.
+  const locale = useLocale();
   const currentChapter = useMemo(
     () => contents?.chapters.find((chapter) => chapter.entries.some((entry) => entry.id === current))?.id ?? null,
     [contents, current],
@@ -163,7 +166,7 @@ export function RulebookContents({
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const response = await fetch(`/api/rulebook/search?q=${encodeURIComponent(q)}`);
+        const response = await fetch(`/api/rulebook/search?q=${encodeURIComponent(q)}`, { headers: { "Accept-Language": locale } });
         const data = response.ok ? await response.json() : { hits: [] };
         if (asked.current === q) setResult({ query: q, hits: data.hits ?? [] });
       } finally {
@@ -171,7 +174,7 @@ export function RulebookContents({
       }
     }, 180);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, locale]);
 
   const entries = useMemo(() => {
     const map = new Map<string, ContentsEntry>();
