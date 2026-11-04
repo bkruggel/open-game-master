@@ -76,6 +76,13 @@ export function RulebookReader({
   // The book reads the reader's language: the fetches carry it in
   // Accept-Language and the routes answer with that language's book.
   const locale = useLocale();
+  // Hydration renders with the server's locale ("en"); the fetches below must
+  // read the reader's CURRENT one at call time, not the render they were
+  // built in, or the first contents fetch races the locale it hydrates to.
+  const localeRef = useRef(locale);
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
   // The leaf in the air on a wide screen: the page it carries on its face,
   // scrolled where the reader had it. On a phone the incoming page swings
   // in instead (`enter`).
@@ -114,29 +121,31 @@ export function RulebookReader({
   const loadContents = useCallback(async () => {
     setContentsFailed(false);
     try {
-      const response = await fetch("/api/rulebook", { headers: { "Accept-Language": locale } });
+      const response = await fetch("/api/rulebook", { headers: { "Accept-Language": localeRef.current } });
       if (!response.ok) throw new Error(String(response.status));
       setContents(await response.json());
     } catch {
       setContentsFailed(true);
     }
-  }, [locale]);
+    // Reads the live locale; stable on purpose so the arrival effect's
+    // closure cannot pin a stale language.
+  }, []);
 
   const fetchPage = useCallback(
     async (id: string): Promise<RulebookPageResponse | null> => {
-      const cached = cache.current.get(`${locale}:${id}`);
+      const cached = cache.current.get(`${localeRef.current}:${id}`);
       if (cached) return cached;
       try {
-        const response = await fetch(`/api/rulebook/pages/${encodeURIComponent(id)}`, { headers: { "Accept-Language": locale } });
+        const response = await fetch(`/api/rulebook/pages/${encodeURIComponent(id)}`, { headers: { "Accept-Language": localeRef.current } });
         if (!response.ok) return null;
         const data: RulebookPageResponse = await response.json();
-        cache.current.set(`${locale}:${id}`, data);
+        cache.current.set(`${localeRef.current}:${id}`, data);
         return data;
       } catch {
         return null;
       }
     },
-    [locale],
+    [],
   );
 
   // Turns a leaf. Forward, the right-hand page itself lifts away (the leaf
