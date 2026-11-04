@@ -19556,6 +19556,13 @@
         4,
         "the Accept-Language header cut into its comma and semicolon parts and tag prefixes (header.split, tag.startsWith) — protocol tokens that read no record's name: their words are scripts/text-comparisons.json's to classify"
       ]
+    ],
+    "components/rulebook/RulebookReader.tsx#keyed": [
+      [
+        "key",
+        1,
+        "the page cache is keyed by locale and page id, not by a text name"
+      ]
     ]
   }
 }
