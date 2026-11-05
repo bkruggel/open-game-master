@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { PortraitMedallion } from "@/components/sheet/SheetParts";
 import { Face, useEscapeToSkip } from "@/app/campaigns/[campaignId]/moment-parts";
 import {
@@ -27,6 +27,7 @@ import type { CharacterSheet } from "@/lib/schemas/sheet";
 // styles/moments.css, "arrival banner".
 export function ArrivalBanner({ sheets }: { sheets: CharacterSheet[] }) {
   const t = useT();
+  const locale = useLocale();
   const [arrivals, setArrivals] = useState(() => startArrivals(sheets));
   const seen = seeSheets(arrivals, sheets);
   if (seen !== arrivals) {
@@ -51,7 +52,7 @@ export function ArrivalBanner({ sheets }: { sheets: CharacterSheet[] }) {
   return (
     <>
       <p role="status" className="sr-only">
-        {current ? `${arrivalLine(t, current)}: ${arrivalDetail(current)}` : ""}
+        {current ? `${arrivalLine(t, current)}: ${arrivalDetail(current, locale)}` : ""}
       </p>
       {current ? (
         <ArrivalCard
@@ -81,6 +82,7 @@ export function ArrivalCard({
   onHold: (held: boolean) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   return (
     <div
       className="moment-arrival"
@@ -95,7 +97,7 @@ export function ArrivalCard({
       </PortraitMedallion>
       <span className="min-w-0 flex-1" aria-hidden="true">
         <span className="gold-title moment-arrival-name">{arrivalLine(t, arrival)}</span>
-        <span className="moment-arrival-detail">{arrivalDetail(arrival)}</span>
+        <span className="moment-arrival-detail">{arrivalDetail(arrival, locale)}</span>
       </span>
       {still ? (
         <button type="button" className="moment-arrival-dismiss" onClick={onDismiss}>

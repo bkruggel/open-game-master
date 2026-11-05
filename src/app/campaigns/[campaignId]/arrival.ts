@@ -1,5 +1,6 @@
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { classDisplayName, speciesName } from "@/lib/characters/class-words";
+import { classDisplayNameFor, speciesNameFor } from "@/lib/characters/class-words";
+import type { Locale } from "@/lib/messages-logic";
 
 // The lobby's arrival moment (backlog F27): when a player seats a character,
 // everyone in the lobby sees "Thornwick takes a seat". Read off the sheets
@@ -28,9 +29,11 @@ export function arrivalLine(t: (key: string, vars?: Record<string, string | numb
   return t("table.arrival.line", { name: sheet.name });
 }
 
-// "Hill dwarf · Fighter", as the lobby's party list names them.
-export function arrivalDetail(sheet: Pick<CharacterSheet, "race" | "raceLabel" | "class">) {
-  return `${speciesName(sheet)} · ${classDisplayName(sheet.class)}`;
+// "Hill dwarf · Fighter", as the lobby's party list names them — in the
+// reader's language where the official-name maps carry it (« Nain des
+// collines · Guerrier »).
+export function arrivalDetail(sheet: Pick<CharacterSheet, "race" | "raceLabel" | "class">, locale: Locale = "en") {
+  return `${speciesNameFor(sheet, locale)} · ${classDisplayNameFor(sheet.class, locale)}`;
 }
 
 // What the banner knows: every player character it has seen, and the

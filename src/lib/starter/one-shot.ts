@@ -1,5 +1,6 @@
 import { createCampaign, getCampaignForUser, setDmOutline, type Campaign } from "@/lib/db/campaigns";
 import { getClock, setClockInstant } from "@/lib/db/clock";
+import type { Locale } from "@/lib/messages-logic";
 import { MINUTES_PER_DAY, MINUTES_PER_HOUR } from "@/lib/dm/calendar";
 
 // The starter one-shot: a table that opens in ten minutes for people who
@@ -53,13 +54,13 @@ export const STARTER_ONE_SHOT_FR = {
 
 // The seed the creator reads: the request's language, English by default,
 // so an English table's stored premise and spine stay English.
-export function starterSeedFor(locale: string) {
+export function starterSeedFor(locale: Locale) {
   return locale === "fr" ? { ...STARTER_ONE_SHOT, ...STARTER_ONE_SHOT_FR } : STARTER_ONE_SHOT;
 }
 
 // narration: whether the server can read aloud (narrationAvailable in
 // src/lib/capabilities.ts); unsaid, the table's switch starts on.
-export function createStarterCampaign(userId: string, options: { solo: boolean; narration?: boolean; locale?: string }): Campaign {
+export function createStarterCampaign(userId: string, options: { solo: boolean; narration?: boolean; locale?: Locale }): Campaign {
   const seed = starterSeedFor(options.locale ?? "en");
   const campaign = createCampaign(userId, {
     title: seed.title,

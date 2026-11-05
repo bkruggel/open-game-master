@@ -6,10 +6,10 @@ import { cn } from "@/lib/cn";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UserAvatar, ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import type { CampaignMember } from "@/lib/campaign-types";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { classLevelWords, speciesAndClassWords } from "@/lib/characters/class-words";
+import { classDisplayNameFor, classLevelWords, speciesAndClassWords } from "@/lib/characters/class-words";
 
 
 // Small gold badge on a party row: DM, co-DM, party lead, owner, real dice.
@@ -115,6 +115,7 @@ export function LobbyParty({
   companionsStyle?: CSSProperties;
 }) {
   const t = useT();
+  const locale = useLocale();
   return (
     <>
       {showParty ? (
@@ -146,7 +147,7 @@ export function LobbyParty({
                       <UserAvatar url={member.avatar?.url} userId={member.userId} size="size-full" />
                     </span>
                     {sheet ? (
-                      <span className="lobby-medallion-emblem" title={classLevelWords(sheet)}>
+                      <span className="lobby-medallion-emblem" title={classLevelWords(sheet, (id) => classDisplayNameFor(id, locale))}>
                         <GameIcon
                           icon={{ kind: "family", key: `class-${sheet.class.toLowerCase()}` }}
                           size="size-6"
@@ -173,7 +174,7 @@ export function LobbyParty({
                     </p>
                     <p className="truncate text-sm text-stone-400">
                       {sheet
-                        ? `${sheet.name} · ${speciesAndClassWords(sheet)}`
+                        ? `${sheet.name} · ${speciesAndClassWords(sheet, locale)}`
                         : t("table.lobby.noCharacter")}
                     </p>
                   </div>
@@ -327,7 +328,7 @@ export function LobbyParty({
                     <div className="min-w-0">
                       <p className="truncate font-medium text-stone-100">{companion.name}</p>
                       <p className="truncate text-sm text-stone-400">
-                        {speciesAndClassWords(companion)}
+                        {speciesAndClassWords(companion, locale)}
                       </p>
                     </div>
                   </div>

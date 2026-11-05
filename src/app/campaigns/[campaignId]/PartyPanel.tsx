@@ -19,7 +19,7 @@ import { KitButton, SettingToggle } from "./PanelKit";
 import { PartyOrderBar, PartyOrderHandle, usePartyOrder } from "./PartyOrder";
 import { useEffect, useId, useState, Suspense, lazy } from "react";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { CountPop } from "@/components/ui/Reveal";
 import { CharacterPortrait } from "@/lib/ui";
 import { CharacterMenu } from "@/app/campaigns/[campaignId]/CharacterMenu";
@@ -415,6 +415,7 @@ export function PartyPanel({
   multiCharacter?: "off" | "one_active" | "all_active";
 }) {
   const t = useT();
+  const locale = useLocale();
   const packArt = usePackArt(worldPack);
   // A companion's "Paint a portrait" only where the server can paint, and
   // where the host has the route (an app's screens may be newer than it).
@@ -627,7 +628,7 @@ export function PartyPanel({
                   ) : null}
                 </span>
                 <span className="block text-xs text-stone-400">
-                  {speciesAndClassWords(sheet)}
+                  {speciesAndClassWords(sheet, locale)}
                 </span>
               </span>
               </button>

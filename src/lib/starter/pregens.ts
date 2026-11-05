@@ -1,4 +1,5 @@
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
+import type { Locale } from "@/lib/messages-logic";
 
 // Four ready-made heroes for a table that wants to start in ten minutes.
 // Each is a complete level 1 sheet in the shape the character builder
@@ -152,7 +153,7 @@ export const PREGENS: Pregen[] = [
   },
 ];
 
-export function pregenById(id: string, locale = "en"): Pregen | null {
+export function pregenById(id: string, locale: Locale = "en"): Pregen | null {
   const pregen = PREGENS.find((pregen) => pregen.id === id) ?? null;
   if (!pregen || locale !== "fr") {
     return pregen;
@@ -190,7 +191,7 @@ const PREGEN_TEXT_FR: Record<string, { tagline: string; blurb: string; backstory
 };
 
 // What the picker shows: no sheet, nothing to tamper with.
-export function pregenSummaries(locale = "en") {
+export function pregenSummaries(locale: Locale = "en") {
   return PREGENS.map((pregen) => {
     const fr = locale === "fr" ? PREGEN_TEXT_FR[pregen.id] : undefined;
     return {

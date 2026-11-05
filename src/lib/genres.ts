@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/messages-logic";
 import type { Genre } from "@/lib/schemas/game-settings";
 import type { Climate } from "@/lib/srd/weather";
 
@@ -182,7 +183,7 @@ export function genrePreset(id: string): GenrePreset {
 // blurbs live in the dictionaries, creator.genre.*). The AI-facing fields
 // stay the English ones; only what is shown or seeded into a new campaign
 // turns with the creator's locale.
-export function genrePresetFor(id: string, locale = "en"): GenrePreset {
+export function genrePresetFor(id: string, locale: Locale = "en"): GenrePreset {
   const preset = genrePreset(id);
   if (locale !== "fr" || !preset.defaultThemeFr) {
     return preset;

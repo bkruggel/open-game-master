@@ -18,7 +18,8 @@ import type { PublicEncounter } from "@/lib/db/encounter-view";
 import { effectiveMaxHp } from "@/lib/dm/condition-logic";
 import type { StoredRoll } from "@/lib/db/rolls";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { classLevelWords } from "@/lib/characters/class-words";
+import { classDisplayNameFor, classLevelWords } from "@/lib/characters/class-words";
+import { useLocale } from "@/lib/locale";
 import { TokenFace } from "@/app/campaigns/[campaignId]/BoardChrome";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
@@ -209,6 +210,8 @@ export function PartyRail({
   // ember pulse and a lingering ghost bar for damage, a green pulse for
   // healing. State from props during render; a reload simply starts quiet.
   const [memory, setMemory] = useState<Record<string, { hp: number; dir?: "up" | "down" }>>({});
+  // Each hero's class reads in the reader's language where the maps carry it.
+  const locale = useLocale();
   const party = sheets.filter((sheet) => !sheet.isCompanion);
   const next: Record<string, { hp: number; dir?: "up" | "down" }> = { ...memory };
   let changed = false;
@@ -272,7 +275,7 @@ export function PartyRail({
                 <span className="cine-party-fill" data-low={ratio <= 0.34 ? "true" : undefined} style={{ width: pct }} />
               </span>
               {/* A split names each class's levels (backlog F9). */}
-              <span className="cine-party-class">{classLevelWords(sheet)}</span>
+              <span className="cine-party-class">{classLevelWords(sheet, (id) => classDisplayNameFor(id, locale))}</span>
             </span>
           </button>
         );

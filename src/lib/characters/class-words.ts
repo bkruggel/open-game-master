@@ -6,6 +6,8 @@
 // reads it directly.
 
 import { workshopClassName } from "@/lib/classes/workshop-registry";
+import { contentName } from "@/lib/content/names";
+import type { Locale } from "@/lib/messages-logic";
 
 export type ClassWordsSource = {
   class: string;
@@ -60,13 +62,56 @@ export function classDisplayName(id: string): string {
   return workshopClassName(id) ?? idAsName(id);
 }
 
+// The id as the spaced words a stored label reads ("plague_doctor" is
+// "plague doctor"), the shape the official-name lookups key.
+function spaced(id: string): string {
+  return id.replace(/[-_]+/g, " ").trim();
+}
+
+// A class's name in the reader's language: a workshop class's own name,
+// else the official name the content maps carry (src/lib/content/names.ts),
+// else its id as a name. English falls back to classDisplayName as ever.
+export function classDisplayNameFor(id: string, locale: Locale = "en"): string {
+  const named = workshopClassName(id);
+  if (named) {
+    return named;
+  }
+  if (locale === "fr") {
+    const official = contentName("classes", spaced(id), locale);
+    if (official !== spaced(id)) {
+      return official;
+    }
+  }
+  return idAsName(id);
+}
+
 // A species' name: the homebrew name the server derived, else its id as a name.
 export function speciesName(source: { race: string; raceLabel?: string | null }): string {
   return source.raceLabel || idAsName(source.race);
 }
 
+// A species' name in the reader's language: the stored label or the id
+// through the official-name maps, the ready page's lookup
+// (src/app/characters/[characterId]/ready/page.tsx). A miss keeps the
+// capitalized id the plain reading gives.
+export function speciesNameFor(source: { race: string; raceLabel?: string | null }, locale: Locale = "en"): string {
+  const plain = speciesName(source);
+  if (locale !== "fr") {
+    return plain;
+  }
+  const ref = source.raceLabel || spaced(source.race);
+  const official = contentName("species", ref, locale);
+  return official === ref ? plain : official;
+}
+
 // "Bhain Kwai Fighter 3 / Rogue 2": the species and each class with its levels,
-// as a card's second line reads.
-export function speciesAndClassWords(source: ClassWordsSource & { race: string; raceLabel?: string | null }): string {
-  return [speciesName(source), classLevelWords(source)].filter(Boolean).join(" ");
+// as a card's second line reads. In French the official names
+// (« Humain », « Guerrier 3 / Roublard 2 ») read when the maps carry them.
+export function speciesAndClassWords(
+  source: ClassWordsSource & { race: string; raceLabel?: string | null },
+  locale: Locale = "en",
+): string {
+  return [speciesNameFor(source, locale), classLevelWords(source, (id) => classDisplayNameFor(id, locale))]
+    .filter(Boolean)
+    .join(" ");
 }
