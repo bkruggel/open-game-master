@@ -7,6 +7,7 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import type { IconRef } from "@/lib/icons";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { Dialog } from "@/components/ui/Dialog";
 import type { ItemSheet } from "@/lib/help/item-sheet";
 import { firstSentence, parseRulesBlocks } from "@/lib/help/rules-text";
@@ -398,6 +399,7 @@ export function InfoButton({
   size?: "sm" | "md";
 }) {
   const [open, setOpen] = useState(false);
+  const t = useT();
   // Nothing to say and nothing to look up: render no control at all rather
   // than a button that opens an empty box.
   if (!text?.trim() && !reference) {
@@ -412,7 +414,7 @@ export function InfoButton({
           event.stopPropagation();
           setOpen(true);
         }}
-        aria-label={`What is ${label}?`}
+        aria-label={t("info.whatIs", { label })}
         // tap-reach: the glyph stays small in its line, a finger gets 40 px
         // round it (audit WA-08).
         className={cn(

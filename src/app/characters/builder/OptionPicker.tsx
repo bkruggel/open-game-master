@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent
 import { cn } from "@/lib/cn";
 import { InfoDialog, type ContentRef } from "@/components/ui/InfoDialog";
 import { textKey } from "@/lib/language/text-logic";
+import { useT } from "@/lib/locale";
 import { OWNS_ESCAPE } from "@/lib/owned-escape";
 
 export type PickerOption = {
@@ -105,6 +106,7 @@ export function OptionList({
   listRef?: Ref<HTMLDivElement>;
 }) {
   const options = groups.flatMap((group) => group.options);
+  const t = useT();
   const anyDetails = options.some(hasDetails);
   const hintId = `${id}-hint`;
   // Each group's first index in the flat list the keys move through.
@@ -176,9 +178,9 @@ export function OptionList({
                         {/* A star, not a word: these rows sit in half-width
                             columns, and the group heading says the rest. */}
                         {group.recommended ? (
-                          <span className="shrink-0 text-amber-300" title="Recommended for this setting">
+                          <span className="shrink-0 text-amber-300" title={t("table.levelup.recommendedClasses")}>
                             <Star className="size-3 fill-current" aria-hidden="true" />
-                            <span className="sr-only">Recommended for this setting</span>
+                            <span className="sr-only">{t("table.levelup.recommendedClasses")}</span>
                           </span>
                         ) : null}
                       </span>
@@ -193,7 +195,7 @@ export function OptionList({
                       <span
                         aria-hidden="true"
                         data-details
-                        title={`What is ${option.name}?`}
+                        title={t("info.whatIs", { label: option.name })}
                         onClick={(event: ReactMouseEvent) => {
                           event.preventDefault();
                           event.stopPropagation();
