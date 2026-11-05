@@ -20,6 +20,7 @@ import { SpellMechFields } from "@/app/workshop/homebrew/SpellMechFields";
 import type { Data } from "@/app/workshop/homebrew/draft";
 import { effectiveSpellPreview } from "@/lib/workshop/spell-preview";
 import { bundledSpellNames, materialCostFrom } from "@/lib/srd/spell-facts";
+import { useT } from "@/lib/locale";
 
 // The spell form. The description is the part the engine reads its damage
 // out of, the same way it reads the SRD's, unless the block underneath says
@@ -30,6 +31,7 @@ import { bundledSpellNames, materialCostFrom } from "@/lib/srd/spell-facts";
 const RUNS_AS_OPTIONS = bundledSpellNames().map((name) => ({ value: name, label: name }));
 
 export function SpellFields({ data, onChange }: { data: Data; onChange: (next: Data) => void }) {
+  const t = useT();
   const set = (patch: Data) => onChange({ ...data, ...patch });
   const preview = effectiveSpellPreview(data);
   const hasMaterial = /\bM\b/.test(String(data.components ?? "").split("(")[0].toUpperCase());
@@ -37,65 +39,65 @@ export function SpellFields({ data, onChange }: { data: Data; onChange: (next: D
 
   return (
     <div className="space-y-3">
-      <SectionHead title="The casting" glyph="rest-spell-slot" className="mb-1" />
+      <SectionHead title={t("workshop.homebrew.spell.castingTitle")} glyph="rest-spell-slot" className="mb-1" />
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <NumberField
-          label="Level"
+          label={t("builder.shared.level")}
           value={typeof data.level === "number" ? data.level : 1}
           min={0}
           max={9}
           onChange={(level) => set({ level: level === "" ? 0 : level })}
-          hint="0 is a cantrip."
+          hint={t("workshop.homebrew.spell.levelHint")}
         />
         <SelectField
-          label="School"
+          label={t("workshop.homebrew.spell.school")}
           value={String(data.school ?? "evocation")}
           options={SPELL_SCHOOLS.map((value) => ({ value, label: value }))}
           onChange={(school) => set({ school })}
-          glossary={{ title: "Schools of magic", entries: glossaryFor(SPELL_SCHOOLS, SPELL_SCHOOL_BLURBS) }}
+          glossary={{ title: t("workshop.homebrew.spell.schoolsTitle"), entries: glossaryFor(SPELL_SCHOOLS, SPELL_SCHOOL_BLURBS) }}
         />
         <TextField
-          label="Casting time"
+          label={t("workshop.homebrew.spell.castingTime")}
           value={String(data.casting_time ?? "")}
           onChange={(casting_time) => set({ casting_time })}
           maxLength={60}
           suggestions={CASTING_TIMES}
-          hint="How long it takes to cast. Most spells take one action."
+          hint={t("workshop.homebrew.spell.castingTimeHint")}
         />
         <TextField
-          label="Range"
+          label={t("workshop.bestiary.attack.range")}
           value={String(data.range ?? "")}
           onChange={(range) => set({ range })}
           maxLength={60}
           suggestions={SPELL_RANGES}
-          hint="How far away the target can be. Self means the caster only."
+          hint={t("workshop.homebrew.spell.rangeHint")}
         />
         <TextField
-          label="Components"
+          label={t("workshop.homebrew.spell.components")}
           value={String(data.components ?? "")}
           onChange={(components) => set({ components })}
           maxLength={120}
           suggestions={SPELL_COMPONENTS}
-          hint="V spoken words, S a free hand, M a material (name it after M in brackets)."
+          hint={t("workshop.homebrew.spell.componentsHint")}
         />
         <TextField
-          label="Duration"
+          label={t("workshop.homebrew.spell.duration")}
           value={String(data.duration ?? "")}
           onChange={(duration) => set({ duration })}
           maxLength={60}
           suggestions={SPELL_DURATIONS}
-          hint="How long the effect lasts. Concentration spells end when the caster loses focus."
+          hint={t("workshop.homebrew.spell.durationHint")}
         />
         <div className="col-span-2 flex flex-wrap items-end gap-3">
-          <CheckField label="Concentration" checked={data.concentration === true} onChange={(concentration) => set({ concentration })} />
-          <CheckField label="Ritual" checked={data.ritual === true} onChange={(ritual) => set({ ritual })} />
+          <CheckField label={t("workshop.homebrew.spell.concentration")} checked={data.concentration === true} onChange={(concentration) => set({ concentration })} />
+          <CheckField label={t("workshop.homebrew.spell.ritual")} checked={data.ritual === true} onChange={(ritual) => set({ ritual })} />
         </div>
       </div>
 
       {hasMaterial ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <TextField
-            label="Material"
+            label={t("workshop.homebrew.spell.material")}
             className="col-span-2"
             value={String(data.material ?? "")}
             onChange={(material) => {
@@ -108,19 +110,19 @@ export function SpellFields({ data, onChange }: { data: Data; onChange: (next: D
             }}
             maxLength={300}
             placeholder="diamonds worth 300 gp, which the spell consumes"
-            hint="What the caster must hold. A component pouch or a focus stands in for one with no price."
+            hint={t("workshop.homebrew.spell.materialHint")}
           />
           <NumberField
-            label="Costs (gp)"
+            label={t("workshop.homebrew.spell.costsGp")}
             value={cost ?? ""}
             min={0}
             max={1_000_000}
             onChange={(value) => set({ materialCostGp: value === "" || value === 0 ? undefined : value, ...(value === "" || value === 0 ? { materialConsumed: undefined } : {}) })}
-            hint="A priced material must be carried or paid for: the cast guard refuses the spell without it."
+            hint={t("workshop.homebrew.spell.costsHint")}
           />
           <div className="flex items-end pb-1">
             <CheckField
-              label="The spell consumes it"
+              label={t("workshop.homebrew.spell.consumesIt")}
               checked={data.materialConsumed === true}
               onChange={(materialConsumed) => set({ materialConsumed: materialConsumed && cost ? true : undefined })}
             />
@@ -129,16 +131,16 @@ export function SpellFields({ data, onChange }: { data: Data; onChange: (next: D
       ) : null}
 
       <TextField
-        label="Runs as"
+        label={t("workshop.homebrew.spell.runsAs")}
         value={String(data.runsAs ?? "")}
         onChange={(runsAs) => set({ runsAs: runsAs.trim() || undefined })}
         maxLength={80}
         suggestions={RUNS_AS_OPTIONS}
-        hint="A published spell whose area, summons, reaction or transformation the engines lay for this one under its own name (a renamed Web still webs the board). A copy starts with the spell it was copied from."
+        hint={t("workshop.homebrew.spell.runsAsHint")}
       />
 
       <div className="space-y-1">
-        <SectionHead title="Classes that can learn it" glyph="tab-characters" className="mb-1" />
+        <SectionHead title={t("workshop.homebrew.spell.classesLearn")} glyph="tab-characters" className="mb-1" />
         <ToggleChips
           options={CLASS_IDS}
           selected={Array.isArray(data.classes) ? (data.classes as string[]) : []}
@@ -150,19 +152,19 @@ export function SpellFields({ data, onChange }: { data: Data; onChange: (next: D
       </div>
 
       <TextField
-        label="At higher levels"
+        label={t("workshop.homebrew.spell.higherLevels")}
         value={String(data.higher_level ?? "")}
         onChange={(higher_level) => set({ higher_level })}
         placeholder="The damage increases by 1d6 for each slot level above 1st."
         maxLength={2000}
-        hint="The engine scales the dice from this sentence when a spell is upcast."
+        hint={t("workshop.homebrew.spell.higherLevelsHint")}
       />
 
       <div className="panel space-y-1 rounded-lg px-3 py-2 text-xs text-stone-400">
         <p>
-          <span className="font-display tracking-wide text-amber-200/70">What the table resolves: </span>
+          <span className="font-display tracking-wide text-amber-200/70">{t("workshop.homebrew.spell.resolvesTitle")}</span>{" "}
           {preview.line}.
-          {preview.line.startsWith("no dice") ? " Write it as \"takes 3d6 fire damage\", or give the block below its dice." : ""}
+          {preview.line.startsWith("no dice") ? ` ${t("workshop.homebrew.spell.noDiceAdvice")}` : ""}
         </p>
         {preview.conflicts.map((conflict) => (
           <p key={conflict} className="text-amber-300">{conflict}</p>

@@ -7,6 +7,7 @@ import { resolveSkin } from "@/lib/battlemap/skins";
 import { TerrainCanvas } from "@/app/campaigns/[campaignId]/TerrainCanvas";
 import { stampsOf, useMapThumb } from "@/app/campaigns/[campaignId]/useMapPaint";
 import { THEME_LABELS, type PreparedMap } from "@/app/workshop/maps/types";
+import { useT } from "@/lib/locale";
 
 // The workshop's map gallery: every prepared map as a thumbnail with its size,
 // theme and skin underneath. Tapping a tile hands the map to the caller, which
@@ -64,18 +65,19 @@ export function MapGallery({
   onOpen: (map: PreparedMap) => void;
 }) {
   const controls = useListControls(maps);
+  const t = useT();
   if (!maps.length) {
     return (
       <p className="text-xs text-stone-500">
-        Nothing in the drawer yet. Roll one, start from blank rock, or import a drawing.
+        {t("workshop.maps.galleryEmpty")}
       </p>
     );
   }
   return (
     <div className="space-y-3">
-    <ListControls controls={controls} placeholder="Find a map" />
+    <ListControls controls={controls} placeholder={t("workshop.maps.findMap")} />
     {controls.filtered && !controls.shown.length ? (
-      <p className="text-xs text-stone-500">Nothing matches that. Clear the search or the tag.</p>
+      <p className="text-xs text-stone-500">{t("workshop.maps.galleryNoMatch")}</p>
     ) : null}
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {controls.shown.map((map) => (
@@ -83,7 +85,7 @@ export function MapGallery({
           <button
             type="button"
             onClick={() => onOpen(map)}
-            aria-label={`Open ${map.name}`}
+            aria-label={t("workshop.maps.openAria", { name: map.name })}
             className={cn(
               ui.card,
               ui.tileHover,

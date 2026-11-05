@@ -15,6 +15,7 @@ import { splitPurse } from "@/lib/characters/options";
 import { rowIcon } from "@/app/workshop/kit";
 import { BACKGROUND_LIMITS, type BackgroundGrants } from "@/lib/homebrew/background-data";
 import type { Data } from "@/app/workshop/homebrew/draft";
+import { useT } from "@/lib/locale";
 
 // A background: what the builder grants and the creation check holds a
 // character to (src/lib/homebrew/background-data.ts), picked rather than
@@ -24,12 +25,7 @@ import type { Data } from "@/app/workshop/homebrew/draft";
 type Props = { data: Data; set: (patch: Data) => void };
 
 const SKILL_LABELS = Object.fromEntries(SKILL_IDS.map((id) => [id, id.replace(/_/g, " ")])) as Record<(typeof SKILL_IDS)[number], string>;
-const TOOLS = [
-  "One type of gaming set",
-  "One type of artisan's tools",
-  "One type of musical instrument",
-  ...TOOL_PROFICIENCIES,
-];
+const GENERIC_TOOLS = ["gaming set", "artisan's tools", "musical instrument"] as const;
 
 export function grantsOfDraft(data: Data): BackgroundGrants {
   const held = data.grants as BackgroundGrants | undefined;
@@ -53,6 +49,7 @@ export function grantsOfDraft(data: Data): BackgroundGrants {
 // one row of ten. A kit keeps BACKGROUND_LIMITS.kit lines, so a count stops
 // where the rest of the kit leaves room and the search goes once it is full.
 function KitList({ items, onChange }: { items: string[]; onChange: (next: string[]) => void }) {
+  const t = useT();
   const counts = new Map<string, number>();
   for (const item of items) counts.set(item, (counts.get(item) ?? 0) + 1);
   const rows = [...counts.entries()];
@@ -64,8 +61,8 @@ function KitList({ items, onChange }: { items: string[]; onChange: (next: string
         {rows.map(([name, count], index) => (
           <li key={name} className="live-in flex items-center gap-2 text-xs text-stone-200">
             <span className="min-w-0 flex-1 truncate">{name}</span>
-            <NumberStepper size="sm" label={`How many ${name}`} value={count} min={1} max={Math.max(count, Math.min(20, count + room))} onChange={(value) => write(rows.map((row, at) => (at === index ? [row[0], value || 1] : row)))} />
-            <button type="button" aria-label={`Remove ${name}`} onClick={() => write(rows.filter((_, at) => at !== index))} className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}>
+            <NumberStepper size="sm" label={t("workshop.homebrew.background.howManyNamed", { name })} value={count} min={1} max={Math.max(count, Math.min(20, count + room))} onChange={(value) => write(rows.map((row, at) => (at === index ? [row[0], value || 1] : row)))} />
+            <button type="button" aria-label={t("workshop.bestiary.block.removeNamed", { name })} onClick={() => write(rows.filter((_, at) => at !== index))} className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}>
               <X className="size-3.5" />
             </button>
           </li>
@@ -74,13 +71,13 @@ function KitList({ items, onChange }: { items: string[]; onChange: (next: string
       {room > 0 ? (
         <ContentPick
           kind="items"
-          label="Add an item to the kit"
-          placeholder="Add an item..."
+          label={t("workshop.homebrew.background.addKitItem")}
+          placeholder={t("workshop.homebrew.background.addKitItemPlaceholder")}
           onPick={(entry) => onChange([...items, entry.name])}
         />
       ) : (
         <p role="status" className="live-in text-[11px] text-stone-400">
-          {items.length} items, the most a kit keeps ({BACKGROUND_LIMITS.kit}). Remove one to add another.
+          {t("workshop.homebrew.background.kitFull", { count: items.length, max: BACKGROUND_LIMITS.kit })}
         </p>
       )}
     </div>
@@ -88,25 +85,32 @@ function KitList({ items, onChange }: { items: string[]; onChange: (next: string
 }
 
 export function BackgroundFields({ data, set }: Props) {
+  const t = useT();
+  const tools = [
+    t("workshop.homebrew.background.toolGaming"),
+    t("workshop.homebrew.background.toolArtisan"),
+    t("workshop.homebrew.background.toolInstrument"),
+    ...TOOL_PROFICIENCIES,
+  ];
   const grants = grantsOfDraft(data);
   const put = (patch: Partial<BackgroundGrants>) => set({ grants: { ...grants, ...patch } });
   const choice = grants.skillChoice;
   return (
     <div className="space-y-3">
       <div className="space-y-1.5 text-sm">
-        <SectionHead title="Skills" glyph="rest-proficiency" className="mb-1" />
+        <SectionHead title={t("workshop.bestiary.stats.skillsTitle")} glyph="rest-proficiency" className="mb-1" />
         <ToggleChips options={SKILL_IDS} labels={SKILL_LABELS} selected={grants.skills} max={BACKGROUND_LIMITS.skills} onChange={(skills) => put({ skills })} />
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-stone-400">
-          <span>And the player picks</span>
+          <span>{t("workshop.homebrew.background.andPlayerPicks")}</span>
           <NumberStepper
             size="sm"
-            label="Skills the player picks"
+            label={t("workshop.homebrew.background.playerPicksSkills")}
             value={choice?.count ?? 0}
             min={0}
             max={4}
             onChange={(count) => put({ skillChoice: count ? { count, from: choice?.from ?? [] } : undefined })}
           />
-          <span>{choice?.count ? "from (none ticked: any skill)" : "more"}</span>
+          <span>{choice?.count ? t("workshop.homebrew.background.fromNoneTicked") : t("workshop.homebrew.background.more")}</span>
         </div>
         {choice?.count ? (
           <div className="live-in">
@@ -116,27 +120,27 @@ export function BackgroundFields({ data, set }: Props) {
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5 text-sm">
-          <SectionHead title="Tools" glyph="tab-loot" className="mb-1" />
-          <ChipList items={grants.tools} onChange={(tools) => put({ tools })} options={TOOLS} prompt="Add a tool" max={8} />
+          <SectionHead title={t("workshop.homebrew.background.tools")} glyph="tab-loot" className="mb-1" />
+          <ChipList items={grants.tools} onChange={(tools) => put({ tools })} options={tools} prompt={t("workshop.homebrew.background.addTool")} max={8} />
         </div>
         <div className="space-y-1.5 text-sm">
-          <SectionHead title="Languages" glyph="system-lore" className="mb-1" />
-          <ChipList items={grants.knownLanguages} onChange={(knownLanguages) => put({ knownLanguages })} options={LANGUAGES} prompt="Add a language" max={6} />
+          <SectionHead title={t("workshop.bestiary.stats.languages")} glyph="system-lore" className="mb-1" />
+          <ChipList items={grants.knownLanguages} onChange={(knownLanguages) => put({ knownLanguages })} options={LANGUAGES} prompt={t("workshop.homebrew.background.addLanguage")} max={6} />
           <span className="flex items-center gap-2 text-[11px] text-stone-400">
-            Plus
-            <NumberStepper size="sm" label="Languages of the player's choice" value={grants.languages} min={0} max={8} onChange={(languages) => put({ languages })} />
-            of the player&apos;s choice
+            {t("workshop.homebrew.background.plus")}
+            <NumberStepper size="sm" label={t("workshop.homebrew.background.languagesOfChoice")} value={grants.languages} min={0} max={8} onChange={(languages) => put({ languages })} />
+            {t("workshop.homebrew.background.ofChoice")}
           </span>
         </div>
       </div>
       <div className="space-y-1.5 text-sm">
-        <SectionHead title="Starting kit" glyph="tab-loot" className="mb-1" />
+        <SectionHead title={t("workshop.homebrew.background.startingKit")} glyph="tab-loot" className="mb-1" />
         <KitList items={grants.equipment} onChange={(equipment) => put({ equipment })} />
-        <NumberField label="Coin (gp)" value={grants.purse} min={0} max={10000} onChange={(purse) => put({ purse: purse === "" ? 0 : purse })} className="w-40" />
+        <NumberField label={t("workshop.homebrew.background.coin")} value={grants.purse} min={0} max={10000} onChange={(purse) => put({ purse: purse === "" ? 0 : purse })} className="w-40" />
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
-        <TextField label="Feature" value={String(data.feature ?? "")} onChange={(feature) => set({ feature })} placeholder="Salt Lore" maxLength={80} />
-        <TextArea label="What the feature does" value={String(data.feature_desc ?? "")} onChange={(feature_desc) => set({ feature_desc })} rows={3} maxLength={4000} />
+        <TextField label={t("workshop.homebrew.background.feature")} value={String(data.feature ?? "")} onChange={(feature) => set({ feature })} placeholder="Salt Lore" maxLength={80} />
+        <TextArea label={t("workshop.homebrew.background.featureDoes")} value={String(data.feature_desc ?? "")} onChange={(feature_desc) => set({ feature_desc })} rows={3} maxLength={4000} />
       </div>
     </div>
   );

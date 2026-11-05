@@ -13,7 +13,7 @@ import { CR_CHOICES, type Found } from "@/app/workshop/bestiary/types";
 import { needsLabel } from "@/lib/content/levelup-logic";
 import { BEST_EFFORT_CHIP } from "@/lib/content/reading-logic";
 import { contentName } from "@/lib/content/names";
-import { useLocale } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 const CR_OPTIONS = CR_CHOICES.map((cr) => ({ value: String(cr), label: crLabel(cr) }));
 
@@ -56,6 +56,7 @@ export function MonsterBuildControls({
   // press makes is still named from the row, in English (a bestiary name is
   // the author's own from there on).
   const locale = useLocale();
+  const t = useT();
 
   async function create(body: Record<string, unknown>) {
     if (await onCreate(body)) {
@@ -72,10 +73,10 @@ export function MonsterBuildControls({
       )}
     >
       {variant === "card" ? (
-        <SectionHead title="Build a monster" glyph="system-bestiary" className="mb-0" />
+        <SectionHead title={t("workshop.create.creature.build.label")} glyph="system-bestiary" className="mb-0" />
       ) : null}
       <div className="flex flex-wrap items-end gap-2">
-        <Field as="label" label="Name" className="min-w-40 flex-1 sm:max-w-64">
+        <Field as="label" label={t("workshop.bestiary.block.name")} className="min-w-40 flex-1 sm:max-w-64">
           <input
             value={newName}
             onChange={(event) => setNewName(event.target.value.slice(0, MONSTER_NAME_MAX))}
@@ -83,8 +84,8 @@ export function MonsterBuildControls({
             className={ui.input}
           />
         </Field>
-        <Field label="Starting CR" className="w-24">
-          <Select label="Starting CR" value={String(newCr)} onChange={(next) => setNewCr(Number(next))} options={CR_OPTIONS} />
+        <Field label={t("workshop.bestiary.build.startingCr")} className="w-24">
+          <Select label={t("workshop.bestiary.build.startingCr")} value={String(newCr)} onChange={(next) => setNewCr(Number(next))} options={CR_OPTIONS} />
         </Field>
         <button
           type="button"
@@ -92,12 +93,12 @@ export function MonsterBuildControls({
           onClick={() => void create({ from: "cr", name: newName.trim(), cr: newCr })}
           className={ui.btnPrimary}
         >
-          Start from the baseline
+          {t("workshop.bestiary.build.startBaseline")}
         </button>
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
-        <Field as="label" label="Or start from something that exists" className="flex-1">
+        <Field as="label" label={t("workshop.bestiary.build.orExisting")} className="flex-1">
           <div className="flex gap-1.5">
             <input
               value={query}
@@ -111,7 +112,7 @@ export function MonsterBuildControls({
               className={cn(ui.input, "flex-1")}
             />
             <button type="button" onClick={onFind} className={ui.btnSecondary}>
-              <Search className="size-3.5" /> Find
+              <Search className="size-3.5" /> {t("workshop.bestiary.build.find")}
             </button>
           </div>
         </Field>
@@ -142,7 +143,7 @@ export function MonsterBuildControls({
                 size="size-7"
               />
               {contentName("monsters", { slug: entry.slug, name: entry.name }, locale)}{" "}
-              <span className="text-stone-600">CR {crLabel(entry.cr)}</span>
+              <span className="text-stone-600">{t("workshop.bestiary.build.crChip", { cr: crLabel(entry.cr) })}</span>
               {/* Built on rules this game does not play: copy it to change
                   that part (issue #570). */}
               {entry.needs?.length ? <span className="text-orange-300/90">{needsLabel(entry.needs)}</span> : null}

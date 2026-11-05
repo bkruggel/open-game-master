@@ -22,12 +22,18 @@ import { subclassLevelFor } from "@/lib/srd/features";
 import { CopySource } from "@/app/workshop/homebrew/CopySource";
 import dynamic from "next/dynamic";
 import { HOMEBREW_DESC_MAX } from "@/lib/schemas/homebrew";
+import { useT } from "@/lib/locale";
 
 // The class form and the catalog it borrows from load when a class is
 // opened, not with the workshop (scripts/bundle-budget.json).
 const ClassFields = dynamic(() => import("@/app/workshop/homebrew/ClassFields").then((module) => module.ClassFields), {
-  loading: () => <p className="text-xs text-stone-500">Loading the class form...</p>,
+  loading: () => <LoadingNote />,
 });
+
+function LoadingNote() {
+  const t = useT();
+  return <p className="text-xs text-stone-500">{t("workshop.homebrew.editor.loadingClass")}</p>;
+}
 
 // A spell draft that already names its classes searches that class's list
 // first; the catalogue is otherwise the whole book.
@@ -84,6 +90,7 @@ export function HomebrewEditor({
   // The author's own classes, for a subclass to sit under.
   workshopClasses?: Array<{ id: string; name: string; subclassLevel?: number }>;
 }) {
+  const t = useT();
   const findings = draftFindings(draft, variantRules, isNew ? undefined : savedName);
   const refused = findings.some((finding) => finding.level === "error");
   const setData = (data: HomebrewDraft["data"]) => onDraft({ ...draft, data });
@@ -93,7 +100,7 @@ export function HomebrewEditor({
   return (
     <div className="space-y-3">
       <div data-tour="homebrew-start">
-        <SectionHead title="Start from the books" glyph="tab-reference" />
+        <SectionHead title={t("workshop.homebrew.editor.startFromBooks")} glyph="tab-reference" />
         <CatalogStart
           kind={draft.kind}
           scope={catalogScope(draft)}
@@ -103,12 +110,12 @@ export function HomebrewEditor({
 
       <CopySource kind={draft.kind} draft={draft} />
 
-      <SectionHead title={`The ${KIND_SINGULAR[draft.kind]}`} glyph={KIND_GLYPHS[draft.kind]} className="mb-0" />
+      <SectionHead title={t(`workshop.homebrew.editor.the_${KIND_SINGULAR[draft.kind]}`)} glyph={KIND_GLYPHS[draft.kind]} className="mb-0" />
       <TextField
-        label="Name"
+        label={t("workshop.new.name")}
         value={draft.name}
         onChange={(name) => onDraft({ ...draft, name: name.slice(0, 80) })}
-        placeholder={`What this ${KIND_SINGULAR[draft.kind]} is called`}
+        placeholder={t("workshop.homebrew.editor.namePlaceholder", { kind: t(`workshop.homebrew.editor.kind_${KIND_SINGULAR[draft.kind]}`) })}
         maxLength={80}
       />
 
@@ -121,7 +128,7 @@ export function HomebrewEditor({
       ) : null}
 
       <TextArea
-        label="Description"
+        label={t("workshop.homebrew.editor.description")}
         value={String(draft.data.desc ?? "")}
         onChange={(desc) => setData({ ...draft.data, desc })}
         maxLength={HOMEBREW_DESC_MAX}
@@ -129,11 +136,11 @@ export function HomebrewEditor({
         placeholder={
           draft.kind === "spell"
             ? "Each creature in a 15-foot cone must make a Dexterity saving throw, taking 3d6 fire damage on a failed save, or half as much on a successful one."
-            : "What it is, in the words the players will read."
+            : t("workshop.homebrew.editor.descPlaceholder")
         }
         hint={
           draft.kind === "spell"
-            ? "What players read. The engine reads the damage, the save and the damage type out of it only where the block above leaves them empty; \"What the table resolves\" says which it used."
+            ? t("workshop.homebrew.editor.descHint")
             : undefined
         }
       />
@@ -153,7 +160,7 @@ export function HomebrewEditor({
                       onClick={() => setReading(finding.page ?? null)}
                       className="motion-press ml-1.5 inline-flex items-center gap-0.5 text-stone-500 underline-offset-2 hover:text-amber-200 hover:underline"
                     >
-                      <BookOpen className="size-3" /> the rule
+                      <BookOpen className="size-3" /> {t("workshop.homebrew.editor.theRule")}
                     </button>
                   ) : null}
                 </span>
@@ -183,7 +190,7 @@ export function HomebrewEditor({
           className={ui.btnPrimary}
         >
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-          {isNew ? "Keep it" : "Save"}
+          {isNew ? t("workshop.homebrew.editor.keepIt") : t("workshop.party.save")}
         </button>
         {!isNew ? (
           <>
@@ -193,7 +200,7 @@ export function HomebrewEditor({
               onClick={onDuplicate}
               className={ui.btnSecondary}
             >
-              <Copy className="size-3.5" /> Duplicate
+              <Copy className="size-3.5" /> {t("action.duplicate")}
             </button>
             <button
               type="button"
@@ -201,7 +208,7 @@ export function HomebrewEditor({
               onClick={onDelete}
               className={cn(ui.btnSmall, "ml-auto hover:border-red-500/50 hover:text-red-300")}
             >
-              <Trash2 className="size-3.5" /> Forget it
+              <Trash2 className="size-3.5" /> {t("workshop.homebrew.editor.forgetIt")}
             </button>
           </>
         ) : null}

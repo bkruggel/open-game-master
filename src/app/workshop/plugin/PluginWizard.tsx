@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Wizard } from "@/components/ui/Wizard";
 import type { WorldPackDraft } from "@/lib/worlds/draft";
 import { NameFields, OriginFields, VoiceFields, WorldFields } from "@/app/workshop/plugin/IdentityFields";
+import { useT } from "@/lib/locale";
 
 // Guided setup: the identity of a world pack, one question at a time. The
 // steps are the same four field groups the Identity tab shows together; the
@@ -27,11 +28,12 @@ export function PluginWizard({
   onCancel: () => void;
 }) {
   const [pull, setPull] = useState(true);
+  const t = useT();
   const props = { draft, onDraft };
   return (
     <Wizard
-      title="Set up the world"
-      doneLabel="Start building"
+      title={t("workshop.plugin.wizard.title")}
+      doneLabel={t("workshop.plugin.wizard.doneLabel")}
       onDone={() => onDone(pull)}
       onCancel={onCancel}
       // Room for the sheet's X, which floats over the header's step count
@@ -40,42 +42,42 @@ export function PluginWizard({
       steps={[
         {
           key: "name",
-          title: "What is it called?",
-          blurb: "The name and the line under it are what a table sees when it picks a world.",
+          title: t("workshop.plugin.wizard.nameTitle"),
+          blurb: t("workshop.plugin.wizard.nameBlurb"),
           content: <NameFields {...props} />,
           canContinue: Boolean(draft.name.trim() && draft.blurb.trim()),
         },
         {
           key: "origins",
-          title: "Whose world is it?",
-          blurb: "An original world leaves the rights holder empty. A homage names who owns the setting, and every surface that shows the pack says so.",
+          title: t("workshop.plugin.whoseWorld"),
+          blurb: t("workshop.plugin.wizard.originsBlurb"),
           content: <OriginFields {...props} />,
           canContinue: Boolean(draft.inspiredBy.trim()),
         },
         {
           key: "world",
-          title: "What kind of world?",
-          blurb: "The base genre keeps every genre-aware tool working; the theme seeds each new campaign.",
+          title: t("workshop.plugin.kindOfWorld"),
+          blurb: t("workshop.plugin.wizard.worldBlurb"),
           content: <WorldFields {...props} />,
           canContinue: Boolean(draft.theme.trim()),
         },
         {
           key: "voice",
-          title: "How should the narrator sound?",
-          blurb: "The brief is the highest-leverage field in the pack. Tone, what magic feels like, what the stakes are, what the narrator must never do.",
+          title: t("workshop.plugin.wizard.voiceTitle"),
+          blurb: t("workshop.plugin.wizard.voiceBlurb"),
           content: <VoiceFields {...props} />,
         },
         {
           key: "fill",
-          title: "Fill it from the workshop?",
-          blurb: "The lore, places, hook cards and cast already built in this workshop can become the pack's factions, places, hooks, glossary and name seeds.",
+          title: t("workshop.plugin.wizard.fillTitle"),
+          blurb: t("workshop.plugin.wizard.fillBlurb"),
           content: (
             <div className="panel flex items-start gap-3 rounded-lg p-3 text-sm text-stone-300">
-              <Switch on={pull} onChange={setPull} label="Pull from this workshop now" className="mt-0.5" />
+              <Switch on={pull} onChange={setPull} label={t("workshop.plugin.wizard.pullNow")} className="mt-0.5" />
               <span>
-                Pull from this workshop now.
+                {t("workshop.plugin.wizard.pullNow")}{" "}
                 <span className="mt-1 block text-[11px] text-stone-500">
-                  It adds to the pack and never overwrites; you can run it again from the header any time.
+                  {t("workshop.plugin.wizard.pullAdds")}
                 </span>
               </span>
             </div>

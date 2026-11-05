@@ -20,11 +20,11 @@ import { useT } from "@/lib/locale";
 // lore), and the row lands in the body.
 
 const KIND_LABELS: Record<RollRefKind, string> = {
-  table: "Another table",
-  monster: "A monster",
-  item: "An item",
-  npc: "Someone from the cast",
-  lore: "A lore entry",
+  table: "workshop.tables.ref.anotherTable",
+  monster: "workshop.tables.ref.aMonster",
+  item: "workshop.tables.ref.anItem",
+  npc: "workshop.tables.ref.someoneCast",
+  lore: "workshop.tables.ref.aLore",
 };
 
 const KIND_GLYPHS: Record<RollRefKind, string> = {
@@ -119,12 +119,12 @@ export function RefPicker({
     <div className="flex flex-wrap items-center gap-1.5" data-tour="tables-ref">
       <GameIcon icon={{ kind: "glyph", key: "tab-reference" }} size="size-6" />
       <span className="w-56">
-        <Select<RollRefKind> value={kind} label="What kind of thing the row is" onChange={setKind} options={KIND_OPTIONS} size="sm" />
+        <Select<RollRefKind> value={kind} label={t("workshop.tables.ref.kindAria")} onChange={setKind} options={KIND_OPTIONS.map((option) => ({ ...option, label: t(option.label) }))} size="sm" />
       </span>
       {kind === "item" ? (
         <ContentPick
           kind="items"
-          label="Find an item to add as a row"
+          label={t("workshop.tables.ref.findItem")}
           placeholder="Potion of Healing"
           onPick={(entry) => insert(entry.name)}
           className="min-w-44 flex-1"
@@ -132,13 +132,13 @@ export function RefPicker({
       ) : kind === "monster" ? (
         <>
           <AddFromList
-            prompt="One of yours"
+            prompt={t("workshop.tables.ref.oneOfYours")}
             options={(list ?? []).map((entry) => entry.name)}
             onPick={insert}
           />
           <ContentPick
             kind="monsters"
-            label="Find a monster in the catalogue to add as a row"
+            label={t("workshop.tables.ref.findMonster")}
             placeholder="wolf"
             onPick={(entry) => insert(entry.name)}
             className="min-w-44 flex-1"
@@ -146,7 +146,7 @@ export function RefPicker({
         </>
       ) : list && list.length ? (
         <AddFromList
-          prompt="Add a row for"
+          prompt={t("workshop.tables.ref.addRowFor")}
           options={list.map((entry) => entry.name)}
           onPick={insert}
           className={cn("min-w-44")}
@@ -155,7 +155,7 @@ export function RefPicker({
         <LoadFailed error={loadErrors[kind] ?? ""} onRetry={retry} className="min-w-44" />
       ) : (
         <span className="text-xs text-stone-500">
-          {list === null ? "Reading..." : `Nothing of that kind in this workshop yet.`}
+          {list === null ? t("action.loading") : t("workshop.tables.ref.nothingOfKind")}
         </span>
       )}
     </div>

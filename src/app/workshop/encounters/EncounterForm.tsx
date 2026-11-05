@@ -13,6 +13,7 @@ import { EncounterExtras } from "@/app/workshop/encounters/EncounterExtras";
 import type { EncounterDraft, MapOption } from "@/app/workshop/encounters/types";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
+import { useT } from "@/lib/locale";
 
 // The prepared-encounter form: a name, the roster (picked or typed), where it
 // happens, which map, and the notes. Split out of DmEncounterPrepPanel so
@@ -42,6 +43,7 @@ export function EncounterForm({
   onSubmit: () => void;
   variant?: "card" | "sheet";
 }) {
+  const t = useT();
   const set = (patch: Partial<EncounterDraft>) => onChange({ ...value, ...patch });
   return (
     <section
@@ -51,16 +53,16 @@ export function EncounterForm({
           : "space-y-2",
       )}
     >
-      <SectionHead title="The fight" glyph="system-encounters" className="mb-1" />
+      <SectionHead title={t("workshop.encounters.formTitle")} glyph="system-encounters" className="mb-1" />
       <input
         value={value.name}
         maxLength={TEMPLATE_NAME_MAX}
         onChange={(event) => set({ name: event.target.value })}
         placeholder="Ambush at the ford"
-        aria-label="Encounter name"
+        aria-label={t("workshop.encounters.nameAria")}
         className={field}
       />
-      <SectionHead title="Who is in it" glyph="system-bestiary" className="mb-1 pt-1" />
+      <SectionHead title={t("workshop.encounters.whoTitle")} glyph="system-bestiary" className="mb-1 pt-1" />
       <div data-tour="encounters-picker">
         <MonsterRosterPicker
           campaignId={campaignId}
@@ -73,37 +75,36 @@ export function EncounterForm({
         onChange={(event) => set({ enemies: event.target.value })}
         rows={3}
         placeholder={"goblin x4\nhobgoblin"}
-        aria-label="Roster"
+        aria-label={t("workshop.encounters.rosterAria")}
         className={field}
       />
       <p className="text-[11px] text-stone-500">
-        One per line, name or slug, optional xN. The same shorthand Start a fight takes, so
-        picking above and typing here are the same thing.
+        {t("workshop.encounters.rosterHintLine")}
       </p>
-      <SectionHead title="Where it happens" glyph="system-maps" className="mb-1 pt-1" />
+      <SectionHead title={t("workshop.encounters.whereTitle")} glyph="system-maps" className="mb-1 pt-1" />
       <input
         value={value.battlefield}
         onChange={(event) => set({ battlefield: event.target.value })}
         placeholder="a rope bridge over a gorge"
-        aria-label="Battlefield"
+        aria-label={t("workshop.encounters.battlefieldAria")}
         className={field}
       />
-      <Field label="Kind of ground">
+      <Field label={t("workshop.encounters.kindOfGround")}>
         <Select
-          label="Kind of ground"
+          label={t("workshop.encounters.kindOfGround")}
           value={value.scene}
           onChange={(scene) => set({ scene })}
-          options={[{ value: "", label: "Where the party is" }, ...sceneOptions()]}
+          options={[{ value: "", label: t("workshop.encounters.wherePartyIs") }, ...sceneOptions()]}
         />
       </Field>
       <div data-tour="encounters-map">
-        <Field label="On which map">
+        <Field label={t("workshop.encounters.whichMap")}>
           <Select
-            label="On which map"
+            label={t("workshop.encounters.whichMap")}
             value={value.mapId}
             onChange={(mapId) => set({ mapId })}
             options={[
-              { value: "", label: "Generator's choice", icon: { kind: "glyph", key: "die-d20" } },
+              { value: "", label: t("workshop.encounters.generatorsChoice"), icon: { kind: "glyph", key: "die-d20" } },
               ...maps.map((map) => ({ value: map.id, label: map.name, icon: { kind: "glyph" as const, key: "system-maps" } })),
             ]}
           />
@@ -116,14 +117,14 @@ export function EncounterForm({
         value={value.extras}
         onChange={(extras) => set({ extras })}
       />
-      <SectionHead title="Notes" glyph="tab-notes" className="mb-1 pt-1" />
-      <DictateField label="Encounter notes" onTranscript={(text) => set({ notes: appendDictation(value.notes, text) })}>
+      <SectionHead title={t("table.tab.notes")} glyph="tab-notes" className="mb-1 pt-1" />
+      <DictateField label={t("workshop.encounters.notesLabel")} onTranscript={(text) => set({ notes: appendDictation(value.notes, text) })}>
         <textarea
           value={value.notes}
           onChange={(event) => set({ notes: event.target.value })}
           rows={2}
           placeholder="Tactics, what they want, when they run."
-          aria-label="Notes"
+          aria-label={t("table.tab.notes")}
           className={field}
         />
       </DictateField>

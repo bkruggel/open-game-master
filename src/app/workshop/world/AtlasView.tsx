@@ -115,7 +115,7 @@ export function AtlasView({
       doc.pins.map((pin) => (pin.id === id ? { ...pin, x: to.x, y: to.y } : pin)),
       (moves) =>
         region.setNotice({
-          text: movedText(moves),
+          text: movedText(moves, t),
           undo: () => {
             const now = latest.current;
             return now.api.patch({ pins: now.doc.pins.map((pin) => (pin.id === id ? { ...pin, x: from.x, y: from.y } : pin)) });

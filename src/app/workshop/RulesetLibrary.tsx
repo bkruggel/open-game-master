@@ -14,6 +14,7 @@ import { FieldLabel, GlyphPlate, RowMenu } from "@/app/workshop/kit";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
 import { useT } from "@/lib/locale";
+import type { MessageVars } from "@/lib/messages-logic";
 import {
   activeVariantRules,
   describeRuleset,
@@ -31,9 +32,9 @@ const readRuleset = (ruleset: Ruleset) => ({ name: ruleset.name });
 // below is this workshop's own copy. Applying overwrites the copy; the
 // library is untouched either way.
 
-function ChangeList({ changes }: { changes: RulesetChange[] }) {
+function ChangeList({ changes, t }: { changes: RulesetChange[]; t: (key: string, vars?: MessageVars) => string }) {
   if (!changes.length) {
-    return <p className="text-xs text-stone-500">Nothing would change.</p>;
+    return <p className="text-xs text-stone-500">{t("workshop.rules.nothingChanges")}</p>;
   }
   return (
     <ul className="space-y-0.5 text-xs text-stone-400">
@@ -43,20 +44,20 @@ function ChangeList({ changes }: { changes: RulesetChange[] }) {
             <>
               {change.label}:{" "}
               <span className="text-stone-500">
-                {typeof change.from === "boolean" ? (change.from ? "on" : "off") : change.from}
+                {typeof change.from === "boolean" ? (change.from ? t("workshop.rules.on") : t("workshop.rules.off")) : change.from}
               </span>{" "}
-              to{" "}
+              {t("workshop.rules.to")}{" "}
               <span className="text-amber-200">
-                {typeof change.to === "boolean" ? (change.to ? "on" : "off") : change.to}
+                {typeof change.to === "boolean" ? (change.to ? t("workshop.rules.on") : t("workshop.rules.off")) : change.to}
               </span>
             </>
           ) : (
             <>
-              House rules: {change.to} ruling{change.to === 1 ? "" : "s"}
+              {t("workshop.rules.houseRulesLine", { count: change.to })}
               {change.replaces ? (
                 <span className="text-amber-300/90">
                   {" "}
-                  replacing the {change.from} already written here
+                  {t("workshop.rules.replacesTail", { count: change.from })}
                 </span>
               ) : null}
             </>
@@ -141,15 +142,15 @@ export function RulesetLibrary({
         body: JSON.stringify({ campaignId, houseRules: mode }),
       }).catch(() => null);
       if (!response?.ok) {
-        setNote({ tone: "error", text: await refused(response, `${ruleset.name} was not applied. Check the connection and try again.`) });
+        setNote({ tone: "error", text: await refused(response, t("workshop.rules.applyFailed", { name: ruleset.name })) });
         return;
       }
       const data = await response.json();
       setNote({
         tone: "ok",
         text: data.changes?.length
-          ? `Applied ${ruleset.name}: ${data.changes.length} change${data.changes.length === 1 ? "" : "s"}.`
-          : `${ruleset.name} was already what this table runs.`,
+          ? t("workshop.rules.appliedLine", { name: ruleset.name, count: data.changes.length })
+          : t("workshop.rules.alreadyLine", { name: ruleset.name }),
       });
       setOpenId(null);
       onApplied?.();
@@ -171,11 +172,11 @@ export function RulesetLibrary({
         body: JSON.stringify({ name: saveName.trim(), captureFrom: campaignId }),
       }).catch(() => null);
       if (!response?.ok) {
-        setNote({ tone: "error", text: await refused(response, "These rules were not saved. Check the connection and try again.") });
+        setNote({ tone: "error", text: await refused(response, t("workshop.rules.saveFailed")) });
         return;
       }
       setSaveName("");
-      setNote({ tone: "ok", text: "Saved these rules to your library." });
+      setNote({ tone: "ok", text: t("workshop.rules.savedNote") });
       await load();
     } finally {
       setSaving(false);
@@ -183,13 +184,13 @@ export function RulesetLibrary({
   }
 
   async function remove(ruleset: Ruleset) {
-    if (!await appConfirm(`Delete the "${ruleset.name}" ruleset? Tables already using it keep it.`)) {
+    if (!await appConfirm(t("workshop.rules.deleteConfirm", { name: ruleset.name }))) {
       return;
     }
     setNote(null);
     const response = await fetch(`/api/rulesets/${ruleset.id}`, { method: "DELETE" }).catch(() => null);
     if (!response?.ok) {
-      setNote({ tone: "error", text: await refused(response, `${ruleset.name} was not deleted. Check the connection and try again.`) });
+      setNote({ tone: "error", text: await refused(response, t("workshop.rules.deleteFailed", { name: ruleset.name })) });
       return;
     }
     setRulesets((current) => current.filter((entry) => entry.id !== ruleset.id));
@@ -197,10 +198,9 @@ export function RulesetLibrary({
 
   return (
     <section className={`${ui.card} mb-4 p-3`} data-tour="rules-library">
-      <SectionHead title="Ruleset library" glyph="system-rulesets" level="h2" />
+      <SectionHead title={t("workshop.rules.libraryTitle")} glyph="system-rulesets" level="h2" />
       <p className="mb-3 text-xs text-stone-400">
-        A ruleset is your table&apos;s variant rules and house rulings kept as one thing, reusable
-        across campaigns. Applying one copies it here; editing it later never reaches back.
+        {t("workshop.rules.libraryBlurb")}
       </p>
 
       {loading ? (
@@ -210,15 +210,15 @@ export function RulesetLibrary({
         </div>
       ) : rulesets.length ? (
         <>
-        <ListHead head={head} noun={["ruleset", "rulesets"]} placeholder="Find a ruleset" />
+        <ListHead head={head} noun={["ruleset", "rulesets"]} placeholder={t("workshop.rules.findPlaceholder")} />
         <ul className="stagger mb-3 space-y-1.5">
           {head.shown.map((ruleset) => {
             // Opening is the row; deleting sits behind the kebab and the
             // right-click or long-press menu. Applying stays inside the opened
             // row, under the list of what it would change.
             const items: ContextMenuItem[] = [
-              { id: "open", label: openId === ruleset.id ? "Close" : "Open", glyph: "system-rulesets", onSelect: () => void open(ruleset) },
-              { id: "delete", label: "Delete", glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(ruleset) },
+              { id: "open", label: openId === ruleset.id ? t("action.close") : t("action.open"), glyph: "system-rulesets", onSelect: () => void open(ruleset) },
+              { id: "delete", label: t("action.delete"), glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(ruleset) },
             ];
             return (
             <ContextMenu as="li" key={ruleset.id} label={ruleset.name} items={items} className="panel rounded-xl">
@@ -248,13 +248,13 @@ export function RulesetLibrary({
                     </ul>
                   ) : null}
                   <div>
-                    <FieldLabel className="mb-1 block">Applying here would</FieldLabel>
+                    <FieldLabel className="mb-1 block">{t("workshop.rules.applyingWould")}</FieldLabel>
                     {previewFailed ? (
                       <p role="alert" className="text-xs text-amber-300/90">
-                        Could not check what applying it here would change. Close and open it again to retry.
+                        {t("workshop.rules.previewFailed")}
                       </p>
                     ) : (
-                      <ChangeList changes={changes} />
+                      <ChangeList changes={changes} t={t} />
                     )}
                   </div>
                   {/* Homebrew is not part of a ruleset: an author's whole shelf
@@ -263,11 +263,9 @@ export function RulesetLibrary({
                       ruleset ships" admitted nothing and installed nothing
                       (workshop import audit F08). Said here, where the ticks were. */}
                   <div data-tour="rules-homebrew">
-                    <SectionHead title="Homebrew" glyph="system-homebrew" level="h4" />
+                    <SectionHead title={t("workshop.system.homebrew.label")} glyph="system-homebrew" level="h4" />
                     <p className="text-xs text-stone-400">
-                      A ruleset carries variant rules and house rules, not Homebrew. Everything on your Homebrew shelf already
-                      counts at every table you run as its owner, GM or assistant GM, whichever ruleset it plays. To give
-                      Homebrew to another GM or server, put it in a Workshop bundle.
+                      {t("workshop.rules.homebrewNote")}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -275,10 +273,10 @@ export function RulesetLibrary({
                       <Select<"replace" | "append">
                         value={mode}
                         onChange={setMode}
-                        label="How to handle existing house rules"
+                        label={t("workshop.rules.handleExisting")}
                         options={[
-                          { value: "replace", label: "Replace the house rules here" },
-                          { value: "append", label: "Add to the house rules here" },
+                          { value: "replace", label: t("workshop.rules.replaceHere") },
+                          { value: "append", label: t("workshop.rules.appendHere") },
                         ]}
                       />
                     </span>
@@ -293,7 +291,7 @@ export function RulesetLibrary({
                       ) : (
                         <Check className="size-3.5" />
                       )}
-                      Apply
+                      {t("workshop.rules.applyButton")}
                     </button>
                   </div>
                 </div>
@@ -313,7 +311,7 @@ export function RulesetLibrary({
           <EmptyState
             size="md"
             art="scrolls"
-            title="No saved rulesets yet. Set the rules below the way your table plays, then save them."
+            title={t("workshop.rules.emptyTitle")}
           />
         ) : null)
       )}
@@ -323,8 +321,8 @@ export function RulesetLibrary({
           value={saveName}
           onChange={(event) => setSaveName(event.target.value)}
           maxLength={80}
-          placeholder="Save these rules as..."
-          aria-label="Save these rules as"
+          placeholder={t("workshop.rules.saveAsPlaceholder")}
+          aria-label={t("workshop.rules.saveAsAria")}
           className={cn(ui.input, "w-full sm:w-64")}
         />
         <button
@@ -338,7 +336,7 @@ export function RulesetLibrary({
           ) : (
             <BookmarkPlus className="size-3.5" />
           )}
-          Save
+          {t("workshop.party.save")}
         </button>
       </div>
       {note ? (

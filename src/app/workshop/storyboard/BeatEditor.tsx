@@ -28,6 +28,7 @@ import { KIND_GLYPH, LINK_FIELDS, LINK_GLYPH } from "@/app/workshop/storyboard/b
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
 import { checkProse, overflowLine } from "@/lib/workshop/prose-check";
+import { useT } from "@/lib/locale";
 
 // One card, open for editing: its kind and title, what happens, who and
 // where it involves, and which cards it leads to and how. Split out of
@@ -75,6 +76,7 @@ export function BeatEditor({
   const prose = checkProse(edit.body);
   const [dismissed, setDismissed] = useState("");
   const proseKey = prose.map((warning) => warning.kind).join(",");
+  const t = useT();
   const saveButton = (
     <button
       type="button"
@@ -83,13 +85,13 @@ export function BeatEditor({
       className={cn(ui.btnPrimary, "w-fit")}
     >
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
-      Save the card
+      {t("workshop.boardEditor.saveCard")}
     </button>
   );
 
   return (
     <>
-      <SectionHead title="The card" glyph={KIND_GLYPH[edit.kind]} className="mb-0" />
+      <SectionHead title={t("workshop.boardEditor.cardTitle")} glyph={KIND_GLYPH[edit.kind]} className="mb-0" />
       {origin ? (
         <p className="text-[11px] text-stone-500" data-testid="card-origin">
           {originLine(origin)}
@@ -98,7 +100,7 @@ export function BeatEditor({
       <div className="flex flex-wrap gap-2">
         <span className="w-full sm:w-52">
           <Select<BeatKind>
-            label="Kind of card"
+            label={t("workshop.boardEditor.kindOfCard")}
             value={edit.kind}
             onChange={(kind) => onChange({ ...edit, kind })}
             options={BEAT_KINDS.map((kind) => ({ value: kind, label: BEAT_LABELS[kind], icon: { kind: "glyph" as const, key: KIND_GLYPH[kind] } }))}
@@ -106,20 +108,20 @@ export function BeatEditor({
         </span>
         <input
           value={edit.title}
-          aria-label="Title"
+          aria-label={t("workshop.loreEditor.entryTitle")}
           onChange={(event) =>
             onChange({ ...edit, title: event.target.value.slice(0, TITLE_MAX) })
           }
           className={cn(ui.input, "min-w-40 flex-1")}
         />
       </div>
-      <DictateField label="What happens" onTranscript={(text) => onChange({ ...edit, body: appendDictation(edit.body, text) })}>
+      <DictateField label={t("workshop.boardEditor.whatHappens")} onTranscript={(text) => onChange({ ...edit, body: appendDictation(edit.body, text) })}>
         <textarea
           value={edit.body}
           onChange={(event) => onChange({ ...edit, body: event.target.value })}
           rows={3}
-          placeholder="What actually happens, and what it means if the party is not there."
-          aria-label="What happens"
+          placeholder={t("workshop.boardEditor.whatHappensPlaceholder")}
+          aria-label={t("workshop.boardEditor.whatHappens")}
           className={cn(ui.input, "resize-y")}
         />
       </DictateField>
@@ -129,24 +131,24 @@ export function BeatEditor({
         </span>
         {overflow ? (
           <span className="motion-shake w-full text-red-400" role="alert">
-            {overflow} Shorten it to save.
+            {overflow} {t("workshop.loreEditor.shortenToSave")}
           </span>
         ) : null}
         {prose.length && dismissed !== proseKey ? (
           <span className="reveal flex w-full items-start gap-1.5 text-amber-300/90" data-testid="prose-warning">
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              This may read oddly: {prose.map((warning) => warning.message).join(" ")}
-              {prose[0].samples[0] ? ` For example: ${prose[0].samples[0]}` : ""} It may have been written this way; nothing is changed.{" "}
+              {t("workshop.loreEditor.mayReadOddly")} {prose.map((warning) => warning.message).join(" ")}
+              {prose[0].samples[0] ? ` ${t("workshop.loreEditor.forExample", { sample: prose[0].samples[0] })}` : ""} {t("workshop.loreEditor.mayBeWrittenThisWay")}{" "}
               <button type="button" onClick={() => setDismissed(proseKey)} className="underline">
-                Dismiss
+                {t("action.dismiss")}
               </button>
             </span>
           </span>
         ) : null}
       </div>
 
-      <SectionHead title="Who and where" glyph="system-cast" className="mb-0 pt-1" />
+      <SectionHead title={t("workshop.boardEditor.whoWhere")} glyph="system-cast" className="mb-0 pt-1" />
       <div className="stagger-up grid gap-2 sm:grid-cols-2">
         {LINK_FIELDS.map(([field, bucket, label]) => (
           <Field key={field} label={label}>
@@ -160,21 +162,21 @@ export function BeatEditor({
                 })
               }
               options={[
-                { value: "", label: "nobody in particular" },
+                { value: "", label: t("workshop.boardEditor.nobodyInParticular") },
                 ...(broken.includes(field) && edit.links[field]
-                  ? [{ value: edit.links[field] as string, label: "Missing: no longer in this workshop or its shared one", disabled: true }]
+                  ? [{ value: edit.links[field] as string, label: t("workshop.boardEditor.missingOption"), disabled: true }]
                   : []),
                 ...inventory[bucket].map((entry) => ({
                   value: entry.id,
                   label: entry.name,
                   icon: { kind: "glyph" as const, key: LINK_GLYPH[field] },
-                  ...(entry.from ? { group: `From ${entry.from}` } : {}),
+                  ...(entry.from ? { group: t("workshop.board.fromShared", { from: entry.from }) } : {}),
                 })),
               ]}
             />
             {broken.includes(field) ? (
               <p className="reveal mt-1 text-[11px] text-amber-300/80">
-                What this card picked is gone. Pick again, or clear it.
+                {t("workshop.boardEditor.pickedGone")}
               </p>
             ) : null}
           </Field>
@@ -182,11 +184,9 @@ export function BeatEditor({
       </div>
 
       <div className="flex flex-col gap-1">
-        <SectionHead title="Leads to" glyph="pace-normal" className="mb-1 pt-1" />
+        <SectionHead title={t("workshop.boardEditor.leadsToTitle")} glyph="pace-normal" className="mb-1 pt-1" />
         <p className="text-[11px] leading-snug text-stone-500">
-          An arrow is &quot;then&quot; unless you say otherwise. Mark the routes the party chooses
-          between, or a scene that only happens if something holds; those arrive in a campaign
-          as moments the storyteller can run or drop, not as beats it waits on.
+          {t("workshop.boardEditor.leadsHint")}
         </p>
         <div className={cn("stagger-pop", chipRow)}>
           {others.map((other) => {
@@ -236,7 +236,7 @@ export function BeatEditor({
                   <span className="min-w-28 flex-1 truncate text-stone-300">{target.title}</span>
                   <span className="w-full sm:w-48">
                     <Select<"then" | RouteKind>
-                      label={`How "${target.title}" follows`}
+                      label={t("workshop.boardEditor.howFollows", { title: target.title })}
                       value={route?.kind ?? "then"}
                       onChange={(kind) => setRoute(kind)}
                       options={(["then", ...ROUTE_KINDS] as const).map((kind) => ({
@@ -249,8 +249,8 @@ export function BeatEditor({
                     <input
                       value={route.label}
                       onChange={(event) => setRoute(route.kind, event.target.value)}
-                      placeholder={route.kind === "choice" ? "if they side with the guild" : "if they search the cellar"}
-                      aria-label={`When the party takes the route to "${target.title}"`}
+                      placeholder={route.kind === "choice" ? t("workshop.boardEditor.routeChoicePlaceholder") : t("workshop.boardEditor.routeOptionalPlaceholder")}
+                      aria-label={t("workshop.boardEditor.routeAria", { title: target.title })}
                       className={cn(ui.input, "reveal min-w-40 flex-1 py-1 text-xs")}
                     />
                   ) : null}
@@ -268,10 +268,10 @@ export function BeatEditor({
             type="button"
             disabled={busy}
             onClick={onDelete}
-            aria-label={`Delete ${edit.title}`}
+            aria-label={t("workshop.tile.deleteAria", { name: edit.title })}
             className={cn(ui.btnSmall, "ml-auto hover:border-red-500/50 hover:text-red-300")}
           >
-            <Trash2 className="size-3.5" /> Delete
+            <Trash2 className="size-3.5" /> {t("action.delete")}
           </button>
         </div>
       ) : (

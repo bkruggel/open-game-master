@@ -11,6 +11,7 @@ import { BLOCK_LIMITS, SAVE_ABILITY_IDS } from "@/lib/bestiary/block-check";
 import { SIZES } from "@/lib/bestiary/monster-draft";
 import type { EnemyAttack } from "@/lib/bestiary/statblock";
 import type { OnHitRider } from "@/lib/bestiary/attack-text";
+import { useT } from "@/lib/locale";
 import { Field, FieldLabel, OptionalStepper, addChip, rowIcon } from "@/app/workshop/kit";
 
 // The half of an attack line the engine reads besides its bonus and dice
@@ -22,20 +23,6 @@ import { Field, FieldLabel, OptionalStepper, addChip, rowIcon } from "@/app/work
 // row; everything is optional and an attack without any of it swings as
 // before.
 
-const MODE_OPTIONS = [
-  { value: "", label: "Unstated" },
-  { value: "melee", label: "Melee" },
-  { value: "ranged", label: "Ranged" },
-  { value: "both", label: "Melee or thrown" },
-];
-
-const SAVE_OPTIONS = [
-  { value: "", label: "No save" },
-  ...SAVE_ABILITY_IDS.map((ability) => ({ value: ability as string, label: `${ability.toUpperCase()} save` })),
-];
-
-const SIZE_OPTIONS = [{ value: "", label: "Any size" }, ...SIZES.map((size) => ({ value: size as string, label: `${size} or smaller` }))];
-
 type Patch = Partial<EnemyAttack>;
 
 function withoutUnset<T extends object>(value: T): T {
@@ -43,6 +30,7 @@ function withoutUnset<T extends object>(value: T): T {
 }
 
 export function AttackDetails({ attack, onChange }: { attack: EnemyAttack; onChange: (next: EnemyAttack) => void }) {
+  const t = useT();
   const conditionList = useId();
   const typeList = useId();
   const set = (patch: Patch) => onChange(withoutUnset({ ...attack, ...patch }));
@@ -62,6 +50,21 @@ export function AttackDetails({ attack, onChange }: { attack: EnemyAttack; onCha
     set({ alternatives: next.length ? next : undefined });
   };
 
+  const modeOptions = [
+    { value: "", label: t("workshop.bestiary.attack.modeUnstated") },
+    { value: "melee", label: t("workshop.bestiary.attack.modeMelee") },
+    { value: "ranged", label: t("workshop.bestiary.attack.modeRanged") },
+    { value: "both", label: t("workshop.bestiary.attack.modeBoth") },
+  ];
+  const saveOptions = [
+    { value: "", label: t("workshop.bestiary.attack.noSave") },
+    ...SAVE_ABILITY_IDS.map((ability) => ({ value: ability as string, label: t("workshop.bestiary.attack.abilitySave", { ability: ability.toUpperCase() }) })),
+  ];
+  const sizeOptions = [
+    { value: "", label: t("workshop.bestiary.attack.anySize") },
+    ...SIZES.map((size) => ({ value: size as string, label: t("workshop.bestiary.attack.sizeOrSmaller", { size }) })),
+  ];
+
   return (
     <div className="reveal grid gap-3 rounded-lg border border-stone-800 bg-stone-950/50 p-3">
       <datalist id={conditionList}>
@@ -76,30 +79,30 @@ export function AttackDetails({ attack, onChange }: { attack: EnemyAttack; onCha
       </datalist>
 
       <div className="flex flex-wrap items-end gap-3">
-        <Field label="Kind">
+        <Field label={t("workshop.bestiary.attack.kind")}>
           <span className="block w-40">
             <Select
-              label="Melee or ranged"
+              label={t("workshop.bestiary.attack.modeSelect")}
               size="sm"
               value={attack.mode ?? ""}
               onChange={(mode) => set({ mode: (mode || undefined) as EnemyAttack["mode"] })}
-              options={MODE_OPTIONS}
+              options={modeOptions}
             />
           </span>
         </Field>
-        <Field label="Spell attack">
-          <Switch label="A spell attack" on={attack.spellAttack === true} onChange={(on) => set({ spellAttack: on || undefined })} />
+        <Field label={t("workshop.bestiary.attack.spellAttack")}>
+          <Switch label={t("workshop.bestiary.attack.spellAttackSwitch")} on={attack.spellAttack === true} onChange={(on) => set({ spellAttack: on || undefined })} />
         </Field>
-        <Field label="Bonus action">
-          <Switch label="Made as a bonus action, beside the action's attacks" on={attack.bonusAction === true} onChange={(on) => set({ bonusAction: on || undefined })} />
+        <Field label={t("workshop.bestiary.attack.bonusAction")}>
+          <Switch label={t("workshop.bestiary.attack.bonusActionSwitch")} on={attack.bonusAction === true} onChange={(on) => set({ bonusAction: on || undefined })} />
         </Field>
-        <Field label="Reach">
-          <OptionalStepper label="Reach in feet (0 for a creature in its space)" min={0} max={60} step={5} suffix="ft" fallback={5} value={attack.reach} onChange={(reach) => set({ reach: reach === "" ? undefined : reach })} />
+        <Field label={t("workshop.bestiary.attack.reach")}>
+          <OptionalStepper label={t("workshop.bestiary.attack.reachStepper")} min={0} max={60} step={5} suffix="ft" fallback={5} value={attack.reach} onChange={(reach) => set({ reach: reach === "" ? undefined : reach })} />
         </Field>
-        <Field label="Range">
+        <Field label={t("workshop.bestiary.attack.range")}>
           <span className="flex items-center gap-1">
             <OptionalStepper
-              label="Normal range in feet"
+              label={t("workshop.bestiary.attack.rangeNormal")}
               min={5}
               max={1000}
               step={5}
@@ -114,7 +117,7 @@ export function AttackDetails({ attack, onChange }: { attack: EnemyAttack; onCha
               <>
                 <span className="text-[11px] text-stone-500">/</span>
                 <OptionalStepper
-                  label="Long range in feet"
+                  label={t("workshop.bestiary.attack.rangeLong")}
                   min={attack.range.normal}
                   max={2000}
                   step={5}
@@ -130,12 +133,12 @@ export function AttackDetails({ attack, onChange }: { attack: EnemyAttack; onCha
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <FieldLabel>Extra dice on a hit</FieldLabel>
+        <FieldLabel>{t("workshop.bestiary.attack.ridersTitle")}</FieldLabel>
         {riders.map((rider, index) => (
           <div key={index} className="live-in flex flex-wrap items-center gap-1.5">
             <input
               value={rider.dice}
-              aria-label="Rider dice"
+              aria-label={t("workshop.bestiary.attack.riderDiceAria")}
               placeholder="2d6"
               onChange={(event) => setRiders(riders.map((row, at) => (at === index ? { ...row, dice: event.target.value } : row)))}
               className={cn(ui.input, "w-24")}
@@ -143,26 +146,26 @@ export function AttackDetails({ attack, onChange }: { attack: EnemyAttack; onCha
             <input
               list={typeList}
               value={rider.type}
-              aria-label="Rider damage type"
+              aria-label={t("workshop.bestiary.attack.riderTypeAria")}
               placeholder="fire"
               onChange={(event) => setRiders(riders.map((row, at) => (at === index ? { ...row, type: event.target.value } : row)))}
               className={cn(ui.input, "w-28")}
             />
-            <button type="button" aria-label="Remove rider" onClick={() => setRiders(riders.filter((_, at) => at !== index))} className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}>
+            <button type="button" aria-label={t("workshop.bestiary.attack.removeRider")} onClick={() => setRiders(riders.filter((_, at) => at !== index))} className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}>
               <Trash2 className="size-3.5" />
             </button>
           </div>
         ))}
         {riders.length < BLOCK_LIMITS.riders ? (
           <button type="button" onClick={() => setRiders([...riders, { dice: "1d6", type: "fire" }])} className={cn(ui.btnSmall, addChip, "w-fit")}>
-            <Plus className="size-3" /> Rider dice
+            <Plus className="size-3" /> {t("workshop.bestiary.attack.riderChip")}
           </button>
         ) : null}
-        <span className="text-[11px] text-stone-500">Each rider meets its own resistance: a fire rider on a bite is halved by fire resistance, not by piercing.</span>
+        <span className="text-[11px] text-stone-500">{t("workshop.bestiary.attack.ridersHint")}</span>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <Field as="label" label="At half its hit points or fewer">
+        <Field as="label" label={t("workshop.bestiary.attack.bloodiedLabel")}>
           <input
             value={bloodied?.damage ?? ""}
             placeholder="1d6"
@@ -171,58 +174,58 @@ export function AttackDetails({ attack, onChange }: { attack: EnemyAttack; onCha
           />
         </Field>
         {bloodied ? (
-          <Field as="label" label="Type">
+          <Field as="label" label={t("workshop.bestiary.attack.type")}>
             <input list={typeList} value={bloodied.type} placeholder="piercing" onChange={(event) => setBloodied(bloodied.damage, event.target.value)} className={cn(ui.input, "w-28")} />
           </Field>
         ) : null}
-        <span className="basis-full text-[11px] text-stone-500">The blow it deals instead once it is down to half its hit points, as a swarm&apos;s bite weakens. Leave empty for the same blow throughout.</span>
+        <span className="basis-full text-[11px] text-stone-500">{t("workshop.bestiary.attack.bloodiedHint")}</span>
       </div>
 
       <div className="grid gap-2">
-        <FieldLabel>What a hit does besides damage</FieldLabel>
+        <FieldLabel>{t("workshop.bestiary.attack.onHitTitle")}</FieldLabel>
         <div className="flex flex-wrap items-end gap-3">
-          <Field label="Save">
+          <Field label={t("workshop.bestiary.attack.save")}>
             <span className="block w-32">
-              <Select label="Save against the hit" size="sm" value={onHit.save ?? ""} onChange={(save) => setOnHit({ save: (save || undefined) as OnHitRider["save"], dc: save ? onHit.dc ?? 13 : undefined })} options={SAVE_OPTIONS} />
+              <Select label={t("workshop.bestiary.attack.saveSelect")} size="sm" value={onHit.save ?? ""} onChange={(save) => setOnHit({ save: (save || undefined) as OnHitRider["save"], dc: save ? onHit.dc ?? 13 : undefined })} options={saveOptions} />
             </span>
           </Field>
           {onHit.save ? (
-            <Field label="DC">
-              <OptionalStepper label="Save DC" min={1} max={30} fallback={13} value={onHit.dc} onChange={(dc) => setOnHit({ dc: dc === "" ? 13 : dc })} />
+            <Field label={t("workshop.bestiary.attack.dc")}>
+              <OptionalStepper label={t("workshop.bestiary.attack.saveDc")} min={1} max={30} fallback={13} value={onHit.dc} onChange={(dc) => setOnHit({ dc: dc === "" ? 13 : dc })} />
             </Field>
           ) : null}
-          <Field as="label" label="Condition">
+          <Field as="label" label={t("workshop.bestiary.attack.condition")}>
             <input list={conditionList} value={onHit.condition ?? ""} placeholder="grappled" onChange={(event) => setOnHit({ condition: event.target.value.toLowerCase() || undefined })} className={cn(ui.input, "w-32")} />
           </Field>
-          <Field as="label" label="And also">
+          <Field as="label" label={t("workshop.bestiary.attack.also")}>
             <input list={conditionList} value={onHit.alsoCondition ?? ""} placeholder="restrained" onChange={(event) => setOnHit({ alsoCondition: event.target.value.toLowerCase() || undefined })} className={cn(ui.input, "w-32")} />
           </Field>
-          <Field label="Escape DC">
-            <OptionalStepper label="Escape DC" min={1} max={30} fallback={13} value={onHit.escapeDc} onChange={(escapeDc) => setOnHit({ escapeDc: escapeDc === "" ? undefined : escapeDc })} />
+          <Field label={t("workshop.bestiary.attack.escapeDc")}>
+            <OptionalStepper label={t("workshop.bestiary.attack.escapeDc")} min={1} max={30} fallback={13} value={onHit.escapeDc} onChange={(escapeDc) => setOnHit({ escapeDc: escapeDc === "" ? undefined : escapeDc })} />
           </Field>
-          <Field label="Rounds">
-            <OptionalStepper label="Rounds the condition lasts" min={1} max={100} fallback={10} value={onHit.rounds} onChange={(rounds) => setOnHit({ rounds: rounds === "" ? undefined : rounds })} />
+          <Field label={t("workshop.bestiary.attack.rounds")}>
+            <OptionalStepper label={t("workshop.bestiary.attack.roundsStepper")} min={1} max={100} fallback={10} value={onHit.rounds} onChange={(rounds) => setOnHit({ rounds: rounds === "" ? undefined : rounds })} />
           </Field>
-          <Field label="Save again each turn">
-            <Switch label="Repeat the save at the end of each turn" on={onHit.repeatSave === true} onChange={(on) => setOnHit({ repeatSave: on || undefined })} />
+          <Field label={t("workshop.bestiary.attack.saveAgain")}>
+            <Switch label={t("workshop.bestiary.attack.saveAgainSwitch")} on={onHit.repeatSave === true} onChange={(on) => setOnHit({ repeatSave: on || undefined })} />
           </Field>
-          <Field label="Works on">
+          <Field label={t("workshop.bestiary.attack.worksOn")}>
             <span className="block w-40">
-              <Select label="Largest size it works on" size="sm" value={onHit.maxSize ?? ""} onChange={(maxSize) => setOnHit({ maxSize: maxSize || undefined })} options={SIZE_OPTIONS} />
+              <Select label={t("workshop.bestiary.attack.maxSize")} size="sm" value={onHit.maxSize ?? ""} onChange={(maxSize) => setOnHit({ maxSize: maxSize || undefined })} options={sizeOptions} />
             </span>
           </Field>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <Field as="label" label="Damage on a failed save">
+          <Field as="label" label={t("workshop.bestiary.attack.damageOnFail")}>
             <input value={onHit.damage ?? ""} placeholder="3d6" onChange={(event) => setOnHit({ damage: event.target.value || undefined, damageType: event.target.value ? onHit.damageType ?? "poison" : undefined })} className={cn(ui.input, "w-24")} />
           </Field>
           {onHit.damage ? (
             <>
-              <Field as="label" label="Type">
+              <Field as="label" label={t("workshop.bestiary.attack.type")}>
                 <input list={typeList} value={onHit.damageType ?? ""} placeholder="poison" onChange={(event) => setOnHit({ damageType: event.target.value || undefined })} className={cn(ui.input, "w-28")} />
               </Field>
-              <Field label="Half on a success">
-                <Switch label="Half damage on a successful save" on={onHit.halfOnSave === true} onChange={(on) => setOnHit({ halfOnSave: on || undefined })} />
+              <Field label={t("workshop.bestiary.attack.halfOnSuccess")}>
+                <Switch label={t("workshop.bestiary.attack.halfOnSaveSwitch")} on={onHit.halfOnSave === true} onChange={(on) => setOnHit({ halfOnSave: on || undefined })} />
               </Field>
             </>
           ) : null}

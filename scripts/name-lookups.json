@@ -2977,13 +2977,8 @@
     "app/reference/page.tsx#partial": [
       [
         "search",
-        2,
-        "the glossary's filter box"
-      ],
-      [
-        "key",
-        4,
-        "calculator ids and compare slugs"
+        7,
+        "the rulebook reference's own filter box over glossary terms and sections; a miss costs nothing, it is a search"
       ]
     ],
     "app/reference/page.tsx#whole": [
@@ -3416,13 +3411,6 @@
         "authoring",
         1,
         "workshop authoring (pickers, drafts, copied rows); every site read, none reads a carried item's row"
-      ]
-    ],
-    "app/workshop/homebrew/SpeciesFields.tsx#sql": [
-      [
-        "key",
-        1,
-        "slug and id lookups, sqlite_master probes, rules prose (\"CR 4 or lower\"); the schema's name COLLATE NOCASE uniques (locations, battle maps) are weaker than textKey, never stricter, and the app checks by textKey first"
       ]
     ],
     "app/workshop/homebrew/SpeciesFields.tsx#whole": [
@@ -19574,6 +19562,20 @@
         "key",
         1,
         "the page cache is keyed by locale and page id, not by a text name"
+      ]
+    ],
+    "lib/messages/en.ts#sql": [
+      [
+        "authoring",
+        1,
+        "the dictionary's own English lines are display prose for the authoring UI; this hint's 'named like a published one' reads no record"
+      ]
+    ],
+    "lib/characters/class-words.ts#whole-single": [
+      [
+        "identity",
+        1,
+        "the official content-name maps' answer compared with the id or stored label, to know whether the map named it; a miss keeps the id as the name"
       ]
     ]
   }

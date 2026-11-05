@@ -10,6 +10,7 @@ import type { WorldPackDraft } from "@/lib/worlds/draft";
 import { DM_FLAVOR_FLOOR } from "@/lib/worlds/draft-check";
 import { ChipList, TextField } from "@/app/workshop/plugin/fields";
 import type { SectionProps } from "@/app/workshop/plugin/types";
+import { useT } from "@/lib/locale";
 
 // The identity of a world pack, in four groups that are also the wizard's
 // steps: what it is called, whose setting it stands on, what kind of world
@@ -17,11 +18,12 @@ import type { SectionProps } from "@/app/workshop/plugin/types";
 // at once for anyone past the guided setup.
 
 export function NameFields({ draft, onDraft }: SectionProps) {
+  const t = useT();
   const set = (patch: Partial<WorldPackDraft>) => onDraft({ ...draft, ...patch });
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <TextField
-        label="Name"
+        label={t("workshop.bestiary.block.name")}
         value={draft.name}
         onChange={(name) => set({ name })}
         maxLength={70}
@@ -30,25 +32,25 @@ export function NameFields({ draft, onDraft }: SectionProps) {
         required
       />
       <TextField
-        label="One line about it"
+        label={t("workshop.plugin.oneLine")}
         value={draft.blurb}
         onChange={(blurb) => set({ blurb })}
         maxLength={200}
         placeholder="A drowned dwarven kingdom and the tide-cults that kept living in it."
-        hint="What the picker shows under the name."
+        hint={t("workshop.plugin.oneLineHint")}
         className="sm:col-span-2"
         required
       />
-      <TextField label="Author" value={draft.author} onChange={(author) => set({ author })} maxLength={80} />
+      <TextField label={t("workshop.plugin.author")} value={draft.author} onChange={(author) => set({ author })} maxLength={80} />
       <TextField
-        label="Version"
+        label={t("workshop.plugin.version")}
         value={draft.version}
         onChange={(version) => set({ version })}
         maxLength={20}
-        hint="Bump it when you change the pack; servers offer an update when the number differs."
+        hint={t("workshop.plugin.versionHint")}
       />
       <TextField
-        label="Homepage (optional)"
+        label={t("workshop.plugin.homepage")}
         value={draft.homepage}
         onChange={(homepage) => set({ homepage })}
         maxLength={300}
@@ -60,11 +62,12 @@ export function NameFields({ draft, onDraft }: SectionProps) {
 }
 
 export function OriginFields({ draft, onDraft }: SectionProps) {
+  const t = useT();
   const set = (patch: Partial<WorldPackDraft>) => onDraft({ ...draft, ...patch });
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <TextField
-        label="Inspired by"
+        label={t("workshop.plugin.inspiredBy")}
         value={draft.inspiredBy}
         onChange={(inspiredBy) => set({ inspiredBy })}
         maxLength={200}
@@ -73,12 +76,12 @@ export function OriginFields({ draft, onDraft }: SectionProps) {
         required
       />
       <TextField
-        label="Rights holder"
+        label={t("workshop.plugin.rightsHolder")}
         value={draft.rightsHolder}
         onChange={(rightsHolder) => set({ rightsHolder })}
         maxLength={120}
         placeholder="Leave empty if this is your own world"
-        hint="Who owns the setting you are referencing. Filling it in turns the notice below into a proper non-affiliation disclaimer."
+        hint={t("workshop.plugin.rightsHolderHint")}
         className="sm:col-span-2"
       />
       <UnofficialPackNotice
@@ -87,79 +90,80 @@ export function OriginFields({ draft, onDraft }: SectionProps) {
         className="sm:col-span-2"
       />
       <TextField
-        label="Franchise"
+        label={t("workshop.plugin.franchise")}
         value={draft.franchise}
         onChange={(franchise) => set({ franchise })}
         maxLength={60}
         placeholder="Defaults to the name"
-        hint="The group the picker files it under. One pack per era: 'Final Fantasy' with an edition of 'VII'."
+        hint={t("workshop.plugin.franchiseHint")}
       />
       <TextField
-        label="Edition"
+        label={t("workshop.plugin.edition")}
         value={draft.edition}
         onChange={(edition) => set({ edition })}
         maxLength={60}
         placeholder="Empty for a single-era world"
       />
       <div className="block">
-        <span className="mb-1 block font-display text-[11px] tracking-[0.1em] text-amber-300/85">Edition order</span>
+        <span className="mb-1 block font-display text-[11px] tracking-[0.1em] text-amber-300/85">{t("workshop.plugin.editionOrder")}</span>
         <NumberStepper
-          label="Edition order"
+          label={t("workshop.plugin.editionOrder")}
           min={0}
           max={999}
           value={draft.editionOrder}
           onChange={(next) => set({ editionOrder: Math.max(0, Math.min(999, next || 0)) })}
         />
-        <span className="mt-1 block text-[11px] text-stone-500">Sorts editions inside the franchise, release order first.</span>
+        <span className="mt-1 block text-[11px] text-stone-500">{t("workshop.plugin.editionOrderHint")}</span>
       </div>
     </div>
   );
 }
 
 export function WorldFields({ draft, onDraft }: SectionProps) {
+  const t = useT();
   const set = (patch: Partial<WorldPackDraft>) => onDraft({ ...draft, ...patch });
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="block">
         <span className="mb-1 block font-display text-[11px] tracking-[0.1em] text-amber-300/85">
-          Base genre <span className="text-amber-400/80">*</span>
+          {t("workshop.plugin.baseGenre")} <span className="text-amber-400/80">*</span>
         </span>
         <Select<WorldPackDraft["baseGenre"]>
-          label="Base genre"
+          label={t("workshop.plugin.baseGenre")}
           value={draft.baseGenre}
           onChange={(baseGenre) => set({ baseGenre })}
           options={GENRE_OPTIONS.map((option) => ({ value: option.value as WorldPackDraft["baseGenre"], label: option.label }))}
         />
         <span className="mt-1 block text-[11px] text-stone-500">
-          Every campaign that picks this world also takes this genre, so everything that knows about genres keeps working.
+          {t("workshop.plugin.baseGenreHint")}
         </span>
       </div>
       <TextField
-        label="Theme"
+        label={t("workshop.maps.theme")}
         value={draft.theme}
         onChange={(theme) => set({ theme })}
         maxLength={120}
         placeholder="Salvage, faith and the things under the water"
-        hint="Seeds the campaign's theme line."
+        hint={t("workshop.plugin.themeHint")}
         required
       />
       <TextField
-        label="Premise"
+        label={t("workshop.plugin.premise")}
         value={draft.premise}
         onChange={(premise) => set({ premise })}
         maxLength={500}
         rows={3}
         placeholder="Where a new campaign in this world starts, in a paragraph."
-        hint="Seeds the campaign description."
+        hint={t("workshop.plugin.premiseHint")}
         className="sm:col-span-2"
       />
       <div className="sm:col-span-2">
-        <span className="mb-1 block font-display text-[11px] tracking-[0.1em] text-amber-300/85">Alignments this world leans on</span>
+        <span className="mb-1 block font-display text-[11px] tracking-[0.1em] text-amber-300/85">{t("workshop.plugin.alignmentsTitle")}</span>
         <ChipList
           items={draft.alignments}
           onChange={(alignments) => set({ alignments })}
           options={ALIGNMENT_OPTIONS}
-          prompt="Add an alignment"
+          prompt={t("workshop.plugin.addAlignment")}
           labelFor={(code) => catalogLabel(ALIGNMENT_OPTIONS, code)}
           max={9}
         />
@@ -169,12 +173,13 @@ export function WorldFields({ draft, onDraft }: SectionProps) {
 }
 
 export function VoiceFields({ draft, onDraft }: SectionProps) {
+  const t = useT();
   const set = (patch: Partial<WorldPackDraft>) => onDraft({ ...draft, ...patch });
   const thin = draft.dmFlavor.trim().length < DM_FLAVOR_FLOOR;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <TextField
-        label="The narrator's brief"
+        label={t("workshop.plugin.narratorBrief")}
         value={draft.dmFlavor}
         onChange={(dmFlavor) => set({ dmFlavor })}
         maxLength={1400}
@@ -182,83 +187,84 @@ export function VoiceFields({ draft, onDraft }: SectionProps) {
         placeholder="Tone, what magic feels like, what the stakes are, what the narrator must never do."
         hint={
           thin
-            ? `The highest-leverage field in the pack. ${DM_FLAVOR_FLOOR} characters or more is what steers the narrator; this is ${draft.dmFlavor.trim().length}.`
-            : "Appended to the genre's own brief in the narrator's system prompt."
+            ? t("workshop.plugin.narratorBriefThin", { floor: DM_FLAVOR_FLOOR, count: draft.dmFlavor.trim().length })
+            : t("workshop.plugin.narratorBriefHint")
         }
         className="sm:col-span-2"
       />
       <TextField
-        label="Portrait style"
+        label={t("workshop.plugin.portraitStyle")}
         value={draft.portraitStyle}
         onChange={(portraitStyle) => set({ portraitStyle })}
         maxLength={300}
         placeholder="Painted, weathered, brine-stained leathers"
-        hint="Art-style words for portraits."
+        hint={t("workshop.plugin.portraitStyleHint")}
       />
       <TextField
-        label="Map style"
+        label={t("workshop.plugin.mapStyle")}
         value={draft.mapStyle}
         onChange={(mapStyle) => set({ mapStyle })}
         maxLength={300}
         placeholder="Inked nautical charts, kelp-green wash"
-        hint="Art-style words for maps."
+        hint={t("workshop.plugin.mapStyleHint")}
       />
       <TextField
-        label="Scene style"
+        label={t("workshop.plugin.sceneStyle")}
         value={draft.sceneStyle}
         onChange={(sceneStyle) => set({ sceneStyle })}
         maxLength={300}
         placeholder="Salt-washed illustration, grey overcast light"
-        hint="Art-style words for scene pictures: the look, not what is in them."
+        hint={t("workshop.plugin.sceneStyleHint")}
       />
       <TextField
-        label="Name hints"
+        label={t("workshop.plugin.nameHints")}
         value={draft.nameHints}
         onChange={(nameHints) => set({ nameHints })}
         maxLength={300}
         placeholder="Dwarven names with tide-words; surnames are the ship they were born on"
-        hint="One line for the story-setup pass."
+        hint={t("workshop.plugin.nameHintsHint")}
       />
       <TextField
-        label="Race hint"
+        label={t("workshop.plugin.raceHint")}
         value={draft.raceHint}
         onChange={(raceHint) => set({ raceHint })}
         maxLength={300}
         placeholder="Most people are dwarves or sea-elves; humans are traders from upriver"
-        hint="One line for the companion tools."
+        hint={t("workshop.plugin.raceHintHint")}
       />
       <div className="sm:col-span-2">
-        <span className="mb-1 block font-display text-[11px] tracking-[0.1em] text-amber-300/85">Companion races</span>
+        <span className="mb-1 block font-display text-[11px] tracking-[0.1em] text-amber-300/85">{t("workshop.plugin.companionRaces")}</span>
         <ChipList
           items={draft.companionRaces}
           onChange={(companionRaces) => set({ companionRaces })}
           options={RACE_OPTIONS}
-          prompt="Allow a race for AI companions"
+          prompt={t("workshop.plugin.allowRace")}
           labelFor={(id) => catalogLabel(RACE_OPTIONS, id)}
         />
-        <p className="mt-1 text-[11px] text-stone-500">Empty means no restriction.</p>
+        <p className="mt-1 text-[11px] text-stone-500">{t("workshop.plugin.emptyNoRestriction")}</p>
       </div>
     </div>
   );
 }
 
 export function IdentitySection(props: SectionProps) {
+  const t = useT();
   return (
     <div className="space-y-6">
       <section className={ui.card + " p-4"}>
-        <SectionHead title="What it is called" glyph="system-plugin" />
+        <SectionHead title={t("workshop.plugin.calledTitle")} glyph="system-plugin" />
         <NameFields {...props} />
       </section>
       <section className={ui.card + " p-4"}>
-        <SectionHead title="Whose world it is" glyph="tab-friends" />
+        <SectionHead title={t("workshop.plugin.whoseWorld")} glyph="tab-friends" />
         <OriginFields {...props} />
       </section>
       <section className={ui.card + " p-4"}>
-        <SectionHead title="What kind of world" glyph="system-region" />
+        <SectionHead title={t("workshop.plugin.kindOfWorld")} glyph="system-region" />
         <WorldFields {...props} />
       </section>
       <section className={ui.card + " p-4"}>
-        <SectionHead title="How the narrator sounds" glyph="tab-ambience" />
+        <SectionHead title={t("workshop.plugin.narratorSounds")} glyph="tab-ambience" />
         <VoiceFields {...props} />
       </section>
     </div>

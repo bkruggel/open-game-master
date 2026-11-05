@@ -7,6 +7,8 @@ import { appConfirm } from "@/components/ui/ConfirmDialog";
 import { KitButton } from "@/app/campaigns/[campaignId]/PanelKit";
 import type { WorldEntity } from "@/lib/db/world-forge";
 import type { PaintJob, PaintStatus } from "@/lib/db/world-paint-jobs";
+import { useT } from "@/lib/locale";
+import type { MessageVars } from "@/lib/messages-logic";
 
 // Paint on an entry's page (audit WF-16), from the jobs the server keeps
 // (src/lib/db/world-paint-jobs.ts): read when the page opens and again
@@ -35,6 +37,7 @@ export type PaintState = {
 };
 
 export function usePaintJobs(campaignId: string, ref: string, portrait: string, onPictureChanged: () => void): PaintState {
+  const t = useT();
   const base = `/api/campaigns/${campaignId}/world/entities/${encodeURIComponent(ref)}/paint`;
   const [status, setStatus] = useState<PaintView | null>(null);
   const [error, setError] = useState("");
@@ -76,14 +79,14 @@ export function usePaintJobs(campaignId: string, ref: string, portrait: string, 
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: unknown; job?: unknown };
       // A refusal the server kept as a failed job shows as that job.
-      if (!response.ok && !payload.job) setError(typeof payload.error === "string" ? payload.error : "Paint did not start.");
+      if (!response.ok && !payload.job) setError(typeof payload.error === "string" ? payload.error : t("workshop.world.paint.notStarted"));
     } catch {
-      setError("The server could not be reached.");
+      setError(t("workshop.world.paint.unreachable"));
     } finally {
       setBusy(null);
       reread();
     }
-  }, [campaignId, ref, reread]);
+  }, [campaignId, ref, reread, t]);
 
   const send = useCallback(
     async (body: Record<string, unknown>, key: string): Promise<{ ok: boolean; payload: Record<string, unknown> }> => {
@@ -95,12 +98,12 @@ export function usePaintJobs(campaignId: string, ref: string, portrait: string, 
         if (response.ok && payload.status) setStatus(payload.status as PaintView);
         return { ok: response.ok, payload };
       } catch {
-        return { ok: false, payload: { error: "The server could not be reached." } };
+        return { ok: false, payload: { error: t("workshop.world.paint.unreachable") } };
       } finally {
         setBusy(null);
       }
     },
-    [base],
+    [base, t],
   );
 
   const decide = useCallback(
@@ -109,9 +112,9 @@ export function usePaintJobs(campaignId: string, ref: string, portrait: string, 
       // The entry's picture changed after this one was asked for: replacing
       // that newer choice is the DM's to confirm, never a late result's.
       if (!answer.ok && action === "accept" && answer.payload.stale) {
-        const ok = await appConfirm("This entry's picture was changed after this one was asked for. Use this one anyway, in place of the newer picture?", {
-          title: "Replace the newer picture?",
-          actionLabel: "Use this one",
+        const ok = await appConfirm(t("workshop.world.paint.staleConfirm"), {
+          title: t("workshop.world.paint.staleTitle"),
+          actionLabel: t("workshop.world.paint.useThisOne"),
         });
         if (!ok) {
           reread();
@@ -120,25 +123,25 @@ export function usePaintJobs(campaignId: string, ref: string, portrait: string, 
         answer = await send({ action, job: job.id, replace: true }, job.id);
       }
       if (!answer.ok) {
-        setError(typeof answer.payload.error === "string" ? answer.payload.error : "That did not work.");
+        setError(typeof answer.payload.error === "string" ? answer.payload.error : t("load.write.fallback"));
         reread();
         return;
       }
       if (action === "accept") onPictureChanged();
     },
-    [send, reread, onPictureChanged],
+    [send, reread, onPictureChanged, t],
   );
 
   const reuse = useCallback(
     async (picture: string) => {
       const answer = await send({ action: "reuse", picture }, picture);
       if (!answer.ok) {
-        setError(typeof answer.payload.error === "string" ? answer.payload.error : "That did not work.");
+        setError(typeof answer.payload.error === "string" ? answer.payload.error : t("load.write.fallback"));
         return;
       }
       onPictureChanged();
     },
-    [send, onPictureChanged],
+    [send, onPictureChanged, t],
   );
 
   return { status, running, error, busy, start, decide, reuse };
@@ -146,21 +149,23 @@ export function usePaintJobs(campaignId: string, ref: string, portrait: string, 
 
 // " (1 being painted, 3 waiting with this one)", or nothing when the
 // queue says nothing useful.
-function queueWords({ painting, waiting }: PaintView["queue"]): string {
-  const parts = [painting ? `${painting} being painted` : "", waiting > 1 ? `${waiting} waiting with this one` : ""].filter(Boolean);
+function queueWords({ painting, waiting }: PaintView["queue"], t: (key: string, vars?: MessageVars) => string): string {
+  const parts = [painting ? t("workshop.world.paint.beingPainted", { count: painting }) : "", waiting > 1 ? t("workshop.world.paint.waitingWith", { count: waiting }) : ""].filter(Boolean);
   return parts.length ? ` (${parts.join(", ")})` : "";
 }
 
 function Picture({ src, alt, wide }: { src: string; alt: string; wide: boolean }) {
+  const t = useT();
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={src} alt={alt} className={cn("w-full rounded-lg border border-stone-700/70 object-cover", wide ? "aspect-video" : "aspect-square")} />
   ) : (
-    <span className={cn("grid w-full place-items-center rounded-lg border border-dashed border-stone-700/70 text-xs text-stone-500", wide ? "aspect-video" : "aspect-square")}>No picture yet</span>
+    <span className={cn("grid w-full place-items-center rounded-lg border border-dashed border-stone-700/70 text-xs text-stone-500", wide ? "aspect-video" : "aspect-square")}>{t("workshop.world.paint.noPicture")}</span>
   );
 }
 
 export function PaintPanel({ entity, paint, canPaint }: { entity: WorldEntity; paint: PaintState; canPaint: boolean }) {
+  const t = useT();
   const { status, running, error, busy } = paint;
   if (!status) return error ? <p className="text-xs text-ember-300" role="alert">{error}</p> : null;
   const wide = entity.shelf === "location";
@@ -171,36 +176,36 @@ export function PaintPanel({ entity, paint, canPaint }: { entity: WorldEntity; p
   if (!shown) return null;
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-stone-700/70 bg-stone-900/40 p-3" aria-label="Paint" data-testid="world-paint">
+    <section className="flex flex-col gap-2 rounded-lg border border-stone-700/70 bg-stone-900/40 p-3" aria-label={t("workshop.world.paint.title")} data-testid="world-paint">
       <h4 className="eyebrow flex items-center gap-1 text-[10px] text-amber-400/80">
-        <Brush className="size-3" aria-hidden="true" /> Paint
+        <Brush className="size-3" aria-hidden="true" /> {t("workshop.world.paint.title")}
       </h4>
       <div role="status" className="flex flex-col gap-1 text-xs text-stone-300">
         {running?.state === "queued" ? (
           running.longQueued ? (
             <p data-paint-state="long-queued">
-              Still waiting for the server&apos;s picture queue, which every table on this server shares
-              {queueWords(status.queue)}. You can cancel this one and paint later.
+              {t("workshop.world.paint.longQueued")}
+              {queueWords(status.queue, t)}. {t("workshop.world.paint.cancelOrLater")}
             </p>
           ) : (
-            <p data-paint-state="queued">Waiting for its turn on the picture queue.</p>
+            <p data-paint-state="queued">{t("workshop.world.paint.queued")}</p>
           )
         ) : null}
         {running?.state === "working" ? (
           <p data-paint-state="working">
-            Painting. The new picture will wait here for you to keep or turn down; {entity.portrait ? "the entry keeps its picture until then" : "nothing changes until then"}. A picture being painted cannot be stopped.
+            {t("workshop.world.paint.working")} {entity.portrait ? t("workshop.world.paint.workingKeeps") : t("workshop.world.paint.nothingChanges")} {t("workshop.world.paint.cannotStop")}
           </p>
         ) : null}
         {ready.length ? (
           <p data-paint-state="ready">
-            {ready.length === 1 ? "A new picture is ready." : `${ready.length} new pictures are ready.`} {entity.portrait ? "The entry keeps its own until you choose." : "Nothing changes until you choose."}
+            {t("workshop.world.paint.ready", { count: ready.length })} {entity.portrait ? t("workshop.world.paint.keepsUntilChoose") : t("workshop.world.paint.nothingChangesUntilChoose")}
           </p>
         ) : null}
       </div>
       {running?.state === "queued" ? (
         <div>
           <KitButton tone="small" busy={busy === running.id} disabled={busy !== null} onClick={() => paint.decide("cancel", running)}>
-            {busy === running.id ? null : <X className="size-3.5" aria-hidden="true" />} Cancel this picture
+            {busy === running.id ? null : <X className="size-3.5" aria-hidden="true" />} {t("workshop.world.paint.cancelThis")}
           </KitButton>
         </div>
       ) : null}
@@ -209,25 +214,25 @@ export function PaintPanel({ entity, paint, canPaint }: { entity: WorldEntity; p
         <div key={job.id} className="flex flex-col gap-2" data-paint-job={job.id}>
           {job.stale ? (
             <p className="flex items-start gap-1.5 text-xs text-amber-300" data-paint-stale>
-              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" /> This entry&apos;s picture was changed after this one was asked for. Using it replaces the newer picture.
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" /> {t("workshop.world.paint.staleNote")}
             </p>
           ) : null}
           <div className="grid max-w-md grid-cols-2 gap-2">
             <figure className="flex flex-col gap-1">
-              <Picture src={entity.portrait} alt={`${entity.name}, the picture it has now`} wide={wide} />
-              <figcaption className="text-[11px] text-stone-500">Now</figcaption>
+              <Picture src={entity.portrait} alt={t("workshop.world.paint.nowAlt", { name: entity.name })} wide={wide} />
+              <figcaption className="text-[11px] text-stone-500">{t("workshop.world.paint.now")}</figcaption>
             </figure>
             <figure className="flex flex-col gap-1">
-              <Picture src={job.result} alt={`${entity.name}, the new picture`} wide={wide} />
-              <figcaption className="text-[11px] text-stone-500">New</figcaption>
+              <Picture src={job.result} alt={t("workshop.world.paint.newAlt", { name: entity.name })} wide={wide} />
+              <figcaption className="text-[11px] text-stone-500">{t("workshop.world.paint.new")}</figcaption>
             </figure>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <KitButton tone="small" busy={busy === job.id} disabled={busy !== null} onClick={() => paint.decide("accept", job)}>
-              {busy === job.id ? null : <Check className="size-3.5" aria-hidden="true" />} Use the new picture
+              {busy === job.id ? null : <Check className="size-3.5" aria-hidden="true" />} {t("workshop.world.paint.useNew")}
             </KitButton>
             <KitButton tone="small" disabled={busy !== null} onClick={() => paint.decide("reject", job)}>
-              <X className="size-3.5" aria-hidden="true" /> Keep the current one
+              <X className="size-3.5" aria-hidden="true" /> {t("workshop.world.paint.keepCurrent")}
             </KitButton>
           </div>
         </div>
@@ -238,13 +243,13 @@ export function PaintPanel({ entity, paint, canPaint }: { entity: WorldEntity; p
           <p className="flex items-start gap-1.5 text-xs leading-5 text-stone-200">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-ember-500" aria-hidden="true" />
             <span>
-              Not painted. {failed.reason}
+              {t("workshop.world.paint.notPainted")} {failed.reason}
             </span>
           </p>
           {canPaint ? (
             <div>
               <KitButton tone="small" busy={busy === "paint"} disabled={busy !== null || running !== null} onClick={paint.start}>
-                {busy === "paint" ? null : <RotateCw className="size-3.5" aria-hidden="true" />} Retry
+                {busy === "paint" ? null : <RotateCw className="size-3.5" aria-hidden="true" />} {t("workshop.world.paint.retry")}
               </KitButton>
             </div>
           ) : null}
@@ -256,15 +261,15 @@ export function PaintPanel({ entity, paint, canPaint }: { entity: WorldEntity; p
         <details className="rounded-md border border-stone-800/80 bg-stone-950/40" data-testid="world-paint-earlier">
           <summary className="flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40">
             <History className="size-3.5 text-stone-500" aria-hidden="true" />
-            <span className="flex-1">Earlier pictures</span>
+            <span className="flex-1">{t("workshop.world.paint.earlier")}</span>
             <span className="text-[11px] text-stone-500">{status.earlier.length}</span>
           </summary>
           <ul className="grid grid-cols-3 gap-2 px-2.5 pb-2.5 @lg:grid-cols-4">
             {status.earlier.map((picture, index) => (
               <li key={picture} className="flex flex-col gap-1">
-                <Picture src={picture} alt={`${entity.name}, earlier picture ${index + 1}`} wide={wide} />
-                <KitButton tone="small" className="justify-center" busy={busy === picture} disabled={busy !== null} onClick={() => paint.reuse(picture)} aria-label={`Use earlier picture ${index + 1} again`}>
-                  Use again
+                <Picture src={picture} alt={t("workshop.world.paint.earlierAlt", { name: entity.name, index: index + 1 })} wide={wide} />
+                <KitButton tone="small" className="justify-center" busy={busy === picture} disabled={busy !== null} onClick={() => paint.reuse(picture)} aria-label={t("workshop.world.paint.useAgainAria", { index: index + 1 })}>
+                  {t("workshop.world.paint.useAgain")}
                 </KitButton>
               </li>
             ))}

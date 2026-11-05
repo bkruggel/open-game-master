@@ -136,7 +136,7 @@ export function SystemView({
         <button
           type="button"
           aria-label={`${t("workshop.system.helpAria", { name: systemLabel(t, current.id) })}`}
-          title="Guide and tour for this tool"
+          title={t("workshop.systemView.helpTitle")}
           onClick={onHelp}
           data-tour="system-help"
           className={cn(ui.iconAction, headIcon)}
@@ -156,7 +156,7 @@ export function SystemView({
 
       {from && parseRef(from) && system !== "world" ? (
         <button type="button" onClick={() => onWorldEntry(from)} className={cn(ui.btnSmall, "mb-3")} data-testid="back-to-world-entry">
-          <ArrowLeft className="size-3.5" /> Back to the World entry
+          <ArrowLeft className="size-3.5" /> {t("workshop.systemView.backToWorld")}
         </button>
       ) : null}
       {/* Keyed by system so the incoming tool rises in instead of cutting. */}

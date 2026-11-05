@@ -12,6 +12,7 @@ import { useAddons } from "@/lib/addons/use-addons";
 import { MAP_THEMES } from "@/lib/battlemap/generate";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 
 // A map built by an addon, into this campaign's or workshop's library: the
 // 3D map maker, a procedural generator, anything an admin switched on. The
@@ -21,12 +22,12 @@ import { ui } from "@/lib/ui";
 // like any other.
 
 const THEME_LABEL: Record<string, string> = {
-  cave: "Cave",
-  forest: "Forest",
-  swamp: "Swamp",
-  riverside: "Riverside",
-  interior: "Indoors",
-  field: "Open field",
+  cave: "workshop.maps.addon.themeCave",
+  forest: "workshop.maps.addon.themeForest",
+  swamp: "workshop.maps.addon.themeSwamp",
+  riverside: "workshop.maps.addon.themeRiverside",
+  interior: "workshop.maps.addon.themeIndoors",
+  field: "workshop.maps.addon.themeField",
 };
 
 export function AddonMapGenerator({
@@ -50,6 +51,7 @@ export function AddonMapGenerator({
   const [notes, setNotes] = useState<string[]>([]);
   const [error, setError] = useState("");
   const live = useRef(true);
+  const t = useT();
 
   useEffect(() => {
     live.current = true;
@@ -66,7 +68,7 @@ export function AddonMapGenerator({
 
   async function build() {
     if (!name.trim()) {
-      setError("Name it first.");
+      setError(t("workshop.maps.addon.nameFirst"));
       return;
     }
     setError("");
@@ -85,18 +87,18 @@ export function AddonMapGenerator({
     }).catch(() => null);
     const data = response ? await response.json().catch(() => ({})) : {};
     if (!response?.ok) {
-      setError(data.error ?? "The addon could not start.");
+      setError(data.error ?? t("workshop.addonImport.startFailed"));
       return;
     }
     const finished = await followTask(data.task as TaskView, setTask, () => live.current);
     if (!finished) {
-      if (live.current) setError("Lost track of the run. Try again.");
+      if (live.current) setError(t("workshop.addonImport.lost"));
       setTask(null);
       return;
     }
     setTask(finished);
     if (finished.status !== "done") {
-      setError(finished.error || "The addon did not finish.");
+      setError(finished.error || t("workshop.addonImport.notFinished"));
       return;
     }
     setNotes(finished.notes);
@@ -114,22 +116,22 @@ export function AddonMapGenerator({
         className={cn(ui.btnSmall, "text-xs")}
       >
         <Puzzle className="size-3.5" />
-        Build a map with an addon
+        {t("workshop.maps.addon.title")}
       </button>
       {open ? (
         <div className={cn(ui.card, "reveal mt-2 p-4")}>
           <SectionHead
-            title="Build a map with an addon"
+            title={t("workshop.maps.addon.title")}
             glyph="system-maps"
             aside={
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className={ui.iconAction}>
+              <button type="button" onClick={() => setOpen(false)} aria-label={t("action.close")} className={ui.iconAction}>
                 <X className="size-4" />
               </button>
             }
           />
           {mapGenerators.length > 1 ? (
             <Select
-              label="Generator"
+              label={t("workshop.maps.addon.generator")}
               value={key(generator)}
               onChange={(next) => {
                 setChosen(next);
@@ -147,37 +149,37 @@ export function AddonMapGenerator({
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1 sm:col-span-2">
-              <span className="block text-xs text-stone-300">Name</span>
+              <span className="block text-xs text-stone-300">{t("workshop.bestiary.block.name")}</span>
               <input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} className={cn(ui.input, "text-xs")} />
             </label>
             <label className="block space-y-1">
-              <span className="block text-xs text-stone-300">Squares across</span>
+              <span className="block text-xs text-stone-300">{t("workshop.maps.addon.squaresAcross")}</span>
               <input type="number" value={width} min={ADDON_MAP_LIMITS.minSide} max={ADDON_MAP_LIMITS.maxSide} onChange={(event) => setWidth(Number(event.target.value))} className={cn(ui.input, "text-xs")} />
             </label>
             <label className="block space-y-1">
-              <span className="block text-xs text-stone-300">Squares down</span>
+              <span className="block text-xs text-stone-300">{t("workshop.maps.addon.squaresDown")}</span>
               <input type="number" value={height} min={ADDON_MAP_LIMITS.minSide} max={ADDON_MAP_LIMITS.maxSide} onChange={(event) => setHeight(Number(event.target.value))} className={cn(ui.input, "text-xs")} />
             </label>
             <div className="space-y-1">
-              <span className="block text-xs text-stone-300">Kind of place</span>
-              <Select label="Kind of place" size="sm" value={theme} onChange={setTheme} options={MAP_THEMES.map((value) => ({ value, label: THEME_LABEL[value] ?? value }))} />
+              <span className="block text-xs text-stone-300">{t("workshop.maps.kindOfPlace")}</span>
+              <Select label={t("workshop.maps.kindOfPlace")} size="sm" value={theme} onChange={setTheme} options={MAP_THEMES.map((value) => ({ value, label: THEME_LABEL[value] ? t(THEME_LABEL[value]) : value }))} />
             </div>
             <div className="space-y-1">
-              <span className="block text-xs text-stone-300">Light</span>
+              <span className="block text-xs text-stone-300">{t("workshop.maps.addon.light")}</span>
               <Select
-                label="Light"
+                label={t("workshop.maps.addon.light")}
                 size="sm"
                 value={ambient}
                 onChange={setAmbient}
                 options={[
-                  { value: "bright", label: "Bright" },
-                  { value: "dim", label: "Dim" },
-                  { value: "dark", label: "Dark" },
+                  { value: "bright", label: t("workshop.maps.addon.bright") },
+                  { value: "dim", label: t("workshop.maps.addon.dim") },
+                  { value: "dark", label: t("workshop.maps.addon.dark") },
                 ]}
               />
             </div>
             <label className="block space-y-1 sm:col-span-2">
-              <span className="block text-xs text-stone-300">What should it be like?</span>
+              <span className="block text-xs text-stone-300">{t("workshop.maps.addon.whatLike")}</span>
               <textarea value={summary} onChange={(event) => setSummary(event.target.value)} maxLength={600} rows={2} placeholder="A flooded crypt with two ways in" className={cn(ui.input, "text-xs")} />
             </label>
           </div>
@@ -212,16 +214,16 @@ export function AddonMapGenerator({
               </div>
               <p className="flex items-center gap-2 text-xs text-stone-300">
                 <Loader2 className="size-3.5 animate-spin" />
-                {task.progress.message || "Building"}
+                {task.progress.message || t("workshop.maps.addon.building")}
               </p>
               <button type="button" onClick={() => void cancelTask(task.id)} className={cn(ui.btnSmall, "text-xs")}>
-                Stop it
+                {t("workshop.addonImport.stop")}
               </button>
             </div>
           ) : (
             <button type="button" onClick={() => void build()} className={cn(ui.btnPrimary, "mt-3")}>
               <Hammer className="size-4" />
-              Build it
+              {t("workshop.maps.addon.buildIt")}
             </button>
           )}
         </div>

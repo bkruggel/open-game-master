@@ -7,6 +7,7 @@ import { FieldLabel } from "@/app/workshop/kit";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ui } from "@/lib/ui";
 import { useT } from "@/lib/locale";
+import { translate, type MessageVars } from "@/lib/messages-logic";
 import {
   IMPORT_KINDS,
   WORLD_RECORD_KINDS,
@@ -241,7 +242,7 @@ export function ContentImportPicker({
     setBusy(true);
     setNote(null);
     try {
-      const outcome = await postContentImport(campaignId, selection);
+      const outcome = await postContentImport(campaignId, selection, t);
       if (!outcome.ok) {
         setNote({ tone: "error", text: outcome.error });
         return;
@@ -280,6 +281,14 @@ export function ContentImportPicker({
 
   // Said beside an import's note too, less what the note already says.
   const unsaid = standingUnsaid(standing, note?.text);
+  const unsaidLine = unsaid.length ? (
+    <p className="flex items-start gap-1.5 text-xs text-amber-300/90" data-testid="import-kept-standing">
+      <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+      <span>
+        {t("creator.import.keptStanding", { list: unsaid.join(" ") })}
+      </span>
+    </p>
+  ) : null;
 
   // What choosing a workshop with offered pregens brings, prep or none.
   const party = offeredPregens.length ? (
@@ -300,7 +309,7 @@ export function ContentImportPicker({
         className={ui.btnSmall}
       >
         {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Hammer className="size-3.5" />}
-        Bring it in
+        {t("creator.import.bringItIn")}
       </button>
       {note ? (
         <span
@@ -317,14 +326,7 @@ export function ContentImportPicker({
 
   return (
     <div className="space-y-3">
-      {unsaid.length ? (
-        <p className="flex items-start gap-1.5 text-xs text-amber-300/90" data-testid="import-kept-standing">
-          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            Kept from an earlier import, until you choose on the entry in the World tab: {unsaid.join(" ")}
-          </span>
-        </p>
-      ) : null}
+      {unsaidLine}
       <div className="block">
         <FieldLabel className="mb-1 block">{t("creator.import.startFrom")}</FieldLabel>
         <Select
@@ -388,21 +390,21 @@ export function ContentImportPicker({
 
             {selection.select.includes("storyboard") && plan?.board?.targetHasArc ? (
               <div className="reveal block">
-                <FieldLabel className="mb-1 block">The board&apos;s beats</FieldLabel>
+                <FieldLabel className="mb-1 block">{t("creator.import.boardBeats")}</FieldLabel>
                 <Select<"leave" | "append">
-                  label="The board's beats"
+                  label={t("creator.import.boardBeats")}
                   value={selection.arc ?? "leave"}
                   onChange={(arc) => onChange({ ...selection, arc })}
                   options={[
                     {
                       value: "leave",
-                      label: "Leave this campaign's arc alone",
-                      hint: "Places, quests, fights and notes still land.",
+                      label: t("creator.import.arcLeave"),
+                      hint: t("creator.import.arcLeaveHint"),
                     },
                     {
                       value: "append",
-                      label: `Add them as act ${plan.board.act}`,
-                      hint: "After the beats already played. Nothing played is changed.",
+                      label: t("creator.import.arcAppend", { act: plan.board.act }),
+                      hint: t("creator.import.arcAppendHint"),
                     },
                   ]}
                 />
@@ -413,14 +415,14 @@ export function ContentImportPicker({
 
             {plan?.kept || selection.again === "copy" ? (
               <div className="reveal block">
-                <FieldLabel className="mb-1 block">Already brought in before</FieldLabel>
+                <FieldLabel className="mb-1 block">{t("creator.import.againTitle")}</FieldLabel>
                 <Select<"skip" | "copy">
-                  label="Already brought in before"
+                  label={t("creator.import.againTitle")}
                   value={selection.again ?? "skip"}
                   onChange={(again) => onChange({ ...selection, again })}
                   options={[
-                    { value: "skip", label: "Keep them as this campaign has them" },
-                    { value: "copy", label: "Bring second copies, numbered" },
+                    { value: "skip", label: t("creator.import.againSkip") },
+                    { value: "copy", label: t("creator.import.againCopy") },
                   ]}
                 />
               </div>
@@ -454,9 +456,9 @@ export function ContentImportPicker({
             {campaignId && planFailed ? (
               <p role="alert" className="flex flex-wrap items-center gap-1.5 text-xs text-amber-300/90">
                 <AlertTriangle className="size-3.5 shrink-0" />
-                <span>Could not check what this would bring in or replace here.</span>
+                <span>{t("creator.import.planFailed")}</span>
                 <button type="button" onClick={() => void refreshPlan()} className={`${ui.btnSmall} min-h-10`}>
-                  Check again
+                  {t("creator.import.checkAgain")}
                 </button>
               </p>
             ) : null}
@@ -488,8 +490,12 @@ export function ContentImportPicker({
 
 export type ImportOutcome = { ok: true; copied: number; note: string } | { ok: false; error: string };
 
+// The words the import's own note is built from; English when no t() is
+// handed in (a caller without a locale to spare).
+type ImportT = (key: string, vars?: MessageVars) => string;
+
 // What an import brought, in one line for the person who asked for it.
-function importNote(data: Record<string, unknown>): string {
+function importNote(data: Record<string, unknown>, t: ImportT): string {
   const copied = Number(data.copied) || 0;
   const names = (value: unknown) => (Array.isArray(value) ? value.map(String) : []);
   const unresolved = names(data.unresolved);
@@ -497,14 +503,14 @@ function importNote(data: Record<string, unknown>): string {
   // brought only those is not "0 items".
   const offered = names(data.pregensOffered);
   const lines = [
-    copied || !offered.length ? `Brought ${copied} item${copied === 1 ? "" : "s"} across.` : "",
-    data.kept ? `Kept ${String(data.kept)} already here.` : "",
-    data.beatsAdded ? `${String(data.beatsAdded)} beat${data.beatsAdded === 1 ? "" : "s"} joined the arc.` : "",
+    copied || !offered.length ? t("creator.import.noteBrought", { count: copied }) : "",
+    data.kept ? t("creator.import.noteKept", { count: Number(data.kept) }) : "",
+    data.beatsAdded ? t("creator.import.noteBeats", { count: Number(data.beatsAdded) }) : "",
     // Names this table's Cast or fights use that nothing here answers to (a
     // monster on another author's shelf), and links both worlds changed
     // (src/lib/db/content-import.ts).
     unresolved.length
-      ? `No monster here answers to ${unresolved.join(", ")}: add them to your bestiary, or point those NPCs and fights at another.`
+      ? t("creator.import.noteUnresolved", { names: unresolved.join(", ") })
       : "",
     names(data.worldConflicts).join(" "),
     // Roll-table rows whose table, NPC or lore entry stayed behind and that
@@ -512,18 +518,19 @@ function importNote(data: Record<string, unknown>): string {
     names(data.referenceNotes).join(" "),
     // Hand-built monsters and items this table's authors did not have,
     // copied in so what names them still works (WF-07, WF-17).
-    names(data.monstersBrought).length ? `Copied into this table's bestiary: ${names(data.monstersBrought).join(", ")}.` : "",
-    names(data.monstersReused).length ? `Already in this table's bestiary: ${names(data.monstersReused).join(", ")}.` : "",
-    names(data.itemsBrought).length ? `Copied into this table's Homebrew: ${names(data.itemsBrought).join(", ")}.` : "",
-    names(data.itemsReused).length ? `Already in this table's Homebrew: ${names(data.itemsReused).join(", ")}.` : "",
-    offered.length ? `Offered to players here: ${offered.join(", ")}.` : "",
+    names(data.monstersBrought).length ? t("creator.import.noteMonstersBrought", { list: names(data.monstersBrought).join(", ") }) : "",
+    names(data.monstersReused).length ? t("creator.import.noteMonstersReused", { list: names(data.monstersReused).join(", ") }) : "",
+    names(data.itemsBrought).length ? t("creator.import.noteItemsBrought", { list: names(data.itemsBrought).join(", ") }) : "",
+    names(data.itemsReused).length ? t("creator.import.noteItemsReused", { list: names(data.itemsReused).join(", ") }) : "",
+    offered.length ? t("creator.import.noteOffered", { list: offered.join(", ") }) : "",
   ];
   return lines.filter(Boolean).join(" ");
 }
 
 // One import, answered: what it brought, or why it brought nothing. A
 // refusal and a dropped connection are both failures the caller must show.
-export async function postContentImport(campaignId: string, selection: ImportSelection): Promise<ImportOutcome> {
+export async function postContentImport(campaignId: string, selection: ImportSelection, t?: ImportT): Promise<ImportOutcome> {
+  const say: ImportT = t ?? ((key, vars) => translate("en", key, vars));
   try {
     const response = await fetch(`/api/campaigns/${campaignId}/import`, {
       method: "POST",
@@ -532,11 +539,11 @@ export async function postContentImport(campaignId: string, selection: ImportSel
     });
     const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) {
-      return { ok: false, error: typeof data.error === "string" && data.error ? data.error : "The import was refused." };
+      return { ok: false, error: typeof data.error === "string" && data.error ? data.error : say("creator.import.refused") };
     }
-    return { ok: true, copied: Number(data.copied) || 0, note: importNote(data) };
+    return { ok: true, copied: Number(data.copied) || 0, note: importNote(data, say) };
   } catch {
-    return { ok: false, error: "Could not reach the server." };
+    return { ok: false, error: say("creator.import.unreachable") };
   }
 }
 

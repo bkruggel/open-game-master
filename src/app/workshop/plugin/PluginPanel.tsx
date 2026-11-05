@@ -54,7 +54,8 @@ const KEEPALIVE_BYTES = 60_000;
 // behind it (a reopened panel's read, Pull, Try again) are not held forever.
 const SAVE_TIMEOUT_MS = 60_000;
 // Said when Pull stops for a save that did not land; gone once one does.
-const PULL_WAITS = "Pull waits for the draft to save, and it did not. Nothing was pulled; your changes are kept here. Try again.";
+// The state keeps the key and the panel translates it.
+const PULL_WAITS = "workshop.plugin.panel.pullWaits";
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 
@@ -131,7 +132,7 @@ export function PluginPanel({
           }
           const parsed = worldPackDraftSchema.safeParse(outcome.payload.draft);
           if (!parsed.success) {
-            setError("The draft could not be read.");
+            setError(t("workshop.plugin.panel.draftUnreadable"));
             return;
           }
           setError("");
@@ -251,7 +252,7 @@ export function PluginPanel({
       // The pull merges into the server's copy and hands that back for the
       // screen, so it goes only once the screen's copy is the server's.
       if (!(await flushSave()).ok) {
-        setError(PULL_WAITS);
+        setError(t(PULL_WAITS));
         return;
       }
       const sent = await inTurn(workshopId, () =>
@@ -276,11 +277,11 @@ export function PluginPanel({
       // What stayed behind is listed whole on the Publish tab; the notice
       // only counts it, so a pull never reads as having taken everything.
       const left = (data.omissions ?? []).reduce((sum, omission) => sum + omission.assets.length, 0);
-      const behind = left ? ` ${left} ${left === 1 ? "entry stays" : "entries stay"} in the workshop; Check & publish lists them.` : "";
+      const behind = left ? ` ${t("workshop.plugin.panel.behind", { count: left })}` : "";
       setPullNotice(
         data.added
-          ? `Pulled ${data.added} ${data.added === 1 ? "entry" : "entries"} into the setting lists.${behind}`
-          : `Nothing new to pull.${behind || " Write some factions, lore, places or hook cards first."}`,
+          ? `${t("workshop.plugin.panel.pulled", { count: data.added })}${behind}`
+          : `${t("workshop.plugin.panel.nothingToPull")}${behind || ` ${t("workshop.plugin.panel.writeFirst")}`}`,
       );
     } finally {
       setPulling(false);
@@ -299,7 +300,7 @@ export function PluginPanel({
       readWrite<StoredReply>(t, fetch(`/api/workshops/${workshopId}/plugin`, { method: "DELETE" }), t("load.write.discard")),
     );
     if (sent.error !== null) {
-      setError(`${sent.error} The draft on screen is kept.`);
+      setError(`${sent.error} ${t("workshop.plugin.panel.keptTail")}`);
       // The edit whose autosave was cancelled above still goes.
       if (JSON.stringify(latest.current) !== savedJson.current) void save();
       return;
@@ -349,33 +350,33 @@ export function PluginPanel({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display tracking-wide text-amber-50">{draft.name.trim() || "An unnamed world"}</p>
+          <p className="truncate font-display tracking-wide text-amber-50">{draft.name.trim() || t("workshop.plugin.panel.unnamedWorld")}</p>
           <p className="text-[11px] text-stone-500">
-            {count ? `${count} ${count === 1 ? "entry" : "entries"}` : "Nothing named yet"}
-            {Object.keys(draft.art).length ? `, ${Object.keys(draft.art).length} pictures` : ""}
+            {count ? t("workshop.plugin.panel.countEntries", { count }) : t("workshop.plugin.panel.nothingNamed")}
+            {Object.keys(draft.art).length ? t("workshop.plugin.panel.picturesTail", { count: Object.keys(draft.art).length }) : ""}
             <span className="ml-2 inline-flex items-center gap-1 text-stone-600" aria-live="polite">
               {saveState === "saving" ? <Loader2 className="size-3 animate-spin" /> : null}
               {saveState === "saved" ? <Check className="size-3 text-emerald-500" /> : null}
-              {saveState === "saving" ? "saving" : saveState === "saved" ? "saved" : saveState === "dirty" ? "unsaved" : saveState === "error" ? "not saved" : ""}
+              {saveState === "saving" ? t("workshop.plugin.panel.saving") : saveState === "saved" ? t("workshop.maps.saved") : saveState === "dirty" ? t("workshop.plugin.panel.unsaved") : saveState === "error" ? t("workshop.plugin.panel.notSaved") : ""}
             </span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setWizardOpen(true)} data-tour="plugin-guided" className={cn(ui.btnSmall, "text-xs")}>
-            <Wand2 className="size-3.5" /> Guided setup
+            <Wand2 className="size-3.5" /> {t("workshop.plugin.panel.guidedSetup")}
           </button>
           <button type="button" onClick={() => void pull()} disabled={pulling} data-tour="plugin-pull" className={cn(ui.btnSmall, "text-xs")}>
-            {pulling ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />} Pull from this workshop
+            {pulling ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />} {t("workshop.plugin.panel.pullButton")}
           </button>
           <button type="button" onClick={() => setSection("publish")} data-tour="plugin-publish" className={cn(ui.btnSmall, "text-xs")}>
-            <Download className="size-3.5" /> Check &amp; publish
+            <Download className="size-3.5" /> {t("workshop.plugin.panel.checkPublish")}
           </button>
         </div>
         {pullNotice ? <p className="live-in basis-full text-xs text-amber-200/90">{pullNotice}</p> : null}
         {saveState === "error" && saveError ? (
-          <LoadFailed error={`${saveError} Your changes are kept here.`} onRetry={() => void flushSave()} className="basis-full" />
+          <LoadFailed error={`${saveError} ${t("workshop.plugin.panel.changesKept")}`} onRetry={() => void flushSave()} className="basis-full" />
         ) : null}
-        {error && !(error === PULL_WAITS && saveState === "saved") ? <PanelError className="basis-full">{error}</PanelError> : null}
+        {error && !(error === t(PULL_WAITS) && saveState === "saved") ? <PanelError className="basis-full">{error}</PanelError> : null}
       </section>
 
       <div data-tour="plugin-sections" className="w-fit max-w-full">
@@ -384,7 +385,7 @@ export function PluginPanel({
           value={section}
           onChange={setSection}
           size="sm"
-          label="Part of the pack"
+          label={t("workshop.plugin.panel.partOfPack")}
         />
       </div>
 
@@ -411,7 +412,7 @@ export function PluginPanel({
       <Sheet
         open={wizardOpen}
         onOpenChange={setWizardOpen}
-        title="Guided setup"
+        title={t("workshop.plugin.panel.guidedSetup")}
         hideTitle
         className="top-0 h-dvh max-h-none rounded-none pt-[max(0.5rem,env(safe-area-inset-top))] lg:top-1/2 lg:h-[min(92vh,44rem)] lg:w-[min(96vw,48rem)] lg:rounded-xl"
       >

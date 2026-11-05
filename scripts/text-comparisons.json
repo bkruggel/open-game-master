@@ -3243,7 +3243,7 @@
     "app/workshop/maps/MapForge.tsx#str-list": [
       [
         "key",
-        3,
+        1,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
@@ -19148,11 +19148,25 @@
         2,
         "the fr-/en- language-tag prefixes (protocol tokens, never a person's text)"
       ]
+    ],
+    "lib/starter/pregens.ts#str-key": [
+      [
+        "key",
+        1,
+        "stored kit lists keyed by the stored English equipment names; the strings are stored values, not text a person writes"
+      ]
     ]
   },
   "humanTextIn": [
     "lib/language/text-logic.ts",
     "lib/language/language.ts",
     "lib/db/core.ts"
+  ],
+  "app/workshop/maps/MapForge.tsx#str-list": [
+    [
+      "key",
+      1,
+      "UI: ids, fixed choices, DOM and keyboard names, stored values"
+    ]
   ]
 }

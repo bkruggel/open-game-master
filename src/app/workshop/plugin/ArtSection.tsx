@@ -17,6 +17,7 @@ import { resizePackArt } from "@/lib/worlds/art-resize";
 import { BACKGROUND_OPTIONS, CLASS_OPTIONS, RACE_OPTIONS, catalogLabel } from "@/lib/worlds/catalog";
 import type { WorldPackDraft } from "@/lib/worlds/draft";
 import type { SectionProps } from "@/app/workshop/plugin/types";
+import { useT } from "@/lib/locale";
 
 // The pack's pictures: a cover, and a tile for everything it names. The
 // slots are derived from the draft (src/lib/worlds/art.ts), never chosen,
@@ -25,20 +26,20 @@ import type { SectionProps } from "@/app/workshop/plugin/types";
 // nothing here needs drag-and-drop. The file is resized in the browser to
 // the slot's shape and held in the draft as a data URL.
 
-const KIND_LABEL: Record<PackArtKind, string> = {
-  cover: "Cover",
-  race: "Species",
-  class: "Calling",
-  background: "Background",
-  monster: "Monster",
-  location: "Place",
-  faction: "Faction",
+const KIND_KEY: Record<PackArtKind, string> = {
+  cover: "workshop.plugin.art.cover",
+  race: "workshop.plugin.art.species",
+  class: "workshop.plugin.art.calling",
+  background: "workshop.plugin.art.background",
+  monster: "workshop.plugin.art.monster",
+  location: "workshop.plugin.art.place",
+  faction: "workshop.plugin.art.faction",
 };
 
-function slotLabel(slot: PackArtSlot, draft: WorldPackDraft): string {
+function slotLabel(slot: PackArtSlot, draft: WorldPackDraft, world: string): string {
   switch (slot.kind) {
     case "cover":
-      return draft.name.trim() || "The world";
+      return draft.name.trim() || world;
     case "race":
       return draft.races.find((entry) => entry.id === slot.ref)?.name.trim() || catalogLabel(RACE_OPTIONS, slot.ref);
     case "class":
@@ -74,6 +75,7 @@ function ArtSlot({
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const t = useT();
   const landscape = PACK_ART_ASPECT[slot.kind] === "landscape";
 
   async function choose(file: File) {
@@ -82,7 +84,7 @@ function ArtSlot({
     try {
       onPicture(await resizePackArt(file, slot.kind));
     } catch (thrown) {
-      setError(thrown instanceof Error ? thrown.message : "That picture would not load.");
+      setError(thrown instanceof Error ? thrown.message : t("workshop.plugin.art.loadFailed"));
     } finally {
       setBusy(false);
     }
@@ -94,7 +96,7 @@ function ArtSlot({
         type="button"
         onClick={() => fileRef.current?.click()}
         disabled={busy}
-        aria-label={`${dataUrl ? "Replace" : "Upload"} the picture for ${label}`}
+        aria-label={t("workshop.plugin.art.uploadAria", { action: dataUrl ? t("workshop.plugin.art.replace") : t("workshop.plugin.art.upload"), label })}
         className={cn(
           "relative flex w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-stone-700 bg-stone-950/60 text-stone-500 hover:border-amber-500/50 hover:text-amber-200",
           landscape ? "aspect-[704/400]" : "aspect-square",
@@ -124,7 +126,7 @@ function ArtSlot({
         <div className="min-w-0">
           <p className="truncate text-xs text-stone-200">{label}</p>
           <p className="text-[10px] text-stone-500">
-            {KIND_LABEL[slot.kind]}
+            {t(KIND_KEY[slot.kind])}
             {dataUrl ? `, ${Math.max(1, Math.round(dataUrlBytes(dataUrl) / 1024))} KB` : ""}
           </p>
         </div>
@@ -132,7 +134,7 @@ function ArtSlot({
           <button
             type="button"
             onClick={onRemove}
-            aria-label={`Remove the picture for ${label}`}
+            aria-label={t("workshop.plugin.art.removeAria", { label })}
             className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}
           >
             <Trash2 className="size-3.5" />
@@ -145,6 +147,7 @@ function ArtSlot({
 }
 
 export function ArtSection({ draft, onDraft }: SectionProps) {
+  const t = useT();
   const slots = packArtSlots({
     races: draft.races.filter((entry) => entry.id),
     classes: draft.classes.filter((entry) => entry.id),
@@ -171,11 +174,11 @@ export function ArtSection({ draft, onDraft }: SectionProps) {
   return (
     <div className="space-y-4">
       <p className="text-[11px] text-stone-500">
-        {filled} of {slots.length} pictures, {Math.round(bytes / 1024)} KB in all. Each is resized on the way in: squares to 256 px, the cover and places to 704 by 400, under {MAX_PACK_ART_BYTES / 1024} KB apiece, at most {MAX_PACK_ART_KEYS} in a pack. Every slot is optional and falls back to the default plate.
+        {t("workshop.plugin.art.summary", { filled, total: slots.length, kb: Math.round(bytes / 1024), maxKb: MAX_PACK_ART_BYTES / 1024, maxKeys: MAX_PACK_ART_KEYS })}
       </p>
       {slots.length === 1 ? (
         <p className="reveal text-xs italic text-stone-500">
-          Name a species, calling, monster, place or faction and its slot appears here.
+          {t("workshop.plugin.art.nameToAppear")}
         </p>
       ) : null}
       <ul className="stagger-up grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
@@ -183,7 +186,7 @@ export function ArtSection({ draft, onDraft }: SectionProps) {
           <ArtSlot
             key={slot.key}
             slot={slot}
-            label={slotLabel(slot, draft)}
+            label={slotLabel(slot, draft, t("workshop.plugin.art.theWorld"))}
             dataUrl={draft.art[slot.key]}
             onPicture={(dataUrl) => setArt(slot.key, dataUrl)}
             onRemove={() => setArt(slot.key, null)}
@@ -193,7 +196,7 @@ export function ArtSection({ draft, onDraft }: SectionProps) {
       {orphans.length ? (
         <div className="reveal rounded-lg border border-amber-500/20 p-3 text-[11px] text-amber-200/80">
           <p>
-            {orphans.length} picture{orphans.length === 1 ? " is" : "s are"} for something the pack no longer names ({orphans.join(", ")}). They are left out of the export.
+            {t("workshop.plugin.art.orphans", { count: orphans.length, list: orphans.join(", ") })}
           </p>
           <button
             type="button"
@@ -204,7 +207,7 @@ export function ArtSection({ draft, onDraft }: SectionProps) {
             }}
             className={cn(ui.btnSmall, "mt-2 text-xs")}
           >
-            <Trash2 className="size-3.5" /> Forget them
+            <Trash2 className="size-3.5" /> {t("workshop.plugin.art.forgetThem")}
           </button>
         </div>
       ) : null}
