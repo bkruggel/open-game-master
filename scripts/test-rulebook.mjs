@@ -22,6 +22,7 @@ register("./lib/register-routes.mjs", import.meta.url);
 const { rulebookContents, rulebookPage, rulebookPages, rulebookSearch, localeFromAcceptLanguage, QUICK_LINKS } = await import(
   "../src/lib/rulebook/book.ts"
 );
+const { crosswalkFor } = await import("../src/lib/rulebook/crosswalk.ts");
 const { anchorSlug, blockText, inlineText, parseBook, parseInline, stripInline } = await import(
   "../src/lib/rulebook/markdown.ts"
 );
@@ -358,8 +359,19 @@ try {
     // The chapter blurbs are the English book's (the FR print prints none);
     // the parts carry the French the reader shows.
     assert.equal(frContents.chapters[0].blurb, rulebookContents().chapters[0].blurb);
-    assert.match(frContents.parts[0].blurb, /Player's Handbook/);
+    assert.match(frContents.parts[0].blurb, /Manuel des joueurs/);
     assert.match(frContents.parts[0].blurb, /créer un héros/);
+  });
+
+  await test("the crosswalk speaks the reader's language but reads the English book's names", () => {
+    const walk = crosswalkFor(rulebookPage("fireball", "fr").page, "fr");
+    assert.equal(walk.support, "engine", "Boule de feu stays an engine spell");
+    assert.match(walk.where, /Les outils d'incantation le lancent/);
+    const magicItems = crosswalkFor(rulebookPage("magic-items", "fr").page, "fr");
+    assert.match(magicItems.where, /Atelier : Objets \(harmonisation, effets, ajouts, charges, sorts\)/);
+    const enFireball = crosswalkFor(rulebookPage("fireball").page, "en");
+    assert.equal(enFireball.support, "engine");
+    assert.match(enFireball.where, /The cast tools roll it/);
   });
 
   await test("the magic-items chapter's rules pages read French, binding unchanged", () => {

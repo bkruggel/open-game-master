@@ -121,9 +121,9 @@ const CHAPTER_TITLES = {
 // already reads — the rulebook.part.* message values' text.
 const PART_TITLES = { players: "Joueurs", "dungeon-master": "Le maître du jeu", monsters: "Monstres" };
 const PART_BLURBS = {
-  players: "Le Player's Handbook, pour tout ce que le SRD en ouvre : créer un héros, jouer, et tous les sorts.",
-  "dungeon-master": "Le Dungeon Master's Guide, pour tout ce que le SRD en ouvre : les pièges à mener et tous les objets magiques.",
-  monsters: "Le Monster Manual, pour tout ce que le SRD en ouvre : tous les blocs de stats, les bêtes, et les gens du monde.",
+  players: "Le Manuel des joueurs, pour tout ce que le SRD en ouvre : créer un héros, jouer, et tous les sorts.",
+  "dungeon-master": "Le Guide du Maître, pour tout ce que le SRD en ouvre : les pièges à mener et tous les objets magiques.",
+  monsters: "Le Manuel des monstres, pour tout ce que le SRD en ouvre : tous les blocs de stats, les bêtes, et les gens du monde.",
 };
 
 // The spells chapter groups by level, cantrips first, as the print names

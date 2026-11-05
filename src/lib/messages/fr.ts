@@ -5832,7 +5832,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
   // une demande en français ; les résumés des trois livres, les liens
   // rapides et le pourtour restent les mots de l'interface.
   "rulebook.title": "Le livre de règles",
-  "rulebook.editionLine": "Cinquième édition · System Reference Document 5.1",
+  "rulebook.editionLine": "Cinquième édition · Document de Référence du Système 5.1",
   "rulebook.fifthEdition": "Cinquième édition",
   "rulebook.openTheBook": "Ouvrir le livre",
   "rulebook.contentsAria": "Sommaire et recherche",
@@ -5860,6 +5860,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "rulebook.marks.aria": "Marque-pages",
   "rulebook.book": "Livre {numeral}",
   "rulebook.legal.button": "Informations légales",
+  "rulebook.legal.noticeA": "Ce présent ouvrage comprend du matériel tiré du Document de Référence du Système 5.1 (« SRD 5.1 ») de Wizards of the Coast LLC, disponible sous licence ",
+  "rulebook.legal.noticeB": ". ",
   "rulebook.opening": "Le livre s'ouvre…",
   "rulebook.chapterWord": "Chapitre {numeral}",
   "rulebook.pageAria": "Page {n}",
@@ -5873,9 +5875,9 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "rulebook.dialogClose": "Fermer le livre de règles",
   // Les résumés des trois livres, lus par l'identifiant de la partie dans
   // srd-5.1.json au rendu.
-  "rulebook.part.players": "Le Player's Handbook, pour tout ce que le SRD en ouvre : créer un héros, jouer, et tous les sorts.",
-  "rulebook.part.dungeonMaster": "Le Dungeon Master's Guide, pour tout ce que le SRD en ouvre : les pièges à mener et tous les objets magiques.",
-  "rulebook.part.monsters": "Le Monster Manual, pour tout ce que le SRD en ouvre : tous les blocs de stats, les bêtes, et les gens du monde.",
+  "rulebook.part.players": "Le Manuel des joueurs, pour tout ce que le SRD en ouvre : créer un héros, jouer, et tous les sorts.",
+  "rulebook.part.dungeonMaster": "Le Guide du Maître, pour tout ce que le SRD en ouvre : les pièges à mener et tous les objets magiques.",
+  "rulebook.part.monsters": "Le Manuel des monstres, pour tout ce que le SRD en ouvre : tous les blocs de stats, les bêtes, et les gens du monde.",
   // Les liens rapides du sommaire (QUICK_LINKS dans book.ts), lus par le
   // libellé anglais, qui est l'identifiant du lien dans les données.
   "rulebook.quick.conditions": "États",

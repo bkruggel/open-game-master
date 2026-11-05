@@ -15754,6 +15754,18 @@
         "key",
         1,
         "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
+      ],
+      [
+        "key",
+        1,
+        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
+      ]
+    ],
+    "lib/rulebook/crosswalk.ts#partial": [
+      [
+        "key",
+        1,
+        "the engine fields' French label by field name, with the English word beside every miss"
       ]
     ],
     "lib/rulebook/markdown.ts#first": [

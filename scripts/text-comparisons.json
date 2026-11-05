@@ -15281,7 +15281,7 @@
     "lib/rulebook/crosswalk.ts#str-key": [
       [
         "key",
-        2,
+        4,
         "page ids and engine field names"
       ]
     ],
@@ -15297,6 +15297,20 @@
         "display",
         1,
         "engine keys shown as words"
+      ]
+    ],
+    "lib/rulebook/crosswalk.ts#str-startsWith": [
+      [
+        "key",
+        1,
+        "the reader's locale, a fixed choice"
+      ]
+    ],
+    "lib/rulebook/crosswalk.ts#str-eq": [
+      [
+        "key",
+        1,
+        "the default line's marker, to speak it in French"
       ]
     ],
     "lib/rulebook/markdown.ts#[a-z]": [

@@ -359,12 +359,11 @@ export function RulebookContents({
               </nav>
 
               <p className="rb-legal">
-                This work includes material taken from the System Reference Document 5.1 (&ldquo;SRD 5.1&rdquo;) by
-                Wizards of the Coast LLC, licensed under{" "}
+                {t("rulebook.legal.noticeA")}
                 <a href={contents.source.licenseUrl} target="_blank" rel="noreferrer">
                   CC-BY-4.0
                 </a>
-                .{" "}
+                {t("rulebook.legal.noticeB")}
                 <button type="button" className="rb-xref" onClick={() => onOpen("legal-information")}>
                   {t("rulebook.legal.button")}
                 </button>

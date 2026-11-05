@@ -13,8 +13,9 @@ import type { RulebookPageResponse } from "@/lib/rulebook/types";
 // workshops (the shelf is theirs in every workshop alike), in the editor for
 // its kind, from this entry, unsaved.
 
-// The support's spoken words, keyed by the crosswalk's own field; `where`
-// itself stays the crosswalk's English, which names the workshop's screens.
+// The support's spoken words, keyed by the crosswalk's own field. The where
+// line arrives in the reader's language (the page route builds it per
+// Accept-Language), naming the screens as the app shows them.
 const SUPPORT_LABEL: Record<NonNullable<RulebookPageResponse["crosswalk"]>["support"], string> = {
   engine: "rulebook.prep.engine",
   structured: "rulebook.prep.structured",

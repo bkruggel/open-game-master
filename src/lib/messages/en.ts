@@ -5838,6 +5838,8 @@ export const en = {
   "rulebook.marks.aria": "Bookmarks",
   "rulebook.book": "Book {numeral}",
   "rulebook.legal.button": "Legal information",
+  "rulebook.legal.noticeA": "This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”) by Wizards of the Coast LLC, licensed under ",
+  "rulebook.legal.noticeB": ". ",
   "rulebook.opening": "Opening the book…",
   "rulebook.chapterWord": "Chapter {numeral}",
   "rulebook.pageAria": "Page {n}",
