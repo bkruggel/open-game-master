@@ -4,7 +4,7 @@ import { CopyLine } from "@/components/CopyLine";
 import type { ScanResult } from "@/app/setup/SetupParts";
 import { useT } from "@/lib/locale";
 import type { MessageKey } from "@/lib/messages/en";
-import { RECOMMENDED_WINDOW, STORY_WINDOW_NEEDS, windowFlag } from "@/lib/story-window";
+import { RECOMMENDED_WINDOW, storyNeeds, windowFlag } from "@/lib/story-window";
 
 const HARDWARE_GUIDE = "https://github.com/Lebbitheplow/open-game-master/blob/main/docs/text-backends.md#hardware-for-a-local-model";
 
@@ -40,7 +40,7 @@ export function StartHints({ inContainer, machine }: { inContainer: boolean; mac
         ) : null}
         {machine ? <p className="text-stone-300">{machineLine(t, machine)}</p> : null}
         <p>
-          {STORY_WINDOW_NEEDS}
+          {storyNeeds(t)}
           {t("setup.start.commands.before")}
           <code>-c {windowFlag(RECOMMENDED_WINDOW)}</code>
           {t("setup.start.commands.after")}

@@ -26,7 +26,7 @@ const { createSheetSchema } = await import("../src/lib/schemas/sheet.ts");
 const { createSheet, listSheets } = await import("../src/lib/db/sheets.ts");
 const { createCharacter, listCharactersForUser } = await import("../src/lib/db/characters.ts");
 const { PREGENS, pregenById, pregenSummaries } = await import("../src/lib/starter/pregens.ts");
-const { STARTER_ONE_SHOT, createStarterCampaign } = await import("../src/lib/starter/one-shot.ts");
+const { STARTER_ONE_SHOT, STARTER_ONE_SHOT_FR, starterSeedFor, createStarterCampaign } = await import("../src/lib/starter/one-shot.ts");
 const { CALENDAR_PRESETS, MINUTES_PER_DAY, breakDown, dayPart, defaultClock, describeInstant, toInstant } = await import("../src/lib/dm/calendar.ts");
 
 let failed = 0;
@@ -59,6 +59,24 @@ test("the one-shot campaign carries its premise, its secret outline and a short 
   assert.equal(solo.maxPlayers, 1);
   // POST /api/starter passes this to the creator, who owns the table.
   assert.equal(solo.role, "owner");
+});
+
+// A table created by a French reader keeps its whole premise and spine in
+// French; an English table's stays English.
+test("the starter speaks the creator's language, premise and secret outline alike", () => {
+  const fr = starterSeedFor("fr");
+  assert.equal(fr.title, STARTER_ONE_SHOT_FR.title);
+  assert.match(fr.description, /Gué-Marais/);
+  assert.match(fr.outline, /Aldo Merrin/);
+  const table = createStarterCampaign(host.id, { solo: true, locale: "fr" });
+  assert.equal(table.title, STARTER_ONE_SHOT_FR.title);
+  const stored = getCampaignById(table.id);
+  assert.ok(stored.dmOutline.includes("la goule qu'était Aldo"), "the DM's outline is written in French");
+  assert.ok(stored.description.includes("Gué-Marais"));
+  const summaries = pregenSummaries("fr");
+  assert.match(summaries[0].tagline, /barbare humain/);
+  assert.match(pregenById("sera", "fr").sheet.backstory, /Orpheline de la chapelle/);
+  assert.equal(pregenById("kara", "en").sheet.backstory, PREGENS.find((pregen) => pregen.id === "kara").sheet.backstory);
 });
 
 // The premise says "you arrive at dusk", and the DM narrates the hour the

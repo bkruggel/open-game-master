@@ -4,7 +4,7 @@ import { ExternalLink, Loader2, RefreshCw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { DEFAULT_WINDOW, STORY_WINDOW_NEEDS, windowLabel } from "@/lib/story-window";
+import { DEFAULT_WINDOW, storyNeeds, windowLabel } from "@/lib/story-window";
 import { BackendProbe } from "@/app/admin/BackendProbe";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { AgentPanel } from "@/app/setup/AgentPanel";
@@ -311,7 +311,7 @@ function LocalPanel({
         />
       ) : null}
       <p className="text-[11px] leading-4 text-stone-500">
-        {STORY_WINDOW_NEEDS}{" "}
+        {storyNeeds(t)}{" "}
         {chosenFound?.ollamaNative
           ? t("setup.local.window.ollamaNative", { window: windowLabel(DEFAULT_WINDOW) })
           : chosenFound?.kind === "ollama"

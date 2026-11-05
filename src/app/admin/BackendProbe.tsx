@@ -3,7 +3,7 @@
 import { Check, Loader2, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
-import { RECOMMENDED_WINDOW, STORY_WINDOW_NEEDS, aWindow, storyWindowVerdict, windowFlag, windowLabel } from "@/lib/story-window";
+import { RECOMMENDED_WINDOW, aWindow, storyNeeds, storyWindowVerdict, windowFlag, windowLabel } from "@/lib/story-window";
 import { ui } from "@/lib/ui";
 import { useT } from "@/lib/locale";
 import type { MessageKey } from "@/lib/messages/en";
@@ -191,7 +191,7 @@ function WindowLine({ size }: { size: { tokens: number; reported: boolean } }) {
     return (
       <p className="text-xs leading-5 text-amber-200">
         {t("admin.probe.window.unreportedBefore", { size: windowLabel(size.tokens) })}
-        {STORY_WINDOW_NEEDS}
+        {storyNeeds(t)}
         {t("admin.probe.window.unreportedAfter")}
       </p>
     );

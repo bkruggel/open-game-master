@@ -9,6 +9,7 @@ import { createSheetSchema } from "@/lib/schemas/sheet";
 import { olderBuilderOf } from "@/lib/srd/legality/older-builder";
 import { pregenById } from "@/lib/starter/pregens";
 import { seatPicksSchema } from "@/lib/characters/seat-picks";
+import { localeFromAcceptLanguage } from "@/lib/rulebook/book";
 import { claimRefusal, offeredPregenFor, pregenSeatRefusal } from "@/lib/db/pregen-offers";
 
 export const runtime = "nodejs";
@@ -112,7 +113,7 @@ export async function POST(
       preview = { ...preview, ok: false, problems: [...refusals, ...preview.problems] };
     }
   } else {
-    const pregen = pregenById(pregenId ?? "");
+    const pregen = pregenById(pregenId ?? "", localeFromAcceptLanguage(request.headers.get("accept-language")));
     if (!pregen) {
       return Response.json({ error: "No such hero." }, { status: 404 });
     }

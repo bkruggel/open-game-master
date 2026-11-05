@@ -66,6 +66,13 @@ const enT: T = (key, vars) => translate("en", key, vars);
 // request fitter's refusals carry it to places no table language reaches.
 export const STORY_WINDOW_NEEDS = enT("story.needs", needsVars());
 
+// The same sentence in the reader's language: the surfaces that show it
+// pass their own translator, as storyWindowVerdict does. (STORY_WINDOW_NEEDS
+// stays the docs' and reports' pinned English.)
+export function storyNeeds(t: T): string {
+  return t("story.needs", needsVars());
+}
+
 export type StoryWindowLevel = "short" | "no-fights" | "tight" | "ok";
 
 // What a table can do in a window, worded for the admin choosing a model.

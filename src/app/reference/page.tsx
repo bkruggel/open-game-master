@@ -179,7 +179,7 @@ export default function ReferencePage() {
     }
     return terms.filter(
       (term) =>
-        textKey(term.term).includes(needle) || textKey(term.short).includes(needle),
+        textKey(term.term).includes(needle) || textKey(term.fr ?? "").includes(needle) || textKey(term.short).includes(needle),
     );
   }, [terms, query]);
 
@@ -275,7 +275,7 @@ export default function ReferencePage() {
   function openTerm(term: GlossaryTerm) {
     const short = french && term.shortFr ? term.shortFr : term.short;
     const long = french && term.longFr ? term.longFr : term.long;
-    setOpen({ title: term.term, text: [short, long].filter(Boolean).join("\n\n") });
+    setOpen({ title: french && term.fr ? term.fr : term.term, text: [short, long].filter(Boolean).join("\n\n") });
   }
 
   function openRow(row: Row) {
@@ -426,7 +426,7 @@ export default function ReferencePage() {
                     <button type="button" onClick={() => openTerm(term)} className={ROW}>
                       <GameIcon icon={{ kind: "glyph", key: "system-lore" }} size="size-8" />
                       <span className="min-w-0 flex-1">
-                        <span className="block font-display text-sm tracking-wide text-amber-100">{term.term}</span>
+                        <span className="block font-display text-sm tracking-wide text-amber-100">{french && term.fr ? term.fr : term.term}</span>
                         <span className="block text-xs text-stone-400">
                           {french && term.shortFr ? term.shortFr : term.short}
                         </span>

@@ -11,6 +11,7 @@ import { publishPersisted } from "@/lib/events";
 import { queueLibraryPortrait } from "@/lib/portrait";
 import { pregenById } from "@/lib/starter/pregens";
 import { seatPicksSchema } from "@/lib/characters/seat-picks";
+import { localeFromAcceptLanguage } from "@/lib/rulebook/book";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export async function POST(
   if (!parsed.success && parsed.error.issues.some((issue) => issue.path[0] === "picks")) {
     return Response.json({ error: "Those picks could not be read." }, { status: 400 });
   }
-  const pregen = parsed.success ? pregenById(parsed.data.id) : null;
+  const pregen = parsed.success ? pregenById(parsed.data.id, localeFromAcceptLanguage(request.headers.get("accept-language"))) : null;
   if (!pregen) {
     return Response.json({ error: "No such hero." }, { status: 404 });
   }
