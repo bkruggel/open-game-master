@@ -362,12 +362,14 @@ try {
     assert.match(frContents.parts[0].blurb, /créer un héros/);
   });
 
-  await test("a page the French print lost falls back to its English page", () => {
+  await test("the magic-items chapter's rules pages read French, binding unchanged", () => {
     const enArtifacts = rulebookPage("artifacts").page;
     const frArtifacts = rulebookPage("artifacts", "fr").page;
-    assert.equal(frArtifacts.md, enArtifacts.md, "the English page's words, in the French binding");
-    assert.equal(frArtifacts.title, enArtifacts.title);
-    // Its neighbours are the French book's, and the binding never moves.
+    assert.equal(frArtifacts.title, "Les artefacts");
+    assert.match(frArtifacts.md, /L’orbe des dragons/);
+    assert.match(rulebookPage("magic-items", "fr").page.md, /Harmonisation/);
+    assert.equal(rulebookPage("sentient-magic-items", "fr").page.title, "Les objets magiques intelligents");
+    // The binding never moves: same neighbours as the English book.
     assert.equal(rulebookPage("artifacts", "fr").next?.id, "adamantine-armor");
     assert.equal(rulebookPage("artifacts", "fr").prev?.id, "sentient-magic-items");
     const frFireball = rulebookPage("fireball", "fr");

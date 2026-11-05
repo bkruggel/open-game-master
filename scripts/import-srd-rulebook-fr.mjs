@@ -20,12 +20,14 @@
 // <tools>/data/manifest-alignment.tsv; the 239 item titles come from the
 // verified pairs in scripts/data/fr-names/magic-items-fr.json.
 //
-// Three English pages have no French print in any wave — the magic items
-// chapter's three rules pages (`magic-items`, `sentient-magic-items`,
-// `artifacts`; FR pdf pp. 225-227, 278-280). They are absent from this book
-// and the loader (src/lib/rulebook/book.ts) falls back to the English page
-// in the same binding position, so folios, bookmarks and neighbours never
-// move. The script refuses to run if the waves' coverage differs from that.
+// Every English page has a French print: the magic items chapter's three
+// rules pages (`magic-items`, `sentient-magic-items`, `artifacts`; FR pdf
+// pp. 225-227, 278-280) were extracted after the main waves and live in
+// waves/monsters/rules/ beside the other rules pages. The loader
+// (src/lib/rulebook/book.ts) still falls back to the English page were a
+// wave file ever to go missing, in the same binding position, so folios,
+// bookmarks and neighbours never move. The script refuses to run if the
+// waves' coverage differs from the manifest.
 //
 // Page markdown keeps the print as extracted; the `<!-- CHECK -->` comments
 // the waves carry (missing FR table captions, print quirks — ~80 sites) stay
@@ -88,6 +90,8 @@ const TITLE_FIX = {
   "monster-statistics": "Monstres",
   "nonplayer-characters": "Personnages non-joueurs",
   "legal-information": "Informations juridiques",
+  // The chapter-opening rules page; the TSV row annotates its sections.
+  "magic-items": "Objets magiques",
 };
 
 // The book's chapters, as the FR print names them. Chapter ids, numerals,
@@ -127,8 +131,11 @@ const PART_BLURBS = {
 const LEVEL_GROUPS_FR = ["Sorts mineurs", "Niveau 1", "Niveau 2", "Niveau 3", "Niveau 4", "Niveau 5", "Niveau 6", "Niveau 7", "Niveau 8", "Niveau 9"];
 const LEVEL_GROUPS_EN = ["Cantrips", "1st Level", "2nd Level", "3rd Level", "4th Level", "5th Level", "6th Level", "7th Level", "8th Level", "9th Level"];
 
-// The three pages no wave covers; the loader serves these English.
-const KNOWN_MISSING = ["magic-items", "sentient-magic-items", "artifacts"];
+// No page is missing any more: the magic-items chapter's three rules pages
+// (`magic-items`, `sentient-magic-items`, `artifacts`; FR pdf pp. 225-227,
+// 278-280) were extracted after the waves, and the loader keeps the English
+// fallback for a page only if its file is absent.
+const KNOWN_MISSING = [];
 
 // The first italic line of an entry: « Invocation du 9e niveau »,
 // « Humanoïde (gobelin) de taille P, neutre mauvais »,
