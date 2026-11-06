@@ -1031,13 +1031,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/GameSettingsPanel.tsx#toLowerCase": [
-      [
-        "display",
-        3,
-        "label in a sentence"
-      ]
-    ],
     "app/campaigns/[campaignId]/HaltedTurnBanner.tsx#toUpperCase": [
       [
         "display",
@@ -1192,17 +1185,10 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/MapLayersPanel.tsx#toLowerCase": [
-      [
-        "display",
-        1,
-        "label in a sentence"
-      ]
-    ],
     "app/campaigns/[campaignId]/MapSceneTools.tsx#str-list": [
       [
         "key",
-        7,
+        2,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
@@ -19147,6 +19133,20 @@
         "key",
         1,
         "the rolls' label key, read by the stored roll value"
+      ]
+    ],
+    "app/characters/builder/CharacterBuilder.tsx#toLowerCase": [
+      [
+        "key",
+        2,
+        "the drop labels' key, found by the drop's stored label folded to lowercase; the ability-method's words folded for the stats summary"
+      ]
+    ],
+    "app/characters/builder/abilityGains.ts#re-word": [
+      [
+        "key",
+        1,
+        "the gain's own 'at level N' source text, matched and rewritten in the reader's words"
       ]
     ]
   },

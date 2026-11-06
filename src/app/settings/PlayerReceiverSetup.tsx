@@ -13,6 +13,7 @@ import {
   receiverFileName,
   type ReceiverConfig,
 } from "@/lib/agents/receiver-config";
+import { useT } from "@/lib/locale";
 
 export type ReceiverInfo = {
   campaignId: string;
@@ -33,6 +34,7 @@ type AddressCheck =
 // (docs/player-webhooks.md). The token stays in the box above; the
 // receiver's --setup asks for it once and keeps it in the OS's store.
 export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverInfo; mcpUrl: string }) {
+  const t = useT();
   const [address, setAddress] = useState("");
   const [port, setPort] = useState(String(RECEIVER_PORT));
   const [check, setCheck] = useState<AddressCheck>({ state: "idle" });
@@ -41,7 +43,7 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
   if (!receiver.character) {
     return (
       <p className="text-xs text-stone-400">
-        To wake this agent on its turn, play a character at that table first, then connect it again.
+        {t("receiver.noCharacter")}
       </p>
     );
   }
@@ -60,7 +62,7 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
         port: Number(port),
       });
     } catch (error) {
-      configError = error instanceof Error ? error.message : "Check the address and port.";
+      configError = error instanceof Error ? error.message : t("receiver.configError");
     }
   }
   const fileName = receiverFileName(character.name, character.id);
@@ -84,12 +86,12 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        settle({ state: "failed", url, error: data.error ?? "Could not check that address." });
+        settle({ state: "failed", url, error: data.error ?? t("receiver.error.check") });
         return;
       }
       settle({ state: "done", url, allowed: Boolean(data.allowed), origin: String(data.origin ?? ""), admin: Boolean(data.admin) });
     } catch {
-      settle({ state: "failed", url, error: "Could not reach the server." });
+      settle({ state: "failed", url, error: t("receiver.error.unreachable") });
     }
   }
   const shown: AddressCheck = check.state !== "idle" && check.url === config?.receiverUrl ? check : { state: "idle" };
@@ -98,29 +100,24 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
   return (
     <div className="space-y-3 rounded-xl border border-stone-800 p-3">
       <div>
-        <p className="text-sm text-stone-200">Wake {character.name}&apos;s agent on its turn (Codex)</p>
+        <p className="text-sm text-stone-200">{t("receiver.title", { name: character.name })}</p>
         <p className="text-xs text-stone-500">
-          A small receiver on the agent&apos;s computer starts a Codex turn when the table needs {character.name}. It needs
-          this repository, Node 22.18 or later, Codex, and an HTTPS address this server can reach, such as a Tailscale
-          Funnel.
+          {t("receiver.intro", { name: character.name })}
         </p>
       </div>
       {httpsServer ? null : (
         <p className="flex items-start gap-2 text-xs text-amber-200">
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> This page was opened at {mcpUrl.replace(/\/api\/mcp$/, "")},
-          which is not HTTPS, and the receiver only talks to ODM over HTTPS. Open Settings through the server&apos;s HTTPS
-          address, then connect again, so the receiver file names that address.
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {t("receiver.notHttps", { url: mcpUrl.replace(/\/api\/mcp$/, "") })}
         </p>
       )}
       {receiver.webhooksEnabled ? null : (
         <p className="flex items-start gap-2 text-xs text-amber-200">
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> This server has not allowed any receiver address yet. Its
-          admin adds yours under Admin &gt; Player agents{receiver.pollLinks ? ", or use a poll link below" : ""}.
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {t("receiver.notAllowed")}{receiver.pollLinks ? t("receiver.notAllowedPoll") : ""}.
         </p>
       )}
       <div className="grid gap-2 sm:grid-cols-[1fr_8rem]">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-stone-400">The receiver&apos;s HTTPS address</span>
+          <span className="mb-1 block text-xs font-medium text-stone-400">{t("receiver.addressLabel")}</span>
           <input
             className={ui.input}
             value={address}
@@ -133,7 +130,7 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-stone-400">Local port</span>
+          <span className="mb-1 block text-xs font-medium text-stone-400">{t("receiver.portLabel")}</span>
           <input
             className={ui.input}
             inputMode="numeric"
@@ -143,8 +140,7 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
         </label>
       </div>
       <p className="text-[11px] text-stone-500">
-        Seating more than one agent from the same computer? Give each its own local port (8787, 8788, 8789) and its own
-        HTTPS port (Funnel takes 443, 8443 and 10000).
+        {t("receiver.portsNote")}
       </p>
       {configError ? (
         <p role="alert" className="text-xs text-red-400">
@@ -153,28 +149,28 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
       ) : null}
       {shown.state === "checking" ? (
         <p className="flex items-center gap-2 text-xs text-stone-400">
-          <Loader2 className="size-3.5 animate-spin" /> Checking whether this server may reach it…
+          <Loader2 className="size-3.5 animate-spin" /> {t("receiver.checking")}
         </p>
       ) : shown.state === "failed" ? (
         <p className="text-xs text-red-400">{shown.error}</p>
       ) : shown.state === "done" ? (
         shown.allowed ? (
           <p className="flex items-center gap-2 text-xs text-emerald-300">
-            <Check className="size-3.5" /> This server may send to {shown.origin}.
+            <Check className="size-3.5" /> {t("receiver.maySend", { origin: shown.origin })}
           </p>
         ) : (
           <p className="flex items-start gap-2 text-xs text-amber-200">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              This server does not send to {shown.origin} yet.{" "}
+              {t("receiver.notSending", { origin: shown.origin })}{" "}
               {shown.admin ? (
                 <Link className="underline" href="/admin?section=admin-player-agents">
-                  Allow it under Admin &gt; Player agents
+                  {t("receiver.allowLink")}
                 </Link>
               ) : (
-                "Ask its admin to allow it under Admin > Player agents"
+                t("receiver.allowAsk")
               )}
-              , then run the setup below.
+              {t("receiver.thenSetup")}
             </span>
           </p>
         )
@@ -187,27 +183,27 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
               className={ui.btnSmall}
               onClick={() => downloadBlob(fileName, new Blob([`${JSON.stringify(config, null, 2)}\n`], { type: "application/json" }))}
             >
-              <Download className="size-3.5" /> Download {fileName}
+              <Download className="size-3.5" /> {t("receiver.download", { name: fileName })}
             </button>
             <span className="block text-stone-500">
-              Keep it in a private folder of your own, outside the repository. Below, replace PATH with that folder.
+              {t("receiver.keepPrivate")}
             </span>
           </li>
           <li className="space-y-1">
-            <span>In the ODM repository on that computer, run the setup once. It asks for the token above.</span>
-            <CopyLine text={commands.setup} label="the setup command" />
+            <span>{t("receiver.runSetup")}</span>
+            <CopyLine text={commands.setup} label={t("receiver.setupLabel")} />
           </li>
           <li className="space-y-1">
-            <span>Start the receiver and keep it running.</span>
-            <CopyLine text={commands.listen} label="the receiver command" />
+            <span>{t("receiver.startReceiver")}</span>
+            <CopyLine text={commands.listen} label={t("receiver.listenLabel")} />
           </li>
           {commands.tunnel ? (
             <li className="space-y-1">
-              <span>Publish it at the address you gave, once.</span>
-              <CopyLine text={commands.tunnel} label="the Tailscale Funnel command" />
+              <span>{t("receiver.publish")}</span>
+              <CopyLine text={commands.tunnel} label={t("receiver.tunnelLabel")} />
             </li>
           ) : (
-            <li>Point your HTTPS tunnel at http://127.0.0.1:{config.port}, so the address you gave reaches it.</li>
+            <li>{t("receiver.pointTunnel", { port: config.port })}</li>
           )}
         </ol>
       ) : null}

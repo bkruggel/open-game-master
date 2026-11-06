@@ -1964,13 +1964,6 @@
         "digits a regex already captured, ids, headers, stored and form numbers (number inputs), dice parts, the pack's English text (\"1,000 feet\", a purse); src/: every site read"
       ]
     ],
-    "app/characters/builder/AbilityEditor.tsx#partial": [
-      [
-        "key",
-        1,
-        "UI copy"
-      ]
-    ],
     "app/characters/builder/AbilityExplainers.tsx#fallback": [
       [
         "identity",
@@ -2245,6 +2238,11 @@
         "pattern",
         1,
         "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
+      ],
+      [
+        "key",
+        1,
+        "the tier word key, read by the stored tier value"
       ]
     ],
     "app/characters/builder/cardFaces.ts#partial": [
@@ -19590,6 +19588,27 @@
         "key",
         2,
         "the market kinds' and sizes' label keys, read by the stored values"
+      ]
+    ],
+    "app/characters/builder/abilityGains.ts#partial": [
+      [
+        "pattern",
+        1,
+        "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
+      ]
+    ],
+    "app/characters/builder/abilityGains.ts#number": [
+      [
+        "parse",
+        1,
+        "the level read out of the at-level gain's source text"
+      ]
+    ],
+    "app/characters/builder/CharacterBuilder.tsx#keyed": [
+      [
+        "key",
+        2,
+        "the drop labels' key, read by the drop's stored label in lowercase; the scope nouns' and other label maps by their stored kind"
       ]
     ]
   }

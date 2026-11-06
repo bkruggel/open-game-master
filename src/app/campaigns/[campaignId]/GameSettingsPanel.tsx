@@ -12,7 +12,7 @@ import { useTtsVoices, voiceLabel } from "@/components/VoicePicker";
 import { CharacterVoices } from "@/app/campaigns/[campaignId]/CharacterVoices";
 import { DetailGroup } from "@/app/create-campaign/fields";
 import type { GameSettings } from "@/lib/schemas/game-settings";
-import { describeTableReroll } from "@/lib/srd/ability-rerolls";
+import { rerollChoiceOf } from "@/lib/srd/ability-rerolls";
 import { useServerRerollBelow } from "@/app/characters/builder/useTableRules";
 import { transcribesVoice, useCapabilities } from "@/lib/use-capabilities";
 import { useT } from "@/lib/locale";
@@ -156,7 +156,21 @@ export function GameSettingsPanel({
   // table's stored choice is kept, so transcription added later brings it
   // back.
   const transcribes = transcribesVoice(capabilities);
-  const serverRerollLabel = describeTableReroll(null, serverRerollBelow).toLowerCase();
+  // The reroll rule in the reader's words, from the keyed pieces: the lib's
+  // describeTableReroll stays English for the campaign creator's data.
+  const rerollWords = (below: number): string => {
+    const choice = rerollChoiceOf(below);
+    if (choice === "keep") return t("creator.reroll.keep");
+    if (choice === "free") return t("creator.reroll.free");
+    return t("creator.reroll.low", { total: below });
+  };
+  const tableRerollWords = (tableSetting: number | null | undefined): string =>
+    typeof tableSetting === "number"
+      ? rerollWords(tableSetting)
+      : serverRerollBelow === null
+        ? t("table.settings.reroll.serverRule")
+        : t("table.settings.reroll.serverRuleWith", { rule: rerollWords(serverRerollBelow) });
+  const serverRerollLabel = tableRerollWords(null);
 
   // Installed world packs, so the lead can switch worlds after creation. An
   // empty list simply hides the row.
@@ -283,7 +297,7 @@ export function GameSettingsPanel({
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "die-d6" }} size="size-5" />
-            {t("table.settings.stats", { rule: describeTableReroll(settings.abilityRerollBelow, serverRerollBelow).toLowerCase() })}
+            {t("table.settings.stats", { rule: tableRerollWords(settings.abilityRerollBelow) })}
           </span>
           <span className="flex items-center gap-1.5">
             <GameIcon icon={{ kind: "glyph", key: "tab-friends" }} size="size-5" />
@@ -338,7 +352,7 @@ export function GameSettingsPanel({
     genreName: t(`creator.genre.${settings.genre}`),
     voiceName: voiceLabel(voices, settings.ttsVoice),
     narrationOff,
-    statsRule: describeTableReroll(settings.abilityRerollBelow, serverRerollBelow).toLowerCase(),
+    statsRule: tableRerollWords(settings.abilityRerollBelow),
     lastingCompanions,
   };
   const searching = find.trim().length > 0;

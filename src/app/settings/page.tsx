@@ -328,7 +328,7 @@ export default function SettingsPage() {
       )}
 
       {me.discordAvailable || me.discordLinked ? (
-        <PageSection heading="Discord" glyph="system-share">
+        <PageSection heading={t("page.section.discord")} glyph="system-share">
           {me.discordLinked ? (
             <p className="reveal text-sm text-stone-400">
               <Check className="mr-1 inline size-4 text-emerald-400" />

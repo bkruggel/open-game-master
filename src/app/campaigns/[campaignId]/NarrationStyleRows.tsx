@@ -16,6 +16,7 @@ import {
   type NarrationLength,
 } from "@/lib/dm/narration-style-logic";
 import type { GameSettings } from "@/lib/schemas/game-settings";
+import { useT } from "@/lib/locale";
 
 // The table's say over how the AI DM writes (issue #383): how long its
 // narration runs, and the lead's own notes on voice and pacing. Fits the
@@ -28,6 +29,7 @@ export function NarrationStyleRows({
   settings: GameSettings;
   patch: (update: Partial<GameSettings>) => void;
 }) {
+  const t = useT();
   const notesId = useId();
   const [notes, setNotes] = useState(settings.styleNotes);
   // Another seat's save, or this one's coming back trimmed: the box follows
@@ -42,17 +44,17 @@ export function NarrationStyleRows({
   return (
     <>
       <div data-settings-row="narration-length" className="reveal flex flex-wrap items-center gap-2">
-        <span className="pk-rowlabel">Length</span>
-        <Tooltip content="How long the GM's narration runs. Short suits a model that runs long and flowery; Rich gives a terse model room. Standard leaves it to the model.">
+        <span className="pk-rowlabel">{t("narr.row.length")}</span>
+        <Tooltip content={t("narr.row.lengthTip")}>
           <span className="inline-flex min-w-0 max-w-full">
             <Select<NarrationLength>
               size="sm"
-              label="Narration length"
+              label={t("narr.row.lengthLabel")}
               value={settings.narrationLength}
               onChange={(narrationLength) => patch({ narrationLength })}
               options={(Object.keys(NARRATION_LENGTH_LABELS) as NarrationLength[]).map((length) => ({
                 value: length,
-                label: `${NARRATION_LENGTH_LABELS[length]} narration`,
+                label: t("narr.row.lengthOption", { label: NARRATION_LENGTH_LABELS[length] }),
               }))}
               className="min-w-0 max-w-full"
             />
@@ -63,12 +65,12 @@ export function NarrationStyleRows({
         </span>
       </div>
       <div data-settings-row="combat-pace" className="reveal flex flex-wrap items-center gap-2">
-        <span className="pk-rowlabel">Fights</span>
-        <Tooltip content="How often the AI GM's world brings a fight: how soon trouble finds the party on its own, whether that trouble wants a fight, and how the story plans its acts. Balanced leaves it to the story.">
+        <span className="pk-rowlabel">{t("narr.row.fights")}</span>
+        <Tooltip content={t("narr.row.fightsTip")}>
           <span className="inline-flex min-w-0 max-w-full">
             <Select<CombatPace>
               size="sm"
-              label="How often fights come"
+              label={t("narr.row.fightsLabel")}
               value={settings.combatPace ?? "balanced"}
               onChange={(combatPace) => patch({ combatPace })}
               options={(Object.keys(COMBAT_PACE_LABELS) as CombatPace[]).map((pace) => ({
@@ -99,7 +101,7 @@ export function NarrationStyleRows({
               patch({ styleNotes: next });
             }
           }}
-          placeholder='How the GM should write for this table, e.g. "Keep the pacing slow. Never decide what my character does next. Less purple prose."'
+          placeholder={t("narr.row.notesPlaceholder")}
           aria-describedby={`${notesId}-length`}
           className={cn(panelField, "w-full resize-y")}
         />
@@ -107,7 +109,7 @@ export function NarrationStyleRows({
           id={`${notesId}-length`}
           length={notes.length}
           max={STYLE_NOTES_MAX}
-          idle="Shapes the voice and pacing; the rules and the dice stay the server's."
+          idle={t("narr.row.notesIdle")}
         />
       </div>
     </>
