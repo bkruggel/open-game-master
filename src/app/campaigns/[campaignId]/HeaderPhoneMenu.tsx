@@ -118,8 +118,8 @@ export function HeaderPhoneMenu({
                 >
                   <HeaderGlyph glyph={prep.open ? "tab-session" : "tab-journal"} />
                   <span>
-                    {prep.open ? "Back to the table" : "Campaign prep"}
-                    {hint(prep.open ? "Play is where you left it" : "Party, rules, lore and Bring in prep, without ending play")}
+                    {prep.open ? t("menu.phone.backToTable") : t("menu.phone.prep")}
+                    {hint(prep.open ? t("menu.phone.prepHintOpen") : t("menu.phone.prepHintClosed"))}
                   </span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="my-1 h-px bg-stone-700/60" />
@@ -136,8 +136,8 @@ export function HeaderPhoneMenu({
                 >
                   <HeaderGlyph glyph={session.held ? "tab-session" : "rest-long"} />
                   <span>
-                    {session.held ? `Start session ${session.next}` : "End the session"}
-                    {hint(session.held ? "Pick the story up where it stopped" : "Stop for tonight: play waits until the next session")}
+                    {session.held ? t("table.header.startSession", { n: session.next }) : t("table.header.endSession")}
+                    {hint(session.held ? t("menu.phone.startHint") : t("menu.phone.endHint"))}
                   </span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="my-1 h-px bg-stone-700/60" />
@@ -150,8 +150,8 @@ export function HeaderPhoneMenu({
                     <Coffee aria-hidden="true" className="size-5 text-amber-200" />
                   </span>
                   <span>
-                    {tableBreak.paused ? "Resume the table" : "Pause the table"}
-                    {hint(tableBreak.paused ? "End the break; play picks up where it stopped" : "A break for everyone: the story waits, table talk goes on")}
+                    {tableBreak.paused ? t("menu.phone.resume") : t("menu.phone.pause")}
+                    {hint(tableBreak.paused ? t("menu.phone.resumeHint") : t("menu.phone.pauseHint"))}
                   </span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="my-1 h-px bg-stone-700/60" />

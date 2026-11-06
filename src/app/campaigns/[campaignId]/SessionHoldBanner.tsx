@@ -5,6 +5,7 @@ import { ScheduleSection } from "@/components/ScheduleSection";
 import { Dialog } from "@/components/ui/Dialog";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { SessionBanner, bannerButtonClass } from "@/app/campaigns/[campaignId]/SessionBanner";
+import { useT } from "@/lib/locale";
 import {
   nextSessionWords,
   pickNextSession,
@@ -55,6 +56,7 @@ export function SessionHoldBanner({
   const [busy, setBusy] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [next, setNext] = useState<NextSession | null | undefined>(undefined);
+  const t = useT();
   const held = hold !== null;
   // Under the session header, whatever its height (TableBreakBanner.tsx).
   useEffect(() => {
@@ -112,7 +114,7 @@ export function SessionHoldBanner({
       >
         <SessionBanner
           glyph="rest-long"
-          title={`Session ${hold.number} is over`}
+          title={t("session.hold.over", { n: hold.number })}
           className="session-hold-banner pointer-events-auto w-full max-w-xl shadow-elev-2"
           actions={
             <>
@@ -122,7 +124,7 @@ export function SessionHoldBanner({
                 className={bannerButtonClass(!mayStart)}
                 data-session-schedule=""
               >
-                Next session
+                {t("session.hold.next")}
               </button>
               {mayStart ? (
                 <button
@@ -132,7 +134,7 @@ export function SessionHoldBanner({
                   className={bannerButtonClass(true)}
                   data-session-start=""
                 >
-                  Start session {hold.number + 1}
+                  {t("table.header.startSession", { n: hold.number + 1 })}
                 </button>
               ) : null}
             </>
@@ -142,14 +144,14 @@ export function SessionHoldBanner({
             {next === undefined ? " " : nextSessionWords(next, next ? sessionWhenLocal(next.startsAt) : "")}
           </span>
           <span className="block text-xs text-stone-400">
-            The story waits where it stopped. Sheets, the chronicle and OOC table talk stay open.
+            {t("session.hold.waitsNote")}
           </span>
         </SessionBanner>
       </div>
       <Dialog
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
-        title="The schedule"
+        title={t("session.hold.scheduleTitle")}
         icon={<GameIcon icon={{ kind: "glyph", key: "tab-session" }} size="size-6" />}
       >
         <ScheduleSection

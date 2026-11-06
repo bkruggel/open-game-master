@@ -8,6 +8,7 @@ import type { Floor } from "@/lib/db/campaigns";
 import type { PublicEncounter } from "@/lib/db/encounter-view";
 import { extraTurnTag, litOrderRows, orderRowKey } from "@/lib/battlemap/initiative-rows";
 import { floorNoticeKey, liveNotice, type HandNotice } from "@/lib/battlemap/hand-table";
+import { useT } from "@/lib/locale";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 
 // Spotlight, held-responses, and initiative banners above the composer;
@@ -32,6 +33,7 @@ export function FloorBanners({
   onRelease: () => void;
 }) {
   const [endingTurn, setEndingTurn] = useState(false);
+  const t = useT();
   // The end-turn route's refusal, in its own words, under the banner, for
   // the turn it answered only (issue 668).
   const [refusalEntry, setRefusalEntry] = useState<HandNotice | null>(null);
@@ -50,10 +52,10 @@ export function FloorBanners({
       const response = await fetch(`/api/campaigns/${campaignId}/encounter/end-turn`, { method: "POST" });
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string };
-        setRefusal(data.error ?? "The turn could not be ended.");
+        setRefusal(data.error ?? t("lead.floor.endFailed"));
       }
     } catch {
-      setRefusal("Could not reach the table.");
+      setRefusal(t("table.wait.unreachable"));
     } finally {
       setEndingTurn(false);
     }
@@ -65,7 +67,7 @@ export function FloorBanners({
         <SessionBanner
           glyph="attitude-hostile"
           tone="blood"
-          title={<>Round {floor.round}</>}
+          title={<>{t("cine.round", { round: floor.round })}</>}
           actions={
             myInitiativeTurn || steersStory ? (
               <>
@@ -75,9 +77,9 @@ export function FloorBanners({
                     onClick={endTurn}
                     disabled={endingTurn}
                     className={bannerButtonClass(true)}
-                    title="Done with your action, movement, and bonus action? End your combat turn."
+                    title={t("lead.floor.endTurnTitle")}
                   >
-                    End turn
+                    {t("board.order.endTurn")}
                   </button>
                 ) : null}
                 {steersStory ? (
@@ -85,9 +87,9 @@ export function FloorBanners({
                     type="button"
                     onClick={onRelease}
                     className={bannerButtonClass()}
-                    title="Skip the current player's turn"
+                    title={t("lead.floor.skipTurnTitle")}
                   >
-                    Skip turn
+                    {t("lead.floor.skipTurn")}
                   </button>
                 ) : null}
               </>
@@ -188,11 +190,11 @@ export function FloorBanners({
         // too, and keep their own banner below.
         <SessionBanner
           glyph="tab-battle"
-          title="Enemy turns"
+          title={t("lead.floor.enemyTurns")}
           actions={
             steersStory ? (
               <button type="button" onClick={onRelease} className={bannerButtonClass(true)}>
-                Hand on the turn
+                {t("lead.floor.handOn")}
               </button>
             ) : null
           }
