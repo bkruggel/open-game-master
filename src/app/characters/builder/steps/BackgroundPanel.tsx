@@ -43,8 +43,8 @@ export function BackgroundPanel({
   const t = useT();
   const locale = useLocale();
   return (
-    <StepPanel title="What did they do before adventuring?" help="Their background: the skills and kit their past gave them.">
-      <Field label="Background" anchor="background">
+    <StepPanel title={t("builder.bg.title")} help={t("builder.bg.help")}>
+      <Field label={t("builder.owed.background")} anchor="background">
         <OptionPicker
           value={background?.id ?? ""}
           groups={backgroundGroups}
@@ -56,7 +56,7 @@ export function BackgroundPanel({
           // The playstyle's backgrounds, one tap each; the list above keeps
           // every other.
           <span key={suggestedKey} className="reveal mt-1.5 flex flex-wrap items-center gap-1 text-xs text-stone-500" data-background-hints>
-            Suits that job:
+            {t("builder.bg.suitsJob")}
             {suggested.map((entry) => (
               <button
                 key={entry.id}
@@ -73,7 +73,7 @@ export function BackgroundPanel({
         {background ? (
           <span className="mt-1 flex items-start gap-1 text-xs text-stone-500">
             <span className="grow">
-              {background.skills.length ? "Grants " : null}
+              {background.skills.length ? t("builder.bg.grants") : null}
               {background.skills.length
                 ? background.skills.map((skillId, index) => {
                     const name = SRD_SKILLS.find((skill) => skill.id === skillId)?.name ?? skillId;
@@ -88,11 +88,11 @@ export function BackgroundPanel({
                       </span>
                     );
                   })
-                : "What your character did before adventuring."}
+                : t("builder.bg.emptyDesc")}
               {background.feature ? (
                 <span className="whitespace-nowrap">
                   {background.skills.length ? " · " : " "}
-                  Feature: {background.feature}
+                  {t("builder.bg.featureLine", { feature: background.feature })}
                   <InfoButton
                     label={background.feature}
                     text={background.featureDesc || undefined}
@@ -112,8 +112,7 @@ export function BackgroundPanel({
           // What the background adds to the language list on this same
           // step, said here so the extra slots are no surprise (issue #117).
           <span className="mt-1 block text-xs text-stone-500">
-            This background adds {background.languages === 1 ? "one more language" : `${background.languages} more languages`} to
-            your bonus languages, picked below{raceChosen ? "" : " once a lineage is chosen"}.
+            {t("builder.bg.langs", { count: background.languages, wait: raceChosen ? "" : t("builder.bg.langsWait") })}
           </span>
         ) : null}
         {background?.skillChoice ? (
@@ -143,8 +142,8 @@ function BackgroundSkillChoice({
   return (
     <div className="mt-2" data-builder-target="backgroundSkills">
       <span className="mb-1 flex flex-wrap items-center gap-1 text-xs text-stone-400">
-        <GameTerm id="skill">Skill</GameTerm> {choice.count === 1 ? "proficiency" : "proficiencies"} (
-        {choice.count} of your choice)
+        <GameTerm id="skill">Skill</GameTerm>
+        {t("builder.bg.skillChoiceTail", { count: choice.count })}
       </span>
       <div className="grid grid-cols-1 gap-2">
         {Array.from({ length: choice.count }, (_, index) => (
@@ -159,10 +158,10 @@ function BackgroundSkillChoice({
                 })
               }
               className="min-w-0 grow"
-              label={`Background skill ${index + 1}`}
-              placeholder="Choose a skill..."
+              label={t("builder.bg.skillN", { n: index + 1 })}
+              placeholder={t("builder.bg.chooseSkill")}
               options={[
-                { value: "", label: "Choose a skill..." },
+                { value: "", label: t("builder.bg.chooseSkill") },
                 ...choice.from
                   .filter((skill) => picks[index] === skill || (!picks.includes(skill) && !taken.has(skill)))
                   .map((skill) => ({ value: skill, label: skillLabel(skill, locale) })),

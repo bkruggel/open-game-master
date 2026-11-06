@@ -11,7 +11,7 @@ import { packRecommends, type Reskinned } from "@/lib/worlds/reskin-logic";
 import type { WorldPack } from "@/lib/worlds/types";
 import type { PickerGroup, PickerOption } from "./OptionPicker";
 import { contentName, subclassName } from "@/lib/content/names";
-import { useLocale } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import type { Locale } from "@/lib/messages-logic";
 import type {
   ArchetypeOption,
@@ -79,7 +79,7 @@ const ALIGNMENT_INFO =
 // A pack's own heading for its recommended tier ("Peoples of Middle-earth"),
 // so the group reads like the world rather than like a filter.
 function packGroupLabel(pack: WorldPack | null, prefix: string): string {
-  return pack ? `${prefix} ${pack.name}` : "Recommended for this setting";
+  return pack ? `${prefix} ${pack.name}` : "";
 }
 
 // The canonical name behind a reskin, shown in the option's meta column so a
@@ -232,7 +232,15 @@ export function usePickerGroups({
   archetypes: ArchetypeOption[];
 }) {
   const locale = useLocale();
+  const t = useT();
   const steered = genre && genre !== "custom" && genre !== "high_fantasy" ? genre : null;
+  // The alignments' names and blurbs, in the reader's language (the codes
+  // stay the stored values).
+  const alignmentWords = (code: string) => ({
+    name: t(`builder.group.align.${code}`),
+    blurb: t(`builder.group.align.${code}.blurb`),
+  });
+  const recommendedLabel = t("table.levelup.recommendedClasses");
 
   const raceTier = useMemo(
     () =>
@@ -272,21 +280,21 @@ export function usePickerGroups({
   const alignmentGroups = useMemo<PickerGroup[]>(() => {
     const toOption = (code: string): PickerOption => ({
       id: code,
-      name: `${code}: ${ALIGNMENT_LABELS[code]?.name ?? code}`,
-      infoText: ALIGNMENT_LABELS[code]?.blurb ?? ALIGNMENT_INFO,
+      name: `${code}: ${alignmentWords(code).name}`,
+      infoText: alignmentWords(code).blurb,
     });
     const preferred = (pack?.alignments ?? []).filter((code) => ALIGNMENTS.includes(code));
     if (!preferred.length) {
       return [{ label: null, options: ALIGNMENTS.map(toOption) }];
     }
     return [
-      { label: packGroupLabel(pack, "Common in"), recommended: true, options: preferred.map(toOption) },
+      { label: packGroupLabel(pack, t("builder.group.commonIn", { pack: pack?.name ?? "" })), recommended: true, options: preferred.map(toOption) },
       {
-        label: "All alignments",
+        label: t("builder.group.allAlignments"),
         options: ALIGNMENTS.filter((code) => !preferred.includes(code)).map(toOption),
       },
     ];
-  }, [pack]);
+  }, [pack, t]);
 
   const raceGroups = useMemo<PickerGroup[]>(() => {
     // `showSource` names the book on the row where the group heading does
@@ -309,11 +317,11 @@ export function usePickerGroups({
     if (raceTier.recommended.length) {
       return [
         {
-          label: packGroupLabel(pack, "Peoples of"),
+          label: pack ? packGroupLabel(pack, t("builder.group.peoplesOf", { pack: pack.name })) : recommendedLabel,
           recommended: true,
           options: raceTier.recommended.map((entry) => toOption(entry, true)),
         },
-        { label: "All races", options: raceTier.other.map((entry) => toOption(entry, true)) },
+        { label: t("builder.group.allRaces"), options: raceTier.other.map((entry) => toOption(entry, true)) },
       ];
     }
     const books = groupByBook(races);
@@ -321,7 +329,7 @@ export function usePickerGroups({
       return books.map((book) => ({ label: book.label, options: book.options.map((entry) => toOption(entry, false)) }));
     }
     return [{ label: null, options: races.map((entry) => toOption(entry, false)) }];
-  }, [races, rawRaces, raceTier, pack, locale]);
+  }, [races, rawRaces, raceTier, pack, locale, t]);
 
   const classGroups = useMemo<PickerGroup[]>(() => {
     const toOption = (entry: Reskinned<ClassOption>, showSource: boolean): PickerOption => ({
@@ -330,7 +338,7 @@ export function usePickerGroups({
       meta: entry.packName
         ? `d${entry.hitDie} · ${canonicalName(rawClasses, entry.id)}`
         : entry.spellAbility
-          ? `d${entry.hitDie} · caster`
+          ? `d${entry.hitDie} · ${t("builder.group.metaCaster")}`
           : `d${entry.hitDie}`,
       ...(showSource && entry.source && !isCoreDocument(entry.documentSlug) ? { source: entry.source } : {}),
       infoText: classInfoText(entry),
@@ -339,11 +347,11 @@ export function usePickerGroups({
     if (classTier.recommended.length) {
       return [
         {
-          label: pack ? packGroupLabel(pack, "Callings of") : "Recommended for this setting",
+          label: pack ? packGroupLabel(pack, t("builder.group.callingsOf", { pack: pack.name })) : recommendedLabel,
           recommended: true,
           options: classTier.recommended.map((entry) => toOption(entry, true)),
         },
-        { label: "All classes", options: classTier.other.map((entry) => toOption(entry, true)) },
+        { label: t("builder.group.allClasses"), options: classTier.other.map((entry) => toOption(entry, true)) },
       ];
     }
     // With no recommended tier, the other books' and the other settings'
@@ -352,19 +360,19 @@ export function usePickerGroups({
     const bySource = groupBySourceSetting(classTier.other);
     if (bySource.packs.length || bySource.books.length) {
       return [
-        { label: "Standard classes (5e Core Rules)", options: bySource.standard.map((entry) => toOption(entry, false)) },
+        { label: t("builder.group.standardClasses"), options: bySource.standard.map((entry) => toOption(entry, false)) },
         ...bySource.books.map((book) => ({
-          label: `From ${book.label}`,
+          label: t("builder.group.fromBook", { book: book.label }),
           options: book.options.map((entry) => toOption(entry, false)),
         })),
         ...bySource.packs.map((source) => ({
-          label: `From the ${source.label} setting`,
+          label: t("builder.group.fromSetting", { setting: source.label }),
           options: source.options.map((entry) => toOption(entry, false)),
         })),
       ];
     }
     return [{ label: null, options: classTier.other.map((entry) => toOption(entry, false)) }];
-  }, [classTier, rawClasses, pack, locale]);
+  }, [classTier, rawClasses, pack, locale, t]);
 
   // The subclasses we have real feature tables for, offered once the chosen
   // level reaches the class's subclass level. The workshop's subclasses come
@@ -401,10 +409,10 @@ export function usePickerGroups({
   );
 
   const subclassGroups = useMemo<PickerGroup[]>(() => {
-    const groups: PickerGroup[] = [{ label: null, options: [{ id: "", name: "None yet" }] }];
+    const groups: PickerGroup[] = [{ label: null, options: [{ id: "", name: t("builder.calling.subclassNone") }] }];
     if (builtInSubclasses.length) {
       groups.push({
-        label: "Full features",
+        label: t("builder.multiclass.fullFeatures"),
         options: builtInSubclasses.map((name) => {
           const match = archetypes.find(
             (entry) => textKey(entry.name) === textKey(name),
@@ -428,7 +436,7 @@ export function usePickerGroups({
     const workshopArchetypes = packOnlyArchetypes.filter((entry) => entry.workshop);
     if (workshopArchetypes.length) {
       groups.push({
-        label: "From Homebrew",
+        label: t("builder.group.fromHomebrew"),
         options: workshopArchetypes.map((entry) => ({
           id: entry.name,
           name: entry.name,
@@ -439,7 +447,7 @@ export function usePickerGroups({
     const packArchetypes = packOnlyArchetypes.filter((entry) => !entry.workshop);
     if (packArchetypes.length) {
       groups.push({
-        label: "From the content pack",
+        label: t("builder.group.fromPack"),
         options: packArchetypes.map((entry) => ({
           id: entry.name,
           name: entry.name,
@@ -449,7 +457,7 @@ export function usePickerGroups({
       });
     }
     return groups;
-  }, [builtInSubclasses, packOnlyArchetypes, archetypes, klass, locale]);
+  }, [builtInSubclasses, packOnlyArchetypes, archetypes, klass, locale, t]);
 
   const backgroundGroups = useMemo<PickerGroup[]>(() => {
     const toOption = (entry: Reskinned<BackgroundOption>, showSource: boolean): PickerOption => ({
@@ -465,36 +473,36 @@ export function usePickerGroups({
     if (backgroundTier.recommended.length) {
       return [
         {
-          label: pack ? packGroupLabel(pack, "Lives in") : "Recommended for this setting",
+          label: pack ? packGroupLabel(pack, t("builder.group.livesIn", { pack: pack.name })) : recommendedLabel,
           recommended: true,
           options: backgroundTier.recommended.map((entry) => toOption(entry, true)),
         },
-        { label: "All backgrounds", options: backgroundTier.other.map((entry) => toOption(entry, true)) },
+        { label: t("builder.group.allBackgrounds"), options: backgroundTier.other.map((entry) => toOption(entry, true)) },
       ];
     }
     const bySource = groupBySourceSetting(backgroundTier.other);
     if (bySource.packs.length || bySource.books.length) {
       return [
         {
-          label: "Standard backgrounds (5e Core Rules)",
+          label: t("builder.group.standardBackgrounds"),
           options: bySource.standard.map((entry) => toOption(entry, false)),
         },
         ...bySource.books.map((book) => ({
-          label: `From ${book.label}`,
+          label: t("builder.group.fromBook", { book: book.label }),
           options: book.options.map((entry) => toOption(entry, false)),
         })),
         ...bySource.packs.map((source) => ({
-          label: `From the ${source.label} setting`,
+          label: t("builder.group.fromSetting", { setting: source.label }),
           options: source.options.map((entry) => toOption(entry, false)),
         })),
       ];
     }
     return [{ label: null, options: backgroundTier.other.map((entry) => toOption(entry, false)) }];
-  }, [backgroundTier, pack, locale]);
+  }, [backgroundTier, pack, locale, t]);
 
   return {
     alignmentGroups,
-    alignmentInfo: ALIGNMENT_INFO,
+    alignmentInfo: t("builder.group.align.info"),
     raceGroups,
     classGroups,
     subclassGroups,

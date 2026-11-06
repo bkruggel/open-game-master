@@ -375,6 +375,8 @@ export function multiclassChoices(input: {
   classList: ReadonlyArray<ClassEntry>;
   abilities: AbilityScores | null;
   rowOf: (id: string) => ClassRow | undefined;
+  // The reader's words (builder.mc.*); without it the English the tests read.
+  t?: (key: string, vars?: Record<string, string | number>) => string;
 }): MulticlassChoice[] {
   const held = new Set(input.classList.map((entry) => textKey(entry.id)));
   const [first] = input.classList;
@@ -385,11 +387,16 @@ export function multiclassChoices(input: {
       const grants = describeGrant(multiclassGrantsFor(row.id));
       let reason: string | null = null;
       if (input.classList.length >= MULTICLASS_CAP) {
-        reason = `A character holds at most ${MULTICLASS_CAP} classes here.`;
+        reason = input.t
+          ? input.t("builder.mc.cap", { count: MULTICLASS_CAP })
+          : `A character holds at most ${MULTICLASS_CAP} classes here.`;
       } else if (input.abilities) {
         const check = canMulticlassInto({ class: first?.id ?? "", classes: [...input.classList], abilities: input.abilities }, row.id);
         if (!check.ok) {
-          reason = refusalWords(row, input.classList, input.abilities, input.rowOf) ?? check.error ?? "Not available.";
+          reason =
+            refusalWords(row, input.classList, input.abilities, input.rowOf, input.t) ??
+            check.error ??
+            (input.t ? input.t("builder.mc.notAvailable") : "Not available.");
         }
       }
       return { row, ok: reason === null, reason, needs, grants };
@@ -406,16 +413,23 @@ function refusalWords(
   classList: ReadonlyArray<ClassEntry>,
   abilities: AbilityScores,
   rowOf: (id: string) => ClassRow | undefined,
+  t?: (key: string, vars?: Record<string, string | number>) => string,
 ): string | null {
+  const say = (key: string, vars: Record<string, string | number>, english: string) =>
+    typeof t === "function" ? t(key, vars) : english;
   if (!findClass(row.id)) {
-    return `${row.name} can only be a first class here: the multiclass rules have no entry for it.`;
+    return say("builder.mc.firstOnly", { name: row.name }, `${row.name} can only be a first class here: the multiclass rules have no entry for it.`);
   }
   if (!meetsPrereq(abilities, row.id)) {
-    return `Needs ${describePrereq(row.id)}; your scores fall short.`;
+    return say("builder.mc.scores", { needs: describePrereq(row.id) }, `Needs ${describePrereq(row.id)}; your scores fall short.`);
   }
   const short = classList.find((entry) => !meetsPrereq(abilities, entry.id));
   if (short) {
-    return `Taking a second class means your ${rowOf(short.id)?.name ?? short.id} needs ${describePrereq(short.id)} too, and your scores fall short.`;
+    return say(
+      "builder.mc.secondPrereq",
+      { klass: rowOf(short.id)?.name ?? short.id, needs: describePrereq(short.id) },
+      `Taking a second class means your ${rowOf(short.id)?.name ?? short.id} needs ${describePrereq(short.id)} too, and your scores fall short.`,
+    );
   }
   return null;
 }

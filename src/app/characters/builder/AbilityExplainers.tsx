@@ -6,6 +6,7 @@ import { Ribbon } from "@/components/ui/Ribbon";
 import { cn } from "@/lib/cn";
 import { formatModifier } from "@/lib/srd";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import type { BuilderHp } from "./builderHp";
 
 const stagger = (index: number, ms: number) => ({ "--i": index, "--stagger": `${ms}ms` }) as CSSProperties;
@@ -50,11 +51,12 @@ export function MethodInfoDialog({
   methods: Array<{ id: string; label: string; info: string }>;
   current: string;
 }) {
+  const t = useT();
   const chosen = methods.find((entry) => entry.id === current) ?? methods[0];
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={chosen.label} width="w-[min(94vw,26rem)]">
       <Brackets />
-      <Ribbon className="mb-3">Three ways</Ribbon>
+      <Ribbon className="mb-3">{t("builder.dice.threeWays")}</Ribbon>
       <div className="flex flex-col gap-2">
         {methods.map((entry, index) => {
           const isCurrent = entry.id === current;
@@ -72,7 +74,7 @@ export function MethodInfoDialog({
                   {entry.label}
                 </span>
                 {isCurrent ? (
-                  <span className="shrink-0 font-mono text-[0.875rem] uppercase tracking-[0.08em] text-amber-300">chosen</span>
+                  <span className="shrink-0 font-mono text-[0.875rem] uppercase tracking-[0.08em] text-amber-300">{t("builder.dice.chosen")}</span>
                 ) : null}
               </div>
               <p className="font-serif text-base leading-normal text-stone-300">{entry.info}</p>
@@ -82,7 +84,7 @@ export function MethodInfoDialog({
       </div>
       <div className="mt-4 flex justify-end">
         <button type="button" onClick={() => onOpenChange(false)} className={ui.btnPrimary}>
-          Close
+          {t("builder.dice.close")}
         </button>
       </div>
     </Dialog>
@@ -151,6 +153,7 @@ export function HpExplainerDialog({
   onOpenChange: (open: boolean) => void;
   hp: HpExplainerInput;
 }) {
+  const t = useT();
   const { parts, method, kept, maxHp } = hp.hp;
   const klass = hp.className.toLowerCase();
   const later = hp.level > 1;
@@ -165,38 +168,54 @@ export function HpExplainerDialog({
     : `${parts.hitDie} ${signed(parts.conMod)}${parts.bonusPerLevel ? ` + ${parts.bonusPerLevel}` : ""}${extra} = ${parts.total}`;
   const laterDie =
     method === "max"
-      ? `the die's highest face (${parts.face})`
+      ? t("builder.hp.laterDie.max", { face: parts.face })
       : method === "rolled"
-        ? `a roll of the die when you save; until then it counts the average (${parts.face})`
-        : `the die's average (${parts.face})`;
+        ? t("builder.hp.laterDie.rolled", { face: parts.face })
+        : t("builder.hp.laterDie.average", { face: parts.face });
+  const how =
+    method === "max"
+      ? t("builder.hp.how.max")
+      : method === "rolled"
+        ? t("builder.hp.how.rolled")
+        : t("builder.hp.how.average");
   const steps = [
-    `A ${klass} rolls a d${parts.hitDie} for health. At first level you do not roll it: you take the best it can give.`,
-    `Your Constitution of ${hp.con} is worth ${formatModifier(parts.conMod)}, and that applies to every level you gain.`,
+    t("builder.hp.step1", { klass, die: parts.hitDie }),
+    t("builder.hp.step2", { con: hp.con, mod: formatModifier(parts.conMod) }),
     later && split
-      ? `Each level after the first adds its own class's die (${split.map((entry) => `d${entry.hitDie}`).join(", ")}), ${method === "max" ? "at its highest face" : method === "rolled" ? "rolled when you save, counted at its average until then" : "at its average"}, plus that modifier, so ${hp.level - 1} more levels add ${laterTotal}. You begin on ${parts.total}.`
+      ? t("builder.hp.step3Split", {
+          dice: split.map((entry) => `d${entry.hitDie}`).join(", "),
+          how,
+          levels: hp.level - 1,
+          total: laterTotal,
+          begin: parts.total,
+        })
       : later
-      ? `Each level after the first adds ${laterDie} plus that modifier, so ${hp.level - 1} more ${hp.level === 2 ? "level adds" : "levels add"} ${parts.laterLevels}. You begin on ${parts.total}.`
-      : `So you begin on ${parts.total}. Rest fully and you are back to it.`,
-    ...(kept
-      ? [`This character was saved with ${maxHp}, and keeps that number while its level and Constitution stay as they were.`]
-      : []),
+        ? t(`builder.hp.step3Later_${hp.level === 2 ? "one" : "other"}`, {
+            count: hp.level - 1,
+            die: laterDie,
+            levels: hp.level - 1,
+            total: parts.laterLevels,
+            begin: parts.total,
+          })
+        : t("builder.hp.step3None", { total: parts.total }),
+    ...(kept ? [t("builder.hp.stepKept", { maxHp })] : []),
   ];
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title="How your health is worked out" width="w-[min(94vw,26rem)]">
+    <Dialog open={open} onOpenChange={onOpenChange} title={t("builder.hp.title")} width="w-[min(94vw,26rem)]">
       <Brackets />
       <p className="mb-4 font-serif text-base leading-normal text-stone-300">
-        At first level you take the best your hit die can give, then add your Constitution modifier.
+        {t("builder.hp.intro")}
       </p>
       <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
-        <FormulaChip index={0} label="Hit die max" value={`d${parts.hitDie}`} note={hp.className} />
+        <FormulaChip index={0} label={t("builder.hp.chip.hitDieMax")} value={`d${parts.hitDie}`} note={hp.className} />
         <Op>+</Op>
-        <FormulaChip index={1} label="Con mod" value={formatModifier(parts.conMod)} note={`(${hp.con})`} />
+        <FormulaChip index={1} label={t("builder.hp.chip.conMod")} value={formatModifier(parts.conMod)} note={`(${hp.con})`} />
         {later ? (
           <>
             <Op>+</Op>
             <FormulaChip
               index={2}
-              label={`Levels 2 to ${hp.level}`}
+              label={t("builder.hp.chip.levels", { level: hp.level })}
               value={String(laterTotal)}
               note={laterTerms}
             />
@@ -206,20 +225,20 @@ export function HpExplainerDialog({
         <FormulaChip
           index={later ? 3 : 2}
           tone="result"
-          label={later ? "Max hp" : "Starting hp"}
+          label={later ? t("builder.hp.chip.maxHp") : t("builder.hp.chip.startingHp")}
           value={String(maxHp)}
-          note={kept ? "as saved" : "full health"}
+          note={kept ? t("builder.hp.chip.asSaved") : t("builder.hp.chip.fullHealth")}
         />
       </div>
       <p className="mb-3.5 text-center font-mono text-base text-amber-300">{sum}</p>
       {parts.bonusPerLevel ? (
         <p className="mb-3 text-center font-mono text-sm text-stone-500">
-          Includes +{parts.bonusPerLevel} per level from your lineage and feats.
+          {t("builder.hp.bonusPerLevel", { amount: parts.bonusPerLevel })}
         </p>
       ) : null}
       {parts.featureHp ? (
         <p className="mb-3 text-center font-mono text-sm text-stone-500">
-          Includes +{parts.featureHp} from Draconic Resilience.
+          {t("builder.hp.bonusFeature", { amount: parts.featureHp })}
         </p>
       ) : null}
       <ol className="flex flex-col gap-[7px]">
@@ -238,11 +257,21 @@ export function HpExplainerDialog({
       </ol>
       <div className="mt-4 flex justify-end">
         <button type="button" onClick={() => onOpenChange(false)} className={ui.btnPrimary}>
-          Got it
+          {t("builder.hp.gotIt")}
         </button>
       </div>
     </Dialog>
   );
+}
+
+function HpExplainerDoor({ onClick }: { onClick: () => void }) {
+  const t = useT();
+  return <HelpDot label={t("builder.hp.title")} onClick={onClick} className="-my-2" />;
+}
+
+function HpExplainerAsk() {
+  const t = useT();
+  return <>{t("builder.hp.button")}</>;
 }
 
 // The labelled button under the abilities summary, and the bare "?" beside
@@ -252,13 +281,13 @@ export function HpExplainerButton({ hp, compact = false }: { hp: HpExplainerInpu
   return (
     <>
       {compact ? (
-        <HelpDot label="How your health is worked out" onClick={() => setOpen(true)} className="-my-2" />
+        <HpExplainerDoor onClick={() => setOpen(true)} />
       ) : (
         <button type="button" onClick={() => setOpen(true)} className={cn(ui.btnSmall, "text-xs")}>
           <span className="flex size-[1.25rem] items-center justify-center rounded-full border border-amber-500/50 font-mono text-[0.875rem] text-amber-300">
             ?
           </span>
-          How is my health worked out?
+          <HpExplainerAsk />
         </button>
       )}
       <HpExplainerDialog open={open} onOpenChange={setOpen} hp={hp} />

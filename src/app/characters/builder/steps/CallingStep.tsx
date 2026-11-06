@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { GameTerm } from "@/components/ui/GameTerm";
 import { InfoButton, InfoDialog } from "@/components/ui/InfoDialog";
 import { describeFeature, describeSkill } from "@/lib/help";
+import { contentName } from "@/lib/content/names";
 import { useClassFeatureText } from "@/lib/classes/use-feature-text";
 import { firstSentence } from "@/lib/help/rules-text";
 import { CLASS_ROLES, classRoles, type ClassRole } from "@/lib/srd/class-roles";
@@ -12,6 +13,7 @@ import { SRD_SKILLS } from "@/lib/srd";
 import { displayName, type Reskinned } from "@/lib/worlds/reskin-logic";
 import type { WorldPack } from "@/lib/worlds/types";
 import { classCard } from "../cardFaces";
+import { CardText } from "../CardText";
 import { abilityName, hitDieChip } from "../lineage";
 import { useShowNumbers } from "../numbersPref";
 import { OptionCardGrid, type CardFacet, type OptionCardGroup } from "../OptionCardGrid";
@@ -29,6 +31,7 @@ import FeatChoicesFields, { knownTraining } from "../FeatChoicesFields";
 import { Field, PickForMe, PickPill, StepPanel, inputClass } from "./shared";
 import { featChoice } from "@/lib/schemas/sheet";
 import { useLocale, useT } from "@/lib/locale";
+import type { Locale } from "@/lib/messages-logic";
 
 // Step 1 (backlog F4: how you want to play comes first): the setting's
 // notices, then the class (the playstyle question and "Help me build" over
@@ -241,7 +244,7 @@ export function CallingStep({
             <span className="mb-3 flex flex-wrap items-center gap-x-1 text-xs text-stone-500">
               <span className="text-amber-200">{klass.name}:</span>{" "}
               {/* In words first (backlog F11); the die joins them with "Show rules and numbers" on. */}
-              <GameTerm id="hit_dice">{hitDieChip(klass.hitDie, numbers)}</GameTerm> ·{" "}
+              <GameTerm id="hit_dice"><CardText text={hitDieChip(klass.hitDie, numbers)} /></GameTerm> ·{" "}
               <GameTerm id="saving_throw">{t("builder.meta.savesWord")}</GameTerm>{" "}
               {klass.saves.map(abilityName).join(", ")}
               {klass.spellAbility ? (
@@ -285,6 +288,7 @@ export function CallingStep({
                     meta: details.meta,
                     saves: classes.find((candidate) => candidate.id === details.id)?.saves,
                     reading: readings.get(details.id),
+                    locale,
                   }).join(" · ")
                 : undefined
             }
@@ -502,21 +506,29 @@ export function classDetailsMeta(
     meta,
     saves,
     reading,
+    locale = "en",
   }: {
     id: string;
     meta?: string;
     saves?: string[];
     reading?: ReturnType<typeof classRoles>;
+    // The reader's language, for the class names in a play line.
+    locale?: Locale;
   },
 ): string[] {
+  const likeWords = (names: string) =>
+    names
+      .split(/\s*\+\s*/)
+      .map((name) => contentName("classes", name.trim(), locale))
+      .join(" + ");
   return [
     meta,
     saves?.length ? t("builder.meta.saves", { list: saves.map(abilityName).join(", ") }) : "",
-    reading ? t("builder.meta.role", { roles: reading.roles.join(" / ") }) : "",
+    reading ? t("builder.meta.role", { roles: reading.roles.map((role) => t(`builder.face.role.${role.toLowerCase()}`)).join(" / ") }) : "",
     reading
       ? reading.playsLike.toLowerCase() === id.toLowerCase()
         ? t("builder.meta.coreFour")
-        : t("builder.meta.playsLike", { like: reading.playsLike }).concat(reading.suggested ? t("builder.meta.suggested") : "")
+        : t("builder.meta.playsLike", { like: likeWords(reading.playsLike) }).concat(reading.suggested ? t("builder.meta.suggested") : "")
       : "",
   ].filter((part): part is string => Boolean(part));
 }

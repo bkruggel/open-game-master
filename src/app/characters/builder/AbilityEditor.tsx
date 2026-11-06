@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type DragEvent,
 import { GameTerm } from "@/components/ui/GameTerm";
 import { CountPop } from "@/components/ui/Reveal";
 import { cn } from "@/lib/cn";
+import { useT } from "@/lib/locale";
 import { abilityMod, formatModifier } from "@/lib/srd";
 import { POINT_BUY_MAX, POINT_BUY_MIN, pointBuyCost, pointBuyRemaining } from "@/lib/srd/point-buy";
 import type { Ability } from "@/lib/schemas/sheet";
@@ -56,26 +57,13 @@ const ABILITY_KEYS = Object.keys(ABILITY_LABELS) as Ability[];
 // rolling (rerollWords), which replaces it below.
 const BUNDLED_RULE = rerollWords(REROLL_BELOW, false).rule;
 
-const METHODS: Array<{ id: AbilityMethod; label: string; info: string }> = [
-  {
-    id: "standard",
-    label: "Standard array",
-    info: `Everyone starts with the same six numbers: ${STANDARD_ARRAY.join(
-      ", ",
-    )}. You decide which ability gets which. Nothing is left to luck, and no character is accidentally weaker than the rest of the party. This is the safe choice if you are new.`,
-  },
-  {
-    id: "pointbuy",
-    label: "Point buy",
-    info:
-      "You spend 27 points raising each score from 8. The higher a score climbs the more each step costs, so a character with one towering ability pays for it with weak ones. Fair like the standard array, but you choose the shape.",
-  },
-  {
-    id: "roll",
-    label: "Roll 4d6",
-    info:
-      `Roll four six-sided dice six times, dropping the lowest each time, then place the six totals on the abilities you choose. It can hand you a hero far above the standard array, or well below it. ${BUNDLED_RULE} Some tables love the swing; ask yours before choosing it.`,
-  },
+// The three ways, keyed: the label and the explanation read in the reader's
+// language (builder.dice.methods.*), the roll's rule in the table's own
+// words (rerollWords) seated in through {rule}.
+const METHODS: Array<{ id: AbilityMethod; labelKey: string; infoKey: string }> = [
+  { id: "standard", labelKey: "builder.dice.methods.standard", infoKey: "builder.dice.methods.standardInfo" },
+  { id: "pointbuy", labelKey: "builder.dice.methods.pointbuy", infoKey: "builder.dice.methods.pointbuyInfo" },
+  { id: "roll", labelKey: "builder.dice.methods.roll", infoKey: "builder.dice.methods.rollInfo" },
 ];
 
 export type AbilityState = Record<Ability, number | null>;
@@ -129,6 +117,7 @@ export default function AbilityEditor({
   // The toss in the air. Display only: the pool itself is committed the
   // moment the dice leave the hand, so nothing is lost if the player moves
   // on mid-toss.
+  const t = useT();
   const [phases, setPhases] = useState<Array<"rolling" | "settled">>([]);
   const [tossId, setTossId] = useState(0);
   // The throw in hand, waiting for an ability to land on.
@@ -142,6 +131,17 @@ export default function AbilityEditor({
   const [asking, setAsking] = useState(false);
   const [rollError, setRollError] = useState("");
   const timers = useRef<number[]>([]);
+  // The three ways as the method switch and its dialog read them.
+  const methodRows = METHODS.map((entry) => ({
+    id: entry.id,
+    label: t(entry.labelKey),
+    info:
+      entry.id === "roll"
+        ? t(entry.infoKey, { rule: words.rule })
+        : entry.id === "standard"
+          ? t(entry.infoKey, { array: STANDARD_ARRAY.join(", ") })
+          : t(entry.infoKey),
+  }));
   // A six already on record for this player (issue #128): shown as kept,
   // with when it was thrown, never as dice in the air. `openPool` is what
   // the server had when the builder opened; `keptAt` says the tray's six
@@ -211,11 +211,24 @@ export default function AbilityEditor({
   const placedCount = ABILITY_KEYS.filter((key) => slots[key] !== null).length;
   const complete = ABILITY_KEYS.every((key) => scores[key] !== null);
   const total = pool ? poolSum(pool) : 0;
-  const highlight = pool ? poolHighlight(pool) : null;
+  const highlight = pool ? poolHighlight(pool, t) : null;
   const rerollOpen = canRerollPool(pool, rerollBelow);
   const keptDate =
     keptAt ? new Date(keptAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
   const ownerOf = (index: number) => ABILITY_KEYS.find((key) => slots[key] === index) ?? null;
+  // An ability key as its name in the reader's language, for the tray's
+  // screen-reader lines and the summary's rows (sheet.ability.*).
+  const abilityWord = (ability: Ability) =>
+    t(
+      ({
+        str: "sheet.ability.str",
+        dex: "sheet.ability.dex",
+        con: "sheet.ability.con",
+        int: "sheet.ability.int",
+        wis: "sheet.ability.wis",
+        cha: "sheet.ability.cha",
+      } as Record<Ability, string>)[ability] ?? ability,
+    );
 
   function switchMethod(next: AbilityMethod) {
     setHeld(null);
@@ -338,10 +351,10 @@ export default function AbilityEditor({
       <DiceDefs />
       <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-2">
         <h2 className="eyebrow w-full text-xs text-amber-200/90 sm:w-auto">
-          <GameTerm id="ability_score">Ability scores</GameTerm>
+          <GameTerm id="ability_score">{t("builder.dice.abilityScores")}</GameTerm>
         </h2>
         <div className="method-switch" onKeyDown={methodKeys.onKeyDown} onFocus={methodKeys.onFocus}>
-          {METHODS.map((entry) => (
+          {methodRows.map((entry) => (
             <button
               key={entry.id}
               type="button"
@@ -357,23 +370,27 @@ export default function AbilityEditor({
           {/* Which of the three to use is the question a first character
               actually gets stuck on, so the answer sits on the control. */}
           <HelpDot
-            label={`About ${METHODS.find((entry) => entry.id === method)?.label ?? "the three ways"}`}
+            label={t("builder.dice.about", {
+              what:
+                methodRows.find((entry) => entry.id === method)?.label ??
+                t("builder.dice.aboutWays"),
+            })}
             onClick={() => setMethodInfoOpen(true)}
             className="-my-px size-[30px]"
           />
         </div>
         {method === "pointbuy" ? (
           <span className={cn("font-mono text-[0.875rem]", remaining < 0 ? "text-red-400" : "text-stone-400")} aria-live="polite">
-            {remaining} points left
+            {t("builder.dice.pointsLeft", { count: remaining })}
           </span>
         ) : null}
         {method === "roll" ? (
           <>
             <span className="inline-flex items-center gap-2">
-              <span className="eyebrow text-[0.875rem] tracking-[0.18em] text-amber-500/80">4d6 drop lowest</span>
+              <span className="eyebrow text-[0.875rem] tracking-[0.18em] text-amber-500/80">{t("builder.dice.dropLowest")}</span>
               {pool ? (
                 <span className="font-mono text-[0.875rem] text-stone-500" aria-live="polite">
-                  {placedCount} / 6 placed
+                  {t("builder.dice.placed", { placed: placedCount })}
                 </span>
               ) : null}
             </span>
@@ -393,7 +410,7 @@ export default function AbilityEditor({
                   "ml-auto px-2.5 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:opacity-40",
                 )}
               >
-                <Dices className="size-3.5" /> Reroll
+                <Dices className="size-3.5" /> {t("builder.dice.reroll")}
               </button>
             ) : null}
           </>
@@ -403,17 +420,12 @@ export default function AbilityEditor({
         // The roll on record is not lost by choosing another method; it
         // waits for a character that uses it (issue #128).
         <p className="mb-3 text-xs text-stone-500" aria-live="polite">
-          Your rolled six ({openPool.pool.map((entry) => entry.total).join(", ")}) stay on record until a
-          character uses them. Choose Roll 4d6 to see them.
+          {t("builder.dice.keptNote", { list: openPool.pool.map((entry) => entry.total).join(", ") })}
         </p>
       ) : null}
       {asiCount > 0 ? (
         <p className="mb-3 text-xs text-stone-500">
-          These are your base scores, the same at every level. Your level has earned{" "}
-          <span className="text-amber-200">
-            {asiCount} ability score {asiCount === 1 ? "improvement" : "improvements"}
-          </span>{" "}
-          on top of them; pick those in the section below, and each Final here counts them.
+          {t("builder.dice.asiEarned", { count: asiCount })}
         </p>
       ) : null}
 
@@ -428,7 +440,7 @@ export default function AbilityEditor({
         >
           {pool ? (
             <>
-              <div className="pool-grid" role="group" aria-label="Your six throws">
+              <div className="pool-grid" role="group" aria-label={t("builder.dice.sixThrowsGroup")}>
                 {pool.map((entry, index) => {
                   const phase = phases[index] ?? "settled";
                   const rolling = anyRolling && phase === "rolling";
@@ -447,7 +459,7 @@ export default function AbilityEditor({
                       draggable={!rolling}
                       disabled={rolling}
                       aria-pressed={inHand}
-                      aria-label={throwName(entry, owner ? ABILITY_LABELS[owner] : null)}
+                      aria-label={throwName(entry, owner ? abilityWord(owner) : null, t)}
                       onClick={() => setHeld(inHand ? null : index)}
                       onDragStart={(event) => startDrag(event, index)}
                       onDragEnd={() => {
@@ -466,44 +478,44 @@ export default function AbilityEditor({
                           <DiceRow roll={{ ...entry.roll, phase: anyRolling ? phase : "settled" }} />
                         </span>
                       ) : (
-                        <span className="pool-saved">from your sheet</span>
+                        <span className="pool-saved">{t("builder.dice.fromSheet")}</span>
                       )}
                       <span className={cn("dice-total", `roll-tier-${rollTier(entry.total)}`)} data-phase={rolling ? "rolling" : undefined}>
                         {entry.total}
                       </span>
                       {rolling ? null : (
                         <span className={cn("pool-tier", `roll-tier-${rollTier(entry.total)}`)} aria-hidden="true">
-                          {rollWord(entry.total)}
+                          {rollWord(entry.total, t)}
                         </span>
                       )}
-                      <span className="pool-tag">{owner ? owner.toUpperCase() : inHand ? "in hand" : "free"}</span>
+                      <span className="pool-tag">{owner ? owner.toUpperCase() : inHand ? t("builder.dice.inHand") : t("builder.dice.free")}</span>
                     </button>
                   );
                 })}
               </div>
               <p id={poolNoteId} className="pool-note" aria-live="polite">
                 {anyRolling ? (
-                  "The dice are in the air…"
+                  t("builder.dice.diceInAir")
                 ) : (
                   <>
                     {keptAt !== undefined ? (
                       <>
-                        <span className="text-amber-200">Your kept roll{keptDate ? ` from ${keptDate}` : ""}.</span>
+                        <span className="text-amber-200">{t("builder.dice.keptRoll", { date: keptDate ? t("builder.dice.keptDate", { date: keptDate }) : "" })}</span>
                         <span className="text-stone-600"> · </span>
                       </>
                     ) : null}
                     {highlight ? (
                       <span className="pool-highlight block">{highlight}</span>
                     ) : null}
-                    <span className="font-mono text-amber-200">Total {total}</span>
+                    <span className="font-mono text-amber-200">{t("builder.dice.total", { total })}</span>
                     <span className="text-stone-600"> · </span>
                     {rerollOpen ? words.open : keptAt !== undefined ? words.keptClosed : words.closed}
                     <span className="block text-stone-500">
                       {held !== null
-                        ? "Now tap the ability that should get it."
+                        ? t("builder.dice.holdHint")
                         : placedCount < 6
-                          ? "Tap a throw, then an ability, or drag it into place."
-                          : "Tap or drag a placed score to swap it with another."}
+                          ? t("builder.dice.placeHint")
+                          : t("builder.dice.swapHint")}
                     </span>
                   </>
                 )}
@@ -511,9 +523,9 @@ export default function AbilityEditor({
             </>
           ) : (
             <div className="pool-empty">
-              <p className="font-display text-lg font-semibold text-stone-100">Six throws of four dice</p>
+              <p className="font-display text-lg font-semibold text-stone-100">{t("builder.dice.sixThrowsTitle")}</p>
               <p className="max-w-sm text-xs text-stone-400">
-                Each throw keeps its best three. All six land at once, then you decide which ability gets which.
+                {t("builder.dice.sixThrowsBody")}
               </p>
               <button
                 type="button"
@@ -522,10 +534,10 @@ export default function AbilityEditor({
                 aria-busy={asking}
                 className="pool-throw motion-press disabled:opacity-60"
               >
-                <Dices className={cn("size-4", asking && "animate-spin")} /> {asking ? "Rolling..." : "Roll the dice"}
+                <Dices className={cn("size-4", asking && "animate-spin")} /> {asking ? t("builder.dice.rolling") : t("builder.dice.rollButton")}
               </button>
               <p className="max-w-sm text-sm text-stone-500">
-                The server throws the dice and keeps them, so a rolled hero is one the table can trust.
+                {t("builder.dice.serverRolls")}
               </p>
             </div>
           )}
@@ -549,12 +561,12 @@ export default function AbilityEditor({
           // its words so the others stay put) and the final pops when it
           // moves.
           const notes: Array<{ key: string; tone: string; motion?: string; body: ReactNode }> = [
-            ...(bonus ? [{ key: "racial", tone: "text-amber-300", body: `+${bonus} racial` }] : []),
+            ...(bonus ? [{ key: "racial", tone: "text-amber-300", body: t("builder.dice.racial", { bonus }) }] : []),
             ...extra.map((gain) => ({
               key: `gain-${gainLabel(gain)}`,
               tone: "text-amber-200",
               motion: "reveal-pop",
-              body: gainLabel(gain),
+              body: gainLabel(gain, t),
             })),
             ...(finalScore !== null
               ? [
@@ -563,14 +575,15 @@ export default function AbilityEditor({
                     tone: "",
                     body: (
                       <>
-                        Final <CountPop value={finalScore}>{finalScore}</CountPop> ({formatModifier(abilityMod(finalScore))})
+                        {t("builder.dice.final")}{" "}
+                        <CountPop value={finalScore}>{finalScore}</CountPop> ({formatModifier(abilityMod(finalScore))})
                       </>
                     ),
                   },
                 ]
               : []),
           ];
-          const label = ABILITY_LABELS[ability];
+          const label = abilityWord(ability);
           const slot = method === "roll" ? slots[ability] : null;
           const armed = method === "roll" && held !== null;
           return (
@@ -627,10 +640,16 @@ export default function AbilityEditor({
                   }}
                   aria-label={
                     slot !== null
-                      ? `${label} holds ${assigned}. ${held === slot ? "Tap again to send it back to the tray" : held !== null ? "Tap to swap" : "Tap to pick it up"}`
+                      ? `${t("builder.dice.socketHolds", { label, value: assigned ?? "" })} ${
+                          held === slot
+                            ? t("builder.dice.socketAgain")
+                            : held !== null
+                              ? t("builder.dice.socketSwap")
+                              : t("builder.dice.socketPickUp")
+                        }`
                       : held !== null
-                        ? `Place the held throw on ${label}`
-                        : `${label} is empty. Pick up a throw from the tray first, then place it here`
+                        ? t("builder.dice.socketPlaceHeld", { label })
+                        : t("builder.dice.socketEmpty", { label })
                   }
                 >
                   {slot !== null && assigned !== null ? (
@@ -638,7 +657,7 @@ export default function AbilityEditor({
                       {assigned}
                     </span>
                   ) : (
-                    <span className="pool-socket-hint">{armed ? "Place" : "—"}</span>
+                    <span className="pool-socket-hint">{armed ? t("builder.dice.socketPlace") : "—"}</span>
                   )}
                 </button>
               ) : null}
@@ -658,7 +677,7 @@ export default function AbilityEditor({
                     type="button"
                     onClick={() => nudgeBuy(ability, -1)}
                     disabled={(assigned ?? POINT_BUY_MIN) <= POINT_BUY_MIN}
-                    aria-label={`Lower ${label}`}
+                    aria-label={t("builder.dice.lower", { label })}
                     className="step-button"
                   >
                     −
@@ -666,14 +685,14 @@ export default function AbilityEditor({
                   <span className="flex flex-1 flex-col items-center leading-none" aria-live="polite">
                     <span className="font-display text-[1.1875rem] font-bold text-amber-100">{assigned ?? POINT_BUY_MIN}</span>
                     <span className="mt-0.5 font-mono text-[0.875rem] text-stone-500">
-                      costs {pointBuyCost(assigned ?? POINT_BUY_MIN)}
+                      {t("builder.dice.costs", { cost: pointBuyCost(assigned ?? POINT_BUY_MIN) })}
                     </span>
                   </span>
                   <button
                     type="button"
                     onClick={() => nudgeBuy(ability, 1)}
                     disabled={(assigned ?? POINT_BUY_MIN) >= POINT_BUY_MAX}
-                    aria-label={`Raise ${label}`}
+                    aria-label={t("builder.dice.raise", { label })}
                     className="step-button"
                   >
                     +
@@ -694,7 +713,7 @@ export default function AbilityEditor({
           hp={hp}
           rows={ABILITY_KEYS.map((ability) => ({
             ability,
-            label: ABILITY_LABELS[ability],
+            label: abilityWord(ability),
             base: scores[ability] ?? 0,
             bonus: racialBonus[ability] ?? 0,
             added: (gains[ability] ?? []).reduce((sum, gain) => sum + gain.amount, 0),
@@ -705,9 +724,7 @@ export default function AbilityEditor({
       <MethodInfoDialog
         open={methodInfoOpen}
         onOpenChange={setMethodInfoOpen}
-        methods={METHODS.map((entry) =>
-          entry.id === "roll" ? { ...entry, info: entry.info.replace(BUNDLED_RULE, words.rule) } : entry,
-        )}
+        methods={methodRows}
         current={method}
       />
     </section>
@@ -728,12 +745,13 @@ export function StandardArrayRow({
   isTaken: (value: number) => boolean;
   onAssign: (value: number) => void;
 }) {
+  const t = useT();
   const roving = useRovingGroup({ keys: STANDARD_ARRAY.map(String), chosen: assigned == null ? null : String(assigned) });
   return (
     <span
       className="flex min-w-[192px] flex-[1_1_192px] items-center gap-[5px]"
       role="group"
-      aria-label={`${label} score`}
+      aria-label={t("builder.dice.standardGroup", { label })}
       onKeyDown={roving.onKeyDown}
       onFocus={roving.onFocus}
     >
@@ -746,7 +764,7 @@ export function StandardArrayRow({
             type="button"
             onClick={() => onAssign(value)}
             aria-pressed={mine}
-            aria-label={`${label} ${value}${taken ? ", held by another ability" : ""}`}
+            aria-label={`${label} ${value}${taken ? `, ${t("builder.dice.standardHeld", { label, value })}` : ""}`}
             data-taken={taken || undefined}
             tabIndex={roving.tabIndex(String(value))}
             data-roving-item={value}

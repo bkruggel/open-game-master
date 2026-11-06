@@ -13,6 +13,7 @@ import { textKey } from "@/lib/language/text-logic";
 import { useLocale, useT } from "@/lib/locale";
 import { skillLabel } from "@/lib/srd";
 import { hitDieChip } from "../lineage";
+import { CardText } from "../CardText";
 import { classSplitWords, multiclassChoices } from "../multiclassBuild";
 import OptionPicker, { type PickerGroup } from "../OptionPicker";
 import { useRovingGroup } from "../roving";
@@ -69,6 +70,7 @@ export function MulticlassSection({
         classList,
         abilities: derived.shownAbilities,
         rowOf: (id) => classes.find((entry) => entry.id === id),
+        t,
       }),
       first: up,
     };
@@ -164,7 +166,7 @@ export function MulticlassSection({
                   >
                     <span className="flex items-center justify-between gap-2 text-sm">
                       <span>{choice.row.name}</span>
-                      <span className="text-xs text-stone-500">{hitDieChip(classes.find((entry) => entry.id === choice.row.id)?.hitDie ?? 8, numbers)}</span>
+                      <span className="text-xs text-stone-500"><CardText text={hitDieChip(classes.find((entry) => entry.id === choice.row.id)?.hitDie ?? 8, numbers)} /></span>
                     </span>
                     <span id={`${listId}-${choice.row.id}`} className="block text-xs">
                       {choice.ok ? t("builder.multiclass.addsLine", { grant: choice.grants }) : choice.reason}{" "}
@@ -242,7 +244,7 @@ function ExtraClassCard({
         <h3 className="grow text-sm text-amber-100">
           {name}{" "}
           <span className="text-xs text-stone-500">
-            {hitDieChip(row.hitDie, numbers)}
+            <CardText text={hitDieChip(row.hitDie, numbers)} />
           </span>
         </h3>
         <button

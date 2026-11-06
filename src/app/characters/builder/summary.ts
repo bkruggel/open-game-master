@@ -58,69 +58,71 @@ const ABILITY_SHORT: Record<Ability, string> = {
   cha: "Cha",
 };
 
-// "Fire Bolt, Light and 2 more": a few names, then a count.
-export function someNames(names: string[], shown = 3): string {
+// "Fire Bolt, Light and 2 more": a few names, then a count. `t` says the
+// join and the count in the reader's language; without it the English.
+export function someNames(names: string[], shown = 3, t?: (key: string, vars?: Record<string, string | number>) => string): string {
   if (names.length <= shown) {
     if (names.length <= 1) return names.join("");
     return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
   }
-  return `${names.slice(0, shown).join(", ")} and ${names.length - shown} more`;
+  return `${names.slice(0, shown).join(", ")}${t ? t("builder.summaryrow.andMore", { count: names.length - shown }) : ` and ${names.length - shown} more`}`;
 }
 
-const counted = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
-
-// The caller's translator (home/types.ts agoLabel pattern): the owed picks'
-// labels read in the reader's language. The rows' own labels and lines are
-// the engine's own words this pass.
+// The caller's translator (home/types.ts agoLabel pattern): the rows, their
+// lines and the owed picks' labels all read in the reader's language. The
+// ability codes ("Str 15") stay the sheet's own shorthand.
 export function summaryRows(t: (key: string, vars?: Record<string, string | number>) => string, input: SummaryInput): SummaryRow[] {
   const name = input.name.trim();
   const items = input.gear.reduce((sum, item) => sum + Math.max(item.qty, 1), 0);
   const gearLine = items
-    ? `Gear: ${counted(items, "item", "items")}, ${someNames(input.gear.map((item) => item.name))}`
-    : "No gear packed";
+    ? t(`builder.summaryrow.gearLine_${items === 1 ? "one" : "other"}`, { count: items, names: someNames(input.gear.map((item) => item.name), 3, t) })
+    : t("builder.summaryrow.noGear");
   const touches = [
-    input.alignment ? `Alignment ${input.alignment}` : null,
-    input.portrait ? "Portrait added" : "No portrait yet",
-    input.appearance ? "Appearance written" : null,
-    input.backstory ? "Backstory written" : "No backstory yet",
+    input.alignment ? t("builder.summaryrow.alignment", { alignment: input.alignment }) : null,
+    input.portrait ? t("builder.summaryrow.portraitAdded") : t("builder.summaryrow.noPortrait"),
+    input.appearance ? t("builder.summaryrow.appearance") : null,
+    input.backstory ? t("builder.summaryrow.backstory") : t("builder.summaryrow.noBackstory"),
   ].filter((line): line is string => Boolean(line));
   return [
     {
       key: "calling",
-      label: "Class",
+      label: t("builder.summaryrow.class"),
       lines: [
         ...(input.klass
-          ? [`${input.klass}, level ${input.level}`, ...(input.subclass ? [input.subclass] : [])]
-          : ["No class chosen"]),
+          ? [t("builder.summaryrow.classLine", { klass: input.klass, level: input.level }), ...(input.subclass ? [input.subclass] : [])]
+          : [t("builder.summaryrow.noClass")]),
         // Said only once chosen: it is optional, and owes nothing unset.
-        ...(input.gender ? [`Gender: ${input.gender}`] : []),
+        ...(input.gender ? [t("builder.summaryrow.gender", { gender: input.gender })] : []),
       ],
       owed: owedPicks(t, input.owed.calling),
     },
     {
       key: "ancestry",
-      label: "Ancestry and background",
-      lines: [input.race ?? "No ancestry chosen", input.background ? `${input.background} background` : "No background chosen"],
+      label: t("builder.summaryrow.ancestry"),
+      lines: [
+        input.race ? t("builder.summaryrow.raceLine", { race: input.race }) : t("builder.summaryrow.noRace"),
+        input.background ? t("builder.summaryrow.backgroundLine", { background: input.background }) : t("builder.summaryrow.noBackground"),
+      ],
       owed: owedPicks(t, input.owed.ancestry),
     },
     {
       key: "abilities",
-      label: "Ability scores",
+      label: t("builder.summaryrow.abilities"),
       lines: [
         input.abilities
           ? ABILITIES.map((ability) => `${ABILITY_SHORT[ability]} ${input.abilities?.[ability]}`).join(", ")
-          : "Not set yet",
+          : t("builder.summaryrow.notSet"),
       ],
       owed: owedPicks(t, input.owed.abilities),
     },
     {
       key: "spells-gear",
-      label: input.casts ? "Spells and gear" : "Gear",
+      label: input.casts ? t("builder.summaryrow.spellsAndGear") : t("builder.summaryrow.gear"),
       lines: [
         ...(input.casts
           ? [
-              input.cantrips.length ? `Cantrips: ${someNames(input.cantrips)}` : "No cantrips chosen",
-              input.spells.length ? `Spells: ${someNames(input.spells)}` : "No spells chosen",
+              input.cantrips.length ? t("builder.summaryrow.cantrips", { names: someNames(input.cantrips, 3, t) }) : t("builder.summaryrow.noCantrips"),
+              input.spells.length ? t("builder.summaryrow.spells", { names: someNames(input.spells, 3, t) }) : t("builder.summaryrow.noSpells"),
             ]
           : []),
         gearLine,
@@ -129,8 +131,8 @@ export function summaryRows(t: (key: string, vars?: Record<string, string | numb
     },
     {
       key: "identity",
-      label: "Name and story",
-      lines: [name || "No name yet", ...touches],
+      label: t("builder.summaryrow.nameStory"),
+      lines: [name || t("builder.summaryrow.noName"), ...touches],
       owed: owedPicks(t, input.owed.identity),
     },
   ];

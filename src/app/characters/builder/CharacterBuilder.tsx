@@ -7,7 +7,9 @@ import { AvatarCropDialog } from "@/app/settings/AvatarCropDialog";
 import { Wizard, type WizardNotice, type WizardStep } from "@/components/ui/Wizard";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
+import { CardText } from "./CardText";
 import { prefersStillMotion, useEffectsRoot } from "@/lib/effects-mode";
 import type { Genre } from "@/lib/schemas/game-settings";
 import type { Ability, CreateSheetInput } from "@/lib/schemas/sheet";
@@ -137,23 +139,49 @@ function droppedName(drop: DroppedPick): string {
   }
 }
 
+// The words reconcile.ts labels a dropped pick with, in the reader's
+// language; a workshop species-choice label the map lacks reads as stored.
+const DROP_LABELS: Record<string, string> = {
+  "species choice": "builder.shell.droplabel.speciesChoice",
+  "background skill": "builder.shell.droplabel.backgroundSkill",
+  "class skill": "builder.shell.droplabel.classSkill",
+  "racial skill": "builder.shell.droplabel.racialSkill",
+  "replacement skill": "builder.shell.droplabel.replacementSkill",
+  "second class skill": "builder.shell.droplabel.secondClassSkill",
+  "racial ability bump": "builder.shell.droplabel.racialAbilityBump",
+  "racial tool": "builder.shell.droplabel.racialTool",
+  "racial cantrip": "builder.shell.droplabel.racialCantrip",
+  "bonus language": "builder.shell.droplabel.bonusLanguage",
+  subclass: "builder.shell.droplabel.subclass",
+  expertise: "builder.shell.droplabel.expertise",
+  "fighting style": "builder.shell.droplabel.fightingStyle",
+  "class option": "builder.shell.droplabel.classOption",
+  cantrip: "builder.shell.droplabel.cantrip",
+  spell: "builder.shell.droplabel.spell",
+  prepared: "builder.shell.droplabel.prepared",
+};
+
 // "Changing the race set aside bonus language Dwarvish and bonus language
 // Giant: they no longer fit. Anything still owed is asked for on the
 // Ancestry step." The notice says what went, never that it must be picked
 // again: a language dropped because the new race has fewer slots is not
 // owed, and the step's own gate knows which picks are.
-function droppedMessage({ because, drops }: DroppedNotice, stepLabel: string | undefined): string {
-  const list = drops.map((drop) => `${drop.label} ${droppedName(drop)}`);
+function droppedMessage(t: (key: string, vars?: Record<string, string | number>) => string, { because, drops }: DroppedNotice, stepLabel: string | undefined): string {
+  const list = drops.map((drop) => {
+    const label = DROP_LABELS[drop.label.toLowerCase()] ? t(DROP_LABELS[drop.label.toLowerCase()]) : drop.label;
+    return `${label} ${droppedName(drop)}`;
+  });
+  const joiner = t("builder.shell.dropped.and");
   const named =
-    list.length <= 2 ? list.join(" and ") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
-  const where = stepLabel ? ` Anything still owed is asked for on the ${stepLabel} step.` : "";
+    list.length <= 2 ? list.join(` ${joiner} `) : `${list.slice(0, -1).join(", ")} ${joiner} ${list[list.length - 1]}`;
+  const where = stepLabel ? t("builder.shell.dropped.where", { step: stepLabel }) : "";
   if (because === "stored character") {
-    return `${list.length === 1 ? "A stored pick is" : "Stored picks are"} no longer on offer: ${named}.${where}`;
+    return t(`builder.shell.dropped.stored_${list.length === 1 ? "one" : "other"}`, { count: list.length, named }) + where;
   }
   if (because === "content pack") {
-    return `The content pack's rows set aside ${named}.${where}`;
+    return t("builder.shell.dropped.pack", { named }) + where;
   }
-  return `Changing the ${because} set aside ${named}: ${list.length === 1 ? "it no longer fits" : "they no longer fit"}.${where}`;
+  return t(`builder.shell.dropped.changed_${list.length === 1 ? "one" : "other"}`, { count: list.length, because, named }) + where;
 }
 
 // Full character creation flow as a six-step wizard: class, ancestry and
@@ -287,9 +315,18 @@ function CharacterBuilderForm({
   const archetypes = subclassOptions.archetypes;
   // Why a list is short: the asker's own Homebrew a table leaves out, or a
   // list the server did not send (workshop import audit F06).
+  const t = useT();
+  const locale = useLocale();
   const scopeNote = (noun: string, kind: OptionListKind) => (
     <TableScopeNote noun={noun} unadmitted={optionStatus.unadmitted[kind]} failed={optionStatus.failed.includes(kind)} onRetry={optionStatus.retry} />
   );
+  // The nouns TableScopeNote and the pickers' notes name the lists with.
+  const scopeNouns = {
+    classes: t("builder.scope.noun.classes"),
+    subclasses: t("builder.scope.noun.subclasses"),
+    species: t("builder.scope.noun.species"),
+    backgrounds: t("builder.scope.noun.backgrounds"),
+  };
 
   const table = useTableRules(campaignId, klass?.id);
   // The text of every feat picked, for what each grants (issue #125); a
@@ -330,7 +367,6 @@ function CharacterBuilderForm({
   // character's split, so it is offered no second class (a stored split
   // still shows, and keeps its classes there).
   const addsClasses = hostOffers(capabilities, "builderMulticlass");
-  const t = useT();
   const [cropping, setCropping] = useState(false);
   // This builder's own root, so the footer's "Show me" looks inside it and
   // not in another builder on the page.
@@ -367,12 +403,12 @@ function CharacterBuilderForm({
   } else if (state.undo && undoAt && undoAt.step !== step) {
     state.clearUndo();
   }
-  const undoSaid = state.undo ? undoMessage(state.undo) : putBackSaid;
+  const undoSaid = state.undo ? undoMessage(state.undo, t) : putBackSaid;
   function putBack() {
     if (!state.undo) {
       return;
     }
-    setPutBackSaid(putBackMessage(state.undo));
+    setPutBackSaid(putBackMessage(state.undo, t));
     state.putBack();
     // The bar goes with the undo; focus goes to the step's heading rather
     // than being dropped on the page.
@@ -504,7 +540,11 @@ function CharacterBuilderForm({
   // chosen. The save waits until the player picks on purpose (issue 229).
   const unoffered = initial && loaded ? unofferedPicks(initial, state, races, classes, backgrounds) : [];
   const unofferedText = unoffered.length
-    ? `This builder does not offer ${initial?.name || "this character"}'s ${listWords(unoffered.map((entry) => entry.what))}: a table's own content, or a row this server no longer has. The save waits until you pick on purpose. Leave without saving to keep ${initial?.name || "them"} as stored.`
+    ? t("builder.shell.unoffered", {
+        who: initial?.name || t("builder.shell.unnamedWho"),
+        what: listWords(unoffered.map((entry) => entry.what)),
+        them: initial?.name || t("builder.shell.unnamedThem"),
+      })
     : "";
 
   function submit() {
@@ -623,7 +663,7 @@ function CharacterBuilderForm({
     background: background?.name,
     race: race?.name,
     // A split reads "Fighter 3 / Wizard 2" (backlog F9).
-    klass: derived.multiclass ? classSplitWords(derived.classList, (id) => classes.find((entry) => entry.id === id)?.name ?? id) : klass?.name,
+    klass: derived.multiclass ? classSplitWords(derived.classList, (id) => contentName("classes", classes.find((entry) => entry.id === id)?.name ?? id, locale)) : klass ? contentName("classes", klass.name, locale) : undefined,
     subclass: state.subclass || undefined,
     level: derived.effectiveLevel,
     gender: state.gender || undefined,
@@ -632,7 +672,7 @@ function CharacterBuilderForm({
     cantrips: state.cantrips,
     spells: state.spells,
     gear: derived.fullEquipment,
-    alignment: ALIGNMENT_LABELS[state.alignment]?.name ?? state.alignment,
+    alignment: state.alignment ? t(`builder.group.align.${state.alignment}`) : state.alignment,
     portrait: Boolean(state.portrait),
     appearance: Boolean(state.appearance.trim()),
     backstory: Boolean(state.backstory.trim()),
@@ -645,9 +685,9 @@ function CharacterBuilderForm({
   const steps: WizardStep[] = [
     {
       key: "calling",
-      label: "Class",
-      title: "Choose how you fight or use magic",
-      blurb: "The class decides how this character plays.",
+      label: t("builder.shell.step.class"),
+      title: t("builder.shell.step.classTitle"),
+      blurb: t("builder.shell.step.classBlurb"),
       ...gate(blockers.calling),
       content: (
         <>
@@ -671,16 +711,16 @@ function CharacterBuilderForm({
             subclassLockedAt={pickers.subclassLockedAt}
             chosenArchetype={pickers.chosenArchetype}
             multiclassAllowed={table.multiclassAllowed && addsClasses}
-            classNote={scopeNote("classes", "classes")}
-            subclassNote={<TableScopeNote noun="subclasses" unadmitted={subclassOptions.unadmitted} failed={subclassOptions.failed} onRetry={subclassOptions.retry} />}
+            classNote={scopeNote(scopeNouns.classes, "classes")}
+            subclassNote={<TableScopeNote noun={scopeNouns.subclasses} unadmitted={subclassOptions.unadmitted} failed={subclassOptions.failed} onRetry={subclassOptions.retry} />}
             playstyle={
               initial
                 ? undefined
                 : {
                     value: playstyle,
                     onChange: setPlaystyle,
-                    question: quizVoice === "party" ? "What does the party need?" : "In a fight, what's your job?",
-                    intro: "New to this? Pick what sounds fun. It suggests a class and a background, and nothing is chosen until you choose it.",
+                    question: quizVoice === "party" ? t("builder.shell.playstyleParty") : t("builder.shell.playstyleJob"),
+                    intro: t("builder.shell.playstyleIntro"),
                     onHelpMeBuild: (role) => setQuiz({ role }),
                   }
             }
@@ -691,11 +731,11 @@ function CharacterBuilderForm({
     },
     {
       key: "ancestry",
-      label: "Ancestry",
-      title: "Choose where your hero comes from",
-      blurb: "Their people and their past, and what each grants.",
+      label: t("builder.shell.step.ancestry"),
+      title: t("builder.shell.step.ancestryTitle"),
+      blurb: t("builder.shell.step.ancestryBlurb"),
       ...gate(blockers.ancestry),
-      continueLabel: race ? `Continue as ${race.name}` : undefined,
+      continueLabel: race ? t("builder.shell.continueAs", { name: race.name }) : undefined,
       content: (
         <>
           {undoBar("ancestry")}
@@ -707,7 +747,7 @@ function CharacterBuilderForm({
             background={background}
             races={races}
             raceGroups={pickers.raceGroups}
-            listNote={scopeNote("species", "races")}
+            listNote={scopeNote(scopeNouns.species, "races")}
             backgroundSection={
               <>
                 <BackgroundPanel
@@ -717,7 +757,7 @@ function CharacterBuilderForm({
                   raceChosen={Boolean(race)}
                   suggested={!initial && playstyle ? playstyleBackgrounds(playstyle, backgrounds) : []}
                   suggestedKey={playstyle ?? undefined}
-                  note={scopeNote("backgrounds", "backgrounds")}
+                  note={scopeNote(scopeNouns.backgrounds, "backgrounds")}
                 />
                 <ToolGrantPanels
                   state={state}
@@ -734,9 +774,9 @@ function CharacterBuilderForm({
     },
     {
       key: "abilities",
-      label: "Abilities",
-      title: "Set what your hero is good at",
-      blurb: "How do you roll?",
+      label: t("builder.shell.step.abilities"),
+      title: t("builder.shell.step.abilitiesTitle"),
+      blurb: t("builder.shell.step.abilitiesBlurb"),
       ...gate(blockers.abilities),
       content: (
         <>
@@ -754,9 +794,9 @@ function CharacterBuilderForm({
     },
     {
       key: "spells-gear",
-      label: casts ? "Spells" : "Gear",
-      title: casts ? "Choose spells and gear" : "Choose your gear",
-      blurb: casts ? "Pick what they can cast, then arm your hero." : "Arm your hero.",
+      label: casts ? t("builder.shell.step.spells") : t("builder.shell.step.gear"),
+      title: casts ? t("builder.shell.step.spellsTitle") : t("builder.shell.step.gearTitle"),
+      blurb: casts ? t("builder.shell.step.spellsBlurb") : t("builder.shell.step.gearBlurb"),
       ...gate(blockers.spells),
       content: (
         <>
@@ -776,9 +816,9 @@ function CharacterBuilderForm({
     },
     {
       key: "identity",
-      label: "Hero",
-      title: "Name your hero and tell their story",
-      blurb: "Who they are. None of it changes a number on the sheet.",
+      label: t("builder.shell.step.hero"),
+      title: t("builder.shell.step.heroTitle"),
+      blurb: t("builder.shell.step.heroBlurb"),
       ...gate(blockers.identity),
       content: (
         <>
@@ -799,9 +839,9 @@ function CharacterBuilderForm({
     },
     {
       key: "finish",
-      label: "Finish",
-      title: "Check your hero and finish",
-      blurb: "Who have you made?",
+      label: t("builder.shell.step.finish"),
+      title: t("builder.shell.step.finishTitle"),
+      blurb: t("builder.shell.step.finishBlurb"),
       canContinue: !busy && !firstOwed,
       blocker: firstOwed?.message ?? null,
       onBlocked: firstOwed ? () => changePick(firstOwed.target) : undefined,
@@ -834,7 +874,7 @@ function CharacterBuilderForm({
     ? steps.map((entry, index) =>
         index === STEP_ORDER.length - 1
           ? entry
-          : { ...entry, secondary: { label: "Back to summary", onClick: () => backToSummary(entry.key) } },
+          : { ...entry, secondary: { label: t("builder.shell.backToSummary"), onClick: () => backToSummary(entry.key) } },
       )
     : steps;
 
@@ -852,7 +892,7 @@ function CharacterBuilderForm({
       }
     : dropped
     ? {
-        message: droppedMessage(dropped, droppedStep >= 0 ? steps[droppedStep].label : undefined),
+        message: droppedMessage(t, dropped, droppedStep >= 0 ? steps[droppedStep].label : undefined),
         step: droppedStep >= 0 ? droppedStep : undefined,
         onShow: () => locate(dropped.drops[0].target),
         onDismiss: state.dismissDropped,
@@ -874,15 +914,15 @@ function CharacterBuilderForm({
       {draftOffer ? (
         <div role="status" className="reveal mb-3 flex shrink-0 flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-100">
           <span className="min-w-0 flex-1">
-            You have an unfinished character here
+            {t("builder.shell.draftHave")}
             {draftOffer.fields.name.trim() ? <>: <span className="font-medium">{draftOffer.fields.name.trim()}</span></> : null}
-            , left on step {draftStepIndex(draftOffer) + 1} of {steps.length}.
+            {t("builder.shell.draftLeft", { step: draftStepIndex(draftOffer) + 1, total: steps.length })}
           </span>
           <button type="button" onClick={resumeDraft} className={ui.btnSmall}>
-            Resume
+            {t("builder.shell.draftResume")}
           </button>
           <button type="button" onClick={discardDraft} className={cn(ui.btnSmall, "text-stone-400")}>
-            Start fresh
+            {t("builder.shell.draftFresh")}
           </button>
         </div>
       ) : null}
@@ -904,10 +944,10 @@ function CharacterBuilderForm({
         // character is saved or another fill starts.
         <p data-quick-kept="" className="mb-3 flex shrink-0 flex-wrap items-center gap-2 rounded-lg border border-stone-800 px-3 py-1.5 text-xs text-stone-400">
           <span className="min-w-0 flex-1">
-            {fill.kept.filled.length} {fill.kept.filled.length === 1 ? "choice was" : "choices were"} picked for you.
+            {t("builder.shell.kept", { count: fill.kept.filled.length })}
           </span>
           <button type="button" onClick={fill.reopen} className="text-sky-300 underline-offset-2 hover:underline">
-            Show what was picked
+            {t("builder.shell.keptShow")}
           </button>
         </p>
       ) : null}
@@ -937,7 +977,7 @@ function CharacterBuilderForm({
         step={step}
         onStepChange={setStep}
         // The name is asked last (backlog F4); until then the hero is "Your hero".
-        title={state.name.trim() || "Your hero"}
+        title={state.name.trim() || t("builder.shared.yourHero")}
         variant="diamonds"
         stepNames
         // The wipe paces a first build; an edit of a stored character moves
@@ -956,19 +996,23 @@ function CharacterBuilderForm({
             ? [
                 // A split names each class's levels (backlog F9).
                 [
-                  race?.name,
+                  race ? contentName("species", race.name, locale) : "",
                   derived.multiclass
-                    ? classSplitWords(derived.classList, (id) => classes.find((entry) => entry.id === id)?.name ?? id)
-                    : klass?.name,
+                    ? classSplitWords(derived.classList, (id) => contentName("classes", classes.find((entry) => entry.id === id)?.name ?? id, locale))
+                    : klass
+                      ? contentName("classes", klass.name, locale)
+                      : "",
                 ]
                   .filter(Boolean)
                   .join(" "),
-                `level ${derived.effectiveLevel}`,
+                t("builder.shell.asideLevel", { level: derived.effectiveLevel }),
                 ...(klass ? [hitDieChip(klass.hitDie, numbers)] : []),
               ].map((part, index) => (
                 <Fragment key={part}>
                   {index ? " · " : ""}
-                  <span className="whitespace-nowrap">{part}</span>
+                  <span className="whitespace-nowrap">
+                    <CardText text={part} />
+                  </span>
                 </Fragment>
               ))
             : undefined
@@ -1002,7 +1046,7 @@ function CharacterBuilderForm({
       )}
       {cropping ? (
         <AvatarCropDialog
-          title={`Portrait for ${state.name.trim() || "your character"}`}
+          title={t("characters.portraitFor", { name: state.name.trim() || t("builder.shell.portraitFallback") })}
           onUploaded={(image) => {
             setCropping(false);
             state.setPortrait({ id: image.id, name: image.name, type: image.type, url: image.url });

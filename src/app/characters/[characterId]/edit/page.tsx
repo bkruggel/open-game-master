@@ -15,6 +15,7 @@ import CharacterBuilder, { type BuilderResult } from "@/app/characters/builder/C
 import LevelUpSheet from "@/app/characters/builder/LevelUpSheet";
 import type { BuilderRole } from "@/app/characters/builder/steps/FinishStep";
 import { refusalText } from "@/app/characters/builder/refusal";
+import { useT } from "@/lib/locale";
 
 type LibraryCharacter = {
   id: string;
@@ -32,6 +33,7 @@ type LibraryCharacter = {
 // ?copyOf=<id> is "Duplicate and edit": the entry is the fresh copy, and the
 // original it came from is named and left alone.
 function EditCharacterInner({ characterId }: { characterId: string }) {
+  const t = useT();
   const search = useSearchParams();
   const copyOf = search.get("copyOf") ?? "";
   // "Level up" on the character's page: the level-up sheet, only what the
@@ -160,35 +162,33 @@ function EditCharacterInner({ characterId }: { characterId: string }) {
           href={`/characters/${characterId}`}
           className="-my-1 inline-flex min-h-10 items-center gap-1.5 text-sm text-stone-400 hover:text-amber-200"
         >
-          <ArrowLeft className="size-4" /> Back without saving
+          <ArrowLeft className="size-4" /> {t("characters.edit.back")}
         </Link>
         <div className="mt-2 flex items-center gap-3">
           <PixelTile src={PIXEL_ICONS.characters} />
           <div className="min-w-0">
             <GoldTitle size="text-2xl">
-              {nextLevel ? `${character.name} reaches level ${nextLevel}` : `Edit ${character.name}`}
+              {nextLevel ? t("characters.edit.levelTitle", { name: character.name, level: nextLevel }) : t("characters.edit.title", { name: character.name })}
             </GoldTitle>
             <p className="text-sm text-stone-400">
-              Saved to your library. Every campaign you bring them to from now on starts from this build.
+              {t("characters.edit.subtitle")}
             </p>
           </div>
         </div>
         {nextLevel && slimSheet ? (
           <p className="reveal mt-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100">
-            Only what level {nextLevel} brings is asked here; the rest of {character.name}&apos;s build stays as it is.
-            Edit the whole build opens every step at level {nextLevel}.
+            {t("characters.edit.levelOnly", { level: nextLevel, name: character.name })}
+            {t("characters.edit.levelOnlyMore", { level: nextLevel })}
           </p>
         ) : nextLevel ? (
           <p className="reveal mt-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100">
-            The build opens at level {nextLevel}, on its summary. Hit points come with the level; anything it lets{" "}
-            {character.name} choose (an ability score improvement, a subclass, new spells) is listed there as still
-            to choose, with a Fix that goes to it. Save changes takes the build once nothing is owed.
+            {t("characters.edit.levelOpens", { level: nextLevel, name: character.name })}
           </p>
         ) : null}
         {copyOf ? (
           <div className="reveal mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2">
             <p className="min-w-0 flex-1 text-xs text-amber-100">
-              A separate copy of {sourceName || "the original"}. Saving changes this copy only; {sourceName || "the original"} stays as it is.
+              {t("characters.edit.copyOf", { source: sourceName || t("characters.edit.theOriginal") })}
             </p>
             <button
               type="button"
@@ -229,7 +229,7 @@ function EditCharacterInner({ characterId }: { characterId: string }) {
         initial={character.sheet}
         initialLevel={character.level}
         startLevel={nextLevel ?? undefined}
-        submitLabel="Save changes"
+        submitLabel={t("characters.edit.submit")}
         onSubmit={(result) => void save(result)}
         busy={busy}
         error={error}

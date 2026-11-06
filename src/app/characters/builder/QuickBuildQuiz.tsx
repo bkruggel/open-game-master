@@ -5,8 +5,9 @@ import { useState } from "react";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { classRoles } from "@/lib/srd/class-roles";
-import { ABILITY_LABELS } from "./AbilityEditor";
+import type { PlaystyleId } from "./playstyles";
 import { abilityPriority } from "./classAbilities";
 import {
   QUIZ_METHODS,
@@ -35,20 +36,22 @@ type Question = {
   options: ReadonlyArray<{ id: string; label: string; tag?: string }>;
 };
 
-function questions(voice: QuizVoice, method: QuizAnswers["method"] | undefined): Question[] {
+// The questions read in the reader's language (builder.quiz.*); the option
+// ids stay the quiz's.
+function questions(t: (key: string, vars?: Record<string, string | number>) => string, voice: QuizVoice, method: QuizAnswers["method"] | undefined): Question[] {
   return [
     {
       key: "role",
-      title: voice === "party" ? "What does the party need?" : "In a fight, what's your job?",
+      title: voice === "party" ? t("builder.quiz.jobParty") : t("builder.quiz.job"),
       options: QUIZ_ROLES,
     },
-    { key: "method", title: voice === "party" ? "How do they do it?" : "How do you do it?", options: QUIZ_METHODS },
+    { key: "method", title: voice === "party" ? t("builder.quiz.methodParty") : t("builder.quiz.method"), options: QUIZ_METHODS },
     ...(asksSource(method)
-      ? [{ key: "source" as const, title: voice === "party" ? "Where does their power come from?" : "Where does your power come from?", options: QUIZ_SOURCES }]
+      ? [{ key: "source" as const, title: voice === "party" ? t("builder.quiz.sourceParty") : t("builder.quiz.source"), options: QUIZ_SOURCES }]
       : []),
     {
       key: "outside",
-      title: voice === "party" ? "Outside a fight, they're the one who…" : "Outside a fight, you're the one who…",
+      title: voice === "party" ? t("builder.quiz.outsideParty") : t("builder.quiz.outside"),
       options: QUIZ_OUTSIDE,
     },
   ];
@@ -75,9 +78,10 @@ export function QuickBuildQuiz({
   onChoose: (seed: BuildSeed, answers: QuizAnswers) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [answers, setAnswers] = useState<Partial<QuizAnswers>>(initial ?? {});
   const [page, setPage] = useState(initial?.role ? 1 : 0);
-  const asked = questions(voice, answers.method);
+  const asked = questions(t, voice, answers.method);
   const done = page >= asked.length;
   // The source question counts until the second answer rules it out, so
   // the count never grows partway through.
@@ -103,17 +107,17 @@ export function QuickBuildQuiz({
         <button
           type="button"
           onClick={() => (page > 0 ? setPage(page - 1) : onCancel())}
-          aria-label={page > 0 ? "Back to the last question" : "Back to building"}
+          aria-label={page > 0 ? t("builder.quiz.back") : t("builder.quiz.backFirst")}
           className="-m-2 p-2 text-stone-500 hover:text-stone-300"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
         </button>
         <h2 className="font-display text-lg tracking-wide text-amber-50">
-          {done ? (voice === "party" ? "A companion for your party" : "Your character") : "Help me build"}
+          {done ? (voice === "party" ? t("builder.quiz.companion") : t("builder.quiz.yours")) : t("builder.quiz.title")}
         </h2>
         {!done ? (
           <span className="ml-auto text-xs text-stone-500">
-            Question {page + 1} of {total}
+            {t("builder.quiz.questionOf", { page: page + 1, total })}
           </span>
         ) : null}
       </div>
@@ -135,8 +139,10 @@ export function QuickBuildQuiz({
                     picked ? "border-amber-400/60 bg-amber-400/10 text-amber-50" : "border-stone-800 bg-stone-950/50 text-stone-200 hover:border-amber-500/40",
                   )}
                 >
-                  {option.label}
-                  {option.tag ? <strong className="font-semibold"> ({option.tag})</strong> : null}
+                  {optionWords(question.key, option.id, t).label}
+                  {optionWords(question.key, option.id, t).tag ? (
+                    <strong className="font-semibold"> ({optionWords(question.key, option.id, t).tag})</strong>
+                  ) : null}
                 </button>
               );
             })}
@@ -149,14 +155,14 @@ export function QuickBuildQuiz({
           {seeds.length ? (
             <>
               <p className="text-xs text-stone-400">
-                Pick one to start from. Everything else is filled in for you, and you can change any part before you save.
+                {t("builder.quiz.pickSeed")}
               </p>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {seeds.map((seed, index) => (
                   <li key={seed.classId}>
                     <SeedCard
                       seed={seed}
-                      title={index === 0 ? "Suggested" : "Second choice"}
+                      title={index === 0 ? t("builder.quiz.suggested") : t("builder.quiz.second")}
                       klass={classes.find((entry) => entry.id === seed.classId)}
                       race={races.find((entry) => entry.id === seed.raceId)}
                       background={backgrounds.find((entry) => entry.id === seed.backgroundId)}
@@ -167,7 +173,7 @@ export function QuickBuildQuiz({
               </ul>
             </>
           ) : (
-            <p className="text-xs text-stone-400">Nothing this table offers fits those answers. Every class is still in the builder.</p>
+            <p className="text-xs text-stone-400">{t("builder.quiz.noFit")}</p>
           )}
           <div className="flex flex-wrap gap-2">
             <button
@@ -178,10 +184,10 @@ export function QuickBuildQuiz({
               }}
               className={ui.btnSmall}
             >
-              Answer again
+              {t("builder.quiz.again")}
             </button>
             <button type="button" onClick={onCancel} className={cn(ui.btnSmall, "text-stone-400")}>
-              Choose everything myself
+              {t("builder.quiz.myself")}
             </button>
           </div>
         </div>
@@ -211,6 +217,7 @@ function SeedCard({
   const reading = classRoles(klass);
   const [first, second] = abilityPriority(klass);
   const name = [race?.name, klass.name].filter(Boolean).join(" ");
+  const t = useT();
   return (
     <div className="panel flex h-full flex-col gap-2 rounded-xl p-3" data-quick-seed={seed.classId}>
       <p className="eyebrow text-[0.875rem] text-amber-400/80">{title}</p>
@@ -219,23 +226,58 @@ function SeedCard({
         <div className="min-w-0">
           <p className="font-display text-base tracking-wide text-amber-50">{name}</p>
           <p className="text-sm text-stone-500">
-            {reading.roles.join(" / ")} · plays like {reading.playsLike}
+            {t("builder.play.playsLike", {
+              roles: reading.roles.map((role) => t(`builder.face.role.${role.toLowerCase()}`)).join(" / "),
+              like: reading.playsLike,
+            })}
           </p>
         </div>
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-xs">
-        <dt className="text-stone-500">Race</dt>
+        <dt className="text-stone-500">{t("builder.quiz.race")}</dt>
         <dd className="text-stone-200">{race?.name ?? seed.raceId}</dd>
-        <dt className="text-stone-500">Background</dt>
+        <dt className="text-stone-500">{t("builder.quiz.background")}</dt>
         <dd className="text-stone-200">{background?.name ?? seed.backgroundId}</dd>
-        <dt className="text-stone-500">Best at</dt>
+        <dt className="text-stone-500">{t("builder.quiz.bestAt")}</dt>
         <dd className="text-stone-200">
-          {ABILITY_LABELS[first]}, then {ABILITY_LABELS[second]}
+          {abilityWord(first, t)}, {t("builder.quiz.then", { ability: abilityWord(second, t) })}
         </dd>
       </dl>
-      <button type="button" onClick={onChoose} className={cn(ui.btnPrimary, "mt-auto")} aria-label={`Build the ${name}`}>
-        Build this one
+      <button type="button" onClick={onChoose} className={cn(ui.btnPrimary, "mt-auto")} aria-label={t("builder.quiz.buildAria", { name })}>
+        {t("builder.quiz.buildOne")}
       </button>
     </div>
   );
+}
+
+// An ability key as its name in the reader's language (sheet.ability.*).
+function abilityWord(ability: string, t: (key: string) => string): string {
+  const key = ({
+    str: "sheet.ability.str",
+    dex: "sheet.ability.dex",
+    con: "sheet.ability.con",
+    int: "sheet.ability.int",
+    wis: "sheet.ability.wis",
+    cha: "sheet.ability.cha",
+  } as Record<string, string>)[ability];
+  return key ? t(key) : ability;
+}
+
+// The quiz's option words, in the reader's language, by question and id.
+function optionWords(
+  key: keyof QuizAnswers,
+  id: string,
+  t: (key: string) => string,
+): { label: string; tag?: string } {
+  if (key === "role") {
+    const style = id as PlaystyleId;
+    return { label: t(`builder.play.${style}.label`), tag: t(`builder.play.${style}.tag`) };
+  }
+  if (key === "method") {
+    return { label: t(`builder.quiz.method.${id}`) };
+  }
+  if (key === "source") {
+    return { label: t(`builder.quiz.source.${id}`) };
+  }
+  return { label: t(`builder.quiz.outside.${id}`) };
 }

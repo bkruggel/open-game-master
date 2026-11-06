@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { InfoButton } from "@/components/ui/InfoDialog";
 import { describeContentEntry, spellSummary } from "@/lib/help";
 import { useContentSearch, type PickerEntry } from "./useContentSearch";
+import { useT } from "@/lib/locale";
 
 export type { PickerEntry } from "./useContentSearch";
 
@@ -38,6 +39,7 @@ export default function ContentPicker({
   // be picked.
   judge?: (entry: PickerEntry) => { blocked: boolean; note: string } | null;
 }) {
+  const t = useT();
   const { query, setQuery, results: found, setResults, open, setOpen, loading, unavailable, failed, unadmitted } =
     useContentSearch(kind, extraParams);
   const results = hide ? found.filter((entry) => !hide(entry)) : found;
@@ -87,13 +89,12 @@ export default function ContentPicker({
         </p>
       ) : open && !results.length && query.trim() && !loading ? (
         <p className="mt-1 rounded-lg border border-stone-800 bg-stone-950/60 px-3 py-2 text-xs text-stone-500">
-          Nothing matched &quot;{query.trim()}&quot;. Try fewer letters, or pick from the full list.
+          {t("builder.catalog.noMatch", { query: query.trim() })}
         </p>
       ) : null}
       {unadmitted.length ? (
         <p className="mt-1 text-sm text-stone-500">
-          Your own {unadmitted.join(", ")} {unadmitted.length === 1 ? "is" : "are"} not offered at this table: whoever runs it (the owner, the
-          GM or the assistant GM) keeps a copy in their workshop to admit one.
+          {t(`builder.catalog.unadmittedTable_${unadmitted.length === 1 ? "one" : "other"}`, { list: unadmitted.join(", ") })}
         </p>
       ) : null}
       {open && results.length ? (
@@ -132,7 +133,7 @@ export default function ContentPicker({
                 </span>
                 <span className="shrink-0 text-xs text-stone-500">
                   {entry.source === "homebrew"
-                    ? "homebrew"
+                    ? t("builder.catalog.homebrew")
                     : (renderMeta?.(entry) ?? "")}
                 </span>
               </button>

@@ -95,7 +95,7 @@ export function BuildMathPanel({
     >
       <div className="flex shrink-0 items-center gap-2 px-3 py-1">
         <h2 id={headingId} className="min-w-0 flex-1 font-display text-base tracking-wide text-amber-100">
-          Character details
+          {t("builder.math.panel.title")}
         </h2>
         <button
           type="button"
@@ -103,11 +103,11 @@ export function BuildMathPanel({
           aria-controls={bodyId}
           // The heading beside it says what; the word on its face fits a
           // phone's row, and the name read aloud starts with that word.
-          aria-label={open ? "Hide character details" : "Show character details"}
+          aria-label={open ? t("builder.math.panel.hide") : t("builder.math.panel.show")}
           onClick={() => setOpen((was) => !was)}
           className="flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 text-base text-sky-300 transition-colors hover:bg-stone-800 @4xl:hidden"
         >
-          {open ? "Hide" : "Show"}
+          {open ? t("builder.math.panel.hideWord") : t("builder.math.panel.showWord")}
           <ChevronDown aria-hidden="true" className={cn("size-4 transition-transform", open && "rotate-180")} />
         </button>
       </div>
@@ -128,7 +128,7 @@ export function BuildMathPanel({
       >
         {sections.length ? (
           <table className="w-full table-fixed border-collapse text-left">
-            <caption className="sr-only">Every number on the sheet and how it is made</caption>
+            <caption className="sr-only">{t("builder.math.panel.caption")}</caption>
             <colgroup>
               <col className="w-[34%]" />
               <col className="w-[26%]" />
@@ -137,13 +137,13 @@ export function BuildMathPanel({
             <thead>
               <tr>
                 <th scope="col" className="px-2 pb-1 text-sm font-semibold text-stone-400">
-                  Number
+                  {t("builder.math.panel.colNumber")}
                 </th>
                 <th scope="col" className="px-2 pb-1 text-sm font-semibold text-stone-400">
-                  Value
+                  {t("builder.math.panel.colValue")}
                 </th>
                 <th scope="col" className="px-2 pb-1 text-sm font-semibold text-stone-400">
-                  How it is made
+                  {t("builder.math.panel.colHow")}
                 </th>
               </tr>
             </thead>
@@ -182,6 +182,7 @@ export function BuildMathPanel({
               race,
               racialBonus: derived.racialBonus,
               proficientSkills: derived.proficientSkills,
+              t,
             })}
             klass={klass}
             race={race}
@@ -228,14 +229,13 @@ function PicksSoFar({
   return (
     <section aria-labelledby={headingId} data-picks-so-far="">
       <h3 id={headingId} className="mb-1 font-display text-base font-semibold text-amber-200/90">
-        Your picks so far
+        {t("builder.math.picks.title")}
       </h3>
       <p className="mb-2 text-base text-stone-400">
-        Every number and how it is made appears here once your hero has a class, an ancestry, a background and six
-        scores.
+        {t("builder.math.picks.body")}
       </p>
       <table className="w-full table-fixed border-collapse text-left">
-        <caption className="sr-only">What is already settled</caption>
+        <caption className="sr-only">{t("builder.math.picks.caption")}</caption>
         <colgroup>
           <col className="w-[38%]" />
           <col className="w-[34%]" />
@@ -244,13 +244,13 @@ function PicksSoFar({
         <thead>
           <tr>
             <th scope="col" className="px-2 pb-1 text-sm font-semibold text-stone-400">
-              Number
+              {t("builder.math.panel.colNumber")}
             </th>
             <th scope="col" className="px-2 pb-1 text-sm font-semibold text-stone-400">
-              Value
+              {t("builder.math.panel.colValue")}
             </th>
             <th scope="col" className="px-2 pb-1 text-sm font-semibold text-stone-400">
-              From
+              {t("builder.math.panel.colFrom")}
             </th>
           </tr>
         </thead>
@@ -271,7 +271,7 @@ function PicksSoFar({
           <h3 className={title}>{contentName("classes", klass.name, locale)}</h3>
           <InfoBody
             large
-            meta={classDetailsMeta(t, { id: klass.id, saves: klass.saves, reading: classRoles(klass) }).join(" · ")}
+            meta={classDetailsMeta(t, { id: klass.id, saves: klass.saves, reading: classRoles(klass), locale }).join(" · ")}
             text={classInfoText(klass)}
             reference={{ kind: "classes", slug: klass.id, name: klass.name }}
           />

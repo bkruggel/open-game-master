@@ -1,9 +1,11 @@
 "use client";
 
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import type { Locale } from "@/lib/messages-logic";
+import { contentName } from "@/lib/content/names";
 import { scoresFromSlots } from "../abilityDice";
-import AbilityEditor, { ABILITY_LABELS, STANDARD_ARRAY } from "../AbilityEditor";
+import AbilityEditor, { STANDARD_ARRAY } from "../AbilityEditor";
 import { abilityPriority, keyAbilities, poolSlotsFor, standardFor } from "../classAbilities";
 import type { HpExplainerInput } from "../AbilityExplainers";
 import AsiFeatEditor from "../AsiFeatEditor";
@@ -13,18 +15,31 @@ import type { BuilderDerived } from "../useBuilderDerived";
 import type { BuilderState } from "../useBuilderState";
 import { PickForMe } from "./shared";
 
+// An ability key as its name in the reader's language (sheet.ability.*).
+const ABILITY_WORDS = {
+  str: "sheet.ability.str",
+  dex: "sheet.ability.dex",
+  con: "sheet.ability.con",
+  int: "sheet.ability.int",
+  wis: "sheet.ability.wis",
+  cha: "sheet.ability.cha",
+} as const;
+
 // What the health explainer works from, shared with the Max HP line on the
 // last step: both read derived.hp (builderHp.ts), the figure the server
 // saves. Null until the class and all six scores are known.
 export function hpExplainerInput(
   derived: BuilderDerived,
   klass: ClassOption | undefined,
+  locale: Locale = "en",
 ): HpExplainerInput | null {
   if (!klass || !derived.shownAbilities || !derived.hp) {
     return null;
   }
   return {
-    className: klass.name,
+    // The explainer's sentences name the class, so it reads in the reader's
+    // language (contentName).
+    className: contentName("classes", klass.name, locale),
     // The Constitution the sheet will hold, a half-feat's point included.
     con: derived.shownAbilities.con,
     level: derived.effectiveLevel,
@@ -43,7 +58,7 @@ function PlaceForClass({ state, klass }: { state: BuilderState; klass: ClassOpti
   if (state.method === "pointbuy" || (state.method === "roll" && !pool)) {
     return null;
   }
-  const words = (ability: string) => ABILITY_LABELS[ability as keyof typeof ABILITY_LABELS] ?? ability;
+  const words = (ability: string) => t(ABILITY_WORDS[ability as keyof typeof ABILITY_WORDS] ?? ability);
   const keys = keyAbilities(klass);
   const named = new Set(keys.flat());
   const then = abilityPriority(klass).find((ability) => !named.has(ability));
@@ -95,6 +110,7 @@ export function AbilitiesStep({
   onPickForMe?: (target: "asi") => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const { asiSlotLevels, activeAsiChoices, asiTakenInPlay, asiBaseAbilities, effectiveLevel } = derived;
   const asiToPick = asiTakenInPlay.filter((taken) => !taken).length;
   const asiOpen = activeAsiChoices.filter((choice, index) => choice === null && !asiTakenInPlay[index]).length;
@@ -117,8 +133,12 @@ export function AbilitiesStep({
         racialBonus={derived.racialBonus}
         gains={derived.abilityGains}
         asiCount={asiToPick}
-        who={race && klass ? `${race.name} ${klass.name}`.toLowerCase() : ""}
-        hp={hpExplainerInput(derived, klass)}
+        who={
+          race && klass
+            ? `${contentName("species", race.name, locale)} ${contentName("classes", klass.name, locale)}`.toLowerCase()
+            : ""
+        }
+        hp={hpExplainerInput(derived, klass, locale)}
       />
       </div>
       {asiSlotLevels.length ? (

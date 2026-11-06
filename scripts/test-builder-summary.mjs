@@ -153,7 +153,8 @@ await test("an edit opens on the summary, and every step offers the way back onc
   assert.match(builder, /useState\(initial \? STEP_ORDER\.length - 1 : 0\)/, "an edit's first step is the last, the summary");
   assert.match(builder, /useState\(Boolean\(initial\)\)/, "an edit has seen the summary from the start");
   assert.match(builder, /if \(step === STEP_ORDER\.length - 1 && !summarySeen\) \{\n\s+setSummarySeen\(true\);/, "a new build sees it on arrival");
-  assert.match(builder, /secondary: \{ label: "Back to summary", onClick: \(\) => backToSummary\(entry\.key\) \}/);
+  // The label reads through the dictionary (builder.shell.backToSummary), the i18n pass.
+  assert.match(builder, /secondary: \{ label: t\("builder\.shell\.backToSummary"\), onClick: \(\) => backToSummary\(entry\.key\) \}/);
   assert.match(builder, /index === STEP_ORDER\.length - 1\n\s+\? entry/, "the summary itself has no Back to summary");
   assert.match(builder, /steps=\{flow\}/);
   assert.match(builder, /summary=\{summary\}/);
@@ -167,7 +168,7 @@ await test("an edit opens on the summary, and every step offers the way back onc
   assert.match(builder, /finishFromAnyStep=\{Boolean\(initial\)\}/);
   assert.match(builder, /jumpAhead\n/);
   assert.match(builder, /variant="diamonds"\s+stepNames/);
-  assert.match(builder, /title: "Check your hero and finish"/);
+  assert.match(builder, /title: t\("builder\.shell\.step\.finishTitle"\)/, "the summary step's title reads through the dictionary");
   // The quiz's character still ends on the summary.
   assert.match(builder, /setStep\(STEP_ORDER\.length - 1\);\n\s+\}\n\s+\},\n\s+\}\);/);
 

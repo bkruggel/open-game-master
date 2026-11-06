@@ -332,8 +332,8 @@ test("the picks show the class and ancestry write-ups their cards' details show"
   // Named for a new player, and the card's "?" is "About", so "details"
   // means one thing.
   assert.match(panel, /Character details/);
-  assert.match(panel, /aria-label=\{open \? "Hide character details" : "Show character details"\}/);
-  assert.match(panel, /\{open \? "Hide" : "Show"\}/);
+  assert.match(panel, /aria-label=\{open \? t\("builder\.math\.panel\.hide"\) : t\("builder\.math\.panel\.show"\)\}/, "the details switch reads through the dictionary (i18n pass)");
+  assert.match(panel, /\{open \? t\("builder\.math\.panel\.hideWord"\) : t\("builder\.math\.panel\.showWord"\)\}/);
   assert.match(read("../src/app/characters/builder/OptionCardGrid.tsx"), /aria-label=\{`About \$\{option\.name\}`\}/);
   // Shown only until the full table can be worked out.
   assert.match(panel, /sections\.length \? \([\s\S]*<table[\s\S]*\) : \(\s*<PicksSoFar/);

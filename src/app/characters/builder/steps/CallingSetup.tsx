@@ -112,7 +112,13 @@ export function LevelField({
               {t("builder.setup.floorNote", { level: state.levelFloor })}
             </span>
           ) : levelNote ? (
-            <span className="mt-1 block text-xs text-stone-500">{levelNote}</span>
+            // The door's notes (door.ts) are English data; the known one says
+            // itself in the reader's language, any other passes through.
+            <span className="mt-1 block text-xs text-stone-500">
+              {/^(?:The party is built for level |Le groupe est prévu pour le niveau )(\d+)\.$/.test(levelNote)
+                ? t("builder.levels.doorParty", { level: Number(levelNote.match(/(\d+)/)?.[1]) })
+                : levelNote}
+            </span>
           ) : null}
         </>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Coins, Dices, Loader2 } from "lucide-react";
+import { useT } from "@/lib/locale";
 import type { ReactNode } from "react";
 import { InfoButton } from "@/components/ui/InfoDialog";
 import { cn } from "@/lib/cn";
@@ -106,7 +107,20 @@ export default function EquipmentSection({
   purse: PurseView;
   inputClass: string;
 }) {
+  const t = useT();
   const have = new Set(equipment.map((item) => textKey(item.name)));
+  // The browse sections' headings read in the reader's language (GEAR_SHELF
+  // stays the data the other shelves build from).
+  const shelfSections = GEAR_SHELF.map((section) => ({
+    ...section,
+    label: t(
+      ({
+        "Armor and shields": "builder.gear.section.armor",
+        "Adventuring gear": "builder.gear.section.gear",
+        Weapons: "builder.gear.section.weapons",
+      } as Record<string, string>)[section.label] ?? section.label,
+    ),
+  }));
   const openSuggestions = suggestions.filter((entry) => !have.has(textKey(entry.name)));
   // Only what the kit does not already carry: most class kits come with a
   // pack, and a second backpack on top was what blocked the step (issue #111).
@@ -114,11 +128,11 @@ export default function EquipmentSection({
 
   return (
     <section className="panel rounded-xl p-4">
-      <h2 className="eyebrow mb-1 text-xs text-amber-200/90">Equipment</h2>
+      <h2 className="eyebrow mb-1 text-xs text-amber-200/90">{t("builder.gear.title")}</h2>
       {kit}
       {openSuggestions.length ? (
         <div className="mb-2">
-          <p className="mb-1.5 text-xs text-stone-500">Suggested for your class:</p>
+          <p className="mb-1.5 text-xs text-stone-500">{t("builder.gear.suggested")}</p>
           <div className="flex flex-wrap gap-1.5">
             {openSuggestions.map((entry) => (
               <span
@@ -149,14 +163,16 @@ export default function EquipmentSection({
           disabled={!starterMissing.length}
           title={
             starterMissing.length
-              ? `Adds ${starterMissing.map((entry) => (entry.qty > 1 ? `${entry.name} x${entry.qty}` : entry.name)).join(", ")}.`
-              : "Your kit already carries the basics: a backpack, bedroll, rations, rope, torches and a waterskin."
+              ? t("builder.gear.starterAdds", {
+                  list: starterMissing.map((entry) => (entry.qty > 1 ? `${entry.name} x${entry.qty}` : entry.name)).join(", "),
+                })
+              : t("builder.gear.starterBasics")
           }
           className="rounded-md border border-stone-700 px-2.5 py-1 text-xs text-stone-300 hover:bg-stone-900 disabled:cursor-not-allowed disabled:opacity-50 motion-press"
         >
           {starterMissing.length
-            ? `Add adventurer's starter pack (${starterMissing.length} ${starterMissing.length === 1 ? "item" : "items"} the kit lacks)`
-            : "Starter pack already in the kit"}
+            ? t(`builder.gear.starterAdd_${starterMissing.length === 1 ? "one" : "other"}`, { count: starterMissing.length })
+            : t("builder.gear.starterInKit")}
         </button>
         <span className="text-xs text-stone-500">plus search armor, weapons, and gear:</span>
       </div>
@@ -171,7 +187,7 @@ export default function EquipmentSection({
       ) : null}
       <ContentPicker
         kind="items"
-        placeholder="Search items (e.g. longsword, chain mail, rope)"
+        placeholder={t("builder.gear.searchItems")}
         onPick={(entry) => onAdd(pickedGear(entry))}
         renderMeta={(entry) => entry.rarity || entry.kind || ""}
         hide={isMagicRow}
@@ -181,15 +197,15 @@ export default function EquipmentSection({
           top and a ⓘ on every row. */}
       <CatalogBrowser
         kind="items"
-        buttonLabel="Browse every weapon, armor and item"
+        buttonLabel={t("builder.gear.browseAll")}
         selectedNames={equipment.map((item) => item.name)}
         onPick={(entry) => onAdd(pickedGear(entry))}
         onUnpick={onRemove}
         recommended={
           suggestions.length
             ? {
-                label: "Suggested for your class",
-                note: "What this class is proficient with, plus the kit everyone carries.",
+                label: t("builder.gear.suggestedLabel"),
+                note: t("builder.gear.suggestedNote"),
                 entries: [
                   ...suggestions.map((entry) => ({ name: entry.name, note: entry.note })),
                   ...STARTER_PACK.map((entry) => ({ name: entry.name, note: "kit" })),
@@ -197,7 +213,7 @@ export default function EquipmentSection({
               }
             : undefined
         }
-        sections={GEAR_SHELF}
+        sections={shelfSections}
         metaOf={(entry) => entry.rarity || entry.cost || ""}
       />
       {purse.receipt ? (
@@ -242,7 +258,7 @@ export default function EquipmentSection({
         {purse.receipt ? null : (
           <div className="flex items-baseline gap-2">
             <Coins className="size-3.5 self-center text-amber-300/80" />
-            <span className="text-xs text-stone-400">Coin left after the gear</span>
+            <span className="text-xs text-stone-400">{t("builder.gear.coinLeft")}</span>
             <span key={`${purse.gold}-${purse.copper}`} className="reveal font-mono text-sm text-amber-200">
               {purse.gold} gp{purse.copper ? ` ${purse.copper} cp` : ""}
             </span>
@@ -250,7 +266,11 @@ export default function EquipmentSection({
         )}
         <p className="text-sm text-stone-500">
           {purse.wealth?.rolled
-            ? `The server rolled ${purse.wealth.rolled.faces.join(", ")} on ${purse.wealth.dice}: ${purse.wealth.rolled.gold} gp. `
+            ? t("builder.gear.rolledBy", {
+                faces: purse.wealth.rolled.faces.join(", "),
+                dice: purse.wealth.dice,
+                gold: purse.wealth.rolled.gold,
+              })
             : ""}
           {purse.source}
         </p>
@@ -261,8 +281,7 @@ export default function EquipmentSection({
         ) : null}
         {purse.problems.length ? (
           <p className={cn("reveal text-sm text-amber-300")}>
-            {purse.problems.length === 1 ? "One item above" : `${purse.problems.length} items above`} cannot be paid for; the
-            Continue button waits on that.
+            {t(`builder.gear.unpaid_${purse.problems.length === 1 ? "one" : "other"}`, { count: purse.problems.length })}
           </p>
         ) : null}
       </div>

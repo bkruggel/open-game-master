@@ -83,7 +83,7 @@ export function PickForMe({ onPick, what }: { onPick: () => void; what: string }
       aria-label={t("builder.shared.pickForMeAria", { what })}
       className="shrink-0 rounded-md border border-sky-500/40 px-1.5 py-0.5 text-xs text-sky-200 transition-colors hover:bg-sky-500/10"
     >
-      Pick for me
+      {t("builder.shared.pickForMe")}
     </button>
   );
 }

@@ -94,48 +94,78 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
   const split = hp.split ?? null;
   const nameOf = (id: string) =>
     derived.extras?.find((entry) => entry.klass.id === id)?.klass.name ?? klass.name;
+  const level1 = t("builder.math.hpWorking.level1", {
+    die: parts.hitDie,
+    max: parts.hitDie,
+    con: formatModifier(parts.conMod),
+    bonus: parts.bonusPerLevel ? t("builder.math.hpWorking.bonus", { bonus: formatModifier(parts.bonusPerLevel) }) : "",
+    first: parts.firstLevel,
+  });
+  const featurePart = parts.featureHp ? [t("builder.math.hpWorking.features", { bonus: formatModifier(parts.featureHp) })] : [];
+  const levelsWord = (levels: number) => (levels === 1 ? t("builder.math.levelWord") : t("builder.math.levelsWord"));
   const hpWorking = preview.hpKept
     ? hpLine.reason
     : split
       ? [
-          `level 1: d${parts.hitDie} ${parts.hitDie}, Con ${formatModifier(parts.conMod)}${parts.bonusPerLevel ? `, bonus ${formatModifier(parts.bonusPerLevel)}` : ""} = ${parts.firstLevel}`,
+          level1,
           ...split
             .filter((entry) => entry.levels > 0)
             .map((entry) =>
               preview.hpMethod === "rolled"
-                ? `${entry.levels} ${nameOf(entry.id).toLowerCase()} ${entry.levels === 1 ? "level" : "levels"} rolled on a d${entry.hitDie} by the server when you save`
-                : `${entry.levels} ${entry === split[0] ? "more " : ""}${nameOf(entry.id).toLowerCase()} ${entry.levels === 1 ? "level" : "levels"} at ${entry.perLevel} each (d${entry.hitDie}) = ${entry.levels * entry.perLevel}`,
+                ? t("builder.math.hpWorking.splitRolled", {
+                    levels: entry.levels,
+                    klass: nameOf(entry.id).toLowerCase(),
+                    levelsWord: levelsWord(entry.levels),
+                    die: entry.hitDie,
+                  })
+                : t("builder.math.hpWorking.split", {
+                    levels: entry.levels,
+                    more: entry === split[0] ? "" : t("builder.math.more"),
+                    klass: nameOf(entry.id).toLowerCase(),
+                    levelsWord: levelsWord(entry.levels),
+                    each: entry.perLevel,
+                    die: entry.hitDie,
+                    sum: entry.levels * entry.perLevel,
+                  }),
             ),
-          ...(parts.featureHp ? [`features ${formatModifier(parts.featureHp)}`] : []),
+          ...featurePart,
         ].join("; ")
       : [
-        `level 1: d${parts.hitDie} ${parts.hitDie}, Con ${formatModifier(parts.conMod)}${parts.bonusPerLevel ? `, bonus ${formatModifier(parts.bonusPerLevel)}` : ""} = ${parts.firstLevel}`,
-        ...(effectiveLevel > 1
-          ? [
-              preview.hpMethod === "rolled"
-                ? `${effectiveLevel - 1} more levels rolled by the server when you save`
-                : `${effectiveLevel - 1} more levels at ${parts.perLevel} each (${preview.hpMethod === "max" ? "die's highest face" : "average"} ${parts.face}, Con ${formatModifier(parts.conMod)}${parts.bonusPerLevel ? `, bonus ${formatModifier(parts.bonusPerLevel)}` : ""}) = ${parts.laterLevels}`,
-            ]
-          : []),
-        ...(parts.featureHp ? [`features ${formatModifier(parts.featureHp)}`] : []),
-      ].join("; ");
+          level1,
+          ...(effectiveLevel > 1
+            ? [
+                preview.hpMethod === "rolled"
+                  ? t("builder.math.hpWorking.rolled", { levels: effectiveLevel - 1 })
+                  : t("builder.math.hpWorking.later", {
+                      levels: effectiveLevel - 1,
+                      each: parts.perLevel,
+                      how: preview.hpMethod === "max" ? t("builder.math.hpWorking.maxFace") : t("builder.math.hpWorking.average"),
+                      face: parts.face,
+                      con: formatModifier(parts.conMod),
+                      bonus: parts.bonusPerLevel ? t("builder.math.hpWorking.bonus", { bonus: formatModifier(parts.bonusPerLevel) }) : "",
+                      sum: parts.laterLevels,
+                    }),
+              ]
+            : []),
+          ...featurePart,
+        ].join("; ");
   const acLine = armorClassLine(t, derived.acInfo?.ac ?? derived.ac, derived.acInfo?.parts);
   sections.push({
     id: "core",
-    title: "Core",
+    title: t("builder.math.core"),
     rows: [
-      { id: "ac", label: "Armor class", value: acLine.value, working: acLine.reason },
-      { id: "hp", label: "Hit points", value: hpLine.value, working: hpWorking },
-      { id: "initiative", label: "Initiative", value: formatModifier(sheet.initiative), working: workingOf(sheet.parts.initiative) },
+      { id: "ac", label: t("builder.math.armorClass"), value: acLine.value, working: acLine.reason },
+      { id: "hp", label: t("builder.math.hitPoints"), value: hpLine.value, working: hpWorking },
+      { id: "initiative", label: t("builder.math.initiative"), value: formatModifier(sheet.initiative), working: workingOf(sheet.parts.initiative) },
       {
         id: "proficiency",
-        label: "Proficiency bonus",
+        label: t("builder.math.profBonus"),
         value: formatModifier(sheet.proficiencyBonus),
-        working: `level ${effectiveLevel}`,
+        working: t("builder.math.levelN", { level: effectiveLevel }),
       },
       {
         id: "passive-perception",
-        label: "Passive Perception",
+        label: t("builder.math.passivePerception"),
         value: String(sheet.passivePerception),
         working: workingOf(sheet.parts.passivePerception),
       },
@@ -144,14 +174,14 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
 
   sections.push({
     id: "abilities",
-    title: "Ability scores",
+    title: t("builder.math.abilities"),
     rows: ABILITIES.map((ability) => {
       const assigned = scores[ability];
       const race = derived.racialBonus[ability] ?? 0;
       const gains = derived.abilityGains[ability] ?? [];
       const working = [
-        assigned === null ? null : `assigned ${assigned}`,
-        race ? `race ${formatModifier(race)}` : null,
+        assigned === null ? null : t("builder.math.assigned", { value: assigned }),
+        race ? t("builder.math.race", { bonus: formatModifier(race) }) : null,
         ...gains.filter((gain) => gain.amount).map((gain) => `${gain.source} ${formatModifier(gain.amount)}`),
       ].filter(Boolean);
       return {
@@ -165,10 +195,10 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
 
   sections.push({
     id: "saves",
-    title: "Saving throws",
+    title: t("builder.math.saves"),
     rows: ABILITIES.map((ability) => ({
       id: `save-${ability}`,
-      label: `${ABILITY_NAMES[ability]} save`,
+      label: t("builder.math.saveOf", { ability: ABILITY_NAMES[ability] }),
       value: formatModifier(sheet.saves[ability]),
       working: workingOf(sheet.parts.saves[ability]),
     })),
@@ -176,7 +206,7 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
 
   sections.push({
     id: "skills",
-    title: "Skills",
+    title: t("builder.math.skills"),
     rows: SRD_SKILLS.map((skill) => ({
       id: `skill-${skill.id}`,
       label: skill.name,
@@ -191,10 +221,14 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
   const slotDesks = (derived.casterDesks ?? []).filter((desk) => desk.klass.casterType !== "pact" && desk.maxSpellLevel > 0);
   const slotTable =
     derived.multiclass && slotDesks.length > 1
-      ? `multiclass table at caster level ${casterLevelFor(derived.classList ?? [])}`
+      ? t("builder.math.slotTable.multiclass", { level: casterLevelFor(derived.classList ?? []) })
       : derived.multiclass && derived.casterKlass
-        ? `${derived.casterKlass.name} table at ${derived.casterKlass.name.toLowerCase()} level ${derived.casterLevel ?? effectiveLevel}`
-        : `${klass.name} table at level ${effectiveLevel}`;
+        ? t("builder.math.slotTable.caster", {
+            klass: derived.casterKlass.name,
+            lower: derived.casterKlass.name.toLowerCase(),
+            level: derived.casterLevel ?? effectiveLevel,
+          })
+        : t("builder.math.slotTable.single", { klass: klass.name, level: effectiveLevel });
   // With more than one casting class each has its own save DC and attack,
   // from its own ability (backlog F9, phase 2).
   const desks = (derived.casterDesks ?? []).filter((desk) => desk.ability && desk.spellSaveDc !== null);
@@ -203,15 +237,23 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
     ? desks.flatMap((desk) => [
         {
           id: `spell-dc-${desk.classId}`,
-          label: `${desk.klass.name} spell save DC`,
+          label: t("builder.math.spellDcOf", { klass: desk.klass.name }),
           value: String(desk.spellSaveDc),
-          working: `8, proficiency ${formatModifier(sheet.proficiencyBonus)}, ${(desk.ability ?? "").toUpperCase()} modifier ${formatModifier((desk.spellSaveDc ?? 8) - 8 - sheet.proficiencyBonus)}`,
+          working: t("builder.math.dcWorking", {
+            prof: formatModifier(sheet.proficiencyBonus),
+            code: (desk.ability ?? "").toUpperCase(),
+            mod: formatModifier((desk.spellSaveDc ?? 8) - 8 - sheet.proficiencyBonus),
+          }),
         },
         {
           id: `spell-attack-${desk.classId}`,
-          label: `${desk.klass.name} spell attack`,
+          label: t("builder.math.spellAttackOf", { klass: desk.klass.name }),
           value: formatModifier(desk.spellAttack ?? 0),
-          working: `proficiency ${formatModifier(sheet.proficiencyBonus)}, ${(desk.ability ?? "").toUpperCase()} modifier ${formatModifier((desk.spellAttack ?? 0) - sheet.proficiencyBonus)}`,
+          working: t("builder.math.attackWorking", {
+            prof: formatModifier(sheet.proficiencyBonus),
+            code: (desk.ability ?? "").toUpperCase(),
+            mod: formatModifier((desk.spellAttack ?? 0) - sheet.proficiencyBonus),
+          }),
         },
       ])
     : [];
@@ -219,7 +261,7 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
     ...SLOT_LEVELS.flatMap(([level, ordinal]) => {
       const slot = derived.spellSlots[level];
       return slot && slot.max > 0
-        ? [{ id: `slots-${level}`, label: `${ordinal}-level slots`, value: String(slot.max), working: slotTable }]
+        ? [{ id: `slots-${level}`, label: t("builder.math.slotsOf", { ordinal }), value: String(slot.max), working: slotTable }]
         : [];
     }),
     // A warlock's pact slots on a class list sit apart from the rest.
@@ -227,9 +269,12 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
       ? [
           {
             id: "slots-pact",
-            label: "Pact magic slots",
-            value: `${derived.pactSlots.max} at ${SLOT_LEVELS[derived.pactSlots.level - 1]?.[1] ?? derived.pactSlots.level} level`,
-            working: "warlock levels, recovered on a short rest",
+            label: t("builder.math.pactSlots"),
+            value: t("builder.math.pactSlotsValue", {
+              count: derived.pactSlots.max,
+              ordinal: SLOT_LEVELS[derived.pactSlots.level - 1]?.[1] ?? derived.pactSlots.level,
+            }),
+            working: t("builder.math.pactWorking"),
           },
         ]
       : []),
@@ -237,14 +282,14 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
   if (sheet.spellSaveDc !== null || slotRows.length || deskRows.length) {
     sections.push({
       id: "spells",
-      title: "Spellcasting",
+      title: t("builder.math.spellcasting"),
       rows: [
         ...deskRows,
         ...(sheet.spellSaveDc !== null && !perClass
-          ? [{ id: "spell-dc", label: "Spell save DC", value: String(sheet.spellSaveDc), working: workingOf(sheet.parts.spellSaveDc) }]
+          ? [{ id: "spell-dc", label: t("builder.math.spellDc"), value: String(sheet.spellSaveDc), working: workingOf(sheet.parts.spellSaveDc) }]
           : []),
         ...(sheet.spellAttack !== null && !perClass
-          ? [{ id: "spell-attack", label: "Spell attack", value: formatModifier(sheet.spellAttack), working: workingOf(sheet.parts.spellAttack) }]
+          ? [{ id: "spell-attack", label: t("builder.math.spellAttack"), value: formatModifier(sheet.spellAttack), working: workingOf(sheet.parts.spellAttack) }]
           : []),
         ...slotRows,
       ],
@@ -257,10 +302,14 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
           {
             id: `weapon-${row.name}`,
             label: row.name,
-            value: `${formatModifier(row.weapon.toHit)} to hit, ${row.weapon.damage} ${row.weapon.damageType}`,
+            value: t("builder.math.weaponValue", {
+              toHit: formatModifier(row.weapon.toHit),
+              damage: row.weapon.damage,
+              type: row.weapon.damageType,
+            }),
             working: [
-              `to hit: ${workingOf(row.weapon.toHitParts)}`,
-              `damage adds ${row.weapon.ability} modifier`,
+              t("builder.math.weaponToHit", { parts: workingOf(row.weapon.toHitParts) }),
+              t("builder.math.weaponDamage", { ability: row.weapon.ability }),
               ...row.weapon.notes,
             ].join("; "),
           },
@@ -268,7 +317,7 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
       : [],
   );
   if (weapons.length) {
-    sections.push({ id: "weapons", title: "Weapons", rows: weapons });
+    sections.push({ id: "weapons", title: t("builder.math.weapons"), rows: weapons });
   }
   return sections;
 }
@@ -286,6 +335,7 @@ export function knownSoFarRows({
   race,
   racialBonus,
   proficientSkills,
+  t,
 }: {
   level: number;
   klass: { name: string; hitDie: number; saves: string[] } | undefined;
@@ -300,7 +350,12 @@ export function knownSoFarRows({
     | undefined;
   racialBonus: Partial<Record<Ability, number>>;
   proficientSkills: string[];
+  // The reader's words (builder.math.known*); without it the test-pinned
+  // English stands.
+  t?: Translator;
 }): BuildMathRow[] {
+  const say = (key: string, vars: Record<string, string | number> = {}, english: string) =>
+    typeof t === "function" ? t(key, vars) : english;
   const bonuses = ABILITIES.flatMap((ability) =>
     racialBonus[ability] ? [`${ABILITY_NAMES[ability]} ${formatModifier(racialBonus[ability] ?? 0)}`] : [],
   );
@@ -311,7 +366,13 @@ export function knownSoFarRows({
     const placed = ABILITIES.reduce((sum, ability) => sum + Math.max(0, (racialBonus[ability] ?? 0) - (race?.asi?.[ability] ?? 0)), 0);
     const owed = choice.count - Math.round(placed / choice.amount);
     if (owed > 0) {
-      bonuses.push(`+${choice.amount} to ${COUNT_WORDS[owed] ?? owed} ${bonuses.length ? "more " : ""}of your choice`);
+      bonuses.push(
+        say(
+          "builder.math.bonusChoice",
+          { amount: choice.amount, word: COUNT_WORDS[owed] ?? owed, more: bonuses.length ? t?.("builder.math.more") ?? "more " : "" },
+          `+${choice.amount} to ${COUNT_WORDS[owed] ?? owed} ${bonuses.length ? "more " : ""}of your choice`,
+        ),
+      );
     }
   }
   const variant = race?.variants ? pickedVariant(race) : null;
@@ -320,29 +381,58 @@ export function knownSoFarRows({
     return skill ? [skill.name] : [];
   });
   return [
-    { id: "proficiency", label: "Proficiency bonus", value: formatModifier(proficiencyBonus(level)), working: `level ${level}` },
+    {
+      id: "proficiency",
+      label: say("builder.math.knownProficiency", {}, "Proficiency bonus"),
+      value: formatModifier(proficiencyBonus(level)),
+      working: say("builder.math.levelN", { level }, `level ${level}`),
+    },
     ...(klass
       ? [
-          { id: "hit-die", label: "Hit die", value: `d${klass.hitDie}`, working: klass.name },
+          { id: "hit-die", label: say("builder.math.knownHitDie", {}, "Hit die"), value: `d${klass.hitDie}`, working: klass.name },
           {
             id: "save-proficiencies",
-            label: "Proficient saves",
+            label: say("builder.math.knownSaves", {}, "Proficient saves"),
             value: klass.saves.map((save) => ABILITY_NAMES[save] ?? save).join(", "),
             working: klass.name,
           },
         ]
       : []),
     ...(race?.variants
-      ? [{ id: "species-choice", label: race.variants.label, value: variant?.name ?? "still to choose", working: race.name }]
+      ? [
+          {
+            id: "species-choice",
+            label: race.variants.label,
+            value: variant?.name ?? say("builder.math.knownSpeciesChoice", {}, "still to choose"),
+            working: race.name,
+          },
+        ]
       : []),
     ...(race
       ? [
-          { id: "ancestry-bonuses", label: "Ancestry bonuses", value: bonuses.join(", ") || "none", working: race.name },
-          { id: "speed", label: "Speed", value: `${race.speed} ft`, working: race.name },
+          {
+            id: "ancestry-bonuses",
+            label: say("builder.math.knownBonuses", {}, "Ancestry bonuses"),
+            value: bonuses.join(", ") || say("builder.math.knownNone", {}, "none"),
+            working: race.name,
+          },
+          {
+            id: "speed",
+            label: say("builder.math.knownSpeed", {}, "Speed"),
+            value: `${race.speed} ft`,
+            working: race.name,
+          },
         ]
       : []),
     ...(skills.length
-      ? [{ id: "skill-proficiencies", label: "Proficient skills", value: skills.join(", "), working: "class, background and ancestry picks" }]
+      ? [
+          {
+            id: "skill-proficiencies",
+            label: say("builder.math.knownSkills", {}, "Proficient skills"),
+            value: skills.join(", "),
+            working: say("builder.math.knownSkillsWorking", {}, "class, background and ancestry picks"),
+          },
+        ]
       : []),
   ];
 }
@@ -350,21 +440,32 @@ export function knownSoFarRows({
 // What a screen reader hears when picks move the numbers: the first number
 // that changed, said as "Armor class 16, was 14", and how many more did. A
 // row that appears is said with its value alone; one that goes is not said.
-export function changeLine(before: ReadonlyMap<string, string>, after: BuildMathSection[]): string | null {
+export function changeLine(
+  before: ReadonlyMap<string, string>,
+  after: BuildMathSection[],
+  t?: Translator,
+): string | null {
   const changed: string[] = [];
   for (const row of after.flatMap((section) => section.rows)) {
     const was = before.get(row.id);
     if (was === undefined) {
-      changed.push(`${row.label} ${row.value}`);
+      changed.push(t ? t("builder.math.change", { label: row.label, value: row.value }) : `${row.label} ${row.value}`);
     } else if (was !== row.value) {
-      changed.push(`${row.label} ${row.value}, was ${was}`);
+      changed.push(
+        t ? t("builder.math.changeWas", { label: row.label, value: row.value, was }) : `${row.label} ${row.value}, was ${was}`,
+      );
     }
   }
   if (!changed.length) {
     return null;
   }
   const more = changed.length - 1;
-  return more ? `${changed[0]}. ${more} more ${more === 1 ? "number" : "numbers"} changed.` : `${changed[0]}.`;
+  if (typeof t !== "function") {
+    return more ? `${changed[0]}. ${more} more ${more === 1 ? "number" : "numbers"} changed.` : `${changed[0]}.`;
+  }
+  return more
+    ? t(`builder.math.changeMore_${more === 1 ? "one" : "other"}`, { count: more, lead: changed[0] })
+    : `${changed[0]}.`;
 }
 
 export function snapshotOf(sections: BuildMathSection[]): Map<string, string> {
