@@ -162,7 +162,7 @@ export function MapForge({
   const canRoll = !busy && !rolling && (!library || named);
   const { theme, ambient } = forgeOutcome(settings);
   const sentences = explainForge(settings, (value) => THEME_LABELS[value], (scene) => cueById(scene)?.label ?? scene);
-  const skinGroups = useMemo(() => skinChoices(genre), [genre]);
+  const skinGroups = useMemo(() => skinChoices(genre, t), [genre, t]);
 
   async function show(roll: ForgeRoll, stretch: number) {
     setRolling(true);

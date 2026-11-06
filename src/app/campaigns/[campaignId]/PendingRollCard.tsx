@@ -24,7 +24,7 @@ import { CheckDie, CheckFrame, ModifierBreakdown } from "@/app/campaigns/[campai
 import { findSkill } from "@/lib/srd";
 import { heldInspiration } from "@/lib/dm/roll-riders";
 import { INSPIRED_KINDS } from "@/lib/dm/pending-inspiration";
-import { ROLL_KIND_LABELS } from "@/lib/roll-labels";
+import { rollKindLabel } from "@/lib/roll-labels";
 import { useT } from "@/lib/locale";
 
 // The abilities' words by value; the keys live with the pending group.
@@ -147,7 +147,7 @@ export function PendingRollCard({
 
   const character = sheets.find((sheet) => sheet.id === pending.characterId);
   const detailText = pending.detail.replaceAll("_", " ");
-  const label = `${character?.name ?? t("cine.someone")}: ${pending.kind.replaceAll("_", " ")}${
+  const label = `${character?.name ?? t("cine.someone")}: ${rollKindLabel(t, pending.kind)}${
     detailText ? ` (${detailText})` : ""
   }`;
   // Plain-words instruction: "Roll 2× d20 and 1× d8" from the faces list.
@@ -278,7 +278,7 @@ export function PendingRollCard({
 
   // What the card is about, for its head: the kind, the DC the table was
   // sent, and the ability behind a skill ("Athletics" is Strength).
-  const title = ROLL_KIND_LABELS[pending.kind] ?? t("table.tray.roll");
+  const title = rollKindLabel(t, pending.kind);
   const skillId = pending.detail.trim().toLowerCase().replace(/[\s-]+/g, "_");
   const abilityId =
     pending.kind === "skill_check"

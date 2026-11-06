@@ -49,9 +49,9 @@ import { footprintDistance } from "@/lib/battlemap/footprint";
 import { useAreaAim } from "@/app/campaigns/[campaignId]/BoardAreaAim";
 import { BoardMoveNotes, useMoveNotes } from "@/app/campaigns/[campaignId]/BoardMoveNotes";
 import type { FxEvent } from "@/lib/battlemap/fx-plan";
-import { TEMPLATE_SHAPES, SHAPE_LABELS, type TemplateShape } from "@/lib/battlemap/template";
+import { TEMPLATE_SHAPES, SHAPE_LABEL_KEYS, shapeLabel, type TemplateShape } from "@/lib/battlemap/template";
 import type { AdhocTokenKind } from "@/lib/battlemap/types";
-import { ADHOC_LABELS, ADHOC_NAME_MAX, type MapPing } from "@/lib/dm/board-logic";
+import { ADHOC_LABEL_KEYS, ADHOC_NAME_MAX, type MapPing } from "@/lib/dm/board-logic";
 import { ENTRY_NAME_MAX, MIN_INITIATIVE, MAX_INITIATIVE } from "@/lib/dm/initiative-edit";
 import { extraTurnTag } from "@/lib/battlemap/initiative-rows";
 import { offSide, sideWords } from "@/app/campaigns/[campaignId]/SideBadge";
@@ -84,7 +84,7 @@ import { TabletopOrder } from "@/app/campaigns/[campaignId]/CinematicParts";
 import { AddonBoardView, postTo, useAnchor } from "@/app/campaigns/[campaignId]/AddonBoardView";
 import { AddonViewSwitch, boardViewKey, useBoardView, useBoardViewOptions } from "@/app/campaigns/[campaignId]/AddonViewSwitch";
 import { createAnchorStore, type AnchorStore, type Anchor, type BoardActionMenu, type BoardHud, type BoardControl, type BoardPanel, type BoardControlId, type BoardLook, type CameraControl, type ViewCameraState } from "@/lib/addons/board-bridge";
-import { HEALTH_LABEL } from "@/lib/battlemap/health-words";
+import { healthLabel } from "@/lib/battlemap/health-words";
 import { HAND_AIM_EVENT, HAND_TARGET_EVENT, HAND_BOARD_ACTION_EVENT, HAND_BOARD_STATUS_EVENT, HAND_BOARD_CONTROL_EVENT, HAND_BOARD_SURFACE_EVENT, type HandAimDetail, type HandBoardAction, type HandBoardStatus } from "@/lib/battlemap/hand-play";
 
 // The tactical battle map tab.
@@ -1084,9 +1084,9 @@ export function BattleMapPanel({
     choose("view", t("board.tools.viewTitle"), addonView ? boardViewKey(addonView) : "", [option("", t("board.tools.odmBoard")), ...offeredViews.map(entry => option(boardViewKey(entry), entry.title))]),
     ...(meUserId && multiCharacter !== "off" && sheets.filter(sheet => sheet.userId === meUserId && !sheet.isCompanion).length > 1 ? [choose("play-as", t("board.playingAs"), playingSheet(sheets, meUserId, activeSheetId)?.id ?? "", sheets.filter(sheet => sheet.userId === meUserId && !sheet.isCompanion).map(sheet => option(sheet.id, sheet.name)))] : []),
     ...(canDirect ? [choose("tool", t("board.tools.tool"), tool, [option("handle", t("board.tools.movePieces")), option("place", t("board.tools.place")), option("measure", t("board.tools.measure")), option("point", t("board.tools.point")), ...(canDraw ? [option("draw", t("board.tools.draw"))] : [])])] : [{ id: "point" as const, label: t("board.tools.pointToggle", { state: pointing ? t("board.state.on") : t("board.state.off") }), disabled: null }, ...(canDraw ? [{ id: "draw" as const, label: t("board.tools.drawToggle", { state: drawing ? t("board.state.on") : t("board.state.off") }), disabled: null }] : [])]),
-    ...(canDirect && tool === "place" ? [choose("place-kind", t("board.tools.placeTitle"), placeKind, (Object.keys(ADHOC_LABELS) as AdhocTokenKind[]).map(value => option(value, value === "npc" ? t("board.adhoc.npc") : t("board.adhoc.prop")))), { id: "place-name" as const, label: t("board.tools.name"), disabled: null, input: { value: placeName } }] : []),
-    ...(canDirect && tool === "measure" ? [choose("measure-shape", t("board.tools.shape"), shape, TEMPLATE_SHAPES.map(value => option(value, SHAPE_LABELS[value]))), choose("measure-size", t("board.tools.size"), String(sizeFeet), Array.from({ length: 12 }, (_, index) => option(String((index + 1) * 5), t("board.tools.ftOption", { feet: (index + 1) * 5 })))), { id: "measure-clear" as const, label: t("board.tools.clearMeasure"), disabled: null }, ...(liveMeasure?.caught.some(entry => entry.enemyId) ? [{ id: "measure-copy" as const, label: t("board.tools.copyIds"), disabled: null }] : [])] : []),
-    ...(drawActive && canDraw ? [choose("draw-kind", t("board.tools.mark"), drawKind, DRAWING_KINDS.map(value => option(value))), choose("draw-tone", t("board.tools.ink"), drawTone, DRAWING_TONES.map(value => option(value))), { id: "draw-ttl" as const, label: t("board.tools.ttl", { state: drawTtl ? t("board.state.yes") : t("board.state.no") }), disabled: null }, { id: "draw-erase" as const, label: canDirect ? t("board.tools.clearAll") : t("board.tools.eraseMine"), disabled: null }] : []), closePanel,
+    ...(canDirect && tool === "place" ? [choose("place-kind", t("board.tools.placeTitle"), placeKind, (Object.keys(ADHOC_LABEL_KEYS) as AdhocTokenKind[]).map(value => option(value, value === "npc" ? t("board.adhoc.npc") : t("board.adhoc.prop")))), { id: "place-name" as const, label: t("board.tools.name"), disabled: null, input: { value: placeName } }] : []),
+    ...(canDirect && tool === "measure" ? [choose("measure-shape", t("board.tools.shape"), shape, TEMPLATE_SHAPES.map(value => option(value, shapeLabel(t, value)))), choose("measure-size", t("board.tools.size"), String(sizeFeet), Array.from({ length: 12 }, (_, index) => option(String((index + 1) * 5), t("board.tools.ftOption", { feet: (index + 1) * 5 })))), { id: "measure-clear" as const, label: t("board.tools.clearMeasure"), disabled: null }, ...(liveMeasure?.caught.some(entry => entry.enemyId) ? [{ id: "measure-copy" as const, label: t("board.tools.copyIds"), disabled: null }] : [])] : []),
+    ...(drawActive && canDraw ? [choose("draw-kind", t("board.tools.mark"), drawKind, DRAWING_KINDS.map(value => option(value, t(`board.drawKind.${value}`)))), choose("draw-tone", t("board.tools.ink"), drawTone, DRAWING_TONES.map(value => option(value, t(`board.tone.${value}`)))), { id: "draw-ttl" as const, label: t("board.tools.ttl", { state: drawTtl ? t("board.state.yes") : t("board.state.no") }), disabled: null }, { id: "draw-erase" as const, label: canDirect ? t("board.tools.clearAll") : t("board.tools.eraseMine"), disabled: null }] : []), closePanel,
   ] };
   const orderKey = JSON.stringify([campaignId, view.mapId, encounter?.order, encounter?.turnIndex, view.round]);
   const confirmation = orderConfirm?.key === orderKey ? orderConfirm : null;
@@ -1110,7 +1110,7 @@ export function BattleMapPanel({
   const battlefieldHud: BoardHud = {
     selection: selectedFigure && !selectedFigure.hidden ? {
       tokenId: selectedFigure.id, name: selectedFigure.name,
-      lines: [view.tokenHealth[selectedFigure.id] ? HEALTH_LABEL[view.tokenHealth[selectedFigure.id]] : "", ...(view.tokenConditions[selectedFigure.id] ?? []).map(entry => [entry.label, entry.rounds ? `${entry.rounds} rd` : "", entry.note].filter(Boolean).join(" · ")),
+      lines: [view.tokenHealth[selectedFigure.id] ? healthLabel(t, view.tokenHealth[selectedFigure.id]) : "", ...(view.tokenConditions[selectedFigure.id] ?? []).map(entry => [entry.label, entry.rounds ? `${entry.rounds} rd` : "", entry.note].filter(Boolean).join(" · ")),
         ...(selectedFigure.kind === "enemy" && view.edges?.[selectedFigure.refId] ? (() => {
           const edge = view.edges[selectedFigure.refId];
           return [edge.blocked ? t("board.hud.noLine") : edge.cover ? t("board.hud.cover", { ac: edge.cover }) : "", edge.flanking ? t("board.hud.flanked") : "", edge.hostileBeside && !edge.adjacent ? t("board.hud.rangedDis") : ""];
@@ -1715,7 +1715,7 @@ export function BattleMapPanel({
                 drawKind === kind ? "border-amber-700 bg-amber-950/50 text-amber-100" : "border-stone-700 text-stone-400",
               )}
             >
-              {kind}
+              {t(`board.drawKind.${kind}`)}
             </button>
           ))}
           <span className="mx-1 h-4 w-px bg-stone-800" />
@@ -1723,7 +1723,7 @@ export function BattleMapPanel({
             <button
               key={tone}
               type="button"
-              aria-label={t("board.inkOf", { tone })}
+              aria-label={t("board.inkOf", { tone: t(`board.tone.${tone}`) })}
               aria-pressed={drawTone === tone}
               onClick={() => setDrawTone(tone)}
               className={cn(

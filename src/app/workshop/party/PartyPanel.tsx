@@ -172,7 +172,7 @@ export function PartyPanel({
         </div>
       ) : (
         <>
-        <ListHead head={head} noun={["pregen", "pregens"]} placeholder={t("workshop.party.findPregen")} />
+        <ListHead head={head} noun={[t("tally.noun.pregen.one"), t("tally.noun.pregen.many")]} placeholder={t("workshop.party.findPregen")} />
         <ul className="stagger-up grid gap-2 sm:grid-cols-2" data-tour="party-roster">
           {head.shown.map((character) => {
             const offLevel = character.level !== targetParty.level;

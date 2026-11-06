@@ -58,7 +58,7 @@ export function MonsterRows({
   }
   return (
     <>
-    <ListHead head={head} noun={["monster", "monsters"]} placeholder={t("workshop.bestiary.rows.findPlaceholder")} />
+    <ListHead head={head} noun={[t("tally.noun.monster.one"), t("tally.noun.monster.many")]} placeholder={t("workshop.bestiary.rows.findPlaceholder")} />
     <ul className="stagger space-y-2">
       {head.shown.map((monster) => {
         const { stats } = monster.draft;

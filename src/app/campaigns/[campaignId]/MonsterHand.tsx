@@ -210,7 +210,7 @@ function MonsterHandInner({
         say(data.error || t("table.hand.monster.notTaken"));
         return;
       }
-      setLines(describeAdjudicationResult(data.result));
+      setLines(describeAdjudicationResult(data.result, t));
       clearAim();
     } catch {
       say(t("table.wait.unreachable"));

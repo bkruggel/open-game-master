@@ -1490,13 +1490,6 @@
         "a roll label's first part and a pending roll's first die"
       ]
     ],
-    "app/campaigns/[campaignId]/PendingRollCard.tsx#keyed": [
-      [
-        "key",
-        1,
-        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
-      ]
-    ],
     "app/campaigns/[campaignId]/PendingRollCard.tsx#number": [
       [
         "key",
@@ -2612,6 +2605,11 @@
         "identity",
         1,
         "builder picks, kit lines, spells, tools and skills by whole name or id; ids, steps and defaults"
+      ],
+      [
+        "key",
+        1,
+        "the class-role ids a calling's readings list, filtered for the role picker"
       ]
     ],
     "app/characters/builder/steps/CallingStep.tsx#whole": [
@@ -17038,6 +17036,11 @@
         "identity",
         3,
         "SRD, spell, feature, subclass, hazard and magic rows by textKey (or armorKey/gearKey/rowKey/featureKey/priceKey, textKey-based); row tables keyed by the row's own name; the workshop's tables"
+      ],
+      [
+        "key",
+        1,
+        "MATH_PART_KEYS: the DerivedPart labels the math itself builds, read back by the explain builder; no record's name is read"
       ]
     ],
     "lib/srd/index.ts#normalizer": [
@@ -17045,13 +17048,18 @@
         "key",
         1,
         "slugs, hosts, file names, ids, env values, display text, throttle keys, model ids (src/: every site read)"
+      ],
+      [
+        "key",
+        1,
+        "mathPartLabel folds the ability abbreviation out of the DerivedPart label shape (\"STR modifier\") before re-keying it; the labels themselves stay English for the rules regex"
       ]
     ],
     "lib/srd/index.ts#partial": [
       [
         "pattern",
-        1,
-        "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
+        2,
+        "fixed patterns over code-built text that read no record's name: the small/tiny size words and the DerivedPart ability-modifier label shape; their English words are scripts/text-comparisons.json's to classify"
       ]
     ],
     "lib/srd/index.ts#whole": [
@@ -18832,8 +18840,8 @@
       ],
       [
         "pattern",
-        2,
-        "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
+        4,
+        "a fixed pattern over text that reads no record's name: the JOINED and LONG_RUN heuristic matches, counted once for the messages and once for the translated messages' counts; their English words are scripts/text-comparisons.json's to classify"
       ]
     ],
     "lib/workshop/species-traits.ts#partial": [
@@ -19609,6 +19617,62 @@
         "key",
         2,
         "the drop labels' key, read by the drop's stored label in lowercase; the scope nouns' and other label maps by their stored kind"
+      ]
+    ],
+    "lib/dm/faction-logic.ts#keyed": [
+      [
+        "key",
+        1,
+        "STANDING_KEYS (and ATTITUDE_KEYS, same shape): the standing/attitude words the code itself picks, read to their faction.* message keys; no record's name is read"
+      ]
+    ],
+    "lib/battlemap/skins.ts#keyed": [
+      [
+        "key",
+        1,
+        "SKIN_ROLES (with skinChoices' GROUP_EN and resolveSkin's bind reads, same shape): tile characters and the code's own group words, never a record's name"
+      ]
+    ],
+    "lib/roll-labels.ts#keyed": [
+      [
+        "key",
+        1,
+        "ROLL_KIND_KEYS: the roll kinds the engine stores, read to their rollmap.kind message keys; no record's name is read"
+      ]
+    ],
+    "app/campaigns/[campaignId]/mapCatalogue.ts#keyed": [
+      [
+        "key",
+        1,
+        "SKIN_ROLES by terrain character (with materialChoices' GROUP_EN, same shape): tile characters and the code's own group words, never a record's name"
+      ]
+    ],
+    "app/characters/builder/CardText.tsx#partial": [
+      [
+        "parse",
+        10,
+        "the card phrases our own builders compose, cut back apart (\"suits Bard\", \"choose +1\", \"all +2\", \"str caster\", \"very low hp, d6\", the lineage id path)"
+      ]
+    ],
+    "app/characters/builder/LineageCarousel.tsx#normalizer": [
+      [
+        "key",
+        1,
+        "sizeWords folds the SRD size word to look up its builder.lineage.size.* message key"
+      ]
+    ],
+    "app/characters/builder/steps/CallingSetup.tsx#partial": [
+      [
+        "parse",
+        2,
+        "the stored party-level note cut back open (the English and French sentence forms) to retell it in the reader's words"
+      ]
+    ],
+    "app/characters/builder/EquipmentSection.tsx#keyed": [
+      [
+        "key",
+        1,
+        "the gear shelves' English headings read to their builder.gear.section.* message keys"
       ]
     ]
   }

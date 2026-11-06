@@ -2,7 +2,7 @@
 
 import { AlignLeft, Bot, Image as ImageIcon, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ART_STYLE_LABELS, ART_STYLE_NOTES } from "@/lib/art-direction";
+import { artStyleLabel, artStyleNote } from "@/lib/art-direction";
 import { cn } from "@/lib/cn";
 import { ImagesNote } from "@/app/campaigns/[campaignId]/NarrationNote";
 import { commitValue, draftsFrom, editDraft, followSaved, inStep } from "@/app/campaigns/[campaignId]/settingDrafts";
@@ -237,7 +237,7 @@ export function StoryAiPanel({
         : providerLabel(t, settings.textProvider);
   const imagesSummary = settings.imageGenerationEnabled
     ? `${backendLabel(t, settings.imageBackend)}${settings.autoImages ? t("ai.imagesAuto") : ""}${
-        settings.artStyle === "setting" ? "" : t("ai.imagesStyle", { style: ART_STYLE_LABELS[settings.artStyle].toLowerCase() })
+        settings.artStyle === "setting" ? "" : t("ai.imagesStyle", { style: artStyleLabel(t, settings.artStyle).toLowerCase() })
       }`
     : t("ai.off");
 
@@ -592,12 +592,12 @@ export function StoryAiPanel({
               <Select<ArtStyle>
                 value={settings.artStyle}
                 onChange={(artStyle) => patch({ artStyle })}
-                options={ART_STYLES.map((style) => ({ value: style, label: ART_STYLE_LABELS[style] }))}
+                options={ART_STYLES.map((style) => ({ value: style, label: artStyleLabel(t, style) }))}
                 label={t("ai.artStyle")}
                 size="sm"
               />
               <span key={settings.artStyle} className="reveal text-stone-500">
-                {ART_STYLE_NOTES[settings.artStyle]}
+                {artStyleNote(t, settings.artStyle)}
               </span>
             </div>
             {settings.artStyle === "custom" ? (
@@ -638,7 +638,7 @@ export function StoryAiPanel({
           <Select<StorySettings["proseSize"]>
             value={settings.proseSize}
             onChange={(proseSize) => patch({ proseSize })}
-            options={PROSE_SIZE_VALUES.map((size) => ({ value: size, label: size }))}
+            options={PROSE_SIZE_VALUES.map((size) => ({ value: size, label: t(`art.prose.${size}`) }))}
             label={t("ai.passages")}
             size="sm"
           />

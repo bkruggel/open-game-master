@@ -12,7 +12,7 @@ import { SectionHead } from "@/components/ui/SectionHead";
 import { KitButton, PanelError } from "./PanelKit";
 import type { CampaignMessage } from "@/lib/db/messages";
 import {
-  LORE_CATEGORY_LABELS,
+  loreCategoryLabel,
   LORE_CHECK_CATEGORIES,
   type LoreCheckCategory,
   type LoreCheckResult,
@@ -162,7 +162,7 @@ export function LoreCheckDialog({
                     aria-pressed={category === value}
                     className="pk-pill pk-tap motion-press"
                   >
-                    {LORE_CATEGORY_LABELS[value]}
+                    {loreCategoryLabel(t, value)}
                   </button>
                 ))}
               </div>

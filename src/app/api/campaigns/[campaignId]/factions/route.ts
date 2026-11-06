@@ -2,7 +2,7 @@ import { isErrorResponse, requireMember, requireStoryAuthority, steersStory } fr
 import { insertFaction, listFactions } from "@/lib/db/factions";
 import { listNpcs } from "@/lib/db/npcs";
 import { getParty } from "@/lib/db/party";
-import { normalizeFactionAttitude, reputationLabel } from "@/lib/dm/faction-logic";
+import { normalizeFactionAttitude } from "@/lib/dm/faction-logic";
 import { publishEphemeral } from "@/lib/events";
 import { isUploadedImagePath } from "@/lib/uploads";
 
@@ -35,7 +35,6 @@ export async function GET(
       tags: faction.tags,
       portraitPath: faction.portraitPath,
       standing,
-      standingLabel: reputationLabel(standing),
       members,
     };
     return dm ? { ...base, goal: faction.goal, power: faction.power } : base;

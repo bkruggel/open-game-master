@@ -15,7 +15,7 @@ import {
   ROUTE_LABELS,
   ROUTE_LABEL_MAX,
   TITLE_MAX,
-  originLine,
+  originLineT,
   type Beat,
   type BeatKind,
   type BeatLinks,
@@ -27,7 +27,7 @@ import {
 import { KIND_GLYPH, LINK_FIELDS, LINK_GLYPH } from "@/app/workshop/storyboard/beat-fields";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
-import { checkProse, overflowLine } from "@/lib/workshop/prose-check";
+import { checkProseT, overflowLineT } from "@/lib/workshop/prose-check";
 import { useT } from "@/lib/locale";
 
 // One card, open for editing: its kind and title, what happens, who and
@@ -72,11 +72,11 @@ export function BeatEditor({
   // held until it fits (issue #302): the server refuses it the same way.
   // The readability note is a heuristic the author may dismiss; the text
   // is never changed.
-  const overflow = overflowLine("This card's text", edit.body.trim(), BODY_MAX);
-  const prose = checkProse(edit.body);
+  const t = useT();
+  const overflow = overflowLineT(t, t("workshop.card.text"), edit.body.trim(), BODY_MAX);
+  const prose = checkProseT(t, edit.body);
   const [dismissed, setDismissed] = useState("");
   const proseKey = prose.map((warning) => warning.kind).join(",");
-  const t = useT();
   const saveButton = (
     <button
       type="button"
@@ -94,7 +94,7 @@ export function BeatEditor({
       <SectionHead title={t("workshop.boardEditor.cardTitle")} glyph={KIND_GLYPH[edit.kind]} className="mb-0" />
       {origin ? (
         <p className="text-[11px] text-stone-500" data-testid="card-origin">
-          {originLine(origin)}
+          {originLineT(t, origin)}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">

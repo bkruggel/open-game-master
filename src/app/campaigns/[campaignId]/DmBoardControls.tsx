@@ -3,8 +3,8 @@
 import { Box, Hand, MapPin, Pencil, Ruler } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Slider } from "@/components/ui/Slider";
-import { ADHOC_LABELS, ADHOC_NAME_MAX } from "@/lib/dm/board-logic";
-import { SHAPE_LABELS, SHAPE_MEASURES, TEMPLATE_SHAPES } from "@/lib/battlemap/template";
+import { ADHOC_LABEL_KEYS, ADHOC_NAME_MAX } from "@/lib/dm/board-logic";
+import { SHAPE_LABEL_KEYS, SHAPE_MEASURE_KEYS, TEMPLATE_SHAPES, shapeLabel } from "@/lib/battlemap/template";
 import type { TemplateShape } from "@/lib/battlemap/template";
 import type { AdhocTokenKind } from "@/lib/battlemap/types";
 import { useT } from "@/lib/locale";
@@ -86,7 +86,7 @@ export function PlaceTokenForm({
   return (
     <div className="space-y-1.5 rounded-lg border border-stone-800 bg-stone-950/60 px-2.5 py-2">
       <div data-pill-group="" className="flex gap-1">
-        {(Object.keys(ADHOC_LABELS) as AdhocTokenKind[]).map((option) => (
+        {(Object.keys(ADHOC_LABEL_KEYS) as AdhocTokenKind[]).map((option) => (
           <button data-on={kind === option ? "" : undefined}
             key={option}
             type="button"
@@ -153,19 +153,19 @@ export function MeasureControls({
                 : "border-stone-700 text-stone-400 hover:text-stone-200",
             )}
           >
-            {SHAPE_LABELS[option]}
+            {shapeLabel(t, option)}
           </button>
         ))}
       </div>
       <label className="flex items-center gap-2 text-[11px] text-stone-400">
-        <span className="w-16 capitalize">{SHAPE_MEASURES[shape]}</span>
+        <span className="w-16 capitalize">{t(SHAPE_MEASURE_KEYS[shape])}</span>
         <Slider
           min={5}
           max={60}
           step={5}
           value={sizeFeet}
           onChange={onSize}
-          label={t("board.measure.sliderLabel", { measure: SHAPE_MEASURES[shape] })}
+          label={t("board.measure.sliderLabel", { measure: t(SHAPE_MEASURE_KEYS[shape]) })}
           bubble={(feet) => t("board.tools.ftOption", { feet })}
           className="min-w-0 flex-1"
         />

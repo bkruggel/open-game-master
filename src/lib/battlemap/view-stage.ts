@@ -13,8 +13,12 @@ import { healthWord, type HealthWord } from "@/lib/battlemap/health-words";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { regeneratingNote } from "@/lib/battlemap/regeneration-notes";
 import { conditionNote, conditionNoteLine, type ConditionMetaLike } from "@/lib/battlemap/condition-notes";
+import { translate } from "@/lib/messages-logic";
 
 export type StageRow = { id: string; label: string; rounds?: number; note?: string };
+
+// Pinned English, for the tests and any caller that has no table language.
+const enRowsT: (key: string, vars?: Record<string, string | number>) => string = (key, vars) => translate("en", key, vars);
 
 type Holder = {
   id: string;
@@ -67,11 +71,17 @@ export function characterStageRows(sheet: CharacterHolder, nameOf: (id: string) 
   return rows;
 }
 
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
 // An enemy's rows: its conditions, its concentration, and a knockout named
-// as one rather than read as dying.
+// as one rather than read as dying. The knockout and regeneration words are
+// the dictionaries' (board.regen.*); the projection passes the table's
+// translator, and the pinned English below is what a test sees.
 export function enemyStageRows(
   enemy: Holder & { concentration?: string | null; currentHp: number },
   nameOf: (id: string) => string | null,
+  t: T = enRowsT,
 ): StageRow[] {
   const rows = conditionStageRows(enemy, nameOf);
   if (enemy.concentration) {
@@ -83,10 +93,12 @@ export function enemyStageRows(
   const regenerating = enemy.currentHp <= 0 && enemy.conditionMeta?.unconscious?.source === "regenerating";
   const stopped = enemy.conditions.includes("regeneration stopped");
   return knockedOut
-    ? rows.map((row) => (row.id === "unconscious" ? { ...row, label: "Knocked out", note: "alive at 0 hit points, out of the fight" } : row))
+    ? rows.map((row) => (row.id === "unconscious" ? { ...row, label: t("board.regen.knockedOut"), note: t("board.regen.knockedNote") } : row))
     : regenerating
       ? rows.map((row) =>
-          row.id === "unconscious" ? { ...row, label: stopped ? "Down, dies at its turn" : "Down, regenerating", note: regeneratingNote(stopped) } : row,
+          row.id === "unconscious"
+            ? { ...row, label: stopped ? t("board.regen.downStopped") : t("board.regen.downWaiting"), note: regeneratingNote(t, stopped) }
+            : row,
         )
       : rows;
 }

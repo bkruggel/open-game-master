@@ -7,7 +7,7 @@ import { encodeImageForUpload } from "@/lib/image-encode";
 import { Select } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
 import { cueOptions } from "@/lib/ambience/catalog";
-import { LIGHT_LIMITS, LIGHT_PRESETS, describeLight } from "@/lib/battlemap/lights";
+import { LIGHT_LIMITS, LIGHT_PRESETS, describeLight, lightPresetLabel } from "@/lib/battlemap/lights";
 import type { ObjectEntry } from "@/lib/battlemap/render/painted";
 import { SCENE_LIMITS, type SceneAmbience, type ZoneKind } from "@/lib/battlemap/scene";
 import { TILE_FEET, type AmbientLight } from "@/lib/battlemap/types";
@@ -39,11 +39,11 @@ export function LightDial({
         {LIGHT_PRESETS.map((preset) => (
           <Chip
             key={preset.id}
-            title={describeLight(preset)}
+            title={describeLight(t, preset)}
             active={preset.brightRadius === value.brightRadius && preset.dimRadius === value.dimRadius}
             onClick={() => onChange({ brightRadius: preset.brightRadius, dimRadius: preset.dimRadius })}
           >
-            {preset.label}
+            {lightPresetLabel(t, preset.id)}
           </Chip>
         ))}
       </div>

@@ -5,7 +5,6 @@ import { CampaignCover } from "@/components/CampaignCover";
 import { StorySetupNotice } from "@/components/StorySetupNotice";
 import { useTtsVoices, voiceLabel } from "@/components/VoicePicker";
 import { cn } from "@/lib/cn";
-import { CAMPAIGN_DIFFICULTY_HINTS } from "@/lib/campaign-types";
 import { storySetupWarningComing } from "@/lib/dm/story-setup-logic";
 import { DM_MODE_LABELS } from "@/lib/schemas/game-settings-options";
 import type { WorldPackSummary } from "@/lib/worlds/types";
@@ -109,7 +108,7 @@ export function ReviewStep({
           </dl>
           <p className="text-stone-400">{solo ? t("creator.review.next.solo") : t("creator.review.next.party")}</p>
           <div className="flex flex-wrap gap-1.5">
-            {[CAMPAIGN_DIFFICULTY_HINTS[draft.difficulty], ...sheet.chips].map((chip, chipIndex) => (
+            {[t(`creator.difficultyHint.${draft.difficulty}`), ...sheet.chips].map((chip, chipIndex) => (
               <span key={chip} className="cc-review-chip" style={{ "--cc-delay": `${420 + chipIndex * 60}ms` } as CSSProperties}>
                 {chip}
               </span>

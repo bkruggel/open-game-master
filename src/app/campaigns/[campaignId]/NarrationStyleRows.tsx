@@ -7,10 +7,6 @@ import { LengthNote } from "@/components/ui/LengthNote";
 import { cn } from "@/lib/cn";
 import { panelField } from "@/app/campaigns/[campaignId]/PanelKit";
 import {
-  COMBAT_PACE_HINTS,
-  COMBAT_PACE_LABELS,
-  NARRATION_LENGTH_HINTS,
-  NARRATION_LENGTH_LABELS,
   STYLE_NOTES_MAX,
   type CombatPace,
   type NarrationLength,
@@ -52,16 +48,16 @@ export function NarrationStyleRows({
               label={t("narr.row.lengthLabel")}
               value={settings.narrationLength}
               onChange={(narrationLength) => patch({ narrationLength })}
-              options={(Object.keys(NARRATION_LENGTH_LABELS) as NarrationLength[]).map((length) => ({
+              options={(["short", "standard", "rich"] as NarrationLength[]).map((length) => ({
                 value: length,
-                label: t("narr.row.lengthOption", { label: NARRATION_LENGTH_LABELS[length] }),
+                label: t("narr.row.lengthOption", { label: t(`narration.length.${length}`) }),
               }))}
               className="min-w-0 max-w-full"
             />
           </span>
         </Tooltip>
         <span key={settings.narrationLength} className="live-in text-stone-500">
-          {NARRATION_LENGTH_HINTS[settings.narrationLength]}
+          {t(`narration.lengthHint.${settings.narrationLength}`)}
         </span>
       </div>
       <div data-settings-row="combat-pace" className="reveal flex flex-wrap items-center gap-2">
@@ -73,21 +69,21 @@ export function NarrationStyleRows({
               label={t("narr.row.fightsLabel")}
               value={settings.combatPace ?? "balanced"}
               onChange={(combatPace) => patch({ combatPace })}
-              options={(Object.keys(COMBAT_PACE_LABELS) as CombatPace[]).map((pace) => ({
+              options={(["rare", "balanced", "frequent"] as CombatPace[]).map((pace) => ({
                 value: pace,
-                label: COMBAT_PACE_LABELS[pace],
+                label: t(`narration.pace.${pace}`),
               }))}
               className="min-w-0 max-w-full"
             />
           </span>
         </Tooltip>
         <span key={settings.combatPace ?? "balanced"} className="live-in text-stone-500">
-          {COMBAT_PACE_HINTS[settings.combatPace ?? "balanced"]}
+          {t(`narration.paceHint.${settings.combatPace ?? "balanced"}`)}
         </span>
       </div>
       <div data-settings-row="style-notes" className="reveal space-y-1">
         <label htmlFor={notesId} className="pk-rowlabel block">
-          Style notes
+          {t("narr.row.notes")}
         </label>
         <textarea
           id={notesId}

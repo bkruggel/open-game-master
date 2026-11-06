@@ -182,7 +182,7 @@ export function EncounterRows({
 
   return (
     <div className="space-y-2">
-      <ListHead head={head} noun={["fight", "fights"]} placeholder={t("workshop.encounters.findFight")} className="" />
+      <ListHead head={head} noun={[t("tally.noun.fight.one"), t("tally.noun.fight.many")]} placeholder={t("workshop.encounters.findFight")} className="" />
       <ul className="stagger-up grid gap-3 lg:grid-cols-2" data-tour="encounters-list">
         {head.shown.map((encounter) => {
           // The kebab and the right-click or long-press menu list the same

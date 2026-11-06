@@ -148,7 +148,7 @@ export function DmActionForm({
         setError(String(body.error ?? t("dm.action.refused")));
         return;
       }
-      const lines = describeAdjudicationResult(body.result);
+      const lines = describeAdjudicationResult(body.result, t);
       setOutcome(lines);
       // Starting a fight moves the panel to the board: the result waits there.
       if (entry.name === "start_encounter") holdConsoleOutcome(campaignId, entry.label, lines);

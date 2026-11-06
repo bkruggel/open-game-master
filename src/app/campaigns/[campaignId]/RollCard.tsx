@@ -8,6 +8,7 @@ import type { StoredRoll } from "@/lib/db/rolls";
 import type { DiceTerm, ModifierTerm } from "@/lib/dice";
 import { prefersReducedMotion } from "@/lib/effects-mode";
 import { rollCardLabel } from "@/lib/roll-labels";
+import { useT } from "@/lib/locale";
 import { CheckDie, CheckFrame, type CheckDieState } from "@/app/campaigns/[campaignId]/SkillCheckCard";
 
 // A roll that arrived within this window is the one the table is watching
@@ -25,7 +26,8 @@ function lowEffectsNow(): boolean {
 // natural 1 in ember. It is the card around the number: the 3D dice tray
 // plays on its own and is not driven from here.
 export function RollCard({ roll, characterName }: { roll: StoredRoll; characterName?: string }) {
-  const label = rollCardLabel(roll, characterName);
+  const t = useT();
+  const label = rollCardLabel(t, roll, characterName);
   // Decided once, when the card first appears: a re-render must not replay
   // the landing, and scrolling back through history must not start one.
   const [beat] = useState<CheckDieState>(() => {

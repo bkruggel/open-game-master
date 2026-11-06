@@ -64,8 +64,60 @@ export function checkProse(text: string): ProseWarning[] {
   return warnings;
 }
 
+// The shape of a translator, as the pure sentence builders take it: the
+// editor that shows the words passes its own.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+// The same check, worded in the reader's language (workshop.prose.*).
+export function checkProseT(t: T, text: string): ProseWarning[] {
+  return checkProse(text).map((warning) => ({
+    ...warning,
+    message:
+      warning.kind === "joined-sentences"
+        ? t("workshop.prose.joined", { count: JOINED_COUNT(text) })
+        : warning.kind === "long-run"
+          ? t("workshop.prose.longRun", { count: LONG_RUN_COUNT(text) })
+          : t("workshop.prose.fewSpaces"),
+  }));
+}
+
+// The counts the English messages embed, re-derived for the translated ones.
+function JOINED_COUNT(text: string): number {
+  return [...text.matchAll(JOINED)].length;
+}
+function LONG_RUN_COUNT(text: string): number {
+  return [...text.matchAll(LONG_RUN)].length;
+}
+
+// One line for a list of items, in the reader's words.
+export function proseWarningLineT(t: T, warnings: ProseWarning[]): string {
+  if (!warnings.length) {
+    return "";
+  }
+  const sample = warnings[0].samples[0] ? ` (${warnings[0].samples[0]})` : "";
+  return `${warnings.map((warning) => warning.message).join(" ")}${sample} ${t("workshop.prose.note")}`;
+}
+
+// The cap's account, in the reader's words: the label (already translated by
+// the caller), the lengths, and the tail that would be lost.
+export function overflowLineT(t: T, label: string, text: string, max: number): string {
+  if (text.length <= max) {
+    return "";
+  }
+  const lost = text.slice(max).trim();
+  const shown = lost.length > 60 ? `${lost.slice(0, 60).trimEnd()}...` : lost;
+  return t("workshop.prose.overflow", {
+    label,
+    count: text.length.toLocaleString("en-US"),
+    max: max.toLocaleString("en-US"),
+    lostCount: (text.length - max).toLocaleString("en-US"),
+    tail: shown ? `: "${shown}"` : "",
+  });
+}
+
 // One line for a list of items: the editor shows the warnings in full, the
-// import preview says which card and why.
+// import preview says which card and why. English-pinned: the bundle and the
+// import planner quote it beside the file's own data.
 export function proseWarningLine(warnings: ProseWarning[]): string {
   if (!warnings.length) {
     return "";

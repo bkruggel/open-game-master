@@ -360,7 +360,7 @@ export function HomebrewPanel({
           className={`${ui.input} pl-9`}
         />
       </label>
-      <ListTally shown={shown.length} total={ofKind.length} noun={["piece", "pieces"]} sort={sort} onSort={setSort} />
+      <ListTally shown={shown.length} total={ofKind.length} noun={[t("tally.noun.piece.one"), t("tally.noun.piece.many")]} sort={sort} onSort={setSort} />
 
       <ul className="stagger-up grid gap-2 lg:grid-cols-2">
         {shown.map((entry) => (

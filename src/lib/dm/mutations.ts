@@ -111,6 +111,12 @@ import { holdsFeature, isConditionNamed, isNamed } from "@/lib/srd/feature-names
 import { unknownSheetRef } from "@/lib/dm/rolls";
 import { classWords } from "@/lib/sheet-words";
 
+import { translate } from "@/lib/messages-logic";
+
+// The tool refusals read the model's protocol: pinned English.
+const enT = (key: string, vars?: Record<string, string | number>) => translate("en", key, vars);
+
+
 // DM stat authority: the model changes sheets ONLY through these tools.
 // Every mutation is server-clamped, audit-logged, and published live.
 
@@ -943,7 +949,7 @@ export function applyDmMutation(
       const parsedCoins = args.coins?.trim() ? parseCoins(args.coins) : null;
       // Coins sent and unread are asked for again, never taken as the delta.
       if (args.coins?.trim() && parsedCoins === null) {
-        return { result: { error: `modify_gold: ${unreadCoins(args.coins)}. Nothing changed.`, retry: true } };
+        return { result: { error: `modify_gold: ${unreadCoins(enT, args.coins)}. Nothing changed.`, retry: true } };
       }
       const coinDelta =
         parsedCoins === null ? null : (delta < 0 ? -parsedCoins : parsedCoins);

@@ -125,7 +125,7 @@ export function TableRows({
           className={`${ui.input} pl-9`}
         />
       </label>
-      <ListTally shown={shown.length} total={tables.length} noun={["table", "tables"]} sort={sort} onSort={setSort} />
+      <ListTally shown={shown.length} total={tables.length} noun={[t("tally.noun.table.one"), t("tally.noun.table.many")]} sort={sort} onSort={setSort} />
 
       <ul className="stagger-up grid gap-2 lg:grid-cols-2">
         {shown.map((table) => {

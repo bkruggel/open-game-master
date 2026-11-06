@@ -11,7 +11,7 @@ import { HotkeyOverlay } from "@/components/ui/HotkeyOverlay";
 import { Select } from "@/components/ui/Select";
 import { SAVE_LABEL, type SaveState } from "@/lib/use-autosave";
 import { useMapSelection } from "@/app/campaigns/[campaignId]/useMapSelection";
-import { BRUSH_LABELS, type Brush as BrushName } from "@/lib/battlemap/paint";
+import { brushLabel, type Brush as BrushName } from "@/lib/battlemap/paint";
 import { TERRAIN, tileAt } from "@/lib/battlemap/types";
 import { collectTags } from "@/lib/workshop/pickers";
 import { MapDetailsPanel, MapNameField, useMapWords } from "@/app/workshop/maps/MapDetails";
@@ -237,7 +237,7 @@ export function MapEditor({
 
   const held = MODES.find((entry) => entry.mode === tools.mode);
   const t = useT();
-  const holding = held ? (isPaintMode(tools.mode) ? `${held.label} · ${BRUSH_LABELS[tools.brush]}` : held.label) : t("workshop.maps.holdingNothing");
+  const holding = held ? (isPaintMode(tools.mode) ? `${held.label} · ${brushLabel(t, tools.brush)}` : held.label) : t("workshop.maps.holdingNothing");
   const backdropPanel = (
     <BackdropControls
       backdrop={selected.backdrop}

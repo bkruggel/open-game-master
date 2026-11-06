@@ -749,7 +749,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                         {event.name}
                         <span className="text-stone-500">
                           {" "}
-                          [{event.kind.replaceAll("_", " ")}]
+                          [{t(`story.eventKind.${event.kind}`)}]
                           {event.trigger ? ` ${t("story.events.when", { trigger: event.trigger })}` : ""}
                         </span>
                       </li>

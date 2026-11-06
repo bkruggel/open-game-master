@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
 import { Select } from "@/components/ui/Select";
 import { KitButton } from "@/app/campaigns/[campaignId]/PanelKit";
-import { LINK_LABELS, VERACITIES, VERACITY_LABELS, newId, type Veracity, type WorldDoc, type WorldLink } from "@/lib/worldforge/model";
+import { LINK_LABELS, VERACITIES, veracityLabel, newId, type Veracity, type WorldDoc, type WorldLink } from "@/lib/worldforge/model";
 import type { WorldEntity } from "@/lib/db/world-forge";
 import { EntityAvatar, EntityPicker, typeOf } from "./world-ui";
 import { playFieldOf } from "@/lib/worldforge/play-fields";
@@ -97,7 +97,7 @@ export function LinkEditor({
                   type="button"
                   role="radio"
                   aria-checked={veracity === value}
-                  title={VERACITY_LABELS[value]}
+                  title={veracityLabel(t, value)}
                   onClick={() => setVeracity(value)}
                   className={cn(ui.btnSmall, "px-2 py-1 text-xs", veracity === value && "border-amber-500/60 bg-amber-400/10 text-amber-100")}
                 >
@@ -105,7 +105,7 @@ export function LinkEditor({
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-stone-500">{VERACITY_LABELS[veracity]}</p>
+            <p className="text-[11px] text-stone-500">{veracityLabel(t, veracity)}</p>
           </div>
           {label === "member of" ? (
             <label className="flex flex-col gap-1 motion-pop">

@@ -55,8 +55,16 @@ import { undoableMove, undoOffer } from "@/lib/battlemap/move-undo";
 import type { AuraTone, PlayerMapView } from "@/lib/battlemap/view-types";
 import { ENEMY_TURN_NAME, turnOwner } from "@/lib/dm/turn-owner";
 import { holdsFeature } from "@/lib/srd/feature-names";
+import { translate } from "@/lib/messages-logic";
 
 export type { PlayerMapView } from "@/lib/battlemap/view-types";
+
+// The board's words follow the table's language: the projection's rows and
+// notes ride to every seat, so they are written where they are built.
+function tableT(campaignId: string): (key: string, vars?: Record<string, string | number>) => string {
+  const language = getCampaignById(campaignId)?.gameSettings.tableLanguage ?? "english";
+  return (key, vars) => translate(language === "french" ? "fr" : "en", key, vars);
+}
 
 // A token's side when it is not its kind's: the rim the board draws.
 function offSide(token: { kind: string }, side: string): { side?: "party" | "foe" } {
@@ -446,7 +454,7 @@ export function buildPlayerMapView(
       if (!enemy) {
         continue;
       }
-      const rows = enemyStageRows(enemy, nameOf);
+      const rows = enemyStageRows(enemy, nameOf, tableT(campaignId));
       if (rows.length) {
         tokenConditions[shown.id] = rows;
       }

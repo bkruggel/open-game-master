@@ -16,8 +16,8 @@ import { ui } from "@/lib/ui";
 import { useT } from "@/lib/locale";
 import type { MessageVars } from "@/lib/messages-logic";
 import {
-  activeVariantRules,
-  describeRuleset,
+  activeVariantRulesT,
+  describeRulesetT,
   type Ruleset,
   type RulesetChange,
 } from "@/lib/rulesets/logic";
@@ -210,7 +210,7 @@ export function RulesetLibrary({
         </div>
       ) : rulesets.length ? (
         <>
-        <ListHead head={head} noun={["ruleset", "rulesets"]} placeholder={t("workshop.rules.findPlaceholder")} />
+        <ListHead head={head} noun={[t("tally.noun.ruleset.one"), t("tally.noun.ruleset.many")]} placeholder={t("workshop.rules.findPlaceholder")} />
         <ul className="stagger mb-3 space-y-1.5">
           {head.shown.map((ruleset) => {
             // Opening is the row; deleting sits behind the kebab and the
@@ -232,7 +232,7 @@ export function RulesetLibrary({
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display tracking-wide text-amber-50">{ruleset.name}</span>
-                    <span className="block truncate text-xs text-stone-500">{describeRuleset(ruleset)}</span>
+                    <span className="block truncate text-xs text-stone-500">{describeRulesetT(t, ruleset)}</span>
                   </span>
                   <ChevronDown className={cn("size-4 shrink-0 text-stone-500 transition-transform", openId === ruleset.id && "rotate-180")} aria-hidden="true" />
                 </button>
@@ -240,9 +240,9 @@ export function RulesetLibrary({
               </div>
               {openId === ruleset.id ? (
                 <div className="reveal space-y-3 border-t border-stone-800/70 p-3">
-                  {activeVariantRules(ruleset.variantRules).length ? (
+                  {activeVariantRulesT(t, ruleset.variantRules).length ? (
                     <ul className="stagger text-xs text-stone-400">
-                      {activeVariantRules(ruleset.variantRules).map((label) => (
+                      {activeVariantRulesT(t, ruleset.variantRules).map((label) => (
                         <li key={label}>{label}</li>
                       ))}
                     </ul>

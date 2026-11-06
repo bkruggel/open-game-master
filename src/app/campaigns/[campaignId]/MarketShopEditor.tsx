@@ -76,7 +76,7 @@ function CoinField({ value, onChange, label }: { value: number; onChange: (cp: n
       onChange(parsed);
       setBad(null);
     } else {
-      setBad(parsed === null ? unreadCoins(draft) : t("market.editor.priceHint"));
+      setBad(parsed === null ? unreadCoins(t, draft) : t("market.editor.priceHint"));
     }
     setDraft(null);
   };

@@ -27,7 +27,7 @@ function draftOf(faction: FactionView): Draft {
   };
 }
 import { findLostCreate, readLoad, readWrite, useLoadStatus } from "@/lib/load-state";
-import { FACTION_ATTITUDES, REPUTATION_MAX, REPUTATION_MIN, reputationLabel, type FactionAttitude } from "@/lib/dm/faction-logic";
+import { FACTION_ATTITUDES, REPUTATION_MAX, REPUTATION_MIN, attitudeLabel, reputationLabel, type FactionAttitude } from "@/lib/dm/faction-logic";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
 import { useT } from "@/lib/locale";
@@ -45,7 +45,6 @@ export type FactionView = {
   tags: string[];
   portraitPath: string;
   standing: number;
-  standingLabel: string;
   members: Array<{ id: string; name: string; portraitUrl: string }>;
   goal?: string;
   power?: number;
@@ -239,7 +238,7 @@ export function FactionsPanel({
             {FACTION_ATTITUDES.map((attitude) => (
               <button data-on={draft.attitude === attitude ? "" : undefined} key={attitude} type="button" aria-pressed={draft.attitude === attitude} onClick={() => setDraft({ ...draft, attitude })} className="pk-pill pk-tap motion-press capitalize">
                 <GameIcon icon={{ kind: "glyph", key: attitudeGlyph(attitude) }} size="size-4" />
-                {attitude}
+                {attitudeLabel(t, attitude)}
               </button>
             ))}
           </div>
@@ -285,7 +284,7 @@ export function FactionsPanel({
                 { id: "edit", label: "Edit", glyph: "ui-edit", onSelect: () => startEdit(faction) },
                 ...(showsStanding ? Array.from({ length: REPUTATION_MAX - REPUTATION_MIN + 1 }, (_, index) => REPUTATION_MIN + index) : []).map((step, index) => ({
                   id: `standing-${step}`,
-                  label: `Standing ${step > 0 ? "+" : ""}${step}: ${reputationLabel(step)}`,
+                  label: t("faction.menu.standing", { step: `${step > 0 ? "+" : ""}${step}`, word: reputationLabel(t, step) }),
                   glyph: step < 0 ? "attitude-hostile" : step === 0 ? "attitude-neutral" : "attitude-friendly",
                   separated: index === 0,
                   disabled: step === faction.standing,
@@ -308,13 +307,13 @@ export function FactionsPanel({
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-medium text-stone-100">
                     <span className="min-w-0 truncate">{faction.name}</span>
-                    <GlyphChip glyph={attitudeGlyph(faction.attitude)} className="capitalize">{faction.attitude}</GlyphChip>
+                    <GlyphChip glyph={attitudeGlyph(faction.attitude)} className="capitalize">{attitudeLabel(t, faction.attitude)}</GlyphChip>
                     {faction.power !== undefined ? <span className="text-[11px] font-normal text-violet-300">power {faction.power}</span> : null}
                   </p>
                   {faction.blurb ? <p className="reveal text-xs leading-5 text-stone-400">{faction.blurb}</p> : null}
                   {faction.goal ? <p className="reveal text-xs italic leading-5 text-violet-300/80">Goal: {faction.goal}</p> : null}
                   {showsStanding ? (
-                    <div className="mt-1 flex items-center gap-1" title={`The party is ${faction.standingLabel} to them`}>
+                    <div className="mt-1 flex items-center gap-1" title={t("faction.standingTitle", { word: reputationLabel(t, faction.standing) })}>
                       {Array.from({ length: REPUTATION_MAX - REPUTATION_MIN + 1 }, (_, index) => REPUTATION_MIN + index).map((step) => (
                         <button
                           key={step}
@@ -329,7 +328,7 @@ export function FactionsPanel({
                           )}
                         />
                       ))}
-                      <span key={faction.standing} className="count-pop ml-1 text-[11px] text-stone-400">{reputationLabel(faction.standing)}</span>
+                      <span key={faction.standing} className="count-pop ml-1 text-[11px] text-stone-400">{reputationLabel(t, faction.standing)}</span>
                     </div>
                   ) : null}
                   {faction.members.length ? (

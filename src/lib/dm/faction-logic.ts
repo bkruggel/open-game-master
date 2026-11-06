@@ -54,8 +54,24 @@ export function normalizeReputation(raw: unknown): Record<string, number> {
 }
 
 // The words a player sees for a standing, so the table never watches a
-// number tick.
-export function reputationLabel(value: number): string {
+// number tick. The words are the dictionaries' (faction.standing.*); the
+// showing surface passes its translator.
+const STANDING_KEYS: Record<string, string> = {
+  hunted: "faction.standing.hunted",
+  disliked: "faction.standing.disliked",
+  suspected: "faction.standing.suspected",
+  unknown: "faction.standing.unknown",
+  noticed: "faction.standing.noticed",
+  trusted: "faction.standing.trusted",
+  honoured: "faction.standing.honoured",
+};
+
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+// The standing's raw word, which the DM's prompt quotes (English by
+// protocol); reputationLabel is its reader-facing form.
+function standingWord(value: number): string {
   if (value <= -4) return "hunted";
   if (value <= -2) return "disliked";
   if (value < 0) return "suspected";
@@ -63,6 +79,29 @@ export function reputationLabel(value: number): string {
   if (value < 2) return "noticed";
   if (value < 4) return "trusted";
   return "honoured";
+}
+
+export function reputationLabel(t: T, value: number): string {
+  return t(STANDING_KEYS[standingWord(value)] ?? "faction.standing.unknown");
+}
+
+// The standing's English word, pinned: the tool results and the prompt the
+// model reads quote it (English by protocol), never the reader's language.
+export function reputationWord(value: number): string {
+  return standingWord(value);
+}
+
+// The attitude ladder's chip words, the same way (faction.attitude.*).
+const ATTITUDE_KEYS: Record<FactionAttitude, string> = {
+  hostile: "faction.attitude.hostile",
+  wary: "faction.attitude.wary",
+  neutral: "faction.attitude.neutral",
+  friendly: "faction.attitude.friendly",
+  allied: "faction.attitude.allied",
+};
+
+export function attitudeLabel(t: T, attitude: FactionAttitude): string {
+  return t(ATTITUDE_KEYS[attitude] ?? "faction.attitude.neutral");
 }
 
 // A social check with a faction's member leans on the party's standing:
@@ -116,7 +155,7 @@ export function renderFactionsForPrompt(
   }
   const lines = factions.slice(0, 12).map((faction) => {
     const standing = reputation[faction.id] ?? 0;
-    const base = `- ${faction.name} (${faction.attitude} to the party; the party is ${reputationLabel(standing)} to them, ${standing >= 0 ? "+" : ""}${standing})`;
+    const base = `- ${faction.name} (${faction.attitude} to the party; the party is ${standingWord(standing)} to them, ${standing >= 0 ? "+" : ""}${standing})`;
     if (!dmView) {
       return `${base}${faction.blurb ? `: ${faction.blurb}` : ""}`;
     }

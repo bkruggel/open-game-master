@@ -6,7 +6,7 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { conditionIconKey } from "@/lib/battlemap/condition-glyphs";
-import { HEALTH_LABEL, HEALTH_RING, type HealthWord } from "@/lib/battlemap/health-words";
+import { HEALTH_RING, healthLabel, type HealthWord } from "@/lib/battlemap/health-words";
 import type { StageToken } from "@/app/campaigns/[campaignId]/BoardStage";
 import type { PublicEncounter } from "@/lib/db/encounter-view";
 import { offSide, SidePlateBand, sidesLine, SideSr } from "@/app/campaigns/[campaignId]/SideBadge";
@@ -295,12 +295,13 @@ export function TurnBanner({ text, mine }: { text: string; mine: boolean }) {
 }
 
 function HealthWordChip({ word }: { word: HealthWord }) {
+  const t = useT();
   return (
     <span
       className="rounded-full border px-1.5 py-px text-[10px] font-medium"
       style={{ borderColor: `${HEALTH_RING[word]}99`, color: HEALTH_RING[word], background: "rgba(8,6,18,0.6)" }}
     >
-      {HEALTH_LABEL[word] ?? word}
+      {healthLabel(t, word)}
     </span>
   );
 }
@@ -456,7 +457,7 @@ export function TargetChips({
           <span className="min-w-0">
             <span className="block max-w-[9rem] truncate text-xs font-medium text-stone-100">{token.name}</span>
             <span className="block font-mono text-[10px] text-stone-400">
-              {[health ? HEALTH_LABEL[health] ?? health : null, feet !== null ? t("board.tools.ftOption", { feet }) : null].filter(Boolean).join(" · ")}
+              {[health ? healthLabel(t, health) : null, feet !== null ? t("board.tools.ftOption", { feet }) : null].filter(Boolean).join(" · ")}
             </span>
           </span>
         </button>

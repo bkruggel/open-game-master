@@ -8,6 +8,7 @@ import { downloadBlob } from "@/lib/download";
 import { ui } from "@/lib/ui";
 import {
   RECEIVER_PORT,
+  ReceiverConfigError,
   receiverCommands,
   receiverConfig,
   receiverFileName,
@@ -62,7 +63,9 @@ export function PlayerReceiverSetup({ receiver, mcpUrl }: { receiver: ReceiverIn
         port: Number(port),
       });
     } catch (error) {
-      configError = error instanceof Error ? error.message : t("receiver.configError");
+      // The refusal carries its key, so it reads the player's language; a
+      // server refusal arrives as data.error and stays as sent.
+      configError = error instanceof ReceiverConfigError ? t(error.key) : error instanceof Error ? error.message : t("receiver.configError");
     }
   }
   const fileName = receiverFileName(character.name, character.id);

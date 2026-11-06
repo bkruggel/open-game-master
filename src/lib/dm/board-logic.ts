@@ -17,10 +17,19 @@ export const ADHOC_NAME_MAX = 40;
 // a stuck loop cannot fill a map with barrels.
 export const MAX_ADHOC_TOKENS = 24;
 
-export const ADHOC_LABELS: Record<AdhocTokenKind, string> = {
-  npc: "Person",
-  prop: "Object",
+// The picker's words are the dictionaries' (board.adhoc.*); the surface
+// that shows them passes its translator. The kind stays the stored value.
+export const ADHOC_LABEL_KEYS: Record<AdhocTokenKind, string> = {
+  npc: "board.adhoc.npc",
+  prop: "board.adhoc.prop",
 };
+
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+export function adhocLabel(t: T, kind: AdhocTokenKind): string {
+  return t(ADHOC_LABEL_KEYS[kind] ?? "board.adhoc.prop");
+}
 
 export const ADHOC_HINTS: Record<AdhocTokenKind, string> = {
   npc: "A bystander, an ally, anyone the rules engine does not need a stat block for.",

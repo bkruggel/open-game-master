@@ -41,11 +41,20 @@ export const HEALTH_RING: Record<HealthWord, string> = {
   dead: "#44403c",
 };
 
-export const HEALTH_LABEL: Record<HealthWord, string> = {
-  unharmed: "Unharmed",
-  scratched: "Scratched",
-  bloodied: "Bloodied",
-  critical: "Near collapse",
-  down: "Down",
-  dead: "Dead",
+// The words are the dictionaries' (board.health.*); the surface that shows
+// them passes its translator.
+export const HEALTH_KEYS: Record<HealthWord, string> = {
+  unharmed: "board.health.unharmed",
+  scratched: "board.health.scratched",
+  bloodied: "board.health.bloodied",
+  critical: "board.health.critical",
+  down: "board.health.down",
+  dead: "board.health.dead",
 };
+
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+export function healthLabel(t: T, word: HealthWord): string {
+  return t(HEALTH_KEYS[word] ?? "board.health.unharmed");
+}

@@ -23,7 +23,7 @@ import { useLocale, useT } from "@/lib/locale";
 import { TokenFace } from "@/app/campaigns/[campaignId]/BoardChrome";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
-import { ROLL_KIND_LABELS, rollChronicleLead, rollToastLead } from "@/lib/roll-labels";
+import { rollChronicleLead, rollKindLabel, rollToastLead } from "@/lib/roll-labels";
 import { LengthNote } from "@/components/ui/LengthNote";
 import { atBottom, chronicleSignature, chronicleSystemLine, chronicleWindow } from "@/lib/chronicle-logic";
 import { textLength } from "@/lib/text-limits";
@@ -332,7 +332,7 @@ export function RollToast({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/icons/glyph/tab-dice.webp" alt="" className="cine-roll-die" />
       <span className="cine-roll-text">
-        {rollToastLead(roll, sheetName)} ·{" "}
+        {rollToastLead(t, roll, sheetName)} ·{" "}
         <span className="cine-roll-math">
           {roll.expression} = {roll.total}
         </span>
@@ -762,8 +762,8 @@ function ChronicleRoll({ roll, sheets }: { roll: StoredRoll; sheets: ReadonlyArr
   const t = useT();
   const sheetName = roll.characterId ? sheets.find((sheet) => sheet.id === roll.characterId)?.name : undefined;
   const crit = roll.breakdown?.crit;
-  const label = ROLL_KIND_LABELS[roll.kind] || t("table.tray.roll");
-  const what = rollChronicleLead(roll, sheetName);
+  const label = rollKindLabel(t, roll.kind);
+  const what = rollChronicleLead(t, roll, sheetName);
   const verdict =
     crit === "nat20" ? t("table.tray.nat20") : crit === "nat1" ? t("table.tray.nat1") : roll.success === null ? label : roll.success ? (roll.kind === "attack" ? t("cine.verdict.hit") : t("cine.verdict.success")) : roll.kind === "attack" ? t("cine.verdict.miss") : t("cine.verdict.failed");
   return (

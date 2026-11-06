@@ -7,6 +7,34 @@ import type { HomebrewKind } from "@/lib/schemas/homebrew";
 // The rule is src/lib/content/scope.ts: the author's own shelf in their
 // library, and at a table the shelves of whoever runs it.
 
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+// The words are the dictionaries' (homebrew.where.*); the editor passes its
+// translator. The archetype's parent sentence is assembled here from three
+// keys so the level note stays inside the where clause.
+export function homebrewAvailabilityT(t: T, kind: HomebrewKind, parent?: { name: string; subclassLevel: number | null }): string {
+  const where =
+    kind === "archetype"
+      ? parent
+        ? parent.subclassLevel
+          ? t("homebrew.where.archetypeParentLevel", { name: parent.name, level: parent.subclassLevel })
+          : t("homebrew.where.archetypeParent", { name: parent.name })
+        : t("homebrew.where.archetype")
+      : t(WHERE_KEYS[kind] ?? "homebrew.where.fallback");
+  return t("homebrew.available", { where });
+}
+
+const WHERE_KEYS: Partial<Record<HomebrewKind, string>> = {
+  class: "homebrew.where.class",
+  race: "homebrew.where.race",
+  background: "homebrew.where.background",
+  feat: "homebrew.where.feat",
+  spell: "homebrew.where.spell",
+  item: "homebrew.where.item",
+  hazard: "homebrew.where.hazard",
+};
+
 const WHERE: Partial<Record<HomebrewKind, string>> = {
   class: "in the character builder's class list",
   race: "as a species in the character builder",
@@ -17,6 +45,7 @@ const WHERE: Partial<Record<HomebrewKind, string>> = {
   hazard: "to the traps, hazards and afflictions a GM sets at the table",
 };
 
+// English-pinned, for wherever the stored data quotes it back.
 export function homebrewAvailability(kind: HomebrewKind, parent?: { name: string; subclassLevel: number | null }): string {
   const where =
     kind === "archetype"

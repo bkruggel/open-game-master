@@ -111,7 +111,18 @@ export type BeatOrigin =
   | { kind: "bundle"; ref: string }
   | { kind: "copy"; workshopId: string; title: string };
 
-// The origin in the author's words, for the card's editor.
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+// The origin in the author's words, for the card's editor. The words are the
+// dictionaries' (workshop.origin.*); the editor passes its translator.
+export function originLineT(t: T, origin: BeatOrigin): string {
+  if (origin.kind === "worldforge") return t("workshop.origin.worldforge");
+  if (origin.kind === "bundle") return t("workshop.origin.bundle");
+  return origin.title ? t("workshop.origin.copyNamed", { title: origin.title }) : t("workshop.origin.copy");
+}
+
+// English-pinned, for wherever the stored data quotes it back.
 export function originLine(origin: BeatOrigin): string {
   if (origin.kind === "worldforge") return "Came in from a WorldForge file. Opening that file again updates this card rather than adding another; what you change here stands.";
   if (origin.kind === "bundle") return "Came in with a shared workshop bundle.";

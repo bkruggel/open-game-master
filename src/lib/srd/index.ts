@@ -356,6 +356,39 @@ export function speedFor(
 // will not trust an engine they cannot audit, so now they all keep it.
 export type DerivedPart = { label: string; value: number };
 
+// The parts' words are the dictionaries' (math.parts.*); the labels the math
+// builds stay the English words above, because rules code matches on them
+// (roll-feature-riders.ts) and the DM's prompt quotes them. The explain
+// builder the sheets use translates each label through here; an unknown
+// label (a pack's own) reads as it was built.
+const MATH_PART_KEYS: Record<string, string> = {
+  base: "math.parts.base",
+  proficiency: "math.parts.proficiency",
+  features: "math.parts.features",
+  "subclass features": "math.parts.subclassFeatures",
+  "magic items": "math.parts.magicItems",
+  expertise: "math.parts.expertise",
+  "half proficiency": "math.parts.halfProficiency",
+  untrained: "math.parts.untrained",
+  Perception: "math.parts.perception",
+  Investigation: "math.parts.investigation",
+};
+
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+export function mathPartLabel(t: T, label: string): string {
+  const modifier = /^([A-Z]{3}) modifier$/.exec(label);
+  if (modifier) {
+    const ability = modifier[1].toLowerCase();
+    if (["str", "dex", "con", "int", "wis", "cha"].includes(ability)) {
+      return t("math.parts.abilityModifier", { ability: t(`sheet.ability.${ability}`) });
+    }
+  }
+  const key = MATH_PART_KEYS[label];
+  return key ? t(key) : label;
+}
+
 // Every derived number's working. Sums are guaranteed to match the totals
 // beside them because the totals are computed BY summing these.
 export type DerivedParts = {

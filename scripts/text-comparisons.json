@@ -1192,13 +1192,6 @@
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
-  "app/campaigns/[campaignId]/MapTilesetPanel.tsx#toLowerCase": [
-   [
-    "display",
-    1,
-    "label in a sentence"
-   ]
-  ],
   "app/campaigns/[campaignId]/MapToolbox.tsx#str-eq": [
    [
     "key",
@@ -1820,13 +1813,6 @@
     "class name in a sentence"
    ]
   ],
-  "app/characters/builder/AbilitySummary.tsx#str-list": [
-   [
-    "key",
-    2,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
   "app/characters/builder/AbilitySummary.tsx#toUpperCase": [
    [
     "display",
@@ -1853,13 +1839,6 @@
     "key",
     1,
     "an ability code as its key, for its name"
-   ]
-  ],
-  "app/characters/builder/AsiFeatEditor.tsx#str-list": [
-   [
-    "key",
-    1,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
   "app/characters/builder/BackgroundKitSection.tsx#toLowerCase": [
@@ -1902,6 +1881,11 @@
     "key",
     2,
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
+   ],
+   [
+    "key",
+    1,
+    "abilityWords: the six ability ids to their sheet.ability.* message keys for a feat's increase line"
    ]
   ],
   "app/characters/builder/FeatChoicesFields.tsx#toLowerCase": [
@@ -2302,13 +2286,6 @@
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
-  "app/characters/builder/usePickerGroups.ts#str-key": [
-   [
-    "key",
-    1,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
   "app/characters/builder/usePickerGroups.ts#str-list": [
    [
     "key",
@@ -2613,13 +2590,6 @@
     "bundle kinds"
    ]
   ],
-  "app/workshop/RulesetLibrary.tsx#str-list": [
-   [
-    "key",
-    1,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
   "app/workshop/[workshopId]/WorkshopHeader.tsx#str-eq": [
    [
     "key",
@@ -2697,13 +2667,6 @@
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
-  "app/workshop/bestiary/MonsterRows.tsx#str-list": [
-   [
-    "key",
-    1,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
   "app/workshop/bestiary/SpellcastingFields.tsx#str-eq": [
    [
     "key",
@@ -2760,13 +2723,6 @@
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
-  "app/workshop/cast/CastList.tsx#str-list": [
-   [
-    "key",
-    1,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
   "app/workshop/encounters/EncounterRows.tsx#re-word": [
    [
     "english-source",
@@ -2779,13 +2735,6 @@
     "key",
     1,
     "budget tick labels"
-   ]
-  ],
-  "app/workshop/encounters/EncounterRows.tsx#str-list": [
-   [
-    "key",
-    1,
-    "list nouns"
    ]
   ],
   "app/workshop/encounters/budget-bar.ts#str-list": [
@@ -2925,13 +2874,6 @@
    [
     "key",
     2,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
-  "app/workshop/homebrew/HomebrewPanel.tsx#str-list": [
-   [
-    "key",
-    1,
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
@@ -3177,13 +3119,6 @@
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
-  "app/workshop/lore/LoreRows.tsx#str-list": [
-   [
-    "key",
-    1,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
   "app/workshop/maps/AddonMapGenerator.tsx#str-key": [
    [
     "key",
@@ -3226,13 +3161,6 @@
     "labels in sentences"
    ]
   ],
-  "app/workshop/party/PartyPanel.tsx#str-list": [
-   [
-    "key",
-    1,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
   "app/workshop/plugin/PluginPanel.tsx#str-eq": [
    [
     "key",
@@ -3265,13 +3193,6 @@
    [
     "key",
     4,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
-   ]
-  ],
-  "app/workshop/tables/TableRows.tsx#str-list": [
-   [
-    "key",
-    1,
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
@@ -16739,18 +16660,32 @@
     "HP methods and feat ids"
    ]
   ],
-  "lib/srd/index.ts#[a-z]": [
+  "lib/srd/index.ts#str-list": [
    [
     "key",
     1,
-    "race id from a race name"
+    "the six ability abbreviations, recognized in a DerivedPart label"
+   ]
+  ],
+  "lib/srd/index.ts#str-key": [
+   [
+    "key",
+    1,
+    "MATH_PART_KEYS: the DerivedPart labels the math builds to their math.parts message keys"
+   ]
+  ],
+  "lib/srd/index.ts#[a-z]": [
+   [
+    "key",
+    2,
+    "race id from a race name; the DerivedPart ability-modifier label shape (\"DEX modifier\") the explain builder reads"
    ]
   ],
   "lib/srd/index.ts#re-word": [
    [
     "key",
-    1,
-    "creature sizes"
+    2,
+    "creature sizes; the DerivedPart ability-modifier label shape the explain builder reads (the label is code-built, never typed)"
    ]
   ],
   "lib/srd/index.ts#str-eq": [
@@ -16763,8 +16698,8 @@
   "lib/srd/index.ts#toLowerCase": [
    [
     "key",
-    5,
-    "race id from a race name; class ids"
+    6,
+    "race id from a race name; class ids; ability abbreviation of a DerivedPart label for the sheet.ability key"
    ]
   ],
   "lib/srd/index.ts#toUpperCase": [
@@ -19211,18 +19146,39 @@
     1,
     "the level note door.ts itself wrote (our own fixed sentence, EN or FR) re-recognised at render to say it in the reader's language; a miss passes the note through"
    ]
+  ],
+  "lib/dm/faction-logic.ts#str-key": [
+   [
+    "key",
+    1,
+    "ATTITUDE_KEYS: the stored attitude's chip words to their faction.attitude.* message keys"
+   ]
+  ],
+  "app/characters/builder/steps/AbilitiesStep.tsx#str-key": [
+   [
+    "key",
+    1,
+    "ABILITY_WORDS: the six ability ids to their sheet.ability.* message keys, read back by the words helper"
+   ]
+  ],
+  "app/characters/builder/CharacterBuilder.tsx#str-key": [
+   [
+    "key",
+    1,
+    "STEP_OF_TARGET: a dropped pick's blocker target to the builder step that asks it again; the step ids are our own"
+   ]
+  ],
+  "components/DeviceSettings.tsx#str-key": [
+   [
+    "key",
+    1,
+    "MIC_MODE_KEYS: the microphone input-mode ids to their mic.* message keys"
+   ]
   ]
  },
  "humanTextIn": [
   "lib/language/text-logic.ts",
   "lib/language/language.ts",
   "lib/db/core.ts"
- ],
- "app/workshop/maps/MapForge.tsx#str-list": [
-  [
-   "key",
-   1,
-   "UI: ids, fixed choices, DOM and keyboard names, stored values"
-  ]
  ]
 }

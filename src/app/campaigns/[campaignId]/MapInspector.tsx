@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { BRUSH_EFFECTS, BRUSH_LABELS, type Brush as BrushName } from "@/lib/battlemap/paint";
+import { BRUSH_EFFECT_KEYS, BRUSH_LABEL_KEYS, type Brush as BrushName } from "@/lib/battlemap/paint";
+import { translate } from "@/lib/messages-logic";
+
+// The inspector's own words are their own slice; the brush words go through
+// the dictionaries pinned to English until that slice lands.
+const enT = (key: string, vars?: Record<string, string | number>) => translate("en", key, vars);
 import { listObjects, objectAt, refKey, sameRef, type MapObjects, type ObjectRef } from "@/lib/battlemap/objects";
 import { TERRAIN, TILE_FEET, tileAt, type XY } from "@/lib/battlemap/types";
 import { PanelHead } from "@/app/campaigns/[campaignId]/mapUi";
@@ -101,9 +106,9 @@ export function MapInspector({
         <Fact name="Tile">
           {hover.x}, {hover.y}
         </Fact>
-        <Fact name="Ground">{brush ? BRUSH_LABELS[brush] : "Unknown"}</Fact>
+        <Fact name="Ground">{brush ? enT(BRUSH_LABEL_KEYS[brush]) : "Unknown"}</Fact>
         <Fact name="On it">{thing ? thing.name : "Nothing placed"}</Fact>
-        {brush ? <p className="pt-1 font-mono text-[9px] leading-snug text-stone-500">{BRUSH_EFFECTS[brush]}</p> : null}
+        {brush ? <p className="pt-1 font-mono text-[9px] leading-snug text-stone-500">{enT(BRUSH_EFFECT_KEYS[brush])}</p> : null}
       </dl>
     );
   } else {
@@ -150,7 +155,7 @@ export function MapStatusLine({
   return (
     <div className="flex shrink-0 items-center gap-4 overflow-x-auto border-t border-stone-800 bg-stone-950/60 px-3 py-1.5 [scrollbar-width:none]">
       {cell("Tile", hover ? `${hover.x}, ${hover.y}` : "·")}
-      {cell("Under", brush ? BRUSH_LABELS[brush] : "·")}
+      {cell("Under", brush ? enT(BRUSH_LABEL_KEYS[brush]) : "·")}
       {cell("Size", `${width} × ${height} · ${width * TILE_FEET} × ${height * TILE_FEET} ft`)}
       {cell("Holding", <span className="text-amber-200">{holding}</span>)}
       {extra}

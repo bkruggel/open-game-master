@@ -6,7 +6,7 @@ import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/cn";
 import {
   REROLL_LOW_DEFAULT,
-  describeReroll,
+  describeRerollT,
   rerollBelowFor,
   rerollChoiceOf,
   type RerollChoice,
@@ -124,7 +124,7 @@ export function CharacterRulesFields({ draft, patch, gates }: StepProps) {
                 label:
                   serverRerollBelow === null
                     ? t("creator.reroll.followServer")
-                    : t("creator.reroll.followServerWith", { rule: describeReroll(serverRerollBelow).toLowerCase() }),
+                    : t("creator.reroll.followServerWith", { rule: describeRerollT(t, serverRerollBelow).toLowerCase() }),
               },
               { value: "keep", label: t("creator.reroll.keep") },
               { value: "low", label: t("creator.reroll.low", { total: REROLL_LOW_DEFAULT }) },

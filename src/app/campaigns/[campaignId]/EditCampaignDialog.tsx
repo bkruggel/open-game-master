@@ -12,12 +12,12 @@ import { NumberStepper as KitStepper } from "@/components/ui/NumberStepper";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
   CAMPAIGN_DIFFICULTIES,
-  CAMPAIGN_DIFFICULTY_HINTS,
   type CampaignCover as CampaignCoverRef,
   type CampaignDifficulty,
 } from "@/lib/campaign-types";
 import type { Campaign } from "@/lib/db/campaigns";
 import { offersImages, useCapabilities } from "@/lib/use-capabilities";
+import { useT } from "@/lib/locale";
 import { CampaignCover, type CoverStatus } from "@/components/CampaignCover";
 
 // Matches the characters page: polls every 2.5 s while a render is queued
@@ -82,6 +82,7 @@ export function EditCampaignDialog({
   };
   onClose: () => void;
 }) {
+  const t = useT();
   const [title, setTitle] = useState(campaign.title);
   const [description, setDescription] = useState(campaign.description);
   const [theme, setTheme] = useState(campaign.theme);
@@ -268,14 +269,14 @@ export function EditCampaignDialog({
             <span className="mb-1 block text-stone-400">Difficulty</span>
             <SegmentedControl
               size="sm"
-              label="Difficulty"
+              label={t("creator.field.difficulty")}
               className="w-full"
-              options={CAMPAIGN_DIFFICULTIES.map((value) => ({ value, label: value }))}
+              options={CAMPAIGN_DIFFICULTIES.map((value) => ({ value, label: t(`creator.difficulty.${value}`) }))}
               value={difficulty}
               onChange={setDifficulty}
             />
             <p key={difficulty} className="motion-tab mt-1.5 text-xs text-stone-500">
-              {CAMPAIGN_DIFFICULTY_HINTS[difficulty]}
+              {t(`creator.difficultyHint.${difficulty}`)}
             </p>
           </div>
         </Group>

@@ -144,13 +144,17 @@ export function packCostCopper(text: string): number | null {
   });
 }
 
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
 // Why a coin amount cannot be read, for the refusal that asks for it again:
-// the mark a number was written with, else the codes.
-export function unreadCoins(text: string): string {
+// the mark a number was written with, else the codes. The words are the
+// dictionaries' (coins.unread.*); the showing surface passes its translator.
+export function unreadCoins(t: T, text: string): string {
   const number = (String(text ?? "").match(/\d(?:[\d.,'’\u00a0\u202f ]*\d)?/gu) ?? []).map(writtenWholeNumber).find((amount) => typeof amount !== "number");
   return number
-    ? `Coins come in whole numbers: ${number.unread}. Write a part of a coin in smaller coins, like "1 gp 5 sp"`
-    : `"${text}" is not an amount in the coins' codes: write it with pp, gp, ep, sp and cp, like "3 gp 4 sp"`;
+    ? t("coins.unread.whole", { written: number.unread })
+    : t("coins.unread.codes", { text });
 }
 
 export type PurseChange = {

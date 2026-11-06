@@ -11,7 +11,7 @@ import { appendTerm, insertAt } from "@/lib/workshop/pickers";
 import { AddFromList } from "@/components/ui/AddFromList";
 import { Markdown } from "@/components/ui/Markdown";
 import { LORE_BODY_MAX, LORE_STYLES, WORLD_LORE_CATEGORIES, loreBodyOverflow, type LoreLinkTarget, type LoreStyle, type WorldLoreCategory } from "@/lib/dm/world-lore-logic";
-import { checkProse } from "@/lib/workshop/prose-check";
+import { checkProseT } from "@/lib/workshop/prose-check";
 import { LoreImageField, VisibilitySelect } from "@/app/workshop/lore/LoreFields";
 import { CATEGORY_LABELS, type LoreDraft } from "@/app/workshop/lore/types";
 import { DictateField } from "@/components/DictateField";
@@ -65,7 +65,7 @@ export function LoreEditorForm({
   // the routes refuse the same way. The readability note is a heuristic
   // the author may dismiss.
   const overflow = loreBodyOverflow(draft.body);
-  const prose = checkProse(draft.body);
+  const prose = checkProseT(t, draft.body);
   const proseKey = prose.map((warning) => warning.kind).join(",");
   const [dismissed, setDismissed] = useState("");
 

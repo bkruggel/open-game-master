@@ -17,7 +17,7 @@ import { SpellFields } from "@/app/workshop/homebrew/SpellFields";
 import { draftFindings, draftFromCatalog, type HomebrewDraft } from "@/app/workshop/homebrew/draft";
 import { KIND_SINGULAR } from "@/app/workshop/homebrew/types";
 import { HazardFields } from "@/app/workshop/homebrew/HazardFields";
-import { homebrewAvailability } from "@/lib/homebrew/availability";
+import { homebrewAvailabilityT } from "@/lib/homebrew/availability";
 import { subclassLevelFor } from "@/lib/srd/features";
 import { CopySource } from "@/app/workshop/homebrew/CopySource";
 import dynamic from "next/dynamic";
@@ -177,7 +177,7 @@ export function HomebrewEditor({
         // Where it is offered, said once it is kept (workshop import audit F06).
         <p className="flex items-start gap-1.5 text-xs text-stone-400" data-testid="homebrew-availability">
           <Info className="mt-0.5 size-3.5 shrink-0 text-sky-300/70" aria-hidden="true" />
-          <span>{homebrewAvailability(draft.kind, archetypeParent(draft, workshopClasses))}</span>
+          <span>{homebrewAvailabilityT(t, draft.kind, archetypeParent(draft, workshopClasses))}</span>
         </p>
       ) : null}
 

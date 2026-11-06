@@ -18,6 +18,7 @@ import {
   formatModifier,
   sizeForRace,
   type DerivedPart,
+  mathPartLabel,
 } from "@/lib/srd";
 import { attunementSlotsFor } from "@/lib/srd/armor";
 import { encumbranceFor } from "@/lib/srd/encumbrance";
@@ -69,8 +70,10 @@ const RESOURCE_HELP = new Map(RESOURCE_DEFS.map((def) => [def.id, def.guidance])
 // Every derived number's working, the way AC has always shown its own.
 // computeSheetDerived returns the parts it summed, so a hover can say where a
 // +7 came from without this file knowing a single rule.
-function explainParts(parts: DerivedPart[]): string {
-  return parts.map((part) => `${formatModifier(part.value)} ${part.label}`).join(", ");
+function explainParts(t: (key: string, vars?: Record<string, string | number>) => string, parts: DerivedPart[]): string {
+  // The parts' own labels are the math's English words; the reader's words
+  // come from the dictionaries (math.parts.*), ability names included.
+  return parts.map((part) => `${formatModifier(part.value)} ${mathPartLabel(t, part.label)}`).join(", ");
 }
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
@@ -294,13 +297,13 @@ export function CharacterSheetDialog({
                   glyph: "rest-initiative",
                   label: <GameTerm id="initiative">{t("table.sheet.initiative")}</GameTerm>,
                   value: formatModifier(derived.initiative),
-                  title: explainParts(derived.parts.initiative),
+                  title: explainParts(t, derived.parts.initiative),
                 },
                 {
                   glyph: "sense-passive-perception",
                   label: <GameTerm id="passive_perception">{t("table.sheet.passivePerception")}</GameTerm>,
                   value: derived.passivePerception,
-                  title: explainParts(derived.parts.passivePerception),
+                  title: explainParts(t, derived.parts.passivePerception),
                 },
                 { glyph: "rest-proficiency", label: t("table.sheet.proficiency"), value: formatModifier(derived.proficiencyBonus) },
                 { glyph: "coin-gp", label: t("table.sheet.gold"), value: t("table.sheet.goldValue", { gold: sheet.gold }) },
@@ -384,7 +387,7 @@ export function CharacterSheetDialog({
               mods={derived.abilityMods}
               saves={derived.saves}
               saveProficiencies={sheet.proficiencies.saves}
-              explainSave={(ability) => explainParts(derived.parts.saves[ability])}
+              explainSave={(ability) => explainParts(t, derived.parts.saves[ability])}
             />
           </SheetBlock>
 
@@ -392,7 +395,7 @@ export function CharacterSheetDialog({
             <SkillRows
               skills={derived.skills}
               proficient={sheet.proficiencies.skills}
-              explain={(skillId) => explainParts(derived.parts.skills[skillId])}
+              explain={(skillId) => explainParts(t, derived.parts.skills[skillId])}
             />
           </SheetBlock>
 
@@ -407,8 +410,8 @@ export function CharacterSheetDialog({
               hint={
                 derived.parts.spellSaveDc.length
                   ? t("table.sheet.saveDcHint", {
-                      dc: explainParts(derived.parts.spellSaveDc),
-                      attack: explainParts(derived.parts.spellAttack),
+                      dc: explainParts(t, derived.parts.spellSaveDc),
+                      attack: explainParts(t, derived.parts.spellAttack),
                     })
                   : undefined
               }

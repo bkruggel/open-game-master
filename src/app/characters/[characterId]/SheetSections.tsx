@@ -16,7 +16,9 @@ import { Ribbon } from "@/components/ui/Ribbon";
 import { cn } from "@/lib/cn";
 import { useT } from "@/lib/locale";
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
-import { computeSheetDerived, formatModifier, speedFor, type DerivedPart } from "@/lib/srd";
+import { computeSheetDerived, formatModifier, speedFor, type DerivedPart,
+  mathPartLabel,
+} from "@/lib/srd";
 import { ui } from "@/lib/ui";
 
 export type CharacterEvent = {
@@ -75,7 +77,7 @@ export function SheetSections({ sheet, level = 1 }: { sheet: CreateSheetInput; l
     feats: sheet.feats,
     equipment: sheet.equipment,
   });
-  const explain = (parts: DerivedPart[]) => parts.map((part) => `${formatModifier(part.value)} ${part.label}`).join(", ");
+  const explain = (parts: DerivedPart[]) => parts.map((part) => `${formatModifier(part.value)} ${mathPartLabel(t, part.label)}`).join(", ");
   return (
     <div className="space-y-4">
       <SheetPanel title={t("characters.sheet.abilities")} className="ornate">

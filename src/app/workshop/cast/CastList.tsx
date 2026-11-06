@@ -139,7 +139,7 @@ export function CastRows({ npcs, onOpen, factionNames }: Omit<ListProps, "select
           className={`${ui.input} pl-9`}
         />
       </label>
-      <ListTally shown={shown.length} total={npcs.length} noun={["person", "people"]} sort={sort} onSort={setSort} />
+      <ListTally shown={shown.length} total={npcs.length} noun={[t("tally.noun.person.one"), t("tally.noun.person.many")]} sort={sort} onSort={setSort} />
 
       <ul className="stagger space-y-2">
         {shown.map((npc) => {

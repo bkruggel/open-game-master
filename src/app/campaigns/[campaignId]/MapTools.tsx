@@ -6,8 +6,8 @@ import { cn } from "@/lib/cn";
 import { encodeImageForUpload } from "@/lib/image-encode";
 import {
   BRUSHES,
-  BRUSH_EFFECTS,
-  BRUSH_LABELS,
+  brushEffect,
+  brushLabel,
   MAX_BRUSH_RADIUS,
   type Brush as BrushName,
 } from "@/lib/battlemap/paint";
@@ -67,7 +67,7 @@ export function BrushPalette({
                 type="button"
                 aria-pressed={active}
                 data-on={active ? "" : undefined}
-                title={`${BRUSH_EFFECTS[option]} (${index + 1})`}
+                title={`${brushEffect(t, option)} (${index + 1})`}
                 onClick={() => onPick(active ? "" : option)}
                 className={cn(
                   "flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left motion-press",
@@ -79,10 +79,10 @@ export function BrushPalette({
                 <Swatch char={brushChar(option)} src={swatches?.[brushChar(option)]} className="mt-0.5" />
                 <span className="min-w-0 flex-1">
                   <span className={cn("flex items-center justify-between text-[12px]", active ? "text-amber-100" : "text-stone-200")}>
-                    {BRUSH_LABELS[option]}
+                    {brushLabel(t, option)}
                     <span className="font-mono text-[8px] text-stone-600">{index + 1}</span>
                   </span>
-                  <span className="block font-mono text-[9px] leading-tight text-stone-500">{BRUSH_EFFECTS[option]}</span>
+                  <span className="block font-mono text-[9px] leading-tight text-stone-500">{brushEffect(t, option)}</span>
                 </span>
               </button>
             </li>

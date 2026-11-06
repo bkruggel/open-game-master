@@ -8,6 +8,41 @@ import type { ArtStyle, StorySettings } from "@/lib/types";
 // scenes, or write its own. Portraits, covers and battle maps keep their own
 // looks.
 
+// The picker's words are the dictionaries' (art.style.*, art.styleNote.*);
+// the surface that shows them passes its translator. The presets stay as
+// they are: they are the prompt's own words, which an image model reads in
+// English.
+export const ART_STYLE_LABEL_KEYS: Record<ArtStyle, string> = {
+  setting: "art.style.setting",
+  painted: "art.style.painted",
+  ink: "art.style.ink",
+  realistic: "art.style.realistic",
+  comic: "art.style.comic",
+  custom: "art.style.custom",
+};
+
+export const ART_STYLE_NOTE_KEYS: Record<ArtStyle, string> = {
+  setting: "art.styleNote.setting",
+  painted: "art.styleNote.painted",
+  ink: "art.styleNote.ink",
+  realistic: "art.styleNote.realistic",
+  comic: "art.styleNote.comic",
+  custom: "art.styleNote.custom",
+};
+
+// The shape of a translator, as the pure sentence builders take it.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+export function artStyleLabel(t: T, style: ArtStyle): string {
+  return t(ART_STYLE_LABEL_KEYS[style] ?? "art.style.setting");
+}
+
+export function artStyleNote(t: T, style: ArtStyle): string {
+  return t(ART_STYLE_NOTE_KEYS[style] ?? "art.styleNote.setting");
+}
+
+// The styles' English words, pinned, where a summary quotes the style for
+// the model's reading.
 export const ART_STYLE_LABELS: Record<ArtStyle, string> = {
   setting: "From the setting",
   painted: "Painted",
@@ -15,16 +50,6 @@ export const ART_STYLE_LABELS: Record<ArtStyle, string> = {
   realistic: "Realistic",
   comic: "Comic book",
   custom: "Custom",
-};
-
-// One line under the picker, so the choice says what it asks for.
-export const ART_STYLE_NOTES: Record<ArtStyle, string> = {
-  setting: "The look the campaign's setting or world pack gives its maps and scenes.",
-  painted: "Painted maps in rich color; scenes as painterly illustrations.",
-  ink: "Ink and watercolor on aged parchment, for maps and scenes alike.",
-  realistic: "Realistic terrain maps with no parchment; scenes as photographic stills.",
-  comic: "Bold ink lines and flat color, for maps and scenes alike.",
-  custom: "Your own words for each. A blank one keeps the setting's look.",
 };
 
 type PresetStyle = Exclude<ArtStyle, "setting" | "custom">;

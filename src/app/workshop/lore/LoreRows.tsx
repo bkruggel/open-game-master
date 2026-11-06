@@ -64,7 +64,7 @@ export function LoreRows({
           className={`${ui.input} pl-9`}
         />
       </label>
-      <ListTally shown={shown.length} total={entries.length} noun={["entry", "entries"]} sort={sort} onSort={setSort} />
+      <ListTally shown={shown.length} total={entries.length} noun={[t("tally.noun.entry.one"), t("tally.noun.entry.many")]} sort={sort} onSort={setSort} />
 
       <ul className="stagger-up grid gap-2 lg:grid-cols-2">
         {shown.map((entry) => {
