@@ -45,6 +45,7 @@ import { Select, type SelectOption } from "@/components/ui/Select";
 import { Slider as KitSlider } from "@/components/ui/Slider";
 import { Switch as KitSwitch } from "@/components/ui/Switch";
 import { ui } from "@/lib/ui";
+import { useT } from "@/lib/locale";
 import { paintedMapsOn, writePaintedMaps } from "@/lib/painted-maps";
 import { MASTER_VOLUME_MAX, VOLUME_STEP } from "@/lib/voice/volume";
 
@@ -60,14 +61,19 @@ const BUTTON = cn(ui.btnSmall, "shrink-0 px-2.5 py-1 text-xs");
 // The kit Select needs a non-empty value to show a choice; the stores keep ""
 // for "whatever the system uses", so that one option is translated both ways.
 const SYSTEM_DEFAULT = "__default";
-const MIC_MODES: SelectOption<MicMode>[] = [
-  { value: "open", label: "Open mic" },
-  { value: "ptt", label: "Push to talk" },
-];
+// The mic modes' words by value; the keys live with the device group.
+const MIC_MODE_KEYS = {
+  open: "device.mic.open",
+  ptt: "device.mic.ptt",
+} as const;
 
-function deviceOptions(devices: Device[]): SelectOption<string>[] {
+function micModeOptions(t: (key: string, vars?: Record<string, string | number>) => string): SelectOption<MicMode>[] {
+  return (Object.keys(MIC_MODE_KEYS) as MicMode[]).map((mode) => ({ value: mode, label: t(MIC_MODE_KEYS[mode]) }));
+}
+
+function deviceOptions(t: (key: string, vars?: Record<string, string | number>) => string, devices: Device[]): SelectOption<string>[] {
   return [
-    { value: SYSTEM_DEFAULT, label: "System default" },
+    { value: SYSTEM_DEFAULT, label: t("device.systemDefault") },
     // A browser without permission reports every device with an empty id.
     ...devices.filter((device) => device.deviceId).map((device) => ({ value: device.deviceId, label: device.label })),
   ];
@@ -82,6 +88,7 @@ type Device = { deviceId: string; label: string };
 // once microphone permission has been granted; `allow` asks for it with a
 // capture that is stopped the moment it starts.
 function useDevices() {
+  const t = useT();
   const [inputs, setInputs] = useState<Device[]>([]);
   const [outputs, setOutputs] = useState<Device[]>([]);
   const [labelled, setLabelled] = useState(false);
@@ -92,15 +99,15 @@ function useDevices() {
     }
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const named = (kind: MediaDeviceKind, noun: string): Device[] =>
+      const named = (kind: MediaDeviceKind, noun: string, count: number): Device[] =>
         devices
           .filter((device) => device.kind === kind)
           .map((device, index) => ({
             deviceId: device.deviceId,
-            label: device.label || `${noun} ${index + 1}`,
+            label: device.label || t(noun, { n: index + 1 }),
           }));
-      setInputs(named("audioinput", "Microphone"));
-      setOutputs(named("audiooutput", "Output"));
+      setInputs(named("audioinput", "device.inputFallback", 0));
+      setOutputs(named("audiooutput", "device.outputFallback", 0));
       setLabelled(devices.some((device) => device.label));
     } catch {
       // No device access at all; the selects stay on the system default.
@@ -341,32 +348,33 @@ function Switch({
 }
 
 function MicrophoneSection({ devices }: { devices: ReturnType<typeof useDevices> }) {
+  const t = useT();
   const micId = useSyncExternalStore(subscribeMicPrefs, readMicId, () => "");
   const micMode = useSyncExternalStore(subscribeMicPrefs, readMicMode, () => "open" as MicMode);
   const gain = useMicGain();
   const meter = useMicMeter(micId, gain);
   return (
     <section>
-      <SectionHead title="Microphone" glyph="ui-voice" />
-      <p className="-mt-1 mb-2 text-xs text-stone-500">Only on this device. Live voice chat and dictation both listen through it.</p>
+      <SectionHead title={t("device.mic.title")} glyph="ui-voice" />
+      <p className="-mt-1 mb-2 text-xs text-stone-500">{t("device.mic.intro")}</p>
       <div className="space-y-3">
         <div>
-          <span className={cn(LABEL, "mb-1 block")}>Recording device</span>
+          <span className={cn(LABEL, "mb-1 block")}>{t("device.mic.recordingDevice")}</span>
           <Select
             value={micId || SYSTEM_DEFAULT}
             onChange={(value) => writeMicId(value === SYSTEM_DEFAULT ? "" : value)}
-            options={deviceOptions(devices.inputs)}
-            label="Recording device"
+            options={deviceOptions(t, devices.inputs)}
+            label={t("device.mic.recordingDevice")}
             size="sm"
             className="w-full"
           />
           {!devices.labelled ? (
             <button type="button" onClick={() => void devices.allow()} className={cn(BUTTON, "mt-1.5")}>
-              Allow microphone access to see device names
+              {t("device.mic.allowNames")}
             </button>
           ) : null}
         </div>
-        <Slider label="Recording level" value={gain} max={MIC_GAIN_MAX} onChange={writeMicGain} />
+        <Slider label={t("device.mic.recordingLevel")} value={gain} max={MIC_GAIN_MAX} onChange={writeMicGain} />
         <div className={ROW}>
           <div className="h-2 flex-1 overflow-hidden rounded-full border border-amber-500/15 bg-stone-900">
             <div
@@ -379,24 +387,24 @@ function MicrophoneSection({ devices }: { devices: ReturnType<typeof useDevices>
             onClick={() => (meter.testing ? meter.stop() : void meter.start())}
             className={BUTTON}
           >
-            {meter.testing ? "Stop test" : "Test microphone"}
+            {meter.testing ? t("device.mic.stopTest") : t("device.mic.test")}
           </button>
         </div>
         <div className={ROW}>
           <span className={LABEL}>
-            Mode{micMode === "ptt" ? ` (hold ${PTT_KEY === "Backquote" ? "`" : PTT_KEY} or the talk button)` : ""}
+            {t("device.mic.mode")}{micMode === "ptt" ? t("device.mic.modePtt", { key: PTT_KEY === "Backquote" ? "`" : PTT_KEY }) : ""}
           </span>
           <Select
             value={micMode}
             onChange={writeMicMode}
-            options={MIC_MODES}
-            label="Microphone mode"
+            options={micModeOptions(t)}
+            label={t("device.mic.modeLabel")}
             size="sm"
             align="end"
           />
         </div>
         <div>
-          <span className={cn(LABEL, "mb-1 block")}>Dictation key</span>
+          <span className={cn(LABEL, "mb-1 block")}>{t("device.mic.dictationKey")}</span>
           <DictationShortcutField />
         </div>
       </div>
@@ -405,6 +413,7 @@ function MicrophoneSection({ devices }: { devices: ReturnType<typeof useDevices>
 }
 
 function PlaybackSection({ devices }: { devices: ReturnType<typeof useDevices> }) {
+  const t = useT();
   const outputId = useOutputId();
   const volumes = useVolumePrefs();
   const narrationMuted = useAudioFlag("narrationMuted", false);
@@ -416,74 +425,72 @@ function PlaybackSection({ devices }: { devices: ReturnType<typeof useDevices> }
   const selectable = supportsOutputSelection();
   return (
     <section>
-      <SectionHead title="Playback" glyph="tab-ambience" />
+      <SectionHead title={t("device.playback.title")} glyph="tab-ambience" />
       <p className="-mt-1 mb-2 text-xs text-stone-500">
-        Only on this device: how loud each part of the table plays for you. Whether the story is read aloud at all is the
-        table&apos;s own Narration setting.
+        {t("device.playback.intro")}
       </p>
       <div className="space-y-3">
         <div>
-          <span className={cn(LABEL, "mb-1 block")}>Playback device</span>
+          <span className={cn(LABEL, "mb-1 block")}>{t("device.playback.device")}</span>
           {selectable ? (
             <div className="reveal flex items-center gap-2">
               <Select
                 value={outputId || SYSTEM_DEFAULT}
                 onChange={(value) => writeOutputId(value === SYSTEM_DEFAULT ? "" : value)}
-                options={deviceOptions(devices.outputs)}
-                label="Playback device"
+                options={deviceOptions(t, devices.outputs)}
+                label={t("device.playback.device")}
                 size="sm"
                 className="min-w-0 flex-1"
               />
               <button type="button" onClick={() => void playTestTone()} className={BUTTON}>
-                Test
+                {t("device.playback.test")}
               </button>
             </div>
           ) : (
             <p className="text-xs text-stone-500">
-              Sound plays through the output this device has selected; change it in the system
-              settings.
+              {t("device.playback.systemNote")}
             </p>
           )}
         </div>
         <Slider
-          label="Voice chat"
+          label={t("device.playback.voiceChat")}
           value={volumes.master}
           max={MASTER_VOLUME_MAX}
           onChange={setMasterVolume}
         />
         <Slider
-          label="Narration"
+          label={t("device.playback.narration")}
           value={narrationVolume}
           max={1}
           min={VOLUME_STEP}
           onChange={(value) => writeAudioPref("narrationVolume", value)}
         />
         <Switch
-          label="Narration read aloud"
+          label={t("device.playback.narrationOn")}
           on={!narrationMuted}
           onChange={(on) => writeAudioPref("narrationMuted", !on)}
         />
         <Slider
-          label="Ambience"
+          label={t("device.playback.ambience")}
           value={ambienceVolume}
           max={1}
           min={VOLUME_STEP}
           onChange={(value) => writeAudioPref("ambienceVolume", value)}
         />
         <Switch
-          label="Ambience"
+          label={t("device.playback.ambience")}
           on={!ambienceMuted}
           onChange={(on) => writeAudioPref("ambienceMuted", !on)}
         />
         <Slider
-          label="Room (within ambience)"
+          label={t("device.playback.room")}
           value={bedLevel}
           max={1}
           min={0}
           onChange={(value) => writeAudioPref("ambienceBedLevel", value)}
         />
         <Slider
-          label="Music (within ambience)"
+          label={t("device.playback.music")}
           value={musicLevel}
           max={1}
           min={0}
@@ -495,6 +502,7 @@ function PlaybackSection({ devices }: { devices: ReturnType<typeof useDevices> }
 }
 
 function DiceSection() {
+  const t = useT();
   const dice3d = useSyncExternalStore(
     subscribeDice3d,
     () => window.localStorage.getItem(DICE3D_KEY) !== "off",
@@ -505,10 +513,10 @@ function DiceSection() {
   const [canShake] = useState(() => supportsShake());
   return (
     <section>
-      <SectionHead title="Dice" glyph="die-d20" />
+      <SectionHead title={t("device.dice.title")} glyph="die-d20" />
       <div className="space-y-3">
         <Switch
-          label="Roll 3D dice on the table"
+          label={t("device.dice.3d")}
           on={dice3d}
           onChange={(on) => {
             window.localStorage.setItem(DICE3D_KEY, on ? "on" : "off");
@@ -519,7 +527,7 @@ function DiceSection() {
         {canShake ? (
           <div>
             <Switch
-              label="Shake to roll"
+              label={t("device.dice.shake")}
               on={shake}
               onChange={(on) => {
                 if (on) {
@@ -530,12 +538,11 @@ function DiceSection() {
               }}
             />
             <p className="mt-1 text-xs text-stone-500">
-              Your rolls wait for you at the table; shake this device to roll them. A tap
-              works too.
+              {t("device.dice.shakeHelp")}
             </p>
           </div>
         ) : null}
-        <SectionHead title="Physical dice" glyph="tab-dice" level="h4" className="mb-0" />
+        <SectionHead title={t("device.dice.physical")} glyph="tab-dice" level="h4" className="mb-0" />
         <DiceSourcesPanel />
       </div>
     </section>
@@ -547,16 +554,17 @@ function DiceSection() {
 // turns off. "Auto" follows the device's reported memory and the app
 // shell's device class (src/lib/effects-mode.ts).
 function EffectsSection() {
+  const t = useT();
   const mode = useEffectsMode();
   const chime = useTurnChime();
   const [auto, setAuto] = useState(() => isEffectsAuto());
   const [painted, setPainted] = useState(() => paintedMapsOn());
   return (
     <section>
-      <SectionHead title="Effects" glyph="cue-arcane" />
+      <SectionHead title={t("device.effects.title")} glyph="cue-arcane" />
       <div className="space-y-3">
         <Switch
-          label="Full effects on the board and scene"
+          label={t("device.effects.full")}
           on={mode === "full"}
           onChange={(on) => {
             writeEffectsMode(on ? "full" : "low");
@@ -566,9 +574,9 @@ function EffectsSection() {
         <p className="text-xs text-stone-500">
           {auto
             ? mode === "low"
-              ? "Set to low automatically for this device. Hits, numbers and rings still play."
-              : "Chosen automatically for this device."
-            : "Chosen by you."}
+              ? t("device.effects.autoLow")
+              : t("device.effects.auto")
+            : t("device.effects.you")}
           {!auto ? (
             <button
               type="button"
@@ -578,12 +586,12 @@ function EffectsSection() {
               }}
               className={cn(ui.btnSmall, "ml-2 px-2 py-0.5 text-[11px]")}
             >
-              Let the device decide
+              {t("device.effects.letDevice")}
             </button>
           ) : null}
         </p>
         <Switch
-          label="Painted battle maps"
+          label={t("device.effects.painted")}
           on={painted}
           onChange={(on) => {
             writePaintedMaps(on);
@@ -591,9 +599,9 @@ function EffectsSection() {
           }}
         />
         <p className="text-xs text-stone-500">
-          Paints each board from its terrain on this device. Off keeps the drawn board, which is lighter on an old phone.
+          {t("device.effects.paintedHelp")}
         </p>
-        <Switch label="Chime when it is your turn" on={chime} onChange={writeTurnChime} />
+        <Switch label={t("device.effects.chime")} on={chime} onChange={writeTurnChime} />
       </div>
     </section>
   );
