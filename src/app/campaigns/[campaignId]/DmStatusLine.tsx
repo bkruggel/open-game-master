@@ -5,16 +5,17 @@ import { useEffect, useState } from "react";
 import { D20Spinner } from "@/components/ui/D20Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { formatElapsed } from "@/lib/dm/call-tracker-logic";
-import { describeStage } from "@/lib/dm/job-stage-logic";
+import { describeStageT } from "@/lib/dm/job-stage-logic";
+import { useT } from "@/lib/locale";
 import type { CampaignState } from "@/app/campaigns/[campaignId]/useCampaignStream";
 
-const STATUS_WORDS: Record<Exclude<CampaignState["dmStatus"], "idle">, string> = {
-  thinking: "GM at work...",
-  rolling: "GM rolling dice...",
-  awaiting_rolls: "Waiting on real dice...",
-  narrating: "GM narrating...",
-  writing_chapter: "GM writing the chapter...",
-  plotting_arc: "GM plotting the story arc...",
+const STATUS_KEYS: Record<Exclude<CampaignState["dmStatus"], "idle">, string> = {
+  thinking: "dm.status.thinking",
+  rolling: "dm.status.rolling",
+  awaiting_rolls: "dm.status.awaitingRolls",
+  narrating: "dm.status.narrating",
+  writing_chapter: "dm.status.writingChapter",
+  plotting_arc: "dm.status.plottingArc",
 };
 
 // The DM's status beside the composer (issue #383): what it is doing, the
@@ -37,6 +38,7 @@ export function DmStatusLine({
   // agree; the clock only ticks while a job runs.
   const [now, setNow] = useState(0);
   const [asked, setAsked] = useState("");
+  const t = useT();
   const jobId = dmJob?.id ?? "";
   useEffect(() => {
     if (!jobId) {
@@ -57,10 +59,10 @@ export function DmStatusLine({
   const job = dmStatus === "awaiting_rolls" ? null : dmJob;
   const stopping = Boolean(job && (job.stopping || asked === job.id));
   const phrase = stopping
-    ? "Stopping..."
+    ? t("dm.status.stopping")
     : dmStatus === "thinking" && job && job.stage !== "starting"
-      ? `${describeStage(job.stage)}...`
-      : STATUS_WORDS[dmStatus];
+      ? `${describeStageT(t, job.stage)}...`
+      : t(STATUS_KEYS[dmStatus]);
   const elapsed = job && now ? formatElapsed(job.since, now) : "";
 
   async function stop() {
@@ -85,15 +87,15 @@ export function DmStatusLine({
       </span>
       {elapsed ? <span className="tabular-nums text-stone-500">{elapsed}</span> : null}
       {canStop && job && !stopping ? (
-        <Tooltip content="Stop what the GM is doing now. A stopped turn can be retried.">
+        <Tooltip content={t("dm.status.stopTip")}>
           <button
             type="button"
             onClick={() => void stop()}
             className="-my-0.5 ml-0.5 inline-flex items-center gap-1 rounded-full border border-red-900/60 px-1.5 py-0.5 text-[11px] text-red-200 transition-colors hover:bg-red-950/60"
-            aria-label="Stop the GM"
+            aria-label={t("dm.status.stopAria")}
           >
             <Square className="size-2.5 fill-current" />
-            Stop
+            {t("dm.status.stop")}
           </button>
         </Tooltip>
       ) : null}

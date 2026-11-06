@@ -8802,6 +8802,22 @@ export const en = {
 
 // ---- the DM's assist rail (DmAssistPanel.tsx): the suggestion box, the
 // DC ladder, the encounter budget, and the rules lookup ----
+  "dm.status.thinking": "GM at work...",
+  "dm.status.rolling": "GM rolling dice...",
+  "dm.status.awaitingRolls": "Waiting on real dice...",
+  "dm.status.narrating": "GM narrating...",
+  "dm.status.writingChapter": "GM writing the chapter...",
+  "dm.status.plottingArc": "GM plotting the story arc...",
+  "dm.status.stopping": "Stopping...",
+  "dm.status.stopTip": "Stop what the GM is doing now. A stopped turn can be retried.",
+  "dm.status.stopAria": "Stop the GM",
+  "dm.status.stop": "Stop",
+  "dm.stage.starting": "Getting started",
+  "dm.stage.settingScene": "Setting the scene",
+  "dm.stage.searchingLore": "Searching the lore",
+  "dm.stage.waitingModel": "Waiting on the model",
+  "dm.stage.resolving": "Resolving actions",
+  "dm.stage.closingChapter": "Closing the chapter",
   "dm.assist.suggestTitle": "What should I press?",
   "dm.assist.suggestPlaceholder": "I try to talk the guard into letting us through.",
   "dm.assist.saidAria": "What the player said",
@@ -10330,6 +10346,8 @@ export const en = {
   "builder.levels.spellsPrepared": "spells prepared",
   "builder.levels.casterSpells": "{name}: {count} {label}",
   "builder.levels.casterNone": "{name}: none yet",
+  "builder.quick.scoresNote": "highest in {first}, then {second}",
+  "builder.quick.levelAsi": "level {level}: {words}",
   "builder.levels.doorParty": "The party is built for level {level}.",
 
 // ---- multiclass reasons (multiclassBuild.ts) ----

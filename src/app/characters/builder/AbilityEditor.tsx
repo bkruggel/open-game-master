@@ -131,6 +131,13 @@ export default function AbilityEditor({
   const [asking, setAsking] = useState(false);
   const [rollError, setRollError] = useState("");
   const timers = useRef<number[]>([]);
+  // Built at a table, the dice are rolled under that table's rule (its own,
+  // or the server's when it set none), and the words say so.
+  const campaignId = useContentCampaign();
+  // The reroll rule where the character is made; the bundled default until
+  // the server has answered.
+  const [rerollBelow, setRerollBelow] = useState(REROLL_BELOW);
+  const words = rerollWords(rerollBelow, Boolean(campaignId));
   // The three ways as the method switch and its dialog read them.
   const methodRows = METHODS.map((entry) => ({
     id: entry.id,
@@ -148,13 +155,6 @@ export default function AbilityEditor({
   // are that kept roll (null when thrown before the server kept dates).
   const [openPool, setOpenPool] = useState<AbilityPoolAnswer | null>(null);
   const [keptAt, setKeptAt] = useState<string | null | undefined>(undefined);
-  // Built at a table, the dice are rolled under that table's rule (its own,
-  // or the server's when it set none), and the words say so.
-  const campaignId = useContentCampaign();
-  // The reroll rule where the character is made; the bundled default until
-  // the server has answered.
-  const [rerollBelow, setRerollBelow] = useState(REROLL_BELOW);
-  const words = rerollWords(rerollBelow, Boolean(campaignId));
   const poolNoteId = useId();
   function learnRule(answer: { rerollBelow: number }) {
     setRerollBelow(answer.rerollBelow);

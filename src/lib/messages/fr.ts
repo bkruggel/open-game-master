@@ -8842,6 +8842,22 @@ export const fr: Partial<Record<MessageKey, string>> = {
 // ---- le rail d'assistance du MJ (DmAssistPanel.tsx) : la boîte à
 // suggestion, l'échelle des DD, le budget de rencontre et la recherche de
 // règle ----
+  "dm.status.thinking": "Le MJ travaille...",
+  "dm.status.rolling": "Le MJ lance les dés...",
+  "dm.status.awaitingRolls": "On attend les vrais dés...",
+  "dm.status.narrating": "Le MJ raconte...",
+  "dm.status.writingChapter": "Le MJ écrit le chapitre...",
+  "dm.status.plottingArc": "Le MJ trace l'intrigue...",
+  "dm.status.stopping": "Arrêt...",
+  "dm.status.stopTip": "Arrête ce que fait le MJ maintenant. Un tour arrêté peut être relancé.",
+  "dm.status.stopAria": "Arrêter le MJ",
+  "dm.status.stop": "Stop",
+  "dm.stage.starting": "Mise en route",
+  "dm.stage.settingScene": "Mise en place de la scène",
+  "dm.stage.searchingLore": "Recherche dans les traditions",
+  "dm.stage.waitingModel": "En attente du modèle",
+  "dm.stage.resolving": "Résolution des actions",
+  "dm.stage.closingChapter": "Clôture du chapitre",
   "dm.assist.suggestTitle": "Sur quoi appuyer ?",
   "dm.assist.suggestPlaceholder": "Je tente de convaincre le garde de nous laisser passer.",
   "dm.assist.saidAria": "Ce que le joueur a dit",
@@ -10374,6 +10390,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "builder.levels.spellsPrepared": "sorts préparés",
   "builder.levels.casterSpells": "{name} : {count} {label}",
   "builder.levels.casterNone": "{name} : encore aucun",
+  "builder.quick.scoresNote": "{first} la plus haute, puis {second}",
+  "builder.quick.levelAsi": "niveau {level} : {words}",
   "builder.levels.doorParty": "Le groupe est prévu pour le niveau {level}.",
 
 // ---- les refus de multiclasse (multiclassBuild.ts) ----

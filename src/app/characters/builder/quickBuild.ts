@@ -20,7 +20,7 @@
 import { ALL_SKILLS, STANDARD_LANGUAGES } from "@/lib/content/mechanics";
 import { textKey } from "@/lib/language/text-logic";
 import { featChoice, withFeatChoice, type Ability, type AsiChoice } from "@/lib/schemas/sheet";
-import { SRD_SKILLS } from "@/lib/srd";
+import { skillLabel, SRD_SKILLS } from "@/lib/srd";
 import { companionImprovements, preferredSpellOrder } from "@/lib/srd/companion-build";
 import { authoredFeatDesc } from "@/lib/srd/feat-effects";
 import type { FeatChoices, FeatPicks, FeatGrantSpec } from "@/lib/srd/feat-grants";
@@ -231,6 +231,8 @@ export type FillContext = {
   // The caller's translator (home/types.ts agoLabel pattern): the filled
   // picks' labels read in the reader's language.
   t: (key: string, vars?: Record<string, string | number>) => string;
+  // The reader's locale, for the skills' official names.
+  locale?: "en" | "fr";
   fields: BuilderDraftFields;
   derived: BuilderDerived;
   race: RaceOption | undefined;
@@ -257,10 +259,9 @@ export type FillContext = {
 
 export type FillRound = { patch: Partial<BuilderDraftFields>; filled: FilledPick[] };
 
-const skillName = (id: string) => SRD_SKILLS.find((skill) => skill.id === id)?.name ?? id;
-const ABILITY_WORDS: Record<Ability, string> = {
-  str: "Strength", dex: "Dexterity", con: "Constitution", int: "Intelligence", wis: "Wisdom", cha: "Charisma",
-};
+// A skill's name in the reader's language (the official French words where
+// the dictionaries carry them), the English row standing in.
+const skillName = (id: string, locale: "en" | "fr" = "en") => skillLabel(id, locale);
 const has = (list: readonly string[], name: string) => list.some((entry) => textKey(entry) === textKey(name));
 
 // Fills a slot-indexed list's blanks (and the slots past its end) from the
@@ -373,7 +374,7 @@ export function fillRound(ctx: FillContext): FillRound {
       patch.scores = standardFor(klass, STANDARD_ARRAY);
     }
     const order = abilityPriority(klass);
-    note("scores", `highest in ${ABILITY_WORDS[order[0]]}, then ${ABILITY_WORDS[order[1]]}`);
+    note("scores", ctx.t("builder.quick.scoresNote", { first: ctx.t(`sheet.ability.${order[0]}`), second: ctx.t(`sheet.ability.${order[1]}`) }));
   }
   if (!fields.name.trim() && wants("name")) {
     const race = ctx.race ?? offered.races.find((entry) => entry.id === patch.raceId);
@@ -414,7 +415,7 @@ export function fillRound(ctx: FillContext): FillRound {
     if (added.length) {
       patch.backgroundSkills = next;
       added.forEach((skill) => proficient.add(skill));
-      note("backgroundSkills", added.map(skillName).join(", "));
+      note("backgroundSkills", added.map((skill) => skillName(skill, ctx.locale)).join(", "));
     }
   }
 
@@ -446,7 +447,7 @@ export function fillRound(ctx: FillContext): FillRound {
     const { next, added } = fillSlots(fields.racialAsi, choice.count, candidates);
     if (added.length) {
       patch.racialAsi = next as Array<Ability | "">;
-      note("racialAsi", added.map((ability) => ABILITY_WORDS[ability as Ability]).join(", "));
+      note("racialAsi", added.map((ability) => ctx.t(`sheet.ability.${ability}`)).join(", "));
     }
   }
   if (race.skillChoice && wants("racialSkills")) {
@@ -455,7 +456,7 @@ export function fillRound(ctx: FillContext): FillRound {
     if (added.length) {
       patch.racialSkills = next;
       added.forEach((skill) => proficient.add(skill));
-      note("racialSkills", added.map(skillName).join(", "));
+      note("racialSkills", added.map((skill) => skillName(skill, ctx.locale)).join(", "));
     }
   }
   if (race.toolChoice && !fields.racialTool && wants("racialTool")) {
@@ -503,7 +504,7 @@ export function fillRound(ctx: FillContext): FillRound {
     if (added.length) {
       patch.repeatSkills = next;
       added.forEach((skill) => proficient.add(skill));
-      note("repeatSkills", added.map(skillName).join(", "));
+      note("repeatSkills", added.map((skill) => skillName(skill, ctx.locale)).join(", "));
     }
   }
 
@@ -523,7 +524,7 @@ export function fillRound(ctx: FillContext): FillRound {
     if (added.length) {
       patch.chosenSkills = next;
       added.forEach((skill) => proficient.add(skill));
-      note("classSkills", added.map(skillName).join(", "));
+      note("classSkills", added.map((skill) => skillName(skill, ctx.locale)).join(", "));
     }
   }
   if (wants("tools")) {
@@ -591,7 +592,7 @@ export function fillRound(ctx: FillContext): FillRound {
     const add = candidates.slice(0, expertiseSlots - expertiseHeld.length);
     if (add.length) {
       patch.expertisePicks = [...expertiseHeld, ...add];
-      note("expertise", add.map(skillName).join(", "));
+      note("expertise", add.map((skill) => skillName(skill, ctx.locale)).join(", "));
     }
   }
   if (wants("options")) {
@@ -624,7 +625,7 @@ export function fillRound(ctx: FillContext): FillRound {
         if (!choice) break;
         next[index] = choice;
         scores = applyOne(scores, choice);
-        words.push(`level ${derived.asiSlotLevels[index]}: ${asiWords(choice)}`);
+        words.push(ctx.t("builder.quick.levelAsi", { level: derived.asiSlotLevels[index], words: asiWords(ctx.t, choice) }));
       }
       if (words.length) {
         for (let index = 0; index < next.length; index += 1) next[index] = next[index] ?? null;
@@ -673,9 +674,16 @@ function applyOne(scores: Record<Ability, number>, choice: AsiChoice): Record<Ab
   return next;
 }
 
-function asiWords(choice: AsiChoice): string {
-  if (choice.mode === "plus2") return `+2 ${ABILITY_WORDS[choice.ability]}`;
-  if (choice.mode === "plus1x2") return choice.abilities.map((ability) => `+1 ${ABILITY_WORDS[ability]}`).join(", ");
+// The improvement the fill picked, in the reader's words; the feat's name
+// rides as it was built.
+function asiWords(t: (key: string, vars?: Record<string, string | number>) => string, choice: AsiChoice): string {
+  if (choice.mode === "plus2") return t("builder.levels.plusTwo", { ability: t(`sheet.ability.${choice.ability}`) });
+  if (choice.mode === "plus1x2") {
+    const [first, second] = choice.abilities;
+    return first === second
+      ? t("builder.levels.plusTwo", { ability: t(`sheet.ability.${first}`) })
+      : t("builder.levels.plusOneTwo", { first: t(`sheet.ability.${first}`), second: t(`sheet.ability.${second}`) });
+  }
   return choice.feat;
 }
 

@@ -33,6 +33,24 @@ export const DM_JOB_STAGE_LABELS: Record<DmJobStage, string> = {
   closing_chapter: "Closing the chapter",
 };
 
+// The stages' words in the reader's language (dm.stage.*); the English
+// labels stay for the server's own logs and the watchdog.
+const DM_JOB_STAGE_KEYS: Record<DmJobStage, string> = {
+  starting: "dm.stage.starting",
+  setting_scene: "dm.stage.settingScene",
+  searching_lore: "dm.stage.searchingLore",
+  waiting_model: "dm.stage.waitingModel",
+  resolving: "dm.stage.resolving",
+  closing_chapter: "dm.stage.closingChapter",
+};
+
+export function describeStageT(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  stage: DmJobStage,
+): string {
+  return t(DM_JOB_STAGE_KEYS[stage]);
+}
+
 // How long a stage may go without progress. Engine stages are generous for
 // what they are (a prompt build takes well under a second on a healthy
 // server); a model stage's deadline comes from its own request timeout

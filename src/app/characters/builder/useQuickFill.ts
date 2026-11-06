@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { FILL_ROUNDS, fillRound, undoFill, type BuildSeed, type FilledPick, type QuizAnswers, } from "./quickBuild";
 import { TARGET_WORDS } from "./owed";
 import type { BlockerTarget } from "./submit";
@@ -59,6 +59,7 @@ export function useQuickFill({
   onDone?: (readback: FillReadback) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const [run, setRun] = useState<Run | null>(null);
   const [readback, setReadback] = useState<FillReadback | null>(null);
   // Whether the panel shows: "Keep them" closes it and keeps it to reopen.
@@ -98,6 +99,7 @@ export function useQuickFill({
         run.round < FILL_ROUNDS + 1
           ? fillRound({
               t,
+              locale,
               fields,
               derived,
               race,
