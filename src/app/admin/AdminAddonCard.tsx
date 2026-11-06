@@ -86,7 +86,7 @@ export function AdminAddonCard({
       headers: body ? { "Content-Type": "application/json" } : undefined,
       body: body ? JSON.stringify(body) : undefined,
     }).catch(() => null);
-    const data = response ? ((await response.json().catch(() => ({}))) as Record<string, unknown>) : { error: "Could not reach the server." };
+    const data = response ? ((await response.json().catch(() => ({}))) as Record<string, unknown>) : { error: t("admin.error.unreachable") };
     if (!response?.ok) {
       setError(String(data.error ?? t("admin.addons.card.fail")));
       return null;
@@ -178,7 +178,7 @@ export function AdminAddonCard({
     const data = response ? ((await response.json().catch(() => ({}))) as { ok?: boolean; tools?: string[]; error?: string; log?: string[] }) : null;
     setWorking("");
     if (!data) {
-      setError("Could not reach the server.");
+      setError(t("admin.error.unreachable"));
       return;
     }
     setTest(data.ok ? t("admin.addons.card.testOk", { tools: data.tools?.join(", ") || "" }) || t("admin.addons.card.testNoTools") : "");
@@ -443,7 +443,7 @@ function AddonSetup({ addon, name, onChanged }: { addon: AdminAddon; name: strin
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ do: "setup" }),
     }).catch(() => null);
-    const data = response ? ((await response.json().catch(() => ({}))) as { task?: TaskView; error?: string }) : { error: "Could not reach the server." };
+    const data = response ? ((await response.json().catch(() => ({}))) as { task?: TaskView; error?: string }) : { error: t("admin.error.unreachable") };
     setStarting(false);
     if (!response?.ok || !data.task) {
       setError(data.error ?? t("admin.addons.card.setup.startFailed"));

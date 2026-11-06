@@ -15,7 +15,7 @@ import {
 import type { WorldPackSummary } from "@/lib/worlds/types";
 import { FieldLabel } from "@/app/create-campaign/fields";
 import type { StepProps } from "@/app/create-campaign/draft";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import {
   arrivalTypeIn,
   dmFlavorText,
@@ -47,6 +47,7 @@ export function WorldFields({
   onPickGenre: (genre: Genre) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const showsAiFill = gates.aiNarrates && draft.aiStorySetup;
   // The type-in is a clip played over the input while its own text hides;
   // `run` re-keys it so a second pick replays it.
@@ -54,14 +55,14 @@ export function WorldFields({
   const [arrived, setArrived] = useState(false);
   if (active && !arrived) {
     setArrived(true);
-    const plan = arrivalTypeIn(draft);
+    const plan = arrivalTypeIn(draft, locale);
     if (plan) {
       setTyping({ ...plan, run: 0 });
     }
   }
 
   const pick = (genre: Genre) => {
-    const plan = typeInPlan(draft, genre);
+    const plan = typeInPlan(draft, genre, locale);
     onPickGenre(genre);
     setTyping((current) => (plan ? { ...plan, run: (current?.run ?? 0) + 1 } : null));
   };

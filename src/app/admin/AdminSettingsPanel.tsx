@@ -368,7 +368,7 @@ export function AdminSettingsPanel() {
                 value={config.serverName}
                 maxLength={100}
                 onChange={(event) => setConfig({ ...config, serverName: event.target.value })}
-                placeholder="Open Game Master"
+                placeholder={t("admin.serverNamePlaceholder")}
               />
             </Field>
           </div>
@@ -706,18 +706,18 @@ export function AdminSettingsPanel() {
       )}
 
       {deviceWorld ? null : (
-        <PageSection id="admin-player-agents" heading="Player agents" glyph="ui-agent">
+        <PageSection id="admin-player-agents" heading={t("admin.section.playerAgents")} glyph="ui-agent">
           <AdminPlayerAgentsSection />
         </PageSection>
       )}
 
       {deviceWorld ? null : (
-        <PageSection id="admin-backup" heading="Backup & restore" glyph="ui-backup">
+        <PageSection id="admin-backup" heading={t("admin.section.backup")} glyph="ui-backup">
           <AdminBackupSection />
         </PageSection>
       )}
 
-      <PageSection id="admin-storage" heading="Storage" glyph="ui-storage">
+      <PageSection id="admin-storage" heading={t("admin.section.storage")} glyph="ui-storage">
         <AdminStorageSection />
       </PageSection>
 

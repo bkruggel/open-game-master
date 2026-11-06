@@ -34,7 +34,7 @@ export function SheetRows({
   onFlip,
 }: StepProps & { keys: readonly SheetRowKey[]; onFlip?: () => void }) {
   const t = useT();
-  const rows = tableSheet(draft, gates)
+  const rows = tableSheet(t, draft, gates)
     .flatMap((group) => group.rows)
     .filter((row) => keys.includes(row.key))
     .sort((a, b) => keys.indexOf(a.key) - keys.indexOf(b.key));

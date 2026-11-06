@@ -219,7 +219,7 @@ function ComfyModelField({
     <>
       <div>
         <SelectField<string>
-          label="Image model"
+          label={t("admin.images.modelLabel")}
           value={selected}
           onChange={(value) => {
             const patch = comfyModelPatch(value, options);

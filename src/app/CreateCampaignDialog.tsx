@@ -15,6 +15,7 @@ import { applyPack, clearPack, DEFAULT_DRAFT, type CampaignDraft, type WizardGat
 import { appDefaultSettings, applyDefaults, defaultsFromDraft } from "@/app/create-campaign/defaults";
 import { DefaultsBar, DefaultsDialog, DefaultsPanel, type DefaultsActions, type StartFrom } from "@/app/create-campaign/DefaultsFields";
 import { presetTheme } from "@/app/create-campaign/portals";
+import { useLocale } from "@/lib/locale";
 import { EssentialsStep } from "@/app/create-campaign/EssentialsStep";
 import { ExperienceStep } from "@/app/create-campaign/ExperienceStep";
 import { ReviewStep, type EditTarget } from "@/app/create-campaign/ReviewStep";
@@ -56,7 +57,10 @@ export function CreateCampaignDialog({
   const t = useT();
   // The default genre's preset writes the first theme, exactly as picking any
   // other portal would; typing in the field takes it over for good.
-  const [draft, setDraft] = useState<CampaignDraft>(() => presetTheme(DEFAULT_DRAFT));
+  const locale = useLocale();
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
+  const [draft, setDraft] = useState<CampaignDraft>(() => presetTheme(DEFAULT_DRAFT, localeRef.current));
   // Every write goes through here, from handlers and callbacks only, so the
   // ref is always the draft as last written: a save pressed right after
   // typing reads the line just typed.
@@ -143,7 +147,7 @@ export function CreateCampaignDialog({
   // A saved setup (or the app's own) laid over the draft, then the server's
   // limits over that. The campaign's own fields stay (defaults.ts).
   const startFromSettings = (source: StartFrom, settings: CampaignDefaultSettings) => {
-    const applied = applyDefaults(latest.current, settings, selectedPack);
+    const applied = applyDefaults(latest.current, settings, selectedPack, localeRef.current);
     const limits = capabilitiesNow.current;
     const limited = limits ? withCapabilities(applied.draft, limits) : { draft: applied.draft, wanted: {} };
     wanted.current = limited.wanted;
@@ -211,13 +215,13 @@ export function CreateCampaignDialog({
   const choosePack = (pack: WorldPackSummary) => patch(applyPack(latest.current, pack));
   // Leaving a pack hands the theme back to the genre's preset, unless the
   // person typed their own.
-  const dropPack = () => patch(presetTheme(clearPack(latest.current, selectedPack)));
+  const dropPack = () => patch(presetTheme(clearPack(latest.current, selectedPack), localeRef.current));
   // Picking a bare genre by hand leaves the pack. A pack is defined as its
   // baseGenre plus overrides, so letting the two disagree would blend the
   // pack's flavor over the wrong preset and overlay its monsters onto the
   // wrong bestiary catalog.
   const pickGenre = (genre: Genre) =>
-    patch(presetTheme({ ...(latest.current.worldPack ? clearPack(latest.current, selectedPack) : latest.current), genre }));
+    patch(presetTheme({ ...(latest.current.worldPack ? clearPack(latest.current, selectedPack) : latest.current), genre }, localeRef.current));
 
   // Saving reads the draft after a half-typed line or veil has been kept: an
   // input still holding focus is blurred first, and the save waits a turn
@@ -231,7 +235,7 @@ export function CreateCampaignDialog({
     setDefaultsMessage(null);
     setDefaultsBusy(true);
     setTimeout(() => {
-      void defaults.save(defaultsFromDraft({ ...latest.current, ...wanted.current })).then((outcome) => {
+      void defaults.save(defaultsFromDraft({ ...latest.current, ...wanted.current }, localeRef.current)).then((outcome) => {
         setDefaultsBusy(false);
         if (outcome.ok) {
           setStartFrom("mine");

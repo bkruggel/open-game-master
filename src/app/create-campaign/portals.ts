@@ -1,4 +1,5 @@
-import { GENRE_PRESETS, genrePreset, type GenrePreset } from "@/lib/genres";
+import { GENRE_PRESETS, genrePreset, genrePresetFor, type GenrePreset } from "@/lib/genres";
+import type { Locale } from "@/lib/messages-logic";
 import { campaignPlaceholder } from "@/lib/placeholders";
 import type { Genre } from "@/lib/schemas/game-settings";
 
@@ -72,12 +73,14 @@ type ThemeSlice = { genre: Genre; theme: string; themeTouched: boolean; worldPac
 // The theme a draft should carry once its genre is settled. A theme the
 // person typed is never clobbered, and neither is one a world pack wrote:
 // the pack is the more specific of the two. Otherwise the preset's line is
-// fair game, which is the same rule applyPack follows for packs.
-export function presetTheme<T extends ThemeSlice>(draft: T): T {
+// fair game, which is the same rule applyPack follows for packs. `locale`
+// seeds the line in the creator's language where the preset carries one
+// (genrePresetFor); pure, so server callers keep the "en" default.
+export function presetTheme<T extends ThemeSlice>(draft: T, locale: Locale = "en"): T {
   if (draft.themeTouched || draft.worldPack) {
     return draft;
   }
-  return { ...draft, theme: genrePreset(draft.genre).defaultTheme };
+  return { ...draft, theme: genrePresetFor(draft.genre, locale).defaultTheme };
 }
 
 export const TYPE_MS_PER_CHAR = 22;
@@ -95,11 +98,12 @@ function planFor(text: string): TypeInPlan {
 export function typeInPlan(
   draft: { theme: string; themeTouched: boolean },
   genre: string,
+  locale: Locale = "en",
 ): TypeInPlan | null {
   if (draft.themeTouched) {
     return null;
   }
-  const text = genrePreset(genre).defaultTheme;
+  const text = genrePresetFor(genre, locale).defaultTheme;
   if (!text || text === draft.theme) {
     return null;
   }
@@ -109,9 +113,9 @@ export function typeInPlan(
 // The first time the world step comes on screen, the line the preset already
 // wrote plays once, so the person sees where it came from. A pack's theme and
 // a typed one are left alone.
-export function arrivalTypeIn(draft: ThemeSlice): TypeInPlan | null {
+export function arrivalTypeIn(draft: ThemeSlice, locale: Locale = "en"): TypeInPlan | null {
   if (draft.themeTouched || draft.worldPack || !draft.theme) {
     return null;
   }
-  return draft.theme === genrePreset(draft.genre).defaultTheme ? planFor(draft.theme) : null;
+  return draft.theme === genrePresetFor(draft.genre, locale).defaultTheme ? planFor(draft.theme) : null;
 }

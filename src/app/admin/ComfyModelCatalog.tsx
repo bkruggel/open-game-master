@@ -8,6 +8,7 @@ import { VERIFIED_ROWS } from "@/lib/image-models/verified";
 import type { ComfyModelReport } from "@/lib/comfyui";
 import type { ComfyDiscovery } from "@/app/admin/AdminImagesSection";
 import { paintsHere } from "@/lib/image-models/curate";
+import { useT } from "@/lib/locale";
 import type { MaskedConfig } from "@/app/admin/AdminSettingsFields";
 
 // Every image model ODM can run on ComfyUI, curated for the machine this
@@ -18,6 +19,10 @@ import type { MaskedConfig } from "@/app/admin/AdminSettingsFields";
 type Images = MaskedConfig["images"];
 
 const hardwareLabel = (id: string) => HARDWARE_PROFILES.find((profile) => profile.id === id)?.label ?? id;
+
+// The translator's shape, for the row words below: `t` comes in first
+// (src/lib/story-window.ts).
+type T = (key: string, vars?: Record<string, string | number>) => string;
 
 function measured(row: VerifiedRow): string {
   return [
@@ -39,6 +44,7 @@ function ModelRow({
   inUse: boolean;
   onPick: () => void;
 }) {
+  const t = useT();
   const model = comfyModel(report.id);
   if (!model) return null;
   const row = report.verified;
@@ -50,11 +56,11 @@ function ModelRow({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span className="text-sm text-stone-200">
           {model.label}
-          {row?.verdict === "recommended" ? <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-300">Recommended</span> : null}
-          {model.style === "anime" ? <span className="ml-2 text-[10px] uppercase tracking-wide text-stone-500">Anime</span> : null}
+          {row?.verdict === "recommended" ? <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-300">{t("admin.comfy.recommended")}</span> : null}
+          {model.style === "anime" ? <span className="ml-2 text-[10px] uppercase tracking-wide text-stone-500">{t("admin.comfy.anime")}</span> : null}
         </span>
         <span className="text-[11px] text-stone-500">
-          {inUse ? "In use" : installed ? "Installed" : `${report.downloadGb} GB to add`}
+          {inUse ? t("admin.comfy.inUse") : installed ? t("admin.comfy.installed") : t("admin.comfy.toAdd", { gb: report.downloadGb })}
         </span>
       </div>
       <p className="text-[11px] leading-4 text-stone-400">{model.blurb}</p>
@@ -62,11 +68,11 @@ function ModelRow({
         {row && row.verdict !== "fails"
           ? measured(row)
           : row
-            ? `Did not run on ${hardware ?? "this hardware"}.`
+            ? t("admin.comfy.didNotRun", { hardware: hardware ?? t("admin.comfy.thisHardware") })
             : elsewhere
-              ? `On ${hardwareLabel(elsewhere.hardware)}: ${measured(elsewhere)}.`
-              : "Not measured yet."}
-        {report.fits === false ? ` Peaked at ${report.needGb} GB, more than this GPU has.` : ""}
+              ? t("admin.comfy.onHardware", { hardware: hardwareLabel(elsewhere.hardware), measured: measured(elsewhere) })
+              : t("admin.comfy.notMeasured")}
+        {report.fits === false ? t("admin.comfy.peakOver", { gb: report.needGb ?? 0 }) : ""}
       </p>
       {row?.notes ? <p className="text-[11px] leading-4 text-stone-500">{row.notes}</p> : null}
       <p className="text-[11px] leading-4 text-stone-600">
@@ -74,21 +80,21 @@ function ModelRow({
       </p>
       {!installed ? (
         <details className="mt-1">
-          <summary className="cursor-pointer text-[11px] text-amber-300 hover:text-amber-200">Files to add</summary>
+          <summary className="cursor-pointer text-[11px] text-amber-300 hover:text-amber-200">{t("admin.comfy.filesToAdd")}</summary>
           <ul className="mt-1 space-y-0.5">
             {report.missing.map((file) => (
               <li key={file.name} className="text-[11px] leading-4 text-stone-400">
                 <a href={file.url} target="_blank" rel="noreferrer" className="text-amber-200 underline">
                   {file.name}
                 </a>{" "}
-                into ComfyUI/models/{file.folder} ({file.sizeGb} GB)
+                {t("admin.comfy.intoFolder", { folder: file.folder, gb: file.sizeGb })}
               </li>
             ))}
           </ul>
         </details>
       ) : !inUse && row?.verdict !== "fails" ? (
         <button type="button" className="mt-1 text-[11px] text-amber-300 hover:text-amber-200" onClick={onPick}>
-          Use this model
+          {t("admin.comfy.useModel")}
         </button>
       ) : null}
     </li>
@@ -110,19 +116,20 @@ export function ComfyModelCatalog({
   // The models that cannot paint here (did not run, or want more GPU
   // memory than this one has) and the ones that painted poorly are kept
   // off the list; one click shows them, each saying why.
+  const t = useT();
   const [showUnfit, setShowUnfit] = useState(false);
   const unfit = discovery.models.filter((report) => !paintsHere(report) || report.verified?.verdict === "poor");
   const reports = showUnfit ? discovery.models : discovery.models.filter((report) => !unfit.includes(report));
   const groups = [
     {
       key: "measured",
-      title: `Measured on ${hardware}`,
+      title: t("admin.comfy.measuredOn", { hardware: hardware ?? "" }),
       items: reports.filter((report) => report.verified && report.verified.verdict !== "fails" && report.verified.verdict !== "poor" && paintsHere(report)),
     },
-    { key: "unmeasured", title: hardware ? `Not measured on ${hardware} yet` : "Models", items: reports.filter((report) => !report.verified && paintsHere(report)) },
-    { key: "poor", title: `Poor pictures on ${hardware}`, items: reports.filter((report) => report.verified?.verdict === "poor" && paintsHere(report)) },
-    { key: "too-big", title: "More GPU memory than this one has", items: reports.filter((report) => report.verified?.verdict !== "fails" && !paintsHere(report)) },
-    { key: "failed", title: `Did not run on ${hardware}`, items: reports.filter((report) => report.verified?.verdict === "fails") },
+    { key: "unmeasured", title: hardware ? t("admin.comfy.notMeasuredOn", { hardware: hardware ?? "" }) : t("admin.comfy.models"), items: reports.filter((report) => !report.verified && paintsHere(report)) },
+    { key: "poor", title: t("admin.comfy.poorOn", { hardware: hardware ?? "" }), items: reports.filter((report) => report.verified?.verdict === "poor" && paintsHere(report)) },
+    { key: "too-big", title: t("admin.comfy.tooBig"), items: reports.filter((report) => report.verified?.verdict !== "fails" && !paintsHere(report)) },
+    { key: "failed", title: t("admin.comfy.didNotRunTitle", { hardware: hardware ?? "" }), items: reports.filter((report) => report.verified?.verdict === "fails") },
   ].filter((group) => group.items.length);
   const measuredCount = groups.find((group) => group.key === "measured")?.items.length ?? 0;
   const installedCount = reports.filter((report) => !report.missing.length).length;
@@ -146,22 +153,20 @@ export function ComfyModelCatalog({
   return (
     <details className="rounded-lg border border-stone-800 bg-stone-950/30 px-3 py-2">
       <summary className="cursor-pointer text-sm text-stone-300">
-        Image models for this machine
+        {t("admin.images.modelsTitle")}
         <span className="ml-2 text-[11px] text-stone-500">
-          {device ? `${hardware ? `${hardware}, ${device.name}` : device.name}, ${device.memoryGb} GB for the GPU. ` : ""}
-          {installedCount} installed{hardware ? `, ${measuredCount} measured here` : ""}
+          {device ? t("admin.comfy.machineSummary", { hardwarePart: hardware ? `${hardware}, ` : "", devicePart: device.name, gb: device.memoryGb }) : ""}
+          {t("admin.comfy.installedCount", { count: installedCount })}{hardware ? t("admin.comfy.measuredHere", { count: measuredCount }) : ""}
         </span>
       </summary>
       <p className="mt-2 text-[11px] leading-4 text-stone-500">
-        Every model ODM can paint with on ComfyUI. Times are per picture once the model is loaded, timed with ODM&apos;s own
-        portrait, creature and scene prompts at 1024 px; the first picture after switching models also loads it from disk.
-        Add a model&apos;s files to ComfyUI, then Refresh.
+        {t("admin.comfy.intro")}
       </p>
       {unfit.length ? (
         <p className="mt-2 text-[11px] leading-4 text-stone-500">
-          {unfit.length} {unfit.length === 1 ? "model" : "models"} {showUnfit ? "cannot paint well here" : "that cannot paint well here " + (unfit.length === 1 ? "is" : "are") + " left off the list"}.{" "}
+          {t("admin.comfy.unfit", { count: unfit.length, state: showUnfit ? t("admin.comfy.unfitShowing") : t("admin.comfy.unfitHidden", { count: unfit.length }) })}.{" "}
           <button type="button" className="underline hover:text-stone-300" onClick={() => setShowUnfit((on) => !on)}>
-            {showUnfit ? "Hide them" : "Show them"}
+            {showUnfit ? t("admin.comfy.hide") : t("admin.comfy.show")}
           </button>
         </p>
       ) : null}

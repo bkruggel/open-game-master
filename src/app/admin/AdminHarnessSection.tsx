@@ -47,8 +47,8 @@ function EffortField({
   const stale = !offered.includes(draft.effort);
   return (
     <SelectField
-      label="Effort"
-      hint={stale ? `The chosen models have no ${draft.effort} setting and run at their own default.` : undefined}
+      label={t("admin.harness.effort")}
+      hint={stale ? t("admin.harness.effort.staleNamed", { effort: draft.effort }) : undefined}
       value={draft.effort}
       onChange={onChange}
       options={(stale ? [...offered, draft.effort] : offered).map((effort) => ({
@@ -74,8 +74,8 @@ function UtilityEffortField({
   const stale = !offered.includes(draft.utilityEffort);
   return (
     <SelectField
-      label="Bookkeeping effort"
-      hint={stale ? `The bookkeeping model has no ${draft.utilityEffort} setting and runs at its own default.` : "Summaries, the reader and Ask rarely need the story's reasoning; a lighter effort answers sooner."}
+      label={t("admin.harness.utilityEffort")}
+      hint={stale ? t("admin.harness.utilityEffort.staleNamed", { effort: draft.utilityEffort }) : t("admin.harness.utilityEffort.hint")}
       value={draft.utilityEffort}
       onChange={onChange}
       options={(stale ? [...offered, draft.utilityEffort] : offered).map((effort) => ({

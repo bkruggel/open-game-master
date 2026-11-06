@@ -109,7 +109,7 @@ export function AdminBackupSection() {
       }
       setVerified((current) => ({ ...current, [name]: data.proof }));
     } catch {
-      setError("Could not reach the server.");
+      setError(t("admin.error.unreachable"));
     } finally {
       setBusyName("");
     }
@@ -137,7 +137,7 @@ export function AdminBackupSection() {
       }
       setRestoredName(name);
     } catch {
-      setError("Could not reach the server.");
+      setError(t("admin.error.unreachable"));
     } finally {
       setBusyName("");
     }
