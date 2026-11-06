@@ -2956,8 +2956,8 @@
     "app/reference/DeskPanel.tsx#keyed": [
       [
         "key",
-        1,
-        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
+        2,
+        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names; the desk kinds' label key by the source's stored kind (src/: every site read)"
       ]
     ],
     "app/reference/ResultBadges.tsx#keyed": [

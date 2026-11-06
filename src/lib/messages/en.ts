@@ -9038,6 +9038,44 @@ export const en = {
   "rel.knows": "knows",
   "rel.empty": "Write two people who know each other and the map draws itself.",
   "rel.aria": "Who knows whom",
+
+// ---- the reference desk (src/app/reference/DeskPanel.tsx) ----
+  "desk.kind.spell": "spell",
+  "desk.kind.monster": "monster",
+  "desk.kind.item": "item",
+  "desk.kind.condition": "condition",
+  "desk.kind.feat": "feat",
+  "desk.kind.glossary": "basics",
+  "desk.kind.ruling": "your house rule",
+  "desk.kind.variant": "your variant rule",
+  "desk.error.answer": "The desk could not answer that.",
+  "desk.intro": "A rules question, answered from the content pack, the rules basics and your own house rules. Every citation is checked against what the desk actually supplied, so a source listed here is one that exists.",
+  "desk.placeholder": "Does a readied spell need concentration?",
+  "desk.questionAria": "Your rules question",
+  "desk.sourcesCount_one": "{count} source the desk would read",
+  "desk.sourcesCount_other": "{count} sources the desk would read",
+  "desk.nothingOnFile": "Nothing on file bears on this yet",
+  "desk.stillAnswers": "The desk will still answer, from general rules knowledge, and will say that it did.",
+  "desk.noCitations": "This answer cites nothing on file. Treat it as a starting point and check it against a book before it settles anything at the table.",
+
+// ---- the lore check dialog (LoreCheckDialog.tsx); the categories' words
+// are the lib's LORE_CATEGORY_LABELS ----
+  "lorecheck.verdict.consistent": "Consistent with the record",
+  "lorecheck.verdict.unsupported": "Unsupported by the record",
+  "lorecheck.verdict.contradicts": "Contradicts the record",
+  "lorecheck.error.check": "The check failed; try again.",
+  "lorecheck.error.apply": "Could not apply the rewrite.",
+  "lorecheck.title": "Lore check",
+  "lorecheck.intro": "What seems off? The server checks the passage against everything on record: facts, chapter archives, past scenes, and NPC states.",
+  "lorecheck.whatAria": "What seems off",
+  "lorecheck.running": "Cross-referencing the record (queued behind the GM)...",
+  "lorecheck.evidence": "Evidence",
+  "lorecheck.rewriteTitle": "Suggested rewrite",
+  "lorecheck.applied": "Applied; the message has been updated.",
+  "lorecheck.accept": "Accept rewrite",
+  "lorecheck.leadCan": "The party lead can accept this rewrite.",
+  "lorecheck.dmOnly": "Only GM narration can be rewritten.",
+  "lorecheck.otherCategory": "Check a different category",
 } as const;
 
 export type MessageDictionary = typeof en;
