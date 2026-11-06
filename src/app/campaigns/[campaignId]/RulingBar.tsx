@@ -78,11 +78,11 @@ export function RulingBar({
           >
             <GameIcon icon={{ kind: "glyph", key: "system-rules" }} size="size-6" className="shrink-0" />
             <span className="min-w-0 flex-1">
-              <span className="font-medium">{nameOf(dispute.raisedByUserId)}</span> disputes the ruling
+              <span className="font-medium">{nameOf(dispute.raisedByUserId)}</span> {t("ruling.disputes")}
               {dispute.reason ? <span className="text-stone-400">: {dispute.reason}</span> : null}
               {voting ? (
                 <span className="ml-1 text-stone-500">
-                  (vote open, {cast} of {dispute.voterIds.length} in)
+                  {t("ruling.voteOpen", { cast, total: dispute.voterIds.length })}
                 </span>
               ) : null}
             </span>

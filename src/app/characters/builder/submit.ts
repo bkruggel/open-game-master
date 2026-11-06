@@ -18,7 +18,7 @@ import { racialCantripFields } from "@/lib/srd/racial-cantrips";
 import { pickedVariant, variantFeatureNames, withSpeciesVariant } from "@/lib/content/species-variants";
 import { reconcilePicks, type ReconcileContext } from "./reconcile";
 import { builderCasting, builderSpellSlots } from "./casting";
-import { fitExtraClasses, fitSpellLists, primaryLevelOf, unmetPrereqs } from "./multiclassBuild";
+import { fitExtraClasses, fitSpellLists, primaryLevelOf, unmetPrereqsT } from "./multiclassBuild";
 import { multiclassGrantsFor } from "@/lib/srd/multiclass";
 import { unmetFeatMessage, type FeatJudge } from "./featPrereqs";
 import type { BackgroundOption, ClassOption, RaceOption } from "./useBuilderOptions";
@@ -505,7 +505,7 @@ export function abilitiesBlocks(
   // Each class's prerequisite, on the final scores as the server reads
   // them (the plan's decision 1): never dropped, the player chooses what
   // to change.
-  for (const line of unmetPrereqs(derived.classList ?? [], derived.abilities, (id) => classNameOf(derived, id))) {
+  for (const line of unmetPrereqsT(t, derived.classList ?? [], derived.abilities, (id) => classNameOf(derived, id))) {
     owed.push(block("scores", t("builder.gate.prereq", { line })));
   }
   const unresolvedSlot = derived.activeAsiChoices.findIndex(

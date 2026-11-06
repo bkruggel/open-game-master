@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { SessionBanner, bannerButtonClass } from "@/app/campaigns/[campaignId]/SessionBanner";
 import type { Floor } from "@/lib/db/campaigns";
 import type { PublicEncounter } from "@/lib/db/encounter-view";
-import { extraTurnTag, litOrderRows, orderRowKey } from "@/lib/battlemap/initiative-rows";
+import { extraTurnTagT, litOrderRows, orderRowKey } from "@/lib/battlemap/initiative-rows";
 import { floorNoticeKey, liveNotice, type HandNotice } from "@/lib/battlemap/hand-table";
 import { useT } from "@/lib/locale";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
@@ -108,7 +108,7 @@ export function FloorBanners({
                     return (
                       <span
                         key={orderRowKey(entry, index)}
-                        title={extraTurnTag(entry)?.title}
+                        title={extraTurnTagT(t, entry)?.title}
                         className={cn(
                           "transition-opacity duration-200",
                           current ? "font-semibold" : "opacity-60",
@@ -116,13 +116,13 @@ export function FloorBanners({
                       >
                         {index > 0 ? " > " : ""}
                         {entry.name}
-                        {entry.reflex ? <sup className="motion-pop ml-0.5 text-[9px] text-amber-300">{extraTurnTag(entry)?.short}</sup> : null}
+                        {entry.reflex ? <sup className="motion-pop ml-0.5 text-[9px] text-amber-300">{extraTurnTagT(t, entry)?.short}</sup> : null}
                       </span>
                     );
                   })}
                 </>
               ) : (
-                <>{floor.currentName}&apos;s turn</>
+                <>{t("table.hand.header.turn", { name: floor.currentName })}</>
               )}
           </span>
           {refusal ? (
@@ -135,7 +135,7 @@ export function FloorBanners({
       {floor.mode === "spotlight" ? (
         <SessionBanner
           glyph="sense-truesight"
-          title={floor.respondedUserIds.length ? "Spotlight, waiting on" : "Spotlight"}
+          title={floor.respondedUserIds.length ? t("lead.floor.spotlightWaiting") : t("dm.console.floor.status.spotlight")}
           lead={
             spotlighted.some((sheet) => sheet.portrait) ? (
               <span className="flex shrink-0 -space-x-2">
@@ -157,7 +157,7 @@ export function FloorBanners({
           actions={
             steersStory ? (
               <button type="button" onClick={onRelease} className={bannerButtonClass(true)}>
-                Release
+                {t("lead.floor.release")}
               </button>
             ) : null
           }
@@ -177,7 +177,7 @@ export function FloorBanners({
                       </span>
                     );
                   })
-                : "someone"}
+                : t("cine.someone")}
               {floor.prompt ? (
                 <span className="opacity-80"> · {floor.prompt}</span>
               ) : null}
@@ -200,27 +200,27 @@ export function FloorBanners({
           }
         >
           <span>
-            The enemies act before {floor.next.currentName || "the next turn"}; the GM hands on the turn.
+            {t("lead.floor.enemyHoldNote", { name: floor.next.currentName || t("table.hand.monster.nextTurn") })}
           </span>
         </SessionBanner>
       ) : floor.mode === "hold" ? (
         <SessionBanner
           glyph="rest-inspiration"
-          title="Responses held"
+          title={t("lead.floor.heldTitle")}
           actions={
             steersStory ? (
               <button type="button" onClick={onRelease} className={bannerButtonClass(true)}>
-                Allow responses
+                {t("lead.floor.allow")}
               </button>
             ) : null
           }
         >
           <span>
-            Talk it over; the lead opens the floor.
+            {t("lead.floor.heldNote")}
             {heldSpotlightNames.length ? (
               <span className="opacity-80">
                 {" "}
-                Next: spotlight on {heldSpotlightNames.join(", ")}
+                {t("lead.floor.heldNext", { names: heldSpotlightNames.join(", ") })}
               </span>
             ) : null}
           </span>

@@ -19174,6 +19174,13 @@
     1,
     "MIC_MODE_KEYS: the microphone input-mode ids to their mic.* message keys"
    ]
+  ],
+  "app/characters/builder/levelProgression.ts#str-key": [
+   [
+    "key",
+    1,
+    "SPELL_CAP_KEYS: the caster-cap labels the math builds (\"spells known\", \"spells prepared\") to their builder.levels.* message keys"
+   ]
   ]
  },
  "humanTextIn": [

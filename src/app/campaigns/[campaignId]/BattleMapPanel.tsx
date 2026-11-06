@@ -53,7 +53,7 @@ import { TEMPLATE_SHAPES, SHAPE_LABEL_KEYS, shapeLabel, type TemplateShape } fro
 import type { AdhocTokenKind } from "@/lib/battlemap/types";
 import { ADHOC_LABEL_KEYS, ADHOC_NAME_MAX, type MapPing } from "@/lib/dm/board-logic";
 import { ENTRY_NAME_MAX, MIN_INITIATIVE, MAX_INITIATIVE } from "@/lib/dm/initiative-edit";
-import { extraTurnTag } from "@/lib/battlemap/initiative-rows";
+import { extraTurnTagT } from "@/lib/battlemap/initiative-rows";
 import { offSide, sideWords } from "@/app/campaigns/[campaignId]/SideBadge";
 import { playingSheet } from "@/lib/battlemap/hand-table";
 import type { PlayerMapView } from "@/lib/battlemap/view";
@@ -1094,7 +1094,7 @@ export function BattleMapPanel({
   const selectedIndex = selectedEntry ? encounter?.order.indexOf(selectedEntry) ?? -1 : -1;
   const orderPanel: BoardPanel | null = encounter && orderOpen ? {
     title: t("board.orderTitle", { n: view.round }),
-    lines: [...(encounter.orderReady ? encounter.order.map((entry, index) => `${index === encounter.turnIndex ? "▶ " : ""}${entry.name}${entry.initiative !== undefined ? ` · ${entry.initiative}` : ""}${entry.hidden ? ` · ${t("board.order.hidden")}` : ""}${extraTurnTag(entry) ? ` · ${extraTurnTag(entry)!.title}` : ""}${offSide(encounter, entry.id, entry.kind) ? ` · ${sideWords(t, offSide(encounter, entry.id, entry.kind)!)}` : ""}`) : [t("board.order.waiting"), ...(encounter.staged ?? []).map(entry => t("board.order.staged", { name: entry.name, score: entry.initiative }))]), ...(canDirect ? [t("board.order.stepBackNote"), ...(encounter.enemiesDue?.length ? [t("board.order.enemiesDue", { names: encounter.enemiesDue.map(entry => `${entry.name}${entry.acted ? ` ${t("board.order.acted")}` : ""}`).join(", ") })] : [])] : []), ...(error ? [error] : [])],
+    lines: [...(encounter.orderReady ? encounter.order.map((entry, index) => `${index === encounter.turnIndex ? "▶ " : ""}${entry.name}${entry.initiative !== undefined ? ` · ${entry.initiative}` : ""}${entry.hidden ? ` · ${t("board.order.hidden")}` : ""}${extraTurnTagT(t, entry) ? ` · ${extraTurnTagT(t, entry)!.title}` : ""}${offSide(encounter, entry.id, entry.kind) ? ` · ${sideWords(t, offSide(encounter, entry.id, entry.kind)!)}` : ""}`) : [t("board.order.waiting"), ...(encounter.staged ?? []).map(entry => t("board.order.staged", { name: entry.name, score: entry.initiative }))]), ...(canDirect ? [t("board.order.stepBackNote"), ...(encounter.enemiesDue?.length ? [t("board.order.enemiesDue", { names: encounter.enemiesDue.map(entry => `${entry.name}${entry.acted ? ` ${t("board.order.acted")}` : ""}`).join(", ") })] : [])] : []), ...(error ? [error] : [])],
     controls: [...(canDirect && encounter.orderReady ? [
       choose("order-entry", t("board.order.combatant"), selectedEntry?.id ?? "", encounter.order.map(entry => option(entry.id, entry.name))),
       { id: "order-up" as const, label: t("board.order.up"), disabled: selectedIndex > 0 ? null : t("board.order.alreadyFirst") }, { id: "order-down" as const, label: t("board.order.down"), disabled: selectedIndex >= 0 && selectedIndex < encounter.order.length - 1 ? null : t("board.order.alreadyLast") },

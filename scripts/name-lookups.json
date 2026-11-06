@@ -19674,6 +19674,13 @@
         1,
         "the gear shelves' English headings read to their builder.gear.section.* message keys"
       ]
+    ],
+    "app/characters/builder/levelProgression.ts#keyed": [
+      [
+        "key",
+        1,
+        "SPELL_CAP_KEYS read by the label the math itself builds; no record's name is read"
+      ]
     ]
   }
 }

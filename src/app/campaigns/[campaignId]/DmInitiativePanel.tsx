@@ -1,6 +1,6 @@
 "use client";
 
-import { extraTurnTag } from "@/lib/battlemap/initiative-rows";
+import { extraTurnTagT } from "@/lib/battlemap/initiative-rows";
 import { ChevronDown, ChevronUp, Clock, ListRestart, Plus, SkipBack, SkipForward, Trash2 } from "lucide-react";
 import { appConfirm } from "@/components/ui/ConfirmDialog";
 import { useState } from "react";
@@ -262,7 +262,7 @@ export function DmInitiativePanel({
                   {KIND_LABEL_KEYS[entry.kind] ? t(KIND_LABEL_KEYS[entry.kind]) : entry.kind}
                   {entry.hidden ? ` · ${t("board.order.hidden")}` : ""}
                   {entry.reflex ? (
-                    <span className="motion-pop ml-1 text-amber-300" title={extraTurnTag(entry)?.title}>
+                    <span className="motion-pop ml-1 text-amber-300" title={extraTurnTagT(t, entry)?.title}>
                       · {entry.extra ? t("dminit.extraTurn") : t("dminit.secondTurn")}
                     </span>
                   ) : null}

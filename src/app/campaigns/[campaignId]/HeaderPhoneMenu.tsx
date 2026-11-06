@@ -51,7 +51,7 @@ export function HeaderPhoneMenu({
   const row = "session-menu-row";
   const hint = (text: string) => <span className="session-menu-hint">{text}</span>;
   const narrationQuiet = narration.muted || !narration.unlocked;
-  const narrationState = !narration.unlocked ? "Narration: tap to hear it" : narration.muted ? "Narration: muted" : "Narration: on";
+  const narrationState = !narration.unlocked ? t("menu.phone.narrationTap") : narration.muted ? t("menu.phone.narrationMuted") : t("menu.phone.narrationOn");
   // Narration the browser is holding until a tap, counted on the menu's
   // button as the desktop header counts it on the narration icon.
   const held = narrates && !narration.muted ? narration.held : 0;
@@ -76,7 +76,11 @@ export function HeaderPhoneMenu({
         <DropdownMenu.Trigger asChild>
           <button
             type="button"
-            aria-label={held > 0 ? `Table menu (${held} narration${held === 1 ? "" : "s"} waiting)` : "Table menu"}
+            aria-label={
+              held > 0
+                ? t(`menu.phone.tableMenuWaiting_${held === 1 ? "one" : "other"}`, { n: held })
+                : t("menu.phone.tableMenu")
+            }
             data-tour="header-menu"
             className={headerButtonClass(false)}
           >
@@ -177,7 +181,7 @@ export function HeaderPhoneMenu({
                   <HeaderGlyph glyph="ui-speech" off={narrationQuiet} />
                   <span>
                     {narrationState}
-                    {hint("The GM's words read aloud, on this device only")}
+                    {hint(t("menu.phone.narrationHint"))}
                   </span>
                 </DropdownMenu.Item>
                 {narration.unlocked && !narration.muted ? (
@@ -190,7 +194,7 @@ export function HeaderPhoneMenu({
                       step={0.05}
                       value={narration.volume}
                       onChange={(value) => narration.setVolume(value)}
-                      label="Narration volume"
+                      label={t("table.header.narrationVolume")}
                       bubble={(value) => `${Math.round(value * 100)}%`}
                       className="w-full"
                     />
@@ -203,7 +207,7 @@ export function HeaderPhoneMenu({
                 <HeaderGlyph glyph="tab-ambience" off={soundState.quiet} />
                 <span>
                   {soundState.tip}
-                  {hint("Ambience and music, and how loud they play for you")}
+                  {hint(t("menu.phone.soundHint"))}
                 </span>
               </DropdownMenu.Item>
             ) : null}
@@ -211,15 +215,15 @@ export function HeaderPhoneMenu({
             <DropdownMenu.Item className={row} onSelect={() => setRulebookOpen(true)}>
               <HeaderGlyph glyph="system-rules" />
               <span>
-                Rulebook
-                {hint("Every rule, spell and monster")}
+                {t("menu.rulebook")}
+                {hint(t("menu.phone.rulebookHint"))}
               </span>
             </DropdownMenu.Item>
             <DropdownMenu.Item className={row} onSelect={onHelp}>
               <HeaderGlyph glyph="tab-reference" />
               <span>
-                Help
-                {hint("How everything works, the guided tours and Report a problem")}
+                {t("menu.help")}
+                {hint(t("table.header.helpTip"))}
               </span>
             </DropdownMenu.Item>
           </DropdownMenu.Content>

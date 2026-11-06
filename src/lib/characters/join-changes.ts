@@ -55,7 +55,7 @@ const ORDINAL = ["", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9t
 
 // The words the slot line counts with, in the reader's language where the
 // dictionaries carry them (« 2 × 1er, 1 × 2e »).
-function ordinalOf(t: T, level: number): string {
+export function ordinalOf(t: T, level: number): string {
   return t(`join.ordinal${level}`) || ORDINAL[level] || String(level);
 }
 

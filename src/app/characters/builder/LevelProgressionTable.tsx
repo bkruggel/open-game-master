@@ -5,7 +5,8 @@ import { useId, useState } from "react";
 import { cn } from "@/lib/cn";
 import { formatModifier } from "@/lib/srd";
 import { FIGHTING_STYLES } from "@/lib/srd/feature-effects";
-import { levelProgressionRows, ordinal, progressionColumns, slotWords, type ProgressionInput, type ProgressionRow } from "./levelProgression";
+import { levelProgressionRows, progressionColumns, slotWords, spellCapLabel, type ProgressionInput, type ProgressionRow } from "./levelProgression";
+import { ordinalOf } from "@/lib/characters/join-changes";
 import type { ClassOption } from "./useBuilderOptions";
 import type { BuilderDerived } from "./useBuilderDerived";
 import type { BuilderState } from "./useBuilderState";
@@ -80,42 +81,42 @@ export function LevelProgressionTable({
       >
         <table data-level-table="" className="w-full min-w-[36rem] border-collapse text-xs text-stone-300">
           <caption id={captionId} className="sr-only">
-            {who}&apos;s levels, 1 to {last}
+            {t("builder.levels.caption", { who, last })}
           </caption>
           <thead className="bg-stone-950/60">
             <tr>
               <th scope="col" className={cn(head, "sticky left-0 bg-stone-950")}>
-                Level
+                {t("builder.shared.level")}
               </th>
               {columns.classes ? (
                 <th scope="col" className={head}>
-                  Class
+                  {t("builder.owed.class")}
                 </th>
               ) : null}
               <th scope="col" className={head}>
-                Proficiency bonus
+                {t("builder.math.profBonus")}
               </th>
               <th scope="col" className={head}>
-                Features
+                {t("builder.levels.features")}
               </th>
               {columns.subclass ? (
                 <th scope="col" className={head}>
-                  Subclass
+                  {t("builder.owed.subclass")}
                 </th>
               ) : null}
               <th scope="col" className={head}>
-                Ability score improvement or feat
+                {t("builder.levels.asiColumn")}
               </th>
               {columns.casting ? (
                 <>
                   <th scope="col" className={head}>
-                    Cantrips
+                    {t("sheet.spells.cantrips")}
                   </th>
                   <th scope="col" className={head}>
-                    Spells
+                    {t("builder.owed.spells")}
                   </th>
                   <th scope="col" className={head}>
-                    Spell slots
+                    {t("table.sheet.spellSlots")}
                   </th>
                 </>
               ) : null}
@@ -178,14 +179,14 @@ export function LevelProgressionTable({
                         row.casters
                           .map((caster) =>
                             caster.spells
-                              ? `${caster.name}: ${caster.spells.count} ${caster.spells.label}${caster.spells.spellbook ? `, ${caster.spells.spellbook} in the spellbook` : ""}`
-                              : `${caster.name}: none yet`,
+                              ? `${t("builder.levels.casterSpells", { name: caster.name, count: caster.spells.count, label: spellCapLabel(t, caster.spells.label) })}${caster.spells.spellbook ? t("builder.levels.spellbook", { count: caster.spells.spellbook }) : ""}`
+                              : t("builder.levels.casterNone", { name: caster.name }),
                           )
                           .join("; ")
                       ) : row.spells ? (
                         <>
-                          {row.spells.count} {row.spells.label}
-                          {row.spells.spellbook ? `, ${row.spells.spellbook} in the spellbook` : ""}
+                          {row.spells.count} {spellCapLabel(t, row.spells.label)}
+                          {row.spells.spellbook ? t("builder.levels.spellbook", { count: row.spells.spellbook }) : ""}
                         </>
                       ) : (
                         none
@@ -194,8 +195,8 @@ export function LevelProgressionTable({
                     <td className={cn(cell, "whitespace-nowrap")}>
                       {row.slots.length || row.pact ? (
                         <>
-                          {row.slots.length ? slotWords(row.slots) : null}
-                          {row.pact ? `${row.slots.length ? "; " : ""}pact ${row.pact.count} at ${ordinal(row.pact.level)}` : null}
+                          {row.slots.length ? slotWords(row.slots, t) : null}
+                          {row.pact ? `${row.slots.length ? "; " : ""}${t("builder.levels.pact", { count: row.pact.count, ordinal: ordinalOf(t, row.pact.level) })}` : null}
                         </>
                       ) : (
                         none
