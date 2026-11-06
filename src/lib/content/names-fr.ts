@@ -2,7 +2,11 @@
 // Wizards of the Coast (CC-BY-4.0), extraits de SRD_CC_v5.1_FR.pdf — la
 // traduction française officielle des noms du SRD 5.1 (sorts, monstres,
 // espèces, Historiques, classes et leurs aptitudes, conditions, dons, armes,
-// armures, objets magiques et équipement d'aventurier). Généré par
+// armures, objets magiques et équipement d'aventurier). Les dons font
+// exception : le SRD 5.1 français n'imprime qu'un don (« Empoigneur »), les
+// autres noms viennent du SRD 5.2.1 français officiel (« Dons », pp. 92-94)
+// et des éditions françaises officielles des livres, documentées par
+// aidedd.org et recoupées avec le « Glossaire D&D 5 » (gdfl.be). Généré par
 // scripts/build-names-fr.mjs depuis scripts/data/fr-names/ ; NE PAS ÉDITER
 // À LA MAIN (regénérer).
 //
@@ -810,7 +814,62 @@ export const CONDITION_NAMES_FR: Record<string, string> = {
 };
 
 export const FEAT_NAMES_FR: Record<string, string> = {
+  "actor": "Comédien",
+  "alert": "Vigilant",
+  "athlete": "Athlète",
+  "charger": "Expert de la charge",
+  "chef": "Chef cuisinier",
+  "crossbow-expert": "Maître-arbalétrier",
+  "crusher": "Broyeur",
+  "defensive-duelist": "Duelliste défensif",
+  "dual-wielder": "Combattant à deux armes",
+  "dungeon-delver": "Explorateur de donjons",
+  "durable": "Endurant",
+  "eldritch-adept": "Adepte occulte",
+  "elemental-adept": "Adepte élémentaire",
+  "elven-accuracy": "Précision elfique",
+  "fey-touched": "Faveur des fées",
   "grappler": "Empoigneur",
+  "great-weapon-master": "Maître des armes à deux mains",
+  "gunner": "Amateur d’armes à feu",
+  "healer": "Soigneur",
+  "heavily-armored": "Protection lourde",
+  "heavy-armor-master": "Maître des armures lourdes",
+  "inspiring-leader": "Meneur exaltant",
+  "keen-mind": "Esprit affûté",
+  "lightly-armored": "Protection légère",
+  "linguist": "Linguiste",
+  "lucky": "Chanceux",
+  "mage-slayer": "Tueur de mages",
+  "magic-initiate": "Initié à la magie",
+  "martial-adept": "Adepte martial",
+  "medium-armor-master": "Maître des armures intermédiaires",
+  "metamagic-adept": "Adepte de métamagie",
+  "mobile": "Mobile",
+  "moderately-armored": "Protection intermédiaire",
+  "mounted-combatant": "Combattant monté",
+  "observant": "Observateur",
+  "piercer": "Empaleur",
+  "poisoner": "Empoisonneur",
+  "polearm-master": "Maître d’hast",
+  "resilient": "Résilient",
+  "ritual-caster": "Magie rituelle",
+  "savage-attacker": "Sauvagerie martiale",
+  "sentinel": "Sentinelle",
+  "shadow-touched": "Faveur des ombres",
+  "sharpshooter": "Tireur d’élite",
+  "shield-master": "Maître des boucliers",
+  "skill-expert": "Expert",
+  "skilled": "Doué",
+  "skulker": "Discret",
+  "slasher": "Pourfendeur",
+  "spell-sniper": "Mage offensif",
+  "tavern-brawler": "Bagarreur de tavernes",
+  "telekinetic": "Télékinésiste",
+  "telepathic": "Télépathe",
+  "tough": "Robuste",
+  "war-caster": "Mage de guerre",
+  "weapon-master": "Maître d’armes",
 };
 
 export const SPECIES_NAMES_FR: Record<string, string> = {
@@ -1538,5 +1597,5 @@ export const FR_NAMES_BY_TABLE: Record<string, Record<string, string>> = {
   subclasses: SUBCLASS_NAMES_FR,
 };
 
-// 1,462 official pairs in total, by table.
-export const FR_NAME_COUNTS: Record<string, number> = {"spells":319,"weapons":37,"armor":17,"gear":154,"magicitems":239,"conditions":15,"feats":1,"species":9,"backgrounds":1,"monsters":317,"classes":12,"classFeatures":270,"speciesTraits":50,"backgroundFeatures":1,"subclasses":20};
+// 1,517 official pairs in total, by table.
+export const FR_NAME_COUNTS: Record<string, number> = {"spells":319,"weapons":37,"armor":17,"gear":154,"magicitems":239,"conditions":15,"feats":56,"species":9,"backgrounds":1,"monsters":317,"classes":12,"classFeatures":270,"speciesTraits":50,"backgroundFeatures":1,"subclasses":20};
