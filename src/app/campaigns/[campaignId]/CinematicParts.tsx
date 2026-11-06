@@ -19,7 +19,7 @@ import { effectiveMaxHp } from "@/lib/dm/condition-logic";
 import type { StoredRoll } from "@/lib/db/rolls";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { classDisplayNameFor, classLevelWords } from "@/lib/characters/class-words";
-import { useLocale } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { TokenFace } from "@/app/campaigns/[campaignId]/BoardChrome";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
@@ -127,6 +127,7 @@ export function InitiativeRibbon({
   onOpen?: () => void;
 }) {
   const orderRef = useRef<HTMLOListElement>(null);
+  const t = useT();
   const ready = encounter.orderReady && encounter.order.length > 0;
   const shown = ready ? encounter.order.filter((entry) => !entry.hidden) : [];
   // The seats whose turn it is (initiative-rows.ts litOrderRows): while the
@@ -149,8 +150,8 @@ export function InitiativeRibbon({
     return null;
   }
   return (
-    <div className="cine-ribbon" role="group" aria-label={`Round ${encounter.round}, turn order`} data-tour="initiative-ribbon">
-      <span className="cine-ribbon-round">Round {encounter.round}</span>
+    <div className="cine-ribbon" role="group" aria-label={t("cine.ribbonAria", { round: encounter.round })} data-tour="initiative-ribbon">
+      <span className="cine-ribbon-round">{t("cine.round", { round: encounter.round })}</span>
       <ol
         ref={orderRef}
         className="cine-ribbon-order"
@@ -168,7 +169,7 @@ export function InitiativeRibbon({
               data-done={!current && index < pointerAt ? "true" : undefined}
               data-foe={entry.kind === "enemy" ? "true" : undefined}
             >
-              <button type="button" className="cine-ribbon-face" onClick={onOpen} aria-label={`${entry.name}${current ? ", their turn" : ""}`} aria-current={current ? "step" : undefined} data-no-motion>
+              <button type="button" className="cine-ribbon-face" onClick={onOpen} aria-label={current ? t("cine.entryTurnAria", { name: entry.name }) : entry.name} aria-current={current ? "step" : undefined} data-no-motion>
                 <TokenFace candidates={facesFor(entry, sheets, encounter.enemies, genre)} name={entry.name} enemy={entry.kind === "enemy"} className="cine-ribbon-img" />
               </button>
               <span className="cine-ribbon-name">{shortName(entry.name)}</span>
@@ -212,6 +213,7 @@ export function PartyRail({
   const [memory, setMemory] = useState<Record<string, { hp: number; dir?: "up" | "down" }>>({});
   // Each hero's class reads in the reader's language where the maps carry it.
   const locale = useLocale();
+  const t = useT();
   const party = sheets.filter((sheet) => !sheet.isCompanion);
   const next: Record<string, { hp: number; dir?: "up" | "down" }> = { ...memory };
   let changed = false;
@@ -239,7 +241,7 @@ export function PartyRail({
         : encounter.order[encounter.turnIndex]?.id
       : undefined;
   return (
-    <aside className="cine-party" aria-label="The party" data-tour="party-rail">
+    <aside className="cine-party" aria-label={t("cine.partyAria")} data-tour="party-rail">
       {party.map((sheet, index) => {
         const max = Math.max(1, effectiveMaxHp(sheet));
         const hp = Math.max(0, Math.min(max, sheet.currentHp ?? max));
@@ -256,7 +258,7 @@ export function PartyRail({
             data-mine={sheet.userId === meUserId ? "true" : undefined}
             data-down={hp === 0 ? "true" : undefined}
             style={{ animationDelay: `${120 + index * 70}ms` }}
-            aria-label={`${sheet.name}, ${hp} of ${max} hit points. Open the party.`}
+            aria-label={t("cine.hpAria", { name: sheet.name, hp, max })}
             data-no-motion
           >
             <span key={`pulse-${hp}`} className="cine-party-pulse" data-dir={dir} aria-hidden="true" />
@@ -301,6 +303,7 @@ export function RollToast({
   sheets: ReadonlyArray<CharacterSheet>;
 }) {
   const [shown, setShown] = useState<{ roll: StoredRoll; seq: number } | null>(null);
+  const t = useT();
   // Each roll is judged once, during the render it arrives in (state from
   // props). The roll the snapshot arrived with is history, not news, so the
   // first seq seen is the one to skip; every later public roll takes the
@@ -334,15 +337,15 @@ export function RollToast({
           {roll.expression} = {roll.total}
         </span>
       </span>
-      {crit ? <span className="cine-roll-crit">{crit === "nat20" ? "Natural 20" : "Natural 1"}</span> : null}
+      {crit ? <span className="cine-roll-crit">{crit === "nat20" ? t("table.tray.nat20") : t("table.tray.nat1")}</span> : null}
       {secret ? (
         <span className="cine-roll-secret">
           <EyeOff className="size-3.5" aria-hidden="true" />
-          Secret
+          {t("table.tray.secretTag")}
         </span>
       ) : null}
       {roll.dc !== null && roll.success !== null && !crit ? (
-        <span className="cine-roll-crit" data-quiet="true">{roll.success ? "Success" : "Miss"}</span>
+        <span className="cine-roll-crit" data-quiet="true">{roll.success ? t("cine.verdict.success") : t("cine.verdict.miss")}</span>
       ) : null}
     </div>
   );
@@ -402,6 +405,7 @@ export function QuestGlance({
   initial: ReadonlyArray<string>;
   onOpen: () => void;
 }) {
+  const t = useT();
   const glance = useQuestGlance(campaignId, refreshKey, initial);
   // The quest that just ended, with nothing after it, lifts away rather
   // than blinking out.
@@ -429,12 +433,12 @@ export function QuestGlance({
       type="button"
       onClick={onOpen}
       className="cine-quest"
-      aria-label={`Quest: ${eyebrow ? `${eyebrow}, ` : ""}${line}. Open the quests.`}
+      aria-label={t("cine.questAria", { eyebrow: eyebrow ? `${eyebrow}, ` : "", line })}
       data-tour="quest-glance"
       data-leaving={glance ? undefined : ""}
       data-no-motion
     >
-      <span className="cine-quest-eyebrow">Quest{eyebrow ? ` · ${eyebrow}` : ""}</span>
+      <span className="cine-quest-eyebrow">{t("cine.quest")}{eyebrow ? ` · ${eyebrow}` : ""}</span>
       <span className="cine-quest-body">{line}</span>
     </button>
   );
@@ -451,19 +455,20 @@ export function TabletopOrder({
   faceOf: (entry: { id: string; kind: string; name: string }) => Array<string | null | undefined>;
   children?: ReactNode;
 }) {
+  const t = useT();
   if (!encounter?.orderReady || encounter.order.length === 0) {
     return null;
   }
   return (
-    <aside className="cine-order" aria-label={`Round ${encounter.round}, turn order`}>
-      <span className="cine-order-round">Round {encounter.round}</span>
+    <aside className="cine-order" aria-label={t("cine.ribbonAria", { round: encounter.round })}>
+      <span className="cine-order-round">{t("cine.round", { round: encounter.round })}</span>
       <ol className="cine-order-list">
         {encounter.order.map((entry, index, order) => (
           <li key={`${entry.id}-${index}`} className="cine-order-row" data-current={litOrderRows(order, encounter.turnIndex, encounter.acting, encounter.enemiesUp).includes(index) ? "true" : undefined} data-foe={entry.kind === "enemy" ? "true" : undefined}>
             <TokenFace candidates={faceOf(entry)} name={entry.name} enemy={entry.kind === "enemy"} className="cine-order-face" />
             <span className="cine-order-name">
               {entry.name}
-              {entry.hidden ? " (hidden)" : ""}
+              {entry.hidden ? ` ${t("cine.hidden")}` : ""}
               {entry.reflex ? <sup className="motion-pop ml-0.5 text-[9px] text-amber-300" title={extraTurnTag(entry)?.title}>{extraTurnTag(entry)?.short}</sup> : null}
             </span>
             {typeof entry.initiative === "number" ? <span className="cine-order-init">{entry.initiative}</span> : null}
@@ -592,6 +597,7 @@ export function TabletopChronicle({
   // Who is reading: a card given back offers its own player to play it again.
   meUserId?: string;
 }) {
+  const t = useT();
   const rollsById = useMemo(() => new Map(rolls.map((roll) => [roll.id, roll])), [rolls]);
   const { recent, earlier } = useMemo(() => chronicleWindow(messages), [messages]);
   const signature = useMemo(() => chronicleSignature(recent, rolls.length), [recent, rolls.length]);
@@ -603,35 +609,35 @@ export function TabletopChronicle({
     sheets.find((sheet) => sheet.id === message.characterId)?.name ??
     sheets.find((sheet) => sheet.userId === message.userId)?.name ??
     members.find((member) => member.userId === message.userId)?.username ??
-    "Someone";
+    t("cine.someone");
   const modes: InputKind[] = isDm ? ["narrate", "ooc"] : ["do", "say", "ooc", ...(steersStory ? (["lead"] as InputKind[]) : [])];
-  const modeLabel: Record<string, string> = { do: "Do", say: "Say", ooc: "OOC", lead: "Direct", narrate: "Narrate" };
+  const modeLabel: Record<string, string> = { do: t("cine.mode.do"), say: t("cine.mode.say"), ooc: t("cine.mode.ooc"), lead: t("cine.mode.lead"), narrate: t("cine.mode.narrate") };
   // The drop cap goes to the first passage on the scroll, like a page.
   const firstPassageId = recent.find((message) => message.authorType === "dm" && !isOocAnswer(message.content))?.id;
   return (
-    <aside className="cine-chronicle" aria-label="The chronicle">
+    <aside className="cine-chronicle" aria-label={t("cine.chronicleAria")}>
       <span className="cine-chronicle-roller" aria-hidden="true" />
       <div className="cine-chronicle-page">
-        <span className="cine-chronicle-eyebrow">The chronicle</span>
+        <span className="cine-chronicle-eyebrow">{t("cine.chronicle")}</span>
         <div className="cine-chronicle-scroll">
         <div ref={logRef} onScroll={onScroll} className="cine-chronicle-log">
           <div ref={flowRef} className="cine-chronicle-flow">
           {earlier > 0 ? (
             onShowStory ? (
               <button type="button" onClick={onShowStory} className="cine-chronicle-earlier">
-                {earlier === 1 ? "1 earlier entry" : `${earlier} earlier entries`}: read them in the story
+                {t("cine.earlier", { count: earlier })}{t("cine.earlierRead")}
               </button>
             ) : (
-              <p className="cine-chronicle-earlier">The last {recent.length} entries; the story holds the rest.</p>
+              <p className="cine-chronicle-earlier">{t("cine.lastEntries", { count: recent.length })}</p>
             )
           ) : null}
-          {recent.length === 0 ? <p className="cine-chronicle-quiet">The tale has not begun.</p> : null}
+          {recent.length === 0 ? <p className="cine-chronicle-quiet">{t("cine.quiet")}</p> : null}
           {recent.map((message) => {
             // The DM's out-of-character answer is a line, as table talk is.
             if (message.authorType === "dm" && isOocAnswer(message.content)) {
               return (
                 <p key={message.id} className="cine-chronicle-line">
-                  Game Master: &ldquo;{message.content.trim()}&rdquo;
+                  {t("cine.gmLine", { content: message.content.trim() })}
                 </p>
               );
             }
@@ -661,7 +667,7 @@ export function TabletopChronicle({
             if (message.authorType === "player") {
               const line = (
                 <p key={message.id} className="cine-chronicle-line">
-                  {nameOf(message)}: &ldquo;{message.content.trim()}&rdquo;
+                  {t("cine.playerLine", { name: nameOf(message), content: message.content.trim() })}
                 </p>
               );
               // A card the GM never carried out says so here too (issue 570).
@@ -691,15 +697,15 @@ export function TabletopChronicle({
           data-unseen={unseen ? "" : undefined}
           aria-hidden={away ? undefined : true}
           tabIndex={away ? undefined : -1}
-          aria-label={unseen ? "New entries below: jump to the latest" : "Jump to the latest entry"}
+          aria-label={unseen ? t("cine.jumpNewAria") : t("cine.jumpAria")}
           className="cine-chronicle-latest"
         >
-          {unseen ? "New below" : "Latest"} <span aria-hidden="true">&#8595;</span>
+          {unseen ? t("cine.newBelow") : t("cine.latest")} <span aria-hidden="true">&#8595;</span>
         </button>
         </div>
         {composer ? (
         <form onSubmit={onSubmit} className="cine-chronicle-desk">
-          <div className="cine-chronicle-modes" data-pill-group="" role="group" aria-label="How you speak">
+          <div className="cine-chronicle-modes" data-pill-group="" role="group" aria-label={t("cine.modesAria")}>
             {modes.map((option) => (
               <button
                 key={option}
@@ -716,7 +722,7 @@ export function TabletopChronicle({
           </div>
           <div className="cine-chronicle-well" data-over={tooLong ? "" : undefined}>
             <DictateField
-              label="Your move"
+              label={t("cine.yourMove")}
               disabled={inputBlocked}
               className="min-w-0 flex-1"
               onTranscript={(text) => setInput(appendDictation(input, text))}
@@ -733,14 +739,14 @@ export function TabletopChronicle({
                 rows={2}
                 disabled={inputBlocked}
                 placeholder={placeholder}
-                aria-label="Your move"
+                aria-label={t("cine.yourMove")}
                 aria-describedby={noteId}
                 aria-invalid={tooLong || undefined}
                 className="cine-chronicle-input"
               />
             </DictateField>
-            <button type="submit" disabled={sending || !input.trim() || inputBlocked || tooLong} className="cine-chronicle-send" aria-label="Send">
-              Send <span aria-hidden="true">&#10230;</span>
+            <button type="submit" disabled={sending || !input.trim() || inputBlocked || tooLong} className="cine-chronicle-send" aria-label={t("cine.send")}>
+              {t("cine.send")} <span aria-hidden="true">&#10230;</span>
             </button>
           </div>
           <LengthNote id={noteId} length={length} max={maxChars} from={0.8} />
@@ -753,12 +759,13 @@ export function TabletopChronicle({
 }
 
 function ChronicleRoll({ roll, sheets }: { roll: StoredRoll; sheets: ReadonlyArray<CharacterSheet> }) {
+  const t = useT();
   const sheetName = roll.characterId ? sheets.find((sheet) => sheet.id === roll.characterId)?.name : undefined;
   const crit = roll.breakdown?.crit;
-  const label = ROLL_KIND_LABELS[roll.kind] || "Roll";
+  const label = ROLL_KIND_LABELS[roll.kind] || t("table.tray.roll");
   const what = rollChronicleLead(roll, sheetName);
   const verdict =
-    crit === "nat20" ? "Natural 20" : crit === "nat1" ? "Natural 1" : roll.success === null ? label : roll.success ? (roll.kind === "attack" ? "Hit" : "Success") : roll.kind === "attack" ? "Miss" : "Failed";
+    crit === "nat20" ? t("table.tray.nat20") : crit === "nat1" ? t("table.tray.nat1") : roll.success === null ? label : roll.success ? (roll.kind === "attack" ? t("cine.verdict.hit") : t("cine.verdict.success")) : roll.kind === "attack" ? t("cine.verdict.miss") : t("cine.verdict.failed");
   return (
     <span className="cine-chronicle-roll" data-crit={crit ?? undefined}>
       <span className="cine-chronicle-roll-head">{verdict}</span>

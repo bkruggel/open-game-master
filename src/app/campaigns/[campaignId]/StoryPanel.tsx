@@ -40,6 +40,7 @@ function ConfirmRewindDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   return (
     <AlertDialog.Root open onOpenChange={(open) => !open && onCancel()}>
       <AlertDialog.Portal>
@@ -51,11 +52,10 @@ function ConfirmRewindDialog({
           )}
         >
           <AlertDialog.Title className="gold-title font-display text-lg tracking-wide">
-            Rewind to Chapter {chapterIndex}?
+            {t("story.rewind.title", { chapter: chapterIndex })}
           </AlertDialog.Title>
           <AlertDialog.Description className="mt-2 text-xs text-stone-400">
-            The story returns to the start of Chapter {chapterIndex}. Sheets, NPCs, facts, and the
-            world roll back with it. This cannot be undone.
+            {t("story.rewind.body", { chapter: chapterIndex })}
           </AlertDialog.Description>
           <ul className="stagger mt-2 space-y-1">
             {warnings.slice(0, 8).map((warning, index) => (
@@ -65,9 +65,9 @@ function ConfirmRewindDialog({
             ))}
           </ul>
           <div className="mt-4 flex justify-end gap-2">
-            <AlertDialog.Cancel className={ui.btnSmall}>Cancel</AlertDialog.Cancel>
+            <AlertDialog.Cancel className={ui.btnSmall}>{t("action.cancel")}</AlertDialog.Cancel>
             <button type="button" onClick={onConfirm} disabled={busy} aria-busy={busy} className={ui.btnPrimary}>
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null} Rewind
+              {busy ? <Loader2 className="size-4 animate-spin" /> : null} {t("story.rewind.action")}
             </button>
           </div>
         </AlertDialog.Content>
@@ -80,12 +80,13 @@ function ConfirmRewindDialog({
 // caps on a gold hairline, its name, and the recap the table heard when
 // it ended. Reveals with the list's stagger.
 function ActHeading({ act, title, recap }: { act: number; title: string; recap: string }) {
+  const t = useT();
   return (
     <li className="reveal pt-2">
       <div className="flex items-center gap-2">
         <span className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-500/60" aria-hidden="true" />
         <span className="font-display text-[11px] uppercase tracking-[0.22em] text-amber-300">
-          Act {romanNumeral(act)}
+          {t("story.act", { act: romanNumeral(act) })}
         </span>
         <span className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-500/60" aria-hidden="true" />
       </div>
@@ -114,6 +115,7 @@ function ChapterCard({
   const [title, setTitle] = useState(chapter.title);
   const [summary, setSummary] = useState(chapter.summary);
   const [busy, setBusy] = useState(false);
+  const t = useT();
 
   async function save() {
     setBusy(true);
@@ -144,7 +146,7 @@ function ChapterCard({
         )}
         <span className="min-w-0">
           <span className="gold-title block font-display text-sm">
-            {chapter.index}. {chapter.title || `Chapter ${chapter.index}`}
+            {chapter.index}. {chapter.title || t("story.chapterN", { n: chapter.index })}
           </span>
         </span>
       </button>
@@ -162,13 +164,13 @@ function ChapterCard({
       {expanded && !editing ? (
         <div className="reveal mt-2 space-y-1.5 pl-5">
           {chapter.abridged ? (
-            <div className="skeleton-block h-10 rounded-md" role="status" aria-label="Reading the summary" />
+            <div className="skeleton-block h-10 rounded-md" role="status" aria-label={t("story.readingSummaryAria")} />
           ) : chapter.summary ? (
             <p className="reveal whitespace-pre-wrap font-serif text-xs leading-5 text-stone-300">
               {chapter.summary}
             </p>
           ) : (
-            <p className="text-xs italic text-stone-500">No summary recorded.</p>
+            <p className="text-xs italic text-stone-500">{t("story.noSummary")}</p>
           )}
           {steersStory ? (
             <div className="reveal flex flex-wrap items-center gap-1.5">
@@ -183,13 +185,13 @@ function ChapterCard({
                   setEditing(true);
                 }}
                 disabled={chapter.abridged}
-                title={chapter.abridged ? "Reading this chapter's summary…" : undefined}
+                title={chapter.abridged ? t("story.readingTitle") : undefined}
               >
-                <Pencil className="size-3" /> Edit
+                <Pencil className="size-3" /> {t("action.edit")}
               </KitButton>
               {onRewind ? (
-                <KitButton tone="danger" onClick={onRewind} title="Rewind the whole campaign to the start of this chapter">
-                  <Rewind className="size-3" /> Rewind to start
+                <KitButton tone="danger" onClick={onRewind} title={t("story.rewindToStartTitle")}>
+                  <Rewind className="size-3" /> {t("story.rewindToStart")}
                 </KitButton>
               ) : null}
             </div>
@@ -202,23 +204,23 @@ function ChapterCard({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={80}
-            aria-label="Chapter title"
+            aria-label={t("story.chapterTitleAria")}
             className={panelField}
           />
-          <DictateField label="Chapter summary" onTranscript={(text) => setSummary((current) => appendDictation(current, text, 4000))}>
+          <DictateField label={t("story.chapterSummary")} onTranscript={(text) => setSummary((current) => appendDictation(current, text, 4000))}>
             <textarea
               value={summary}
               onChange={(event) => setSummary(event.target.value)}
               rows={6}
               maxLength={4000}
-              aria-label="Chapter summary"
+              aria-label={t("story.chapterSummary")}
               className={cn(panelField, "leading-5")}
             />
           </DictateField>
           <div className="flex gap-1.5">
             <KitButton tone="primary" onClick={save} disabled={busy} busy={busy}>
               {busy ? null : <Check className="size-3.5" />}
-              Save
+              {t("action.save")}
             </KitButton>
             <KitButton
               onClick={() => {
@@ -227,7 +229,7 @@ function ChapterCard({
                 setSummary(chapter.summary);
               }}
             >
-              <X className="size-3.5" /> Cancel
+              <X className="size-3.5" /> {t("action.cancel")}
             </KitButton>
           </div>
         </div>
@@ -241,6 +243,7 @@ function ChapterCard({
 // until asked for: the panel fetches the roster the moment it mounts.
 function NpcReviewCard({ campaignId }: { campaignId: string }) {
   const [expanded, setExpanded] = useState(false);
+  const t = useT();
   return (
     <div className="panel rounded-lg p-2.5">
       <button
@@ -256,7 +259,7 @@ function NpcReviewCard({ campaignId }: { campaignId: string }) {
         )}
         <span className="flex items-center gap-1.5">
           <GameIcon icon={{ kind: "glyph", key: "system-cast" }} size="size-6" />
-          <span className="section-head-title">NPC roster</span>
+          <span className="section-head-title">{t("story.npcRoster")}</span>
         </span>
       </button>
       {expanded ? (
@@ -277,6 +280,7 @@ function NpcReviewCard({ campaignId }: { campaignId: string }) {
 // those edits regardless; the UI just does not offer them.
 function ArcCard({ campaignId }: { campaignId: string }) {
   const [expanded, setExpanded] = useState(false);
+  const t = useT();
   const [loadingRequest, setLoadingRequest] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [loadedArc, setLoadedArc] = useState<{
@@ -337,13 +341,13 @@ function ArcCard({ campaignId }: { campaignId: string }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setBeatError(data.error ?? "That edit did not go through.");
+        setBeatError(data.error ?? t("story.editFailed"));
         return false;
       }
       setLoadedArc({ campaignId, arc: data.arc, dmOutline: outline });
       return true;
     } catch {
-      setBeatError("That edit did not go through.");
+      setBeatError(t("story.editFailed"));
       return false;
     } finally {
       setBeatBusy(false);
@@ -422,35 +426,35 @@ function ArcCard({ campaignId }: { campaignId: string }) {
         )}
         <span className="flex items-center gap-1.5">
           <GameIcon icon={{ kind: "glyph", key: "system-storyboard" }} size="size-6" />
-          <span className="section-head-title">GM story arc (secret)</span>
+          <span className="section-head-title">{t("story.arc.title")}</span>
         </span>
       </button>
       {expanded ? (
         <div className="reveal mt-2 space-y-2 pl-5">
           {loading ? (
-            <PanelLoading label="Loading..." rows={2} />
+            <PanelLoading label={t("action.loading")} rows={2} />
           ) : arc ? (
             <>
               {arc.saga ? (
                 <p className="reveal text-[11px] font-medium leading-4 text-amber-200">
-                  {arc.saga.sagaIndex > 1 ? `Saga ${arc.saga.sagaIndex} (sequel): ` : ""}
+                  {arc.saga.sagaIndex > 1 ? t("story.saga.sequel", { n: arc.saga.sagaIndex }) : ""}
                   &ldquo;{arc.saga.title}&rdquo;
                   <span className="font-normal text-stone-400">
                     {" "}
-                    &middot; act {currentAct} of {arc.saga.plannedActs}
+                    {t("story.saga.actOf", { act: currentAct, total: arc.saga.plannedActs })}
                   </span>
                 </p>
               ) : null}
               <p className="text-xs leading-5 text-stone-300">{arc.premise}</p>
               {arc.stakes ? (
-                <p className="reveal text-xs leading-5 text-stone-400">Stakes: {arc.stakes}</p>
+                <p className="reveal text-xs leading-5 text-stone-400">{t("story.stakes", { stakes: arc.stakes })}</p>
               ) : null}
               {arc.antagonist ? (
-                <p className="reveal text-xs leading-5 text-stone-400">Antagonist: {arc.antagonist}</p>
+                <p className="reveal text-xs leading-5 text-stone-400">{t("story.antagonist", { name: arc.antagonist })}</p>
               ) : null}
               {actGroups.map((act) => (
                 <div key={act}>
-                  <SectionHead title={`Act ${act}`} glyph="tab-story" level="h4" className="mb-1" />
+                  <SectionHead title={t("story.act", { act })} glyph="tab-story" level="h4" className="mb-1" />
                   <ol className="mt-0.5 space-y-0.5">
                     {arc.beats.map((beat, index) => {
                       if (beat.act !== act) {
@@ -461,7 +465,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                       if (editingBeat === number) {
                         return (
                           <li key={index} className="list-none">
-                            <DictateField single label="Beat" onTranscript={(text) => setDraft((current) => appendDictation(current, text, MAX_BEAT_TEXT))}>
+                            <DictateField single label={t("story.beat.label")} onTranscript={(text) => setDraft((current) => appendDictation(current, text, MAX_BEAT_TEXT))}>
                               <input
                                 value={draft}
                                 autoFocus
@@ -484,14 +488,14 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                 disabled={beatBusy || !draft.trim()}
                                 className={cn(ui.btnSmall, "pk-tap px-2.5 py-1 text-xs")}
                               >
-                                <Check className="size-3" /> Save
+                                <Check className="size-3" /> {t("action.save")}
                               </button>
                               <button
                                 type="button"
                                 onClick={closeEditor}
                                 className={cn(ui.btnSmall, "pk-tap px-2.5 py-1 text-xs")}
                               >
-                                Cancel
+                                {t("action.cancel")}
                               </button>
                             </div>
                           </li>
@@ -502,12 +506,12 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                         : [
                             ...(beat.status === "active"
                               ? []
-                              : [{ id: "now", label: "Make this the beat in play", glyph: "quest-active", disabled: beatBusy, onSelect: () => void editBeat({ op: "setNow", beat: number }) }]),
-                            { id: "up", label: "Move up", glyph: "ui-up", disabled: beatBusy, onSelect: () => void editBeat({ op: "move", beat: number, direction: "up" }) },
-                            { id: "down", label: "Move down", glyph: "ui-down", disabled: beatBusy, onSelect: () => void editBeat({ op: "move", beat: number, direction: "down" }) },
+                              : [{ id: "now", label: t("story.beat.setNow"), glyph: "quest-active", disabled: beatBusy, onSelect: () => void editBeat({ op: "setNow", beat: number }) }]),
+                            { id: "up", label: t("story.beat.moveUp"), glyph: "ui-up", disabled: beatBusy, onSelect: () => void editBeat({ op: "move", beat: number, direction: "up" }) },
+                            { id: "down", label: t("story.beat.moveDown"), glyph: "ui-down", disabled: beatBusy, onSelect: () => void editBeat({ op: "move", beat: number, direction: "down" }) },
                             {
                               id: "reword",
-                              label: "Reword this beat",
+                              label: t("story.beat.reword"),
                               glyph: "ui-edit",
                               disabled: beatBusy,
                               onSelect: () => {
@@ -516,13 +520,13 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                 setDraft(beat.text);
                               },
                             },
-                            { id: "skip", label: "Skip this beat", glyph: "ui-skip", separated: true, disabled: beatBusy, onSelect: () => void editBeat({ op: "skip", beat: number }) },
+                            { id: "skip", label: t("story.beat.skip"), glyph: "ui-skip", separated: true, disabled: beatBusy, onSelect: () => void editBeat({ op: "skip", beat: number }) },
                           ];
                       return (
                         <ContextMenu
                           as="li"
                           items={beatItems}
-                          label={`Beat ${number}`}
+                          label={t("story.beat.aria", { n: number })}
                           key={index}
                           className={`group flex items-start gap-1 text-xs leading-5 ${
                             settled
@@ -533,8 +537,8 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                           }`}
                         >
                           <span className="min-w-0 flex-1">
-                            {number}. {beat.status === "active" ? "(now) " : ""}
-                            {beat.status === "skipped" ? "(skipped) " : ""}
+                            {number}. {beat.status === "active" ? t("story.beat.now") : ""}
+                            {beat.status === "skipped" ? t("story.beat.skipped") : ""}
                             {beat.text}
                             {beat.detail ? (
                               <span className="text-stone-500"> [{beat.detail}]</span>
@@ -550,7 +554,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                         className="mt-0.5 size-3 shrink-0 accent-amber-400"
                                         checked={waypoint.done}
                                         disabled={beatBusy}
-                                        aria-label={`Waypoint: ${waypoint.text}`}
+                                        aria-label={t("story.beat.waypointAria", { text: waypoint.text })}
                                         onChange={(event) =>
                                           void editBeat({ op: "waypoint", beat: number, index: at, done: event.target.checked })
                                         }
@@ -574,8 +578,8 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                   disabled={beatBusy}
                                   onClick={() => void editBeat({ op: "setNow", beat: number })}
                                   className={cn(ui.iconAction, "p-1")}
-                                  title="Make this the beat in play"
-                                  aria-label="Make this the beat in play"
+                                  title={t("story.beat.setNow")}
+                                  aria-label={t("story.beat.setNow")}
                                 >
                                   <Crosshair className="size-3" />
                                 </button>
@@ -587,8 +591,8 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                   void editBeat({ op: "move", beat: number, direction: "up" })
                                 }
                                 className={cn(ui.iconAction, "p-1")}
-                                title="Move up"
-                                aria-label="Move up"
+                                title={t("story.beat.moveUp")}
+                                aria-label={t("story.beat.moveUp")}
                               >
                                 <ArrowUp className="size-3" />
                               </button>
@@ -599,8 +603,8 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                   void editBeat({ op: "move", beat: number, direction: "down" })
                                 }
                                 className={cn(ui.iconAction, "p-1")}
-                                title="Move down"
-                                aria-label="Move down"
+                                title={t("story.beat.moveDown")}
+                                aria-label={t("story.beat.moveDown")}
                               >
                                 <ArrowDown className="size-3" />
                               </button>
@@ -613,8 +617,8 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                   setDraft(beat.text);
                                 }}
                                 className={cn(ui.iconAction, "p-1")}
-                                title="Reword this beat"
-                                aria-label="Reword this beat"
+                                title={t("story.beat.reword")}
+                                aria-label={t("story.beat.reword")}
                               >
                                 <Pencil className="size-3" />
                               </button>
@@ -623,13 +627,13 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                                 disabled={beatBusy}
                                 onClick={() => void editBeat({ op: "skip", beat: number })}
                                 className={cn(ui.iconAction, "p-1")}
-                                title="Skip this beat"
-                                aria-label="Skip this beat"
+                                title={t("story.beat.skip")}
+                                aria-label={t("story.beat.skip")}
                               >
                                 <SkipForward className="size-3" />
                               </button>
                               </span>
-                              <RowMenu items={beatItems} label={`Beat ${number}`} className="p-1" />
+                              <RowMenu items={beatItems} label={t("story.beat.aria", { n: number })} className="p-1" />
                             </span>
                           )}
                         </ContextMenu>
@@ -638,12 +642,12 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                   </ol>
                   {addingToAct === act ? (
                     <div className="reveal mt-1">
-                      <DictateField single label="Beat" onTranscript={(text) => setDraft((current) => appendDictation(current, text, MAX_BEAT_TEXT))}>
+                      <DictateField single label={t("story.beat.label")} onTranscript={(text) => setDraft((current) => appendDictation(current, text, MAX_BEAT_TEXT))}>
                         <input
                           value={draft}
                           autoFocus
                           maxLength={MAX_BEAT_TEXT}
-                          placeholder="What happens in this beat"
+                          placeholder={t("story.beat.placeholder")}
                           onChange={(event) => setDraft(event.target.value)}
                           onKeyDown={(event) => {
                             if (event.key === "Enter") {
@@ -662,14 +666,14 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                           disabled={beatBusy || !draft.trim()}
                           className={cn(ui.btnSmall, "pk-tap px-2.5 py-1 text-xs")}
                         >
-                          <Check className="size-3" /> Add
+                          <Check className="size-3" /> {t("action.add")}
                         </button>
                         <button
                           type="button"
                           onClick={closeEditor}
                           className={cn(ui.btnSmall, "pk-tap px-2.5 py-1 text-xs")}
                         >
-                          Cancel
+                          {t("action.cancel")}
                         </button>
                       </div>
                     </div>
@@ -682,7 +686,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                       }}
                       className="mt-0.5"
                     >
-                      <Plus className="size-3" /> Add a beat
+                      <Plus className="size-3" /> {t("story.beat.add")}
                     </KitButton>
                   )}
                 </div>
@@ -690,19 +694,18 @@ function ArcCard({ campaignId }: { campaignId: string }) {
               {beatError ? <PanelError>{beatError}</PanelError> : null}
               {aheadSketches.length ? (
                 <div>
-                  <SectionHead title="Acts ahead (sketches)" glyph="quest-hidden" level="h4" className="mb-1" />
+                  <SectionHead title={t("story.actsAhead")} glyph="quest-hidden" level="h4" className="mb-1" />
                   <ul className="mt-0.5 space-y-0.5">
                     {aheadSketches.map((sketch) => (
                       <li key={sketch.act} className="list-none text-xs leading-5 text-stone-500">
-                        Act {sketch.act}: {sketch.milestone}
+                        {t("story.sketch.line", { act: sketch.act, milestone: sketch.milestone })}
                         {sketch.boss ? (
-                          <span className="text-stone-600"> &middot; boss: {sketch.boss.name}</span>
+                          <span className="text-stone-600"> {t("story.sketch.boss", { name: sketch.boss.name })}</span>
                         ) : null}
                         {sketch.allies.length ? (
                           <span className="text-stone-600">
                             {" "}
-                            &middot; {sketch.allies.length} planned all
-                            {sketch.allies.length === 1 ? "y" : "ies"}
+                            &middot; {t("story.sketch.allies", { count: sketch.allies.length })}
                           </span>
                         ) : null}
                       </li>
@@ -712,25 +715,25 @@ function ArcCard({ campaignId }: { campaignId: string }) {
               ) : null}
               {arc.finale ? (
                 <p className="reveal text-xs leading-5 text-stone-400">
-                  Finale: {arc.finale}
+                  {t("story.finale", { text: arc.finale })}
                   {arc.saga?.finaleBoss ? (
                     <span className="text-stone-500">
                       {" "}
-                      &middot; final boss: {arc.saga.finaleBoss.name}
+                      {t("story.finaleBoss", { name: arc.saga.finaleBoss.name })}
                     </span>
                   ) : null}
                 </p>
               ) : null}
               {cast?.length ? (
                 <div>
-                  <SectionHead title="Recurring cast" glyph="system-cast" level="h4" className="mb-1" />
+                  <SectionHead title={t("story.cast.title")} glyph="system-cast" level="h4" className="mb-1" />
                   <ul className="mt-0.5 space-y-0.5">
                     {cast.map((npc) => (
                       <li key={npc.id} className="list-none text-xs leading-5 text-stone-400">
                         {npc.name}
                         {npc.role ? `, ${npc.role}` : ""}
                         {npc.agenda ? (
-                          <span className="text-stone-500"> wants: {npc.agenda}</span>
+                          <span className="text-stone-500"> {t("story.cast.wants", { agenda: npc.agenda })}</span>
                         ) : null}
                       </li>
                     ))}
@@ -739,7 +742,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
               ) : null}
               {plannedEvents?.length ? (
                 <div>
-                  <SectionHead title="Planned events (may never fire)" glyph="tab-timeline" level="h4" className="mb-1" />
+                  <SectionHead title={t("story.events.title")} glyph="tab-timeline" level="h4" className="mb-1" />
                   <ul className="mt-0.5 space-y-0.5">
                     {plannedEvents.map((event) => (
                       <li key={event.id} className="list-none text-xs leading-5 text-stone-400">
@@ -747,7 +750,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
                         <span className="text-stone-500">
                           {" "}
                           [{event.kind.replaceAll("_", " ")}]
-                          {event.trigger ? ` when ${event.trigger}` : ""}
+                          {event.trigger ? ` ${t("story.events.when", { trigger: event.trigger })}` : ""}
                         </span>
                       </li>
                     ))}
@@ -756,7 +759,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
               ) : null}
               {openThreads?.length ? (
                 <div>
-                  <SectionHead title="Open threads" glyph="quest-active" level="h4" className="mb-1" />
+                  <SectionHead title={t("story.threads.title")} glyph="quest-active" level="h4" className="mb-1" />
                   <ul className="mt-0.5 space-y-0.5">
                     {openThreads.map((subArc) => (
                       <li key={subArc.id} className="list-none text-xs leading-5 text-stone-400">
@@ -768,7 +771,7 @@ function ArcCard({ campaignId }: { campaignId: string }) {
               ) : null}
               {arc.saga?.priorSagas.length ? (
                 <div>
-                  <SectionHead title="Previous sagas" glyph="quest-done" level="h4" className="mb-1" />
+                  <SectionHead title={t("story.priorSagas.title")} glyph="quest-done" level="h4" className="mb-1" />
                   <ul className="mt-0.5 space-y-0.5">
                     {arc.saga.priorSagas.map((prior, index) => (
                       <li key={index} className="list-none text-xs leading-5 text-stone-500">
@@ -785,17 +788,17 @@ function ArcCard({ campaignId }: { campaignId: string }) {
           ) : outline ? (
             <p className="reveal whitespace-pre-wrap text-xs leading-5 text-stone-400">{outline}</p>
           ) : (
-            <EmptyState size="sm" art="scrolls" title={canPlot ? "No story arc yet. It is written when the adventure begins, or generate one now." : "No story arc yet."} />
+            <EmptyState size="sm" art="scrolls" title={canPlot ? t("story.arc.empty") : t("story.arc.emptyShort")} />
           )}
           {!loading && canPlot ? (
-            <KitButton onClick={regenerate} disabled={regenerating} title="Discard the current arc and have the GM plot a fresh one from the premise">
+            <KitButton onClick={regenerate} disabled={regenerating} title={t("story.arc.regenerateTitle")}>
               {regenerating ? (
                 <>
-                  <Loader2 className="size-3 animate-spin" /> Plotting a new arc...
+                  <Loader2 className="size-3 animate-spin" /> {t("story.arc.plotting")}
                 </>
               ) : (
                 <>
-                  <RefreshCw className="size-3" /> Regenerate arc
+                  <RefreshCw className="size-3" /> {t("story.arc.regenerate")}
                 </>
               )}
             </KitButton>
@@ -919,11 +922,11 @@ export function StoryPanel({
           <EmptyState
             art="scrolls"
             size="sm"
-            title="The story has not begun"
-            hint="The first chapter opens with the first scene."
+            title={t("story.empty.title")}
+            hint={t("story.empty.hint")}
             action={
               <KitButton onClick={() => setReloads((current) => current + 1)}>
-                <RefreshCw className="size-3" /> Check again
+                <RefreshCw className="size-3" /> {t("story.checkAgain")}
               </KitButton>
             }
           />
@@ -938,32 +941,32 @@ export function StoryPanel({
       {steersStory ? <NpcReviewCard campaignId={campaignId} /> : null}
       <ExportMenu campaignId={campaignId} />
       {closed.length ? (
-        <KitButton tone="secondary" onClick={() => setReading(true)} title="Read the closed chapters as a book, one spread each" className="h-10 w-full border-amber-500/50 text-amber-100">
-          <GameIcon icon={{ kind: "glyph", key: "tab-story" }} size="size-6" /> Open the chronicle
+        <KitButton tone="secondary" onClick={() => setReading(true)} title={t("story.readTitle")} className="h-10 w-full border-amber-500/50 text-amber-100">
+          <GameIcon icon={{ kind: "glyph", key: "tab-story" }} size="size-6" /> {t("story.openChronicle")}
         </KitButton>
       ) : null}
       <div className="panel rounded-lg p-2.5">
         <SectionHead
-          title={`${open?.act ? `Act ${romanNumeral(open.act)}, ` : ""}Chapter ${open?.index ?? closed.length + 1} in progress`}
+          title={`${open?.act ? `${t("story.act", { act: romanNumeral(open.act) })}, ` : ""}${t("story.inProgress", { n: open?.index ?? closed.length + 1 })}`}
           glyph="tab-journal"
           className="mb-0"
         />
         {steersStory ? (
-          <KitButton onClick={closeChapter} disabled={closing} title="Seal this chapter; the GM writes its title and summary" className="mt-2 w-full justify-center">
+          <KitButton onClick={closeChapter} disabled={closing} title={t("story.closeChapterTitle")} className="mt-2 w-full justify-center">
             {closing ? (
               <>
-                <Loader2 className="size-3 animate-spin" /> Writing the chapter...
+                <Loader2 className="size-3 animate-spin" /> {t("story.writingChapter")}
               </>
             ) : (
               <>
-                <Scissors className="size-3" /> Close chapter
+                <Scissors className="size-3" /> {t("story.closeChapter")}
               </>
             )}
           </KitButton>
         ) : null}
         {steersStory && open && rewindable.includes(open.index) ? (
-          <KitButton tone="danger" onClick={() => void postRewind(open.index, false)} disabled={rewindBusy} busy={rewindBusy} title="Discard this chapter's progress and return to how it began" className="mt-1.5 w-full justify-center">
-            {rewindBusy ? null : <Rewind className="size-3" />} Restart this chapter
+          <KitButton tone="danger" onClick={() => void postRewind(open.index, false)} disabled={rewindBusy} busy={rewindBusy} title={t("story.restartTitle")} className="mt-1.5 w-full justify-center">
+            {rewindBusy ? null : <Rewind className="size-3" />} {t("story.restartChapter")}
           </KitButton>
         ) : null}
       </div>
@@ -1001,13 +1004,13 @@ export function StoryPanel({
       <Book
         open={reading}
         onOpenChange={setReading}
-        title="The chronicle"
+        title={t("cine.chronicle")}
         startAt={closed.length - 1}
         entries={closed.map((chapter) => ({
           id: chapter.id,
-          kicker: `${chapter.act ? `Act ${romanNumeral(chapter.act)}, ` : ""}Chapter ${chapter.index}`,
-          heading: chapter.title || `Chapter ${chapter.index}`,
-          body: chapter.summary || "No summary was recorded for this chapter.",
+          kicker: `${chapter.act ? `${t("story.act", { act: romanNumeral(chapter.act) })}, ` : ""}${t("story.chapterN", { n: chapter.index })}`,
+          heading: chapter.title || t("story.chapterN", { n: chapter.index }),
+          body: chapter.summary || t("story.noSummaryBook"),
           note: chapter.highlights.length ? chapter.highlights.join("\n") : undefined,
         }))}
       />

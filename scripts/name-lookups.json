@@ -16,6 +16,13 @@
         "slugs, hosts, file names, ids, env values, display text, throttle keys, model ids (src/: every site read)"
       ]
     ],
+    "app/AuthForm.tsx#partial": [
+      [
+        "key",
+        1,
+        "the auth.* key tag on a stored error word, telling a dictionary key from the server's own message; it names no record"
+      ]
+    ],
     "app/ChangePasswordForm.tsx#whole-single": [
       [
         "key",

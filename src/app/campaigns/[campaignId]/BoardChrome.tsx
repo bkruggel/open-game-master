@@ -12,7 +12,7 @@ import type { PublicEncounter } from "@/lib/db/encounter-view";
 import { offSide, SidePlateBand, sidesLine, SideSr } from "@/app/campaigns/[campaignId]/SideBadge";
 import type { TargetEdge } from "@/lib/battlemap/view-tactics";
 import { contentName } from "@/lib/content/names";
-import { useLocale } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 // The chrome on the board as a stage (docs/visual-overhaul-plan.md 5.1): the
 // initiative rail, the turn HUD, the turn banner, the hover plate and the
@@ -88,6 +88,7 @@ export function InitiativeRail({
   onOpen?: () => void;
   namesOnly?: boolean;
 }) {
+  const t = useT();
   if (!encounter.orderReady || !encounter.order.length) {
     return null;
   }
@@ -99,10 +100,10 @@ export function InitiativeRail({
   if (namesOnly) {
     return (
       <div className="board-initiative-names" data-tour="battle-initiative">
-        <button type="button" onClick={onOpen} disabled={!onOpen} aria-label={`Round ${round}, open initiative order`}>
-          Round {round} · initiative
+        <button type="button" onClick={onOpen} disabled={!onOpen} aria-label={t("board.rail.openAria", { round })}>
+          {t("board.rail.eyebrow", { round })}
         </button>
-        <ol tabIndex={0} aria-label="Initiative order">
+        <ol tabIndex={0} aria-label={t("board.rail.orderAria")}>
           {encounter.order.map((entry, at) => (
             <li key={`${entry.id}-${at}`} aria-current={lit.includes(at) ? "step" : undefined} title={entry.name}>
               {entry.name}
@@ -133,12 +134,12 @@ export function InitiativeRail({
       onClick={onOpen}
       disabled={!onOpen}
       data-tour="battle-initiative"
-      aria-label={`Round ${round}, initiative order. ${encounter.acting?.name ?? order[up]?.name ?? ""} is up. ${sidesLine(encounter)}Open the order.`}
+      aria-label={t("board.rail.fullAria", { round, name: encounter.acting?.name ?? order[up]?.name ?? "", sides: sidesLine(t, encounter) })}
       className="absolute left-2 top-2 z-10 flex flex-col items-start gap-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 @md:left-3.5 @md:top-3.5 @md:gap-1.5"
     >
       <span className="board-eyebrow">
-        Round {round}
-        <span className="hidden @md:inline"> · initiative</span>
+        {t("cine.round", { round })}
+        <span className="hidden @md:inline"> {t("board.rail.initiativeTag")}</span>
       </span>
       <span className="flex gap-[3px] @md:gap-[5px]">
         {shown.map(({ entry, at }, index) => {
@@ -146,7 +147,7 @@ export function InitiativeRail({
           return (
             <span
               key={`${entry.id}-${at}`}
-              title={`${entry.name}${entry.hidden ? " (hidden)" : ""}${entry.initiative !== undefined ? ` · ${entry.initiative}` : ""}`}
+              title={`${entry.name}${entry.hidden ? ` ${t("board.hiddenMark")}` : ""}${entry.initiative !== undefined ? ` · ${entry.initiative}` : ""}`}
               className={cn(
                 "board-plate relative block h-[38px] w-[31px] overflow-hidden rounded-[6px] border bg-[#0d0b1c] shadow-[0_2px_6px_rgba(4,2,12,0.55)] @md:h-14 @md:w-[46px] @md:rounded-[7px]",
                 current ? "border-transparent" : "border-[rgba(227,193,92,0.25)]",
@@ -196,10 +197,10 @@ export function InitiativeRail({
 // turnHudBudget): the pips are drawn only for a seat that was sent one.
 export type TurnHudBudget = { action: boolean; bonus: boolean; reaction: boolean };
 
-const PIPS: Array<{ key: keyof TurnHudBudget; label: string }> = [
-  { key: "action", label: "ACTION" },
-  { key: "bonus", label: "BONUS" },
-  { key: "reaction", label: "REACTION" },
+const PIPS: Array<{ key: keyof TurnHudBudget; labelKey: "board.pip.action" | "board.pip.bonus" | "board.pip.reaction" }> = [
+  { key: "action", labelKey: "board.pip.action" },
+  { key: "bonus", labelKey: "board.pip.bonus" },
+  { key: "reaction", labelKey: "board.pip.reaction" },
 ];
 
 // Top-right: whose turn, and on your own turn what you have left.
@@ -221,17 +222,18 @@ export function TurnHud({
   ac?: number | null;
   hp?: { current: number; max: number } | null;
 }) {
+  const t = useT();
   if (!actorName) {
     return null;
   }
   const stats = [
-    typeof speedLeftFeet === "number" ? `${speedLeftFeet} ft left` : null,
-    typeof ac === "number" ? `AC ${ac}` : null,
+    typeof speedLeftFeet === "number" ? t("board.hud.ftLeft", { feet: speedLeftFeet }) : null,
+    typeof ac === "number" ? t("board.hud.acShort", { ac }) : null,
     hp ? `${hp.current}/${hp.max}` : null,
   ].filter(Boolean);
   return (
     <div className="pointer-events-none absolute right-2 top-2 z-10 flex max-w-[58%] flex-col items-end gap-1 @md:right-3.5 @md:top-3.5 @md:gap-[7px]">
-      <span className="board-eyebrow block max-w-full truncate text-right">{mine ? `${actorName} · ${commanded ? "your orders" : "your turn"}` : `${actorName}'s turn`}</span>
+      <span className="board-eyebrow block max-w-full truncate text-right">{mine ? (commanded ? t("board.hud.mineCommanded", { name: actorName }) : t("board.hud.mineTurn", { name: actorName })) : t("board.turnOf", { name: actorName })}</span>
       {mine && budget ? (
         // On a narrow board the pips and the stats sit under the rail's
         // plates instead of beside them, where there is no room.
@@ -249,7 +251,7 @@ export function TurnHud({
                 className="turn-pip flex items-center gap-[5px] rounded-full border px-2 py-[3px] font-mono text-[9px] tracking-[0.04em] @md:text-[10px]"
               >
                 <span className="turn-pip-shape" aria-hidden="true" />
-                {pip.label}
+                {t(pip.labelKey)}
               </span>
             );
           })}
@@ -320,10 +322,11 @@ export function ConditionChip({ label, rounds, note }: { label: string; rounds?:
 // plate: the board's own verdict (view-tactics.ts), the one the hit preview
 // and pc_attack read.
 function EdgeChips({ edge }: { edge: TargetEdge }) {
+  const t = useT();
   const chips = [
-    edge.blocked ? "No line of sight" : edge.cover === 5 ? "Three-quarters cover (+5 AC)" : edge.cover === 2 ? "Half cover (+2 AC)" : null,
-    edge.flanking ? "Flanked: advantage in melee" : null,
-    edge.hostileBeside && !edge.adjacent ? "Enemy beside you: ranged at disadvantage" : null,
+    edge.blocked ? t("board.hud.noLine") : edge.cover === 5 ? t("board.plate.cover34", { ac: 5 }) : edge.cover === 2 ? t("board.plate.cover12", { ac: 2 }) : null,
+    edge.flanking ? t("board.hud.flanked") : null,
+    edge.hostileBeside && !edge.adjacent ? t("board.plate.enemyBeside") : null,
   ].filter((chip): chip is string => Boolean(chip));
   if (!chips.length) return null;
   return (
@@ -426,11 +429,12 @@ export function TargetChips({
   onPick: (tokenId: string) => void;
   onHover?: (tokenId: string | null) => void;
 }) {
+  const t = useT();
   if (!targets.length) {
-    return <p className="text-[11px] text-stone-500">Nobody here to aim at.</p>;
+    return <p className="text-[11px] text-stone-500">{t("board.targets.empty")}</p>;
   }
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Targets">
+    <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label={t("board.targets.groupAria")}>
       {targets.map(({ token, face, health, feet }, index) => (
         <button
           key={token.id}
@@ -452,7 +456,7 @@ export function TargetChips({
           <span className="min-w-0">
             <span className="block max-w-[9rem] truncate text-xs font-medium text-stone-100">{token.name}</span>
             <span className="block font-mono text-[10px] text-stone-400">
-              {[health ? HEALTH_LABEL[health] ?? health : null, feet !== null ? `${feet} ft` : null].filter(Boolean).join(" · ")}
+              {[health ? HEALTH_LABEL[health] ?? health : null, feet !== null ? t("board.tools.ftOption", { feet }) : null].filter(Boolean).join(" · ")}
             </span>
           </span>
         </button>

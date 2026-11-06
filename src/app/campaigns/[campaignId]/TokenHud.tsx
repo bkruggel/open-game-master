@@ -20,6 +20,11 @@ import {
 import { cn } from "@/lib/cn";
 import type { StageToken } from "@/app/campaigns/[campaignId]/BoardStage";
 import type { HudGateId } from "@/lib/battlemap/hand-hud";
+import { useT } from "@/lib/locale";
+
+// The translator's own shape, for the factories below: they are plain
+// functions, so `t` comes in as the first argument (src/lib/story-window.ts).
+type T = (key: string, vars?: Record<string, string | number>) => string;
 
 // The radial HUD on a token (docs/vtt-parity-implementation-plan.md section
 // 1.4). Six 40 px buttons in an arc, scaling in over --dur-quick. It is a
@@ -41,6 +46,7 @@ export type HudAction = {
 };
 
 export function playerActions(
+  t: T,
   compose: (text: string) => void,
   pickTarget: (mode: "attack" | "cast") => void,
   // hudGates (src/lib/battlemap/hand-hud.ts): canAct, the turn's spends and
@@ -53,16 +59,17 @@ export function playerActions(
     return reason ? { ...action, disabled: reason, onPick: () => refuse?.(reason) } : action;
   };
   return [
-    gate("attack", { id: "attack", label: "Attack", icon: Crosshair, tone: "ember", onPick: () => pickTarget("attack") }),
-    gate("cast", { id: "cast", label: "Cast", icon: Wand2, tone: "gold", onPick: () => pickTarget("cast") }),
-    gate("dodge", { id: "dodge", label: "Dodge", icon: Shield, onPick: () => compose("I take the Dodge action.") }),
-    gate("dash", { id: "dash", label: "Dash", icon: Wind, onPick: () => compose("I Dash.") }),
-    gate("disengage", { id: "disengage", label: "Disengage", icon: ArrowRightLeft, onPick: () => compose("I Disengage and step away.") }),
-    gate("help", { id: "help", label: "Help", icon: HandHelping, onPick: () => compose("I take the Help action for ") }),
+    gate("attack", { id: "attack", label: t("board.targeting.attack"), icon: Crosshair, tone: "ember", onPick: () => pickTarget("attack") }),
+    gate("cast", { id: "cast", label: t("board.targeting.cast"), icon: Wand2, tone: "gold", onPick: () => pickTarget("cast") }),
+    gate("dodge", { id: "dodge", label: t("board.hud.dodge"), icon: Shield, onPick: () => compose(t("board.hud.dodgeCompose")) }),
+    gate("dash", { id: "dash", label: t("board.hud.dash"), icon: Wind, onPick: () => compose(t("board.hud.dashCompose")) }),
+    gate("disengage", { id: "disengage", label: t("board.hud.disengage"), icon: ArrowRightLeft, onPick: () => compose(t("board.hud.disengageCompose")) }),
+    gate("help", { id: "help", label: t("board.hud.help"), icon: HandHelping, onPick: () => compose(t("board.hud.helpCompose")) }),
   ];
 }
 
 export function dmActions(
+  t: T,
   token: StageToken,
   handlers: {
     hold: () => void;
@@ -77,28 +84,28 @@ export function dmActions(
   const adhoc = token.kind === "npc" || token.kind === "prop";
   const combatant = token.kind === "pc" || token.kind === "enemy";
   const actions: HudAction[] = [
-    { id: "hold", label: "Pick up", icon: Hand, tone: "gold", onPick: handlers.hold },
-    { id: "teleport", label: "Teleport", icon: Sparkles, onPick: handlers.teleport },
+    { id: "hold", label: t("board.hud.pickUp"), icon: Hand, tone: "gold", onPick: handlers.hold },
+    { id: "teleport", label: t("board.hud.teleport"), icon: Sparkles, onPick: handlers.teleport },
   ];
   if (token.kind !== "pc") {
     actions.push({
       id: "visibility",
-      label: token.hidden ? "Reveal" : "Hide",
+      label: token.hidden ? t("board.hud.reveal") : t("board.hud.hide"),
       icon: token.hidden ? Eye : EyeOff,
       onPick: () => handlers.visibility(!token.hidden),
     });
   }
   if (combatant) {
     actions.push(
-      { id: "damage", label: "Damage", icon: HeartCrack, tone: "ember", onPick: handlers.damage },
-      { id: "condition", label: "Condition", icon: Tag, onPick: handlers.condition },
+      { id: "damage", label: t("board.hud.damage"), icon: HeartCrack, tone: "ember", onPick: handlers.damage },
+      { id: "condition", label: t("board.prompt.condition"), icon: Tag, onPick: handlers.condition },
     );
   }
   if (token.kind === "pc") {
-    actions.push({ id: "heal", label: "Heal", icon: Heart, onPick: handlers.heal });
+    actions.push({ id: "heal", label: t("board.prompt.healVerb"), icon: Heart, onPick: handlers.heal });
   }
   if (adhoc) {
-    actions.push({ id: "remove", label: "Take off", icon: Trash2, tone: "ember", onPick: handlers.remove });
+    actions.push({ id: "remove", label: t("board.hud.takeOff"), icon: Trash2, tone: "ember", onPick: handlers.remove });
   }
   return actions.slice(0, 7);
 }
@@ -125,6 +132,7 @@ export function TokenHud({
   // (centre across, top, bottom), when it is not on the grid's square.
   anchor?: [number, number, number];
 }) {
+  const t = useT();
   const cx = anchor ? anchor[0] * 100 : ((token.x + footprint / 2) / boardWidth) * 100;
   const cy = anchor ? ((anchor[1] + anchor[2]) / 2) * 100 : ((token.y + footprint / 2) / boardHeight) * 100;
   // The arc opens upward, or downward near the top edge so it stays on the board.
@@ -136,7 +144,7 @@ export function TokenHud({
     <div
       className="pointer-events-none absolute inset-0 z-20"
       role="menu"
-      aria-label={`Actions for ${token.name}`}
+      aria-label={t("board.hud.actionsAria", { name: token.name })}
     >
       <div
         className="absolute"
@@ -193,7 +201,7 @@ export function TokenHud({
             event.stopPropagation();
             onClose();
           }}
-          aria-label="Close"
+          aria-label={t("board.close")}
           className="token-sigil pointer-events-auto fx-pop absolute flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(107,99,148,0.6)] text-[#aeaac6] hover:text-white"
           style={{ left: 0, top: flip ? -radius - 16 : radius + 16 }}
         >
