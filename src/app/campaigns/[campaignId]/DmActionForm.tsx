@@ -21,6 +21,7 @@ import { describeAdjudicationResult, type ResultLine } from "@/lib/dm/catalog-re
 import { holdConsoleOutcome } from "@/app/campaigns/[campaignId]/ConsoleOutcomeBanner";
 import type { PublicEncounter } from "@/lib/db/encounter-view";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
+import { useT } from "@/lib/locale";
 
 // One adjudication, rendered from its catalog entry. Nothing here knows what
 // any particular action does: the fields come from the catalog and the rules
@@ -88,6 +89,7 @@ export function DmActionForm({
   // wears the same face the row did.
   glyph?: string;
 }) {
+  const t = useT();
   const [values, setValues] = useState<Record<string, Value>>(() =>
     Object.fromEntries(
       entry.fields.map((field) => [
@@ -129,7 +131,7 @@ export function DmActionForm({
     // What cannot be taken back asks first (end the fight, dismiss a
     // companion, a death).
     const question = needsConfirm(entry, args);
-    if (question && !(await appConfirm(question, { title: entry.label, actionLabel: "Run it" }))) {
+    if (question && !(await appConfirm(question, { title: entry.label, actionLabel: t("dm.action.runIt") }))) {
       return;
     }
     setBusy(true);
@@ -143,7 +145,7 @@ export function DmActionForm({
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(String(body.error ?? "The engine refused that."));
+        setError(String(body.error ?? t("dm.action.refused")));
         return;
       }
       const lines = describeAdjudicationResult(body.result);
@@ -164,7 +166,7 @@ export function DmActionForm({
       );
       onRan?.();
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy(false);
     }
@@ -183,7 +185,7 @@ export function DmActionForm({
       {blocked ? (
         <p className="reveal flex items-center gap-2 rounded-lg border border-amber-500/25 bg-stone-900/60 px-2.5 py-2 text-xs text-stone-300">
           <GameIcon icon={{ kind: "glyph", key: "tab-battle" }} size="size-5" className="shrink-0" />
-          Needs a fight running. Start one first.
+          {t("dm.action.needsEncounter")}
         </p>
       ) : null}
 
@@ -233,7 +235,7 @@ export function DmActionForm({
           className={ui.btnPrimary}
         >
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-          Run
+          {t("dm.action.run")}
         </button>
         {error ? (
           <span role="alert" className="motion-shake inline-block text-xs text-red-300">

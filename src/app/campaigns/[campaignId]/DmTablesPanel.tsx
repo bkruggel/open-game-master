@@ -105,7 +105,7 @@ export function DmTablesPanel({
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data.error || "Could not draft that.");
+        setError(data.error || t("tables.error.draft"));
         return;
       }
       setText(data.text ?? "");
@@ -113,7 +113,7 @@ export function DmTablesPanel({
         setName(prompt.trim().slice(0, TABLE_NAME_MAX));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy("");
     }
@@ -140,7 +140,7 @@ export function DmTablesPanel({
       );
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not save that.");
+        setError(data.error || t("tables.error.save"));
         return;
       }
       setName("");
@@ -151,7 +151,7 @@ export function DmTablesPanel({
       setEditorOpen(false);
       await load();
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy("");
     }
@@ -171,13 +171,13 @@ export function DmTablesPanel({
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data.error || "Could not roll that.");
+        setError(data.error || t("tables.error.roll"));
         return;
       }
       setResult({
         tableId: table.id,
         total: data.total,
-        text: data.final?.text ?? data.entry?.text ?? "Nothing. That result is not on the table.",
+        text: data.final?.text ?? data.entry?.text ?? t("tables.result.none"),
         chain: Array.isArray(data.chain) && data.chain.length > 1 ? data.chain : [],
         remaining: typeof data.remaining === "number" ? data.remaining : null,
       });
@@ -186,7 +186,7 @@ export function DmTablesPanel({
         await load();
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy("");
     }
@@ -208,12 +208,12 @@ export function DmTablesPanel({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not copy that.");
+        setError(data.error || t("tables.error.copy"));
         return;
       }
       await load();
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy("");
     }
@@ -261,7 +261,7 @@ export function DmTablesPanel({
       after();
       await load();
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy("");
     }
@@ -270,12 +270,12 @@ export function DmTablesPanel({
   // Forget every result dealt so far, so the deck is whole again.
   function reset(table: RollTable) {
     const init = { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reset: true }) };
-    return ask(table, init, "Could not reset that.", () => setResult(null));
+    return ask(table, init, t("tables.error.reset"), () => setResult(null));
   }
 
   // A save after a delete would otherwise PATCH a table that is gone.
   function remove(table: RollTable) {
-    return ask(table, { method: "DELETE" }, "Could not delete that.", () => {
+    return ask(table, { method: "DELETE" }, t("tables.error.delete"), () => {
       if (editingId === table.id) open(null);
     });
   }
@@ -289,8 +289,8 @@ export function DmTablesPanel({
       <input
         value={name}
         onChange={(event) => setName(event.target.value.slice(0, TABLE_NAME_MAX))}
-        placeholder="Rumours in the Salt Wharf"
-        aria-label="Table name"
+        placeholder={t("tables.namePlaceholder")}
+        aria-label={t("tables.nameAria")}
         data-tour="tables-name"
         className={inputClass}
       />
@@ -299,15 +299,15 @@ export function DmTablesPanel({
           <input
             value={prompt}
             onChange={(event) => setPrompt(event.target.value.slice(0, 300))}
-            placeholder="what the dockhands are whispering about"
-            aria-label="What the table is about"
+            placeholder={t("tables.promptPlaceholder")}
+            aria-label={t("tables.promptAria")}
             className={inputClass}
           />
           <button
             type="button"
             onClick={draft}
             disabled={busy === "draft" || !prompt.trim()}
-            title="Drafts rows for you to edit. Nothing is saved until you save it."
+            title={t("tables.draftTitle")}
             aria-busy={busy === "draft"}
             className={cn(ui.btnSmall, "shrink-0 text-xs")}
           >
@@ -316,7 +316,7 @@ export function DmTablesPanel({
             ) : (
               <Sparkles className="size-3.5" />
             )}
-            Draft
+            {t("tables.draft")}
           </button>
         </div>
       ) : null}
@@ -324,8 +324,8 @@ export function DmTablesPanel({
         value={text}
         onChange={(event) => setText(event.target.value)}
         rows={rows ? 10 : 5}
-        placeholder={"1-3 A press gang is working the taproom.\n4. The harbourmaster has not been seen in a week.\nOr just paste a table straight out of a book."}
-        aria-label="Table rows"
+        placeholder={t("tables.bodyPlaceholder")}
+        aria-label={t("tables.rowsAria")}
         data-tour="tables-body"
         className={cn(inputClass, "mt-1.5 resize-y font-mono text-xs")}
       />
@@ -339,19 +339,19 @@ export function DmTablesPanel({
       </div>
       {draftEntries.length ? (
         <p className="reveal mt-1 text-[11px] text-stone-500">
-          {draftEntries.length} rows, rolled on a d{dieForTable(draftEntries)}.
+          {t("tables.rowsSummary", { count: draftEntries.length, sides: dieForTable(draftEntries) })}
           {gaps?.uncovered.length
-            ? ` Nothing on ${gaps.uncovered.join(", ")}.`
+            ? t("tables.gapUncovered", { gaps: gaps.uncovered.join(", ") })
             : ""}
           {gaps?.overlapping.length
-            ? ` Two rows both cover ${gaps.overlapping.join(", ")}.`
+            ? t("tables.gapOverlap", { gaps: gaps.overlapping.join(", ") })
             : ""}
         </p>
       ) : null}
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
         <span className="flex min-h-10 items-center gap-2 text-xs text-stone-300">
-          <Switch on={noReplacement} onChange={setNoReplacement} label="Draw without replacement" />
-          Draw without replacement
+          <Switch on={noReplacement} onChange={setNoReplacement} label={t("tables.noReplacement")} />
+          {t("tables.noReplacement")}
         </span>
         {editing?.noReplacement && editing.drawn.length ? (
           <button
@@ -359,14 +359,12 @@ export function DmTablesPanel({
             onClick={() => void reset(editing)}
             className={cn(ui.btnSmall, "px-2 py-1 text-[11px]")}
           >
-            Reset ({editing.drawn.length} dealt)
+            {t("tables.reset", { count: editing.drawn.length })}
           </button>
         ) : null}
       </div>
       <p className="mt-1 text-[10px] leading-snug text-stone-500">
-        Bare rows can carry a weight (x3 A goblin patrol). A row can be a thing: @table: Gems rolls
-        that table too; @monster: wolf, @item: Potion of Healing, @npc: Marla name what they are.
-        The picker above writes those rows for you.
+        {t("tables.syntaxHelp")}
       </p>
       {error ? <p role="alert" className="motion-shake mt-1 text-xs text-red-400">{error}</p> : null}
       <button
@@ -377,7 +375,7 @@ export function DmTablesPanel({
         data-tour="tables-save"
         className={cn(ui.btnPrimary, "mt-2")}
       >
-        {busy === "save" ? "Saving..." : "Save table"}
+        {busy === "save" ? t("tables.saving") : t("tables.save")}
       </button>
     </>
   );
@@ -406,7 +404,7 @@ export function DmTablesPanel({
         <Sheet
           open={editorOpen}
           onOpenChange={setEditorOpen}
-          title={editing ? editing.name : "New table"}
+          title={editing ? editing.name : t("tables.new")}
           className="lg:w-[min(92vw,40rem)]"
         >
           {editor}
@@ -419,7 +417,7 @@ export function DmTablesPanel({
     <div className="space-y-3">
       <DeskCard
         glyph="system-tables"
-        title="Your tables"
+        title={t("tables.yours")}
         aside={tables.length ? <span key={tables.length} className="count-pop">{tables.length}</span> : undefined}
       >
         {tables.length ? (
@@ -429,9 +427,9 @@ export function DmTablesPanel({
               // Roll stays the row's visible button. The two that were icons
               // live in the row's menu under the words they always carried.
               const items: ContextMenuItem[] = [
-                { id: "roll", label: "Roll", glyph: dieGlyph(sides), disabled: busy === table.id, onSelect: () => void roll(table) },
-                { id: "duplicate", label: `Duplicate ${table.name}`, glyph: "ui-duplicate", disabled: busy === `copy-${table.id}`, onSelect: () => void duplicate(table) },
-                { id: "delete", label: "Delete this table", glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(table) },
+                { id: "roll", label: t("table.tray.roll"), glyph: dieGlyph(sides), disabled: busy === table.id, onSelect: () => void roll(table) },
+                { id: "duplicate", label: t("tables.duplicate", { name: table.name }), glyph: "ui-duplicate", disabled: busy === `copy-${table.id}`, onSelect: () => void duplicate(table) },
+                { id: "delete", label: t("tables.delete"), glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(table) },
               ];
               return (
                 <ContextMenu key={table.id} as="li" items={items} label={table.name} className={panelRow}>
@@ -449,7 +447,7 @@ export function DmTablesPanel({
                         aria-busy={busy === table.id}
                         className={cn(ui.btnPrimary, "h-9 px-3 text-[11px]")}
                       >
-                        {busy === table.id ? <Loader2 className="size-3.5 animate-spin" /> : "Roll"}
+                        {busy === table.id ? <Loader2 className="size-3.5 animate-spin" /> : t("table.tray.roll")}
                       </button>
                       <RowMenu items={items} label={table.name} />
                     </span>
@@ -471,16 +469,16 @@ export function DmTablesPanel({
             })}
           </ul>
         ) : loaded ? (
-          <EmptyState size="sm" art="scrolls" title="No tables yet. Paste one in below." />
+          <EmptyState size="sm" art="scrolls" title={t("tables.empty")} />
         ) : loadError ? (
           <LoadFailed error={loadError} onRetry={() => void load()} />
         ) : (
-          <PanelLoading label="Loading..." rows={2} />
+          <PanelLoading label={t("action.loading")} rows={2} />
         )}
         {loaded && loadError ? <LoadFailed error={loadError} onRetry={() => void load()} /> : null}
       </DeskCard>
 
-      <DeskCard glyph="system-homebrew" title="New table">
+      <DeskCard glyph="system-homebrew" title={t("tables.new")}>
         {editor}
       </DeskCard>
 

@@ -6,6 +6,7 @@ import { NumberStepper } from "@/components/ui/NumberStepper";
 import { Select, optionsFrom } from "@/components/ui/Select";
 import { DeskCard, FieldLabel } from "@/app/campaigns/[campaignId]/DmConsoleParts";
 import { asPercent, forecastAttack, roundsToDrop } from "@/lib/srd/odds";
+import { useT } from "@/lib/locale";
 
 // The consequence preview: hit chance, expected damage, and how long a target
 // lasts. Pure arithmetic from src/lib/srd/odds.ts, so it is instant, always
@@ -17,11 +18,12 @@ import { asPercent, forecastAttack, roundsToDrop } from "@/lib/srd/odds";
 export type CritRules = { powerfulCritical: boolean; criticalDamageMods: boolean };
 
 type Roll = "none" | "advantage" | "disadvantage";
-const ROLLS = optionsFrom<Roll>([
-  ["none", "Straight"],
-  ["advantage", "Advantage"],
-  ["disadvantage", "Disadvantage"],
-]);
+// The rolls' words by value; the keys live with the odds group.
+const ROLL_KEYS = {
+  none: "dm.odds.roll.none",
+  advantage: "dm.odds.roll.advantage",
+  disadvantage: "dm.odds.roll.disadvantage",
+} as const;
 
 // Hit chance, expected damage, and how long a target lasts. Pure arithmetic
 // from src/lib/srd/odds.ts, so it is instant and always available.
@@ -33,6 +35,7 @@ export function OddsCalculator({
   // server would actually roll.
   variantRules: CritRules;
 }) {
+  const t = useT();
   const [attackBonus, setAttackBonus] = useState(5);
   const [ac, setAc] = useState(15);
   const [damage, setDamage] = useState("1d8+3");
@@ -60,80 +63,79 @@ export function OddsCalculator({
   const rounds = roundsToDrop(hitPoints, perRound);
 
   return (
-    <DeskCard glyph="tab-dice" title="What is this likely to do?">
+    <DeskCard glyph="tab-dice" title={t("dm.odds.title")}>
       {/* Divs, not labels: a label would press the stepper's minus button
           whenever its caption was tapped. Each control carries its name. */}
       <div className="grid grid-cols-1 gap-x-2 gap-y-2.5 min-[24rem]:grid-cols-2">
         <div>
-          <FieldLabel>Attack bonus</FieldLabel>
-          <NumberStepper value={attackBonus} onChange={setAttackBonus} label="Attack bonus" size="sm" />
+          <FieldLabel>{t("dm.odds.attackBonus")}</FieldLabel>
+          <NumberStepper value={attackBonus} onChange={setAttackBonus} label={t("dm.odds.attackBonus")} size="sm" />
         </div>
         <div>
-          <FieldLabel>Target AC</FieldLabel>
-          <NumberStepper value={ac} onChange={setAc} label="Target AC" size="sm" />
+          <FieldLabel>{t("dm.odds.ac")}</FieldLabel>
+          <NumberStepper value={ac} onChange={setAc} label={t("dm.odds.ac")} size="sm" />
         </div>
         <div>
-          <FieldLabel>Damage</FieldLabel>
+          <FieldLabel>{t("dm.odds.damage")}</FieldLabel>
           <input
             value={damage}
             onChange={(event) => setDamage(event.target.value)}
             placeholder="2d6+4"
-            aria-label="Damage"
+            aria-label={t("dm.odds.damage")}
             className={ui.input}
           />
         </div>
         <div>
-          <FieldLabel>Roll</FieldLabel>
-          <Select value={advantage} onChange={setAdvantage} options={ROLLS} label="Roll" />
+          <FieldLabel>{t("dm.odds.roll")}</FieldLabel>
+          <Select value={advantage} onChange={setAdvantage} options={(Object.keys(ROLL_KEYS) as Roll[]).map((roll) => ({ value: roll, label: t(ROLL_KEYS[roll]) }))} label={t("dm.odds.roll")} />
         </div>
         <div>
-          <FieldLabel>Target hit points</FieldLabel>
-          <NumberStepper value={hitPoints} onChange={setHitPoints} label="Target hit points" size="sm" />
+          <FieldLabel>{t("dm.odds.hitPoints")}</FieldLabel>
+          <NumberStepper value={hitPoints} onChange={setHitPoints} label={t("dm.odds.hitPoints")} size="sm" />
         </div>
         <div>
-          <FieldLabel>Attacks per round</FieldLabel>
-          <NumberStepper value={attacksPerRound} onChange={setAttacksPerRound} min={1} label="Attacks per round" size="sm" />
+          <FieldLabel>{t("dm.odds.attacksPerRound")}</FieldLabel>
+          <NumberStepper value={attacksPerRound} onChange={setAttacksPerRound} min={1} label={t("dm.odds.attacksPerRound")} size="sm" />
         </div>
-        <div title="Brutal Critical, Savage Attacks.">
-          <FieldLabel>Extra dice on a crit</FieldLabel>
-          <NumberStepper value={extraCritDice} onChange={setExtraCritDice} min={0} max={4} label="Extra dice on a crit" size="sm" />
+        <div title={t("dm.odds.extraCritTitle")}>
+          <FieldLabel>{t("dm.odds.extraCrit")}</FieldLabel>
+          <NumberStepper value={extraCritDice} onChange={setExtraCritDice} min={0} max={4} label={t("dm.odds.extraCrit")} size="sm" />
         </div>
       </div>
       {forecast.exact ? null : (
         <p className="mt-2 text-xs text-amber-300/90">
-          That damage expression cannot be averaged, so only the odds below are
-          real. The chance to hit never depended on it.
+          {t("dm.odds.notExact")}
         </p>
       )}
       <dl className="mt-3 rounded-lg border border-amber-500/20 bg-stone-950/50 px-2.5 py-1.5 text-xs">
         <div className="dm-readout flex justify-between gap-3 py-0.5">
-          <dt className="text-stone-400">Chance to hit</dt>
+          <dt className="text-stone-400">{t("dm.odds.chanceToHit")}</dt>
           <dd className="text-right font-medium text-amber-100">
             {asPercent(forecast.odds.hit)}
-            <span className="text-stone-500"> ({asPercent(forecast.odds.crit)} crit)</span>
+            <span className="text-stone-500"> {t("dm.odds.critPct", { pct: asPercent(forecast.odds.crit) })}</span>
           </dd>
         </div>
         <div className="dm-readout flex justify-between gap-3 py-0.5">
-          <dt className="text-stone-400">Damage on a hit</dt>
+          <dt className="text-stone-400">{t("dm.odds.damageOnHit")}</dt>
           <dd className="text-right font-medium text-amber-100">
             {forecast.exact ? (
               <>
                 {forecast.onHit.toFixed(1)}
-                <span className="text-stone-500"> ({forecast.onCrit.toFixed(1)} on a crit)</span>
+                <span className="text-stone-500"> {t("dm.odds.critValue", { value: forecast.onCrit.toFixed(1) })}</span>
               </>
             ) : (
-              "unknown"
+              t("dm.odds.unknown")
             )}
           </dd>
         </div>
         <div className="dm-readout flex justify-between gap-3 py-0.5">
-          <dt className="text-stone-400">Average per round</dt>
-          <dd className="text-right font-medium text-amber-100">{forecast.exact ? perRound.toFixed(1) : "unknown"}</dd>
+          <dt className="text-stone-400">{t("dm.odds.perRound")}</dt>
+          <dd className="text-right font-medium text-amber-100">{forecast.exact ? perRound.toFixed(1) : t("dm.odds.unknown")}</dd>
         </div>
         <div className="dm-readout flex justify-between gap-3 py-0.5">
-          <dt className="text-stone-400">Rounds to drop</dt>
+          <dt className="text-stone-400">{t("dm.odds.roundsToDrop")}</dt>
           <dd className="text-right font-medium text-amber-100">
-            {!forecast.exact ? "unknown" : rounds === null ? "never" : rounds}
+            {!forecast.exact ? t("dm.odds.unknown") : rounds === null ? t("dm.odds.never") : rounds}
           </dd>
         </div>
       </dl>

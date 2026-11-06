@@ -908,7 +908,7 @@
     "app/campaigns/[campaignId]/DmConsolePanel.tsx#str-list": [
       [
         "english-source",
-        13,
+        7,
         "UI copy: tab labels and command palette keywords (the UI's own English copy)"
       ]
     ],
@@ -968,13 +968,6 @@
         "label in a sentence"
       ]
     ],
-    "app/campaigns/[campaignId]/DmOddsPanel.tsx#str-list": [
-      [
-        "key",
-        3,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
     "app/campaigns/[campaignId]/DmSharePanel.tsx#str-eq": [
       [
         "key",
@@ -1013,7 +1006,7 @@
     "app/campaigns/[campaignId]/DmWorkbenchPanel.tsx#str-key": [
       [
         "key",
-        1,
+        2,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
@@ -1368,8 +1361,8 @@
     "app/campaigns/[campaignId]/PactPanel.tsx#str-key": [
       [
         "key",
-        1,
-        "a secret action's kind, reading its label"
+        3,
+        "the pact kinds' and skills' label keys, read by the stored values"
       ]
     ],
     "app/campaigns/[campaignId]/PartyOrder.tsx#str-eq": [
@@ -19154,6 +19147,20 @@
         "key",
         1,
         "stored kit lists keyed by the stored English equipment names; the strings are stored values, not text a person writes"
+      ]
+    ],
+    "app/campaigns/[campaignId]/DmActionFields.tsx#str-key": [
+      [
+        "key",
+        1,
+        "the shares' label key, read by the stored share value"
+      ]
+    ],
+    "app/campaigns/[campaignId]/DmOddsPanel.tsx#str-key": [
+      [
+        "key",
+        1,
+        "the rolls' label key, read by the stored roll value"
       ]
     ]
   },

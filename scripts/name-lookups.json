@@ -19584,6 +19584,13 @@
         1,
         "the official content-name maps' answer compared with the id or stored label, to know whether the map named it; a miss keeps the id as the name"
       ]
+    ],
+    "app/campaigns/[campaignId]/MarketPanel.tsx#keyed": [
+      [
+        "key",
+        2,
+        "the market kinds' and sizes' label keys, read by the stored values"
+      ]
     ]
   }
 }

@@ -69,27 +69,38 @@ type HaggleSkill = "persuasion" | "intimidation" | "deception";
 // A haggle's outcome for the person who made it, in the rules' own words.
 // `moved` is false at an end of the price ladder, where a step had nowhere
 // to go; `prices` is where it left them, in the server's words.
-function haggleOutcome(steps: number, moved: boolean, prices: string): string {
+function haggleOutcome(t: (key: string, vars?: Record<string, string | number>) => string, steps: number, moved: boolean, prices: string): string {
   if (steps < 0) {
-    return moved ? `You talked the keeper down: your prices here are ${prices}.` : "You talked the keeper down, but your prices here are already at their lowest.";
+    return moved ? t("market.haggle.downMoved", { prices }) : t("market.haggle.downStuck");
   }
   if (steps === 0) {
-    return "The keeper holds firm: your prices stay where they were.";
+    return t("market.haggle.firm");
   }
-  return moved
-    ? `A bad failure (you missed the DC by 5 or more): your prices here are ${prices}.`
-    : "A bad failure (you missed the DC by 5 or more), but your prices here are already at their highest.";
+  return moved ? t("market.haggle.badMoved", { prices }) : t("market.haggle.badStuck");
 }
 
 // Where the viewer's haggle left their prices, for the line under a shop.
-function haggledLine(steps: number, prices: string): string {
-  return steps < 0 ? `You haggled here: your prices are ${prices}.` : steps === 0 ? "You haggled here: the keeper held firm." : `You haggled here and pushed too hard: your prices are ${prices}.`;
+function haggledLine(t: (key: string, vars?: Record<string, string | number>) => string, steps: number, prices: string): string {
+  return steps < 0 ? t("market.haggle.lineDown", { prices }) : steps === 0 ? t("market.haggle.lineFirm") : t("market.haggle.lineUp", { prices });
 }
 
 const KINDS = ["general", "smith", "apothecary", "outfitter", "curiosities"] as const;
 const SIZES = ["hamlet", "village", "town", "city"] as const;
-const KIND_OPTIONS = KINDS.map((kind) => ({ value: kind as string, label: kind }));
-const SIZE_OPTIONS = SIZES.map((size) => ({ value: size as string, label: size }));
+// The kinds' and sizes' words by stored value; the keys live with the market.
+// Shared with the shelf editor (MarketShopEditor.tsx).
+export const KIND_KEYS: Record<(typeof KINDS)[number], "market.kind.general" | "market.kind.smith" | "market.kind.apothecary" | "market.kind.outfitter" | "market.kind.curiosities"> = {
+  general: "market.kind.general",
+  smith: "market.kind.smith",
+  apothecary: "market.kind.apothecary",
+  outfitter: "market.kind.outfitter",
+  curiosities: "market.kind.curiosities",
+};
+export const SIZE_KEYS: Record<(typeof SIZES)[number], "market.size.hamlet" | "market.size.village" | "market.size.town" | "market.size.city"> = {
+  hamlet: "market.size.hamlet",
+  village: "market.size.village",
+  town: "market.size.town",
+  city: "market.size.city",
+};
 
 // The coin a price is mostly made of, so a chip leads with the right metal.
 function coinGlyph(copper: number): string {
@@ -238,11 +249,11 @@ export function MarketPanel({
       if (!response.ok && data.unpriced === true) {
         setUnpriced({ shop: shop.name, item });
       } else if (!response.ok) {
-        setError(String(data.error ?? "The keeper shakes their head."));
+        setError(String(data.error ?? t("market.error.shakesHead")));
       } else if (action === "haggle") {
         // The haggler's new markup against the shop's own: equal when the
         // step met an end of the ladder.
-        setError(haggleOutcome(Number(data.result?.steps) || 0, Number(data.result?.markup) !== shop.markup, String(data.result?.prices ?? "")));
+        setError(haggleOutcome(t, Number(data.result?.steps) || 0, Number(data.result?.markup) !== shop.markup, String(data.result?.prices ?? "")));
       }
       setReload((current) => current + 1);
     } finally {
@@ -282,8 +293,8 @@ export function MarketPanel({
           }
           setWriteError(
             found === "missing"
-              ? "The server did not answer and the shop is not in the market, so it was not opened. What you typed is kept; press Open it again."
-              : "The server could not be reached, so it is not known yet whether the shop was opened. What you typed is kept. Look at the market before opening it again.",
+              ? t("market.error.lostMissing")
+              : t("market.error.lostUnknown"),
           );
           return;
         }
@@ -304,7 +315,7 @@ export function MarketPanel({
   }
 
   async function close(shop: ShopView) {
-    if (!(await appConfirm(`Close ${shop.name} for good?`, { actionLabel: "Close it", tone: "danger" }))) {
+    if (!(await appConfirm(t("market.close.title", { name: shop.name }), { actionLabel: t("market.close.action"), tone: "danger" }))) {
       return;
     }
     setWriteError("");
@@ -323,7 +334,7 @@ export function MarketPanel({
   }
 
   if (shops === null) {
-    return <PanelLoading label="Looking over the stalls..." />;
+    return <PanelLoading label={t("market.loading")} />;
   }
   return (
     <div ref={listRef} className="space-y-2">
@@ -332,7 +343,7 @@ export function MarketPanel({
           open
           onOpenChange={(open) => !open && setDetails(null)}
           title={details.itemName}
-          meta={`${formatPrice(details.askingCp)} here, ${details.qty} on the shelf`}
+          meta={t("market.detailsMeta", { price: formatPrice(details.askingCp), qty: details.qty })}
           note={details.note || undefined}
           reference={{ kind: "items", slug: contentSlug(details.itemName), name: details.itemName }}
           icon={cardArtwork({ kind: "item", key: details.itemName, family: "item-gear" })}
@@ -340,7 +351,7 @@ export function MarketPanel({
       ) : null}
       <SectionHead
         headingRef={headingRef}
-        title="Market"
+        title={t("table.side.market")}
         glyph="tab-market"
         aside={
           mySheet ? (
@@ -351,15 +362,15 @@ export function MarketPanel({
           ) : null
         }
       />
-      {here ? <p className="-mt-1 text-xs text-stone-500">at {here.name}</p> : null}
+      {here ? <p className="-mt-1 text-xs text-stone-500">{t("market.at", { name: here.name })}</p> : null}
       {error ? <p role="status" className="live-in text-xs text-amber-300/90">{error}</p> : null}
       {writeError ? <PanelError>{writeError}</PanelError> : null}
       {unpriced ? (
         <p role="status" className="live-in flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-amber-300/90">
-          <span className="min-w-0">The shopkeeper will name a price for {unpriced.item}.</span>
+          <span className="min-w-0">{t("market.unpriced.line", { item: unpriced.item })}</span>
           {onAskKeeper ? (
-            <KitButton onClick={() => onAskKeeper(`I offer my ${unpriced.item} to the keeper of ${unpriced.shop} and ask what they would pay.`)}>
-              Ask at the counter
+            <KitButton onClick={() => onAskKeeper(t("market.unpriced.compose", { item: unpriced.item, shop: unpriced.shop }))}>
+              {t("market.unpriced.ask")}
             </KitButton>
           ) : null}
         </p>
@@ -367,15 +378,15 @@ export function MarketPanel({
       {canPrep ? (
         opening ? (
           <div className="panel reveal flex flex-wrap items-center gap-1.5 rounded-lg p-2.5">
-            <input ref={nameRef} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} maxLength={80} placeholder="Marla's Sundries" aria-label="Shop name" className={cn(panelField, "min-w-[9rem] flex-1")} />
-            <Select size="sm" label="Kind of shop" value={draft.kind} options={KIND_OPTIONS} onChange={(kind) => setDraft({ ...draft, kind })} className="pk-w-28" />
-            <Select size="sm" label="Size of the place" value={draft.size} options={SIZE_OPTIONS} onChange={(size) => setDraft({ ...draft, size })} className="pk-w-24" />
+            <input ref={nameRef} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} maxLength={80} placeholder={t("market.open.namePlaceholder")} aria-label={t("market.open.nameAria")} className={cn(panelField, "min-w-[9rem] flex-1")} />
+            <Select size="sm" label={t("market.open.kind")} value={draft.kind} options={KINDS.map((kind) => ({ value: kind as string, label: t(KIND_KEYS[kind]) }))} onChange={(kind) => setDraft({ ...draft, kind })} className="pk-w-28" />
+            <Select size="sm" label={t("market.open.size")} value={draft.size} options={SIZES.map((size) => ({ value: size as string, label: t(SIZE_KEYS[size]) }))} onChange={(size) => setDraft({ ...draft, size })} className="pk-w-24" />
             {places.length ? (
               <Select
                 size="sm"
-                label="Where it stands"
+                label={t("market.open.where")}
                 value={draft.locationId || here?.id || ""}
-                options={[{ value: "", label: "No place yet" }, ...places.map((place) => ({ value: place.id, label: place.name, icon: { kind: "glyph" as const, key: "tab-map" } }))]}
+                options={[{ value: "", label: t("market.open.noPlace") }, ...places.map((place) => ({ value: place.id, label: place.name, icon: { kind: "glyph" as const, key: "tab-map" } }))]}
                 onChange={(locationId) => setDraft({ ...draft, locationId })}
                 className="min-w-[9rem] flex-1"
               />
@@ -383,25 +394,25 @@ export function MarketPanel({
             {keepers.length ? (
               <Select
                 size="sm"
-                label="Who keeps it"
+                label={t("market.open.keeper")}
                 value={draft.keeperNpcId}
-                options={[{ value: "", label: "Nobody named" }, ...keepers.map((npc) => ({ value: npc.id, label: npc.name, icon: { kind: "glyph" as const, key: "system-cast" } }))]}
+                options={[{ value: "", label: t("market.open.nobody") }, ...keepers.map((npc) => ({ value: npc.id, label: npc.name, icon: { kind: "glyph" as const, key: "system-cast" } }))]}
                 onChange={(keeperNpcId) => setDraft({ ...draft, keeperNpcId })}
                 className="min-w-[9rem] flex-1"
               />
             ) : null}
             <SettingToggle on={draft.stockFromPack} onToggle={() => setDraft({ ...draft, stockFromPack: !draft.stockFromPack })}>
-              Stock the shelves from the content pack
+              {t("market.open.stockPack")}
             </SettingToggle>
-            {draft.stockFromPack ? null : <span className="live-in basis-full text-[11px] text-stone-500">It opens bare, straight into its shelf, for you to write line by line.</span>}
+            {draft.stockFromPack ? null : <span className="live-in basis-full text-[11px] text-stone-500">{t("market.open.bareNote")}</span>}
             <KitButton tone="primary" disabled={busy === "open" || !draft.name.trim()} busy={busy === "open"} onClick={() => void open()}>
-              Open it
+              {t("market.open.action")}
             </KitButton>
-            <KitButton onClick={() => setOpening(false)}>Cancel</KitButton>
+            <KitButton onClick={() => setOpening(false)}>{t("action.cancel")}</KitButton>
           </div>
         ) : (
           <KitButton data-tour="market-open" onClick={() => setOpening(true)}>
-            <Plus className="size-3.5" /> Open a shop {here ? `at ${here.name}` : ""}
+            <Plus className="size-3.5" /> {here ? t("market.open.at", { name: here.name }) : t("market.open.label")}
           </KitButton>
         )
       ) : null}
@@ -409,7 +420,7 @@ export function MarketPanel({
         loadError ? (
           <LoadFailed error={loadError} onRetry={() => setReload((current) => current + 1)} />
         ) : loaded ? (
-          <EmptyState size="sm" art="chest" title={here ? `No shops at ${here.name}.` : canPrep ? "No shops yet. Open one and give it a shelf." : "The party is nowhere with a market yet."} />
+          <EmptyState size="sm" art="chest" title={here ? t("market.empty.here", { name: here.name }) : canPrep ? t("market.empty.none") : t("market.empty.nowhere")} />
         ) : null
       ) : null}
       {shops.map((shop) => {
@@ -424,15 +435,15 @@ export function MarketPanel({
         // right-click or long-press menu offer the same list.
         const haggleItems: ContextMenuItem[] = canHaggle
           ? [
-              { id: "haggle", label: "Haggle (Persuasion)", glyph: "skill-persuasion", disabled: Boolean(busy), onSelect: () => void counter(shop, "haggle") },
-              { id: "haggle-intimidation", label: "Haggle by Intimidation (a bad failure: two steps up)", glyph: "skill-intimidation", disabled: Boolean(busy), onSelect: () => void counter(shop, "haggle", "", "intimidation") },
-              ...(canDeceive ? [{ id: "haggle-deception", label: "Haggle by Deception (works once per shop)", glyph: "skill-deception", disabled: Boolean(busy), onSelect: () => void counter(shop, "haggle", "", "deception") }] : []),
+              { id: "haggle", label: t("market.haggle.persuasion"), glyph: "skill-persuasion", disabled: Boolean(busy), onSelect: () => void counter(shop, "haggle") },
+              { id: "haggle-intimidation", label: t("market.haggle.intimidation"), glyph: "skill-intimidation", disabled: Boolean(busy), onSelect: () => void counter(shop, "haggle", "", "intimidation") },
+              ...(canDeceive ? [{ id: "haggle-deception", label: t("market.haggle.deception"), glyph: "skill-deception", disabled: Boolean(busy), onSelect: () => void counter(shop, "haggle", "", "deception") }] : []),
             ]
           : [];
         const shopItems: ContextMenuItem[] = [
           ...haggleItems,
-          ...(canPrep ? [{ id: "edit", label: "Edit the shop and its shelf", glyph: "ui-edit", separated: canHaggle, onSelect: () => setEditing(shop.id) }] : []),
-          ...(canPrep ? [{ id: "close", label: `Close ${shop.name}`, glyph: "ui-lock", tone: "danger" as const, onSelect: () => void close(shop) }] : []),
+          ...(canPrep ? [{ id: "edit", label: t("market.menu.edit"), glyph: "ui-edit", separated: canHaggle, onSelect: () => setEditing(shop.id) }] : []),
+          ...(canPrep ? [{ id: "close", label: t("market.close.menu", { name: shop.name }), glyph: "ui-lock", tone: "danger" as const, onSelect: () => void close(shop) }] : []),
         ];
         if (editing === shop.id) {
           return (
@@ -466,16 +477,16 @@ export function MarketPanel({
                     20rem panel leaves a name and its markup a few letters. */}
                 <p className="gold-title break-words text-sm leading-tight">{shop.name}</p>
                 <p className="text-pretty break-words text-[11px] leading-snug text-stone-500">
-                  {shop.kind}
-                  {shop.keeperName ? `, kept by ${shop.keeperName}` : ""}
-                  {steersStory && shop.locationName ? ` at ${shop.locationName}` : ""}
-                  {shop.yourMarkup !== 1 ? ` (prices ${shop.yourMarkup > 1 ? "+" : ""}${Math.round((shop.yourMarkup - 1) * 100)}%)` : ""}
+                  {KIND_KEYS[shop.kind as keyof typeof KIND_KEYS] ? t(KIND_KEYS[shop.kind as keyof typeof KIND_KEYS]) : shop.kind}
+                  {shop.keeperName ? t("market.keptBy", { name: shop.keeperName }) : ""}
+                  {steersStory && shop.locationName ? ` ${t("market.at", { name: shop.locationName })}` : ""}
+                  {shop.yourMarkup !== 1 ? t("market.pricesPct", { pct: `${shop.yourMarkup > 1 ? "+" : ""}${Math.round((shop.yourMarkup - 1) * 100)}` }) : ""}
                   {shop.kind === "curiosities" || shop.kind === "apothecary" ? (
                     <>
                       {" · "}
                       {/* A finger-sized target (40px) that keeps the line's height. */}
                       <GameTerm id="magic_item_prices" className="-my-3.5 inline-block py-3.5">
-                        How magic is priced
+                        {t("market.magicPriced")}
                       </GameTerm>
                     </>
                   ) : null}
@@ -484,24 +495,24 @@ export function MarketPanel({
               {canHaggle ? (
                 <>
                   <KitButton disabled={Boolean(busy)} busy={busy === `${shop.id}:haggle:`} onClick={() => void counter(shop, "haggle")}>
-                    Haggle
+                    {t("market.haggle.button")}
                   </KitButton>
                   {/* One tap haggles by Persuasion; this door opens the other
                       skills, the same list the shop's own menu holds. */}
                   <RowMenu
                     items={haggleItems}
-                    label={`Haggle at ${shop.name}`}
-                    trigger={{ label: "Haggle with another skill", icon: <ChevronDown className="size-4" aria-hidden="true" /> }}
+                    label={t("market.haggle.atMenu", { name: shop.name })}
+                    trigger={{ label: t("market.haggle.otherSkill"), icon: <ChevronDown className="size-4" aria-hidden="true" /> }}
                     className="-ml-1.5"
                   />
                 </>
               ) : null}
               {canPrep ? (
                 <>
-                  <KitButton tone="icon" always aria-label={`Edit ${shop.name}`} onClick={() => setEditing(shop.id)}>
+                  <KitButton tone="icon" always aria-label={t("market.editAria", { name: shop.name })} onClick={() => setEditing(shop.id)}>
                     <Pencil className="size-3.5" />
                   </KitButton>
-                  <KitButton tone="iconDanger" always aria-label={`Close ${shop.name}`} onClick={() => void close(shop)}>
+                  <KitButton tone="iconDanger" always aria-label={t("market.closeAria", { name: shop.name })} onClick={() => void close(shop)}>
                     <Trash2 className="size-3.5" />
                   </KitButton>
                 </>
@@ -509,19 +520,17 @@ export function MarketPanel({
             </ContextMenu>
             {canHaggle ? (
               <p data-haggle-rules="" className="text-pretty text-[11px] leading-snug text-stone-500">
-                Haggling is a Persuasion check against DC {shop.haggleDc}: win and your prices drop a step, fail and they stay where they were, fail by 5 or
-                more and they rise a step. One try each, and the price you get is yours, not the whole party&apos;s. The menu beside Haggle offers
-                Intimidation and Deception instead.
+                {t("market.haggle.rules", { dc: shop.haggleDc })}
               </p>
             ) : mySheet && shop.standsHere === false ? (
               <p data-shop-away="" className="text-pretty text-[11px] leading-snug text-stone-500">
                 {shop.locationName
-                  ? `The party is not at ${shop.locationName}. Its shelf is for looking until they get there.`
-                  : "This shop has no place yet. Its shelf is for looking until it opens where the party is."}
+                  ? t("market.away.named", { place: shop.locationName })
+                  : t("market.away.noPlace")}
               </p>
             ) : mySheet && shop.yourHaggle !== null ? (
               <p data-haggle-rules="" className="text-[11px] leading-snug text-stone-500">
-                {haggledLine(shop.yourHaggle, shop.yourPrices ?? "")}
+                {haggledLine(t, shop.yourHaggle, shop.yourPrices ?? "")}
               </p>
             ) : null}
             {/* Columns follow the panel, not the window: the side panel is
@@ -537,15 +546,15 @@ export function MarketPanel({
                     key={line.itemName}
                     label={line.itemName}
                     items={[
-                      { id: "details", label: "Details", glyph: "system-rules", onSelect: () => setDetails(line) },
-                      ...(trades ? [{ id: "buy", label: `Buy for ${formatPrice(line.askingCp)}`, glyph: coinGlyph(line.askingCp), disabled: cannotBuy, onSelect: () => void counter(shop, "buy", line.itemName) }] : []),
+                      { id: "details", label: t("market.details"), glyph: "system-rules", onSelect: () => setDetails(line) },
+                      ...(trades ? [{ id: "buy", label: t("market.buyFor", { price: formatPrice(line.askingCp) }), glyph: coinGlyph(line.askingCp), disabled: cannotBuy, onSelect: () => void counter(shop, "buy", line.itemName) }] : []),
                     ]}
                     className="flex flex-col justify-between rounded-lg border border-stone-700/60 bg-stone-900/50 p-2 transition-transform duration-[var(--dur-quick,150ms)] hover:-translate-y-0.5 hover:border-amber-500/40"
                   >
                     <button
                       type="button"
                       onClick={() => setDetails(line)}
-                      aria-label={`Details of ${line.itemName}`}
+                      aria-label={t("market.detailsAria", { item: line.itemName })}
                       className="pk-tap flex min-w-0 items-center gap-1.5 rounded text-left text-xs text-stone-200 hover:text-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                       <GameIcon icon={{ kind: "item", key: line.itemName, family: "item-gear" }} size="size-7" />
@@ -561,18 +570,18 @@ export function MarketPanel({
                     </span>
                     {trades ? (
                       <KitButton disabled={cannotBuy} busy={buying} onClick={() => void counter(shop, "buy", line.itemName)} className="mt-1.5 w-full justify-center border-amber-500/30 text-amber-100">
-                        {buying ? null : "Buy"}
+                        {buying ? null : t("market.buy")}
                       </KitButton>
                     ) : null}
                   </ContextMenu>
                 );
               })}
-              {!shop.stock.length ? <li className="col-span-full text-xs italic text-stone-500">Bare shelves.</li> : null}
+              {!shop.stock.length ? <li className="col-span-full text-xs italic text-stone-500">{t("market.bareShelves")}</li> : null}
             </ul>
             {shop.buys && trades && mySheet?.equipment.length ? (
               <details className="group/sell text-xs">
                 <summary className="pk-link pk-tap flex cursor-pointer list-none items-center gap-1">
-                  <GameIcon icon={{ kind: "glyph", key: "tab-trade" }} size="size-5" /> Sell from your pack
+                  <GameIcon icon={{ kind: "glyph", key: "tab-trade" }} size="size-5" /> {t("market.sell")}
                   <ChevronDown className="size-3.5 transition-transform group-open/sell:rotate-180" />
                 </summary>
                 <ul className="stagger mt-1.5 flex flex-wrap gap-1">

@@ -15,6 +15,11 @@ import type { PublicEncounter } from "@/lib/db/encounter-view";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
+import { useT } from "@/lib/locale";
+
+// The translator's shape, for the label helpers below: `t` comes in first
+// (src/lib/story-window.ts).
+type T = (key: string, vars?: Record<string, string | number>) => string;
 
 // The inputs one console form is built from, one per catalog field kind
 // (src/lib/dm/catalog-types.ts FieldKind). Split out of DmActionForm.tsx so
@@ -40,12 +45,17 @@ export function initialValue(field: CatalogField): Value {
   return "";
 }
 
-const SHARES = [
-  { value: "full", label: "Full" },
-  { value: "half", label: "Half" },
-  { value: "double", label: "Double" },
-  { value: "none", label: "None" },
-];
+// The shares' words by value; the keys live with the console group.
+const SHARE_KEYS = {
+  full: "dm.action.share.full",
+  half: "dm.action.share.half",
+  double: "dm.action.share.double",
+  none: "dm.action.share.none",
+} as const;
+
+function sharesOf(t: T): Array<{ value: string; label: string }> {
+  return (Object.keys(SHARE_KEYS) as Array<keyof typeof SHARE_KEYS>).map((value) => ({ value, label: t(SHARE_KEYS[value]) }));
+}
 
 function hitDiceLeft(sheet: CharacterSheet): number {
   if (sheet.hitDicePools?.length) {
@@ -81,6 +91,7 @@ function PickOrType({
     ...options,
     ...(other ? [{ value: OTHER, label: `${other.label}...` }] : []),
   ];
+
   return (
     <div className="space-y-1.5">
       <Select
@@ -126,6 +137,7 @@ function ShareRows({
   sheets: CharacterSheet[];
   enemies: Enemy[];
 }) {
+  const t = useT();
   const refOf = (row: ShareRow) => (row.enemyId ? `enemy:${row.enemyId}` : `character:${row.characterId}`);
   const taken = new Set(value.map(refOf));
   const choices: SelectOption<string>[] = [
@@ -133,13 +145,13 @@ function ShareRows({
       value: `enemy:${enemy.id}`,
       label: enemyLabel(enemy),
       icon: { kind: "glyph" as const, key: "system-bestiary" },
-      group: "Enemies",
+      group: t("dm.action.groupEnemies"),
     })),
     ...sheets.map((sheet) => ({
       value: `character:${sheet.id}`,
       label: sheet.name,
       icon: { kind: "glyph" as const, key: "tab-characters" },
-      group: "Characters",
+      group: t("dm.action.groupCharacters"),
     })),
   ];
   const nameOf = (ref: string) => choices.find((choice) => choice.value === ref)?.label ?? ref;
@@ -158,14 +170,14 @@ function ShareRows({
             <span className="min-w-0 grow truncate text-sm text-stone-200">{nameOf(refOf(row))}</span>
             <SegmentedControl
               size="sm"
-              label={`Share for ${nameOf(refOf(row))}`}
-              options={SHARES}
+              label={t("dm.action.shareFor", { name: nameOf(refOf(row)) })}
+              options={sharesOf(t)}
               value={row.share}
               onChange={(share) => onChange(value.map((entry, at) => (at === index ? { ...entry, share } : entry)))}
             />
             <button
               type="button"
-              aria-label={`Take ${nameOf(refOf(row))} off`}
+              aria-label={t("dm.action.takeOff", { name: nameOf(refOf(row)) })}
               onClick={() => onChange(value.filter((_, at) => at !== index))}
               className={cn(ui.btnSmall, "min-h-9 px-2")}
             >
@@ -178,11 +190,11 @@ function ShareRows({
         value=""
         onChange={add}
         options={[
-          { value: "", label: "Add a creature" },
+          { value: "", label: t("dm.action.addCreature") },
           ...choices.map((choice) => ({ ...choice, disabled: taken.has(choice.value) })),
         ]}
-        label={`Add to ${field.label}`}
-        placeholder="Add a creature"
+        label={t("dm.action.addTo", { label: field.label })}
+        placeholder={t("dm.action.addCreature")}
       />
     </div>
   );
@@ -197,6 +209,7 @@ function HitDiceRows({
   onChange: (value: Value) => void;
   sheets: CharacterSheet[];
 }) {
+  const t = useT();
   const diceFor = (id: string) => value.find((row) => row.characterId === id)?.dice ?? 0;
   const set = (id: string, dice: number) =>
     onChange([...value.filter((row) => row.characterId !== id), ...(dice > 0 ? [{ characterId: id, dice }] : [])]);
@@ -209,7 +222,7 @@ function HitDiceRows({
             <span className="min-w-0 grow">
               <span className="block truncate text-sm text-stone-200">{sheet.name}</span>
               <span className="block text-[11px] text-stone-500">
-                {left ? `${left} left, ${sheet.hitDice.die}` : "No hit dice left"}
+                {left ? t("dm.action.hitDiceLeft", { left, die: sheet.hitDice.die }) : t("dm.action.hitDiceNone")}
               </span>
             </span>
             <NumberStepper
@@ -218,7 +231,7 @@ function HitDiceRows({
               min={0}
               max={Math.min(20, left)}
               disabled={left === 0}
-              label={`Hit dice for ${sheet.name}`}
+              label={t("dm.action.hitDiceFor", { name: sheet.name })}
               onChange={(dice) => set(sheet.id, dice)}
             />
           </li>
@@ -280,19 +293,20 @@ export function FieldInput({
   sheets: CharacterSheet[];
   enemies: Enemy[];
 }) {
+  const t = useT();
   switch (field.kind) {
     case "character": {
       // The empty row stays in the list, as it did in the browser's own
       // select, so a picked target can be unpicked.
       const options: SelectOption<string>[] = [
-        { value: "", label: "Pick a character" },
+        { value: "", label: t("dm.action.pickCharacter") },
         ...sheets.map((sheet) => ({
           value: sheet.id,
           label: sheet.name,
           icon: { kind: "glyph" as const, key: "tab-characters" },
         })),
       ];
-      return <Select value={String(value ?? "")} onChange={onChange} options={options} label={field.label} placeholder="Pick a character" />;
+      return <Select value={String(value ?? "")} onChange={onChange} options={options} label={field.label} placeholder={t("dm.action.pickCharacter")} />;
     }
     case "characters":
       return (
@@ -301,7 +315,7 @@ export function FieldInput({
           picked={Array.isArray(value) ? (value as string[]) : []}
           choices={sheets.map((sheet) => ({ id: sheet.id, name: sheet.name }))}
           onChange={onChange}
-          empty="Nobody has a character yet."
+          empty={t("dm.action.noCharacters")}
         />
       );
     case "enemies":
@@ -311,19 +325,19 @@ export function FieldInput({
           picked={Array.isArray(value) ? (value as string[]) : []}
           choices={enemies.map((enemy) => ({ id: enemy.id, name: enemyLabel(enemy) }))}
           onChange={onChange}
-          empty="No enemy is standing."
+          empty={t("dm.action.noEnemies")}
         />
       );
     case "enemy": {
       const options: SelectOption<string>[] = [
-        { value: "", label: "Pick an enemy" },
+        { value: "", label: t("dm.action.pickEnemy") },
         ...enemies.map((enemy) => ({
           value: enemy.id,
           label: enemyLabel(enemy),
           icon: { kind: "glyph" as const, key: "system-bestiary" },
         })),
       ];
-      return <Select value={String(value ?? "")} onChange={onChange} options={options} label={field.label} placeholder="Pick an enemy" />;
+      return <Select value={String(value ?? "")} onChange={onChange} options={options} label={field.label} placeholder={t("dm.action.pickEnemy")} />;
     }
     case "combatant":
       return (
@@ -331,19 +345,19 @@ export function FieldInput({
           field={field}
           value={String(value ?? "")}
           onChange={onChange}
-          placeholder="Pick who"
+          placeholder={t("dm.action.pickWho")}
           options={[
             ...sheets.map((sheet) => ({
               value: sheet.id,
               label: sheet.name,
               icon: { kind: "glyph" as const, key: "tab-characters" },
-              group: "Characters",
+              group: t("dm.action.groupCharacters"),
             })),
             ...enemies.map((enemy) => ({
               value: enemy.id,
               label: enemyLabel(enemy),
               icon: { kind: "glyph" as const, key: "system-bestiary" },
-              group: "Enemies",
+              group: t("dm.action.groupEnemies"),
             })),
           ]}
         />
@@ -363,15 +377,15 @@ export function FieldInput({
     case "select": {
       const options = (field.options ?? []).map((option) => ({ value: option.value, label: option.label }));
       if (field.other) {
-        return <PickOrType field={field} value={String(value ?? "")} onChange={onChange} options={options} placeholder="Not set" />;
+        return <PickOrType field={field} value={String(value ?? "")} onChange={onChange} options={options} placeholder={t("dm.action.notSet")} />;
       }
       return (
         <Select
           value={String(value ?? "")}
           onChange={onChange}
-          options={[{ value: "", label: "Not set" }, ...options]}
+          options={[{ value: "", label: t("dm.action.notSet") }, ...options]}
           label={field.label}
-          placeholder="Not set"
+          placeholder={t("dm.action.notSet")}
         />
       );
     }
@@ -385,7 +399,7 @@ export function FieldInput({
           max={field.max}
           onChange={onChange}
           label={field.label}
-          emptyHint="Not set"
+          emptyHint={t("dm.action.notSet")}
         />
       );
     case "longtext":
