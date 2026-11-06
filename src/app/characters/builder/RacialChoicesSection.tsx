@@ -24,6 +24,7 @@ import { RacialCantripPicker } from "./RacialCantripPicker";
 import { featChoice } from "@/lib/schemas/sheet";
 import { skillLabel } from "@/lib/srd";
 import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 
 // An ability key as its name in the reader's language (sheet.ability.*).
 const ABILITY_LABEL_KEYS: Record<Ability, string> = {
@@ -327,7 +328,7 @@ export function RacialChoicesSection({
               {feats.map((feat) => (
                 <Chip
                   key={feat}
-                  label={feat}
+                  label={contentName("feats", feat, locale)}
                   info={{ reference: { kind: "feats", slug: contentSlug(feat), name: feat } }}
                   onRemove={() => onFeatsChange(feats.filter((entry) => entry !== feat))}
                 />
@@ -372,11 +373,11 @@ export function RacialChoicesSection({
             : null}
           {featScores.length > 1 && onFeatAbilityChange ? (
             <label className="mt-2 block sm:w-64">
-              <span className="mb-1 block text-xs text-stone-500">{t("builder.racial.featRaisesBy1", { feat: feats[0] })}</span>
+              <span className="mb-1 block text-xs text-stone-500">{t("builder.racial.featRaisesBy1", { feat: contentName("feats", feats[0], locale) })}</span>
               <Select<Ability>
                 value={featScores.includes(featAbility as Ability) ? (featAbility as Ability) : featScores[0]}
                 onChange={(ability) => onFeatAbilityChange(ability)}
-                label={t("builder.racial.featRaises", { feat: feats[0] })}
+                label={t("builder.racial.featRaises", { feat: contentName("feats", feats[0], locale) })}
                 className="w-full"
                 options={featScores.map((ability) => ({ value: ability, label: abilityWord(ability) }))}
               />

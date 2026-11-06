@@ -10,7 +10,7 @@
 // lays them out as rows and says what changed.
 import type { Ability } from "@/lib/schemas/sheet";
 import { pickedVariant, type SpeciesVariantGroup } from "@/lib/content/species-variants";
-import { SRD_SKILLS, findSkill, formatModifier, proficiencyBonus, type DerivedPart } from "@/lib/srd";
+import { SRD_SKILLS, findSkill, formatModifier, mathPartLabel, proficiencyBonus, type DerivedPart } from "@/lib/srd";
 import { ABILITY_NAMES } from "@/lib/srd/legality/types";
 import { armorClassLine, hitPointsLine } from "./derivedReasons";
 import { casterLevelFor } from "@/lib/srd/multiclass";
@@ -59,10 +59,13 @@ export type BuildMathInput = {
 };
 
 // The parts as a line, in the sheet's own words and signs, as the sheet's
-// own breakdown writes them: "DEX modifier +3, proficiency +2".
-export function workingOf(parts: DerivedPart[]): string {
+// own breakdown writes them: "Dexterity modifier +3, proficiency +2". Each
+// label reads in the reader's language (mathPartLabel, the words the sheet's
+// own explain lines go through); an unknown label (a pack's own) reads as it
+// was built.
+export function workingOf(t: Translator, parts: DerivedPart[]): string {
   return parts
-    .map((part) => `${part.label} ${formatModifier(part.value)}`)
+    .map((part) => `${mathPartLabel(t, part.label)} ${formatModifier(part.value)}`)
     .join(", ");
 }
 
@@ -156,7 +159,7 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
     rows: [
       { id: "ac", label: t("builder.math.armorClass"), value: acLine.value, working: acLine.reason },
       { id: "hp", label: t("builder.math.hitPoints"), value: hpLine.value, working: hpWorking },
-      { id: "initiative", label: t("builder.math.initiative"), value: formatModifier(sheet.initiative), working: workingOf(sheet.parts.initiative) },
+      { id: "initiative", label: t("builder.math.initiative"), value: formatModifier(sheet.initiative), working: workingOf(t, sheet.parts.initiative) },
       {
         id: "proficiency",
         label: t("builder.math.profBonus"),
@@ -167,7 +170,7 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
         id: "passive-perception",
         label: t("builder.math.passivePerception"),
         value: String(sheet.passivePerception),
-        working: workingOf(sheet.parts.passivePerception),
+        working: workingOf(t, sheet.parts.passivePerception),
       },
     ],
   });
@@ -200,7 +203,7 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
       id: `save-${ability}`,
       label: t("builder.math.saveOf", { ability: ABILITY_NAMES[ability] }),
       value: formatModifier(sheet.saves[ability]),
-      working: workingOf(sheet.parts.saves[ability]),
+      working: workingOf(t, sheet.parts.saves[ability]),
     })),
   });
 
@@ -211,7 +214,7 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
       id: `skill-${skill.id}`,
       label: skill.name,
       value: formatModifier(sheet.skills[skill.id] ?? 0),
-      working: workingOf(sheet.parts.skills[skill.id] ?? []),
+      working: workingOf(t, sheet.parts.skills[skill.id] ?? []),
     })),
   });
 
@@ -286,10 +289,10 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
       rows: [
         ...deskRows,
         ...(sheet.spellSaveDc !== null && !perClass
-          ? [{ id: "spell-dc", label: t("builder.math.spellDc"), value: String(sheet.spellSaveDc), working: workingOf(sheet.parts.spellSaveDc) }]
+          ? [{ id: "spell-dc", label: t("builder.math.spellDc"), value: String(sheet.spellSaveDc), working: workingOf(t, sheet.parts.spellSaveDc) }]
           : []),
         ...(sheet.spellAttack !== null && !perClass
-          ? [{ id: "spell-attack", label: t("builder.math.spellAttack"), value: formatModifier(sheet.spellAttack), working: workingOf(sheet.parts.spellAttack) }]
+          ? [{ id: "spell-attack", label: t("builder.math.spellAttack"), value: formatModifier(sheet.spellAttack), working: workingOf(t, sheet.parts.spellAttack) }]
           : []),
         ...slotRows,
       ],
@@ -308,8 +311,8 @@ export function buildMathSections({ t, derived, scores, klass, atTable }: BuildM
               type: row.weapon.damageType,
             }),
             working: [
-              t("builder.math.weaponToHit", { parts: workingOf(row.weapon.toHitParts) }),
-              t("builder.math.weaponDamage", { ability: row.weapon.ability }),
+              t("builder.math.weaponToHit", { parts: workingOf(t, row.weapon.toHitParts) }),
+              t("builder.math.weaponDamage", { ability: t(`sheet.ability.${row.weapon.ability.toLowerCase()}`) }),
               ...row.weapon.notes,
             ].join("; "),
           },

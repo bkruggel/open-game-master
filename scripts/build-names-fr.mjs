@@ -15,6 +15,11 @@
 //   slug the rulebook's item pages carry (srd-5.1.json; "Ammunition, +1, +2,
 //   or +3" is "ammunition-1-2-or-3") and the sheet's item rows spell;
 // - conditions: the lowercase condition id ("blinded");
+// - feats: the feat's slug ("grappler") — the open5e row slug and the slug of
+//   the stored English name are the same slugify, so one key serves both.
+//   The official French SRD 5.1 prints a single feat (its « Dons » chapter,
+//   one page, carries only « Empoigneur » — the English SRD 5.1 it translates
+//   has only Grappler as a feat); every other feat falls back to English;
 // - classes: 12 bare class ids ("cleric") plus class-feature keys of the
 //   canonical form the render helper slugs a display name to
 //   ("cleric:bonus-proficiency-heavy-armor", "cleric:channel-divinity-1-rest",
@@ -48,6 +53,7 @@ const TABLES = {
   gear: "GEAR_NAMES_FR",
   magicitems: "MAGIC_ITEM_NAMES_FR",
   conditions: "CONDITION_NAMES_FR",
+  feats: "FEAT_NAMES_FR",
   species: "SPECIES_NAMES_FR",
   backgrounds: "BACKGROUND_NAMES_FR",
   monsters: "MONSTER_NAMES_FR",
@@ -67,6 +73,7 @@ const raw = {
   gear: read("gear"),
   magicitems: read("magic-items"),
   conditions: read("conditions"),
+  feats: read("feats"),
   species: read("species"),
   backgrounds: read("backgrounds"),
   monsters: read("monsters"),
@@ -95,8 +102,8 @@ const tables = {
 };
 
 const total = Object.values(tables).reduce((sum, entries) => sum + Object.keys(entries).length, 0);
-if (total !== 1461) {
-  throw new Error(`expected 1,461 name pairs, read ${total}`);
+if (total !== 1462) {
+  throw new Error(`expected 1,462 name pairs, read ${total}`);
 }
 
 const tsLiteral = (value) => JSON.stringify(value);
@@ -110,7 +117,7 @@ const counts = Object.fromEntries(Object.entries(tables).map(([table, entries]) 
 const header = `// NOMS OFFICIELS FRANÇAIS du Document de Référence du Système 5.1 de
 // Wizards of the Coast (CC-BY-4.0), extraits de SRD_CC_v5.1_FR.pdf — la
 // traduction française officielle des noms du SRD 5.1 (sorts, monstres,
-// espèces, Historiques, classes et leurs aptitudes, conditions, armes,
+// espèces, Historiques, classes et leurs aptitudes, conditions, dons, armes,
 // armures, objets magiques et équipement d'aventurier). Généré par
 // scripts/build-names-fr.mjs depuis scripts/data/fr-names/ ; NE PAS ÉDITER
 // À LA MAIN (regénérer).
@@ -129,7 +136,7 @@ const body = [
   ...Object.keys(TABLES).map((table) => `  ${table}: ${TABLES[table]},`),
   `};`,
   ``,
-  `// 1,461 official pairs in total, by table.`,
+  `// 1,462 official pairs in total, by table.`,
   `export const FR_NAME_COUNTS: Record<string, number> = ${JSON.stringify(counts)};`,
 ].join("\n");
 

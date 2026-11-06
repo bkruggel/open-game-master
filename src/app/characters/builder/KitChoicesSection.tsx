@@ -16,7 +16,8 @@ import { SRD_WEAPONS } from "@/lib/srd/weapons";
 import type { DerivedLine } from "./derivedReasons";
 import OptionPicker from "./OptionPicker";
 import { PickPill, inputClass } from "./steps/shared";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { damageWords } from "@/lib/dm/damage-logic";
 
 const LETTERS = "abcdef";
 
@@ -49,6 +50,7 @@ export default function KitChoicesSection({
   onPick: (slot: number, name: string) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const slotLines = kitSlotsByLine(kit, choices.options);
   const captionId = useId();
   return (
@@ -98,7 +100,7 @@ export default function KitChoicesSection({
                           options: slotChoices(slot).map((name) => ({
                             id: name,
                             name,
-                            meta: damageOf.get(name) ?? "",
+                            meta: damageWords(damageOf.get(name) ?? "", locale),
                             reference: { kind: "items" as const, slug: contentSlug(name), name },
                           })),
                         },

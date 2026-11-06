@@ -9,7 +9,8 @@ import { GameTerm } from "@/components/ui/GameTerm";
 import { InfoButton } from "@/components/ui/InfoDialog";
 import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import { contentSlug } from "@/lib/help";
 import { abilityMod, formatModifier } from "@/lib/srd";
 import { ABILITY_SCORE_CAP, applyAsiChoices } from "@/lib/srd/asi";
@@ -79,6 +80,10 @@ export default function AsiFeatEditor({
   const judge = useFeatJudge();
   const noteId = useId();
   const t = useT();
+  const locale = useLocale();
+  // A stored feat name as the reader reads it (the official maps); the pick
+  // itself, the reference lookups and the data-* attributes stay English.
+  const featName = (feat: string) => contentName("feats", feat, locale);
   // An ability key as its name in the reader's language (sheet.ability.*).
   const abilityWord = (ability: Ability) =>
     t(
@@ -239,9 +244,9 @@ export default function AsiFeatEditor({
                           judge?.checkFeat(choice.feat)?.state === "unmet" ? "border-red-500/70" : "border-amber-800",
                         )}
                       >
-                        {choice.feat}
+                        {featName(choice.feat)}
                         <InfoButton
-                          label={choice.feat}
+                          label={featName(choice.feat)}
                           reference={{
                             kind: "feats",
                             slug: contentSlug(choice.feat),
@@ -251,7 +256,7 @@ export default function AsiFeatEditor({
                         <button
                           type="button"
                           onClick={() => setChoice(index, null)}
-                          aria-label={t("builder.asi.removeFeat", { feat: choice.feat })}
+                          aria-label={t("builder.asi.removeFeat", { feat: featName(choice.feat) })}
                           aria-describedby={(judge?.checkFeat(choice.feat)?.state ?? "none") !== "none" ? `${noteId}-${index}` : undefined}
                           className="text-stone-500 hover:text-red-400"
                         >
@@ -287,11 +292,11 @@ export default function AsiFeatEditor({
                   // A half-feat that offers a choice of score (Resilient,
                   // Athlete) asks which one it raises.
                   <label className="mt-2 block sm:w-64">
-                    <span className="mb-1 block text-xs text-stone-500">{t("builder.asi.raisesBy1", { feat: choice.feat })}</span>
+                    <span className="mb-1 block text-xs text-stone-500">{t("builder.asi.raisesBy1", { feat: featName(choice.feat) })}</span>
                     <Select<Ability>
                       value={choice.ability ?? featAbilityIncrease(choice.feat, featDescOf?.(choice.feat))!.from[0]}
                       onChange={(ability) => setChoice(index, { ...choice, ability })}
-                      label={t("builder.asi.raises", { feat: choice.feat })}
+                      label={t("builder.asi.raises", { feat: featName(choice.feat) })}
                       className="w-full"
                       options={featAbilityIncrease(choice.feat, featDescOf?.(choice.feat))!.from.map((ability) => ({
                         value: ability,
@@ -316,7 +321,7 @@ export default function AsiFeatEditor({
                 {choice ? (
                   <p className="mt-2 text-xs text-stone-500">
                     {choice.mode === "feat"
-                      ? t("builder.asi.featLine", { feat: choice.feat, raise: featRaise(current, choice, featDescOf, abilityWord) })
+                      ? t("builder.asi.featLine", { feat: featName(choice.feat), raise: featRaise(current, choice, featDescOf, abilityWord) })
                       : summarizeChoice(current, choice, abilityWord)}
                   </p>
                 ) : (

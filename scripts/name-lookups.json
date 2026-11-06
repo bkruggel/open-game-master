@@ -9898,6 +9898,11 @@
         "key",
         1,
         "slugs, hosts, file names, ids, env values, display text, throttle keys, model ids (src/: every site read)"
+      ],
+      [
+        "key",
+        1,
+        "a damage type folded to its key to read the official French word map; nothing is identified by the fold"
       ]
     ],
     "lib/dm/damage-logic.ts#partial": [
@@ -19680,6 +19685,13 @@
         "key",
         1,
         "SPELL_CAP_KEYS read by the label the math itself builds; no record's name is read"
+      ]
+    ],
+    "lib/dm/damage-logic.ts#keyed": [
+      [
+        "key",
+        2,
+        "the official French damage-type words read by the type's own key (the word a damage expression matched, or the caller's type); a miss is the English word back, never a near record"
       ]
     ]
   }

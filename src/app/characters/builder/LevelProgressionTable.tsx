@@ -11,7 +11,7 @@ import type { ClassOption } from "./useBuilderOptions";
 import type { BuilderDerived } from "./useBuilderDerived";
 import type { BuilderState } from "./useBuilderState";
 import { StepPanel } from "./steps/shared";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 // The level progression table (backlog F8): a real table, with a header
 // row and each level as a row header, so a screen reader moves across a
@@ -261,13 +261,15 @@ export function BuilderLevelTable({
   derived: BuilderDerived;
   klass: ClassOption | undefined;
 }) {
+  const t = useT();
+  const locale = useLocale();
   // A first-level build is one row, with nothing yet to compare it to.
   if (!klass || derived.effectiveLevel <= 1) {
     return null;
   }
   return (
     <LevelProgressionTable
-      rows={levelProgressionRows(builderProgressionInput(state, derived, klass))}
+      rows={levelProgressionRows(builderProgressionInput(state, derived, klass), t, locale)}
       who={state.name.trim() || "your hero"}
     />
   );

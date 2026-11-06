@@ -1,7 +1,7 @@
 // NOMS OFFICIELS FRANÇAIS du Document de Référence du Système 5.1 de
 // Wizards of the Coast (CC-BY-4.0), extraits de SRD_CC_v5.1_FR.pdf — la
 // traduction française officielle des noms du SRD 5.1 (sorts, monstres,
-// espèces, Historiques, classes et leurs aptitudes, conditions, armes,
+// espèces, Historiques, classes et leurs aptitudes, conditions, dons, armes,
 // armures, objets magiques et équipement d'aventurier). Généré par
 // scripts/build-names-fr.mjs depuis scripts/data/fr-names/ ; NE PAS ÉDITER
 // À LA MAIN (regénérer).
@@ -809,6 +809,10 @@ export const CONDITION_NAMES_FR: Record<string, string> = {
   "unconscious": "Inconscient",
 };
 
+export const FEAT_NAMES_FR: Record<string, string> = {
+  "grappler": "Empoigneur",
+};
+
 export const SPECIES_NAMES_FR: Record<string, string> = {
   "dragonborn": "Drakéide",
   "dwarf": "Nain",
@@ -1523,6 +1527,7 @@ export const FR_NAMES_BY_TABLE: Record<string, Record<string, string>> = {
   gear: GEAR_NAMES_FR,
   magicitems: MAGIC_ITEM_NAMES_FR,
   conditions: CONDITION_NAMES_FR,
+  feats: FEAT_NAMES_FR,
   species: SPECIES_NAMES_FR,
   backgrounds: BACKGROUND_NAMES_FR,
   monsters: MONSTER_NAMES_FR,
@@ -1533,5 +1538,5 @@ export const FR_NAMES_BY_TABLE: Record<string, Record<string, string>> = {
   subclasses: SUBCLASS_NAMES_FR,
 };
 
-// 1,461 official pairs in total, by table.
-export const FR_NAME_COUNTS: Record<string, number> = {"spells":319,"weapons":37,"armor":17,"gear":154,"magicitems":239,"conditions":15,"species":9,"backgrounds":1,"monsters":317,"classes":12,"classFeatures":270,"speciesTraits":50,"backgroundFeatures":1,"subclasses":20};
+// 1,462 official pairs in total, by table.
+export const FR_NAME_COUNTS: Record<string, number> = {"spells":319,"weapons":37,"armor":17,"gear":154,"magicitems":239,"conditions":15,"feats":1,"species":9,"backgrounds":1,"monsters":317,"classes":12,"classFeatures":270,"speciesTraits":50,"backgroundFeatures":1,"subclasses":20};

@@ -1984,6 +1984,11 @@
     "display",
     3,
     "class name in a sentence (hit point and slot working)"
+   ],
+   [
+    "display",
+    1,
+    "an attack's ability code folded to its sheet.ability key, the full word shown (a weapon's damage working)"
    ]
   ],
   "app/characters/builder/buildMath.ts#toUpperCase": [
@@ -9086,6 +9091,11 @@
     "english-source",
     10,
     "a block's resistance line (pack rows; the workshop writes it from its toggles)"
+   ],
+   [
+    "english-source",
+    2,
+    "reference: damage types (values the schema lists) found as whole words in a weapon's damage cell, read for their official French words"
    ]
   ],
   "lib/dm/damage-logic.ts#re-word": [
@@ -9093,6 +9103,11 @@
     "english-source",
     6,
     "a block's resistance line (pack rows; the workshop writes it from its toggles)"
+   ],
+   [
+    "english-source",
+    1,
+    "reference: damage types (values the schema lists) found as whole words in a weapon's damage cell, read for their official French words"
    ]
   ],
   "lib/dm/damage-logic.ts#str-includes": [
@@ -9119,6 +9134,16 @@
     "english-source",
     2,
     "reference: damage types (values the schema lists) and a block's resistance line"
+   ],
+   [
+    "key",
+    1,
+    "a damage type folded to its key to read the official French word map (nothing is identified by the fold)"
+   ],
+   [
+    "display",
+    1,
+    "the French word's case lowered for the weapon-table cell form the French SRD prints (« 1d6 contondants »)"
    ]
   ],
   "lib/dm/damage-parts.ts#toLowerCase": [
@@ -19180,6 +19205,20 @@
     "key",
     1,
     "SPELL_CAP_KEYS: the caster-cap labels the math builds (\"spells known\", \"spells prepared\") to their builder.levels.* message keys"
+   ]
+  ],
+  "lib/dm/damage-logic.ts#str-key": [
+   [
+    "key",
+    1,
+    "the official French damage-type words read by the type's own key (a fixed choice the DAMAGE_TYPES list names); a miss is the English word back"
+   ]
+  ],
+  "app/characters/builder/AbilityText.tsx#str-key": [
+   [
+    "key",
+    1,
+    "a card ability code read by its fixed sheet.ability message key; the code is the engine's own vocabulary"
    ]
   ]
  },

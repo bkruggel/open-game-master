@@ -196,7 +196,7 @@ const t = useT();
   // What this level brings, read off the tables by level, so a section
   // stays while its pick is made (the owed list empties as it is).
   const rows = klass
-    ? levelProgressionRows(builderProgressionInput(state, derived, klass, { current: initialLevel, next: nextLevel }))
+    ? levelProgressionRows(builderProgressionInput(state, derived, klass, { current: initialLevel, next: nextLevel }), t, locale)
     : [];
   const newRow = rows[nextLevel - 1];
   const heldRow = rows[initialLevel - 1];

@@ -23,6 +23,7 @@ export type FrNamesTable =
   | "gear"
   | "magicitems"
   | "conditions"
+  | "feats"
   | "species"
   | "backgrounds"
   | "monsters"

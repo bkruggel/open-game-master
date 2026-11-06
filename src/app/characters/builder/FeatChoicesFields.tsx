@@ -5,6 +5,7 @@ import { STANDARD_LANGUAGES } from "@/lib/content/mechanics";
 import { describeSkill } from "@/lib/help";
 import { SRD_SKILLS } from "@/lib/srd";
 import { KNOWN_TOOLS, anyPicksMade, pickSlots, type FeatGrantSpec, type FeatPicks, type PickKind } from "@/lib/srd/feat-grants";
+import { damageTypeWord, damageWords } from "@/lib/dm/damage-logic";
 import { featEngineTag } from "@/lib/srd/feat-combat";
 import { featAbilityIncrease } from "@/lib/srd/feat-effects";
 import { ABILITY_LABELS } from "./AbilityEditor";
@@ -12,6 +13,7 @@ import { featSpellsAnything, type CastingAbility } from "@/lib/srd/feat-spells";
 import { SRD_WEAPONS } from "@/lib/srd/weapons";
 import { textKey } from "@/lib/language/text-logic";
 import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import { skillLabel } from "@/lib/srd";
 import ContentPicker from "./ContentPicker";
 import { PickPill } from "./steps/shared";
@@ -74,6 +76,10 @@ export default function FeatChoicesFields({
 }) {
   const t = useT();
   const locale = useLocale();
+  // The feat's name as the reader reads it (the official maps) in the
+  // sentences below; the data-* test attributes and the stored picks stay
+  // the stored English name.
+  const featName = contentName("feats", feat, locale);
   const mine = {
     languages: picks?.languages ?? [],
     skills: picks?.skills ?? [],
@@ -203,9 +209,9 @@ export default function FeatChoicesFields({
       const chosen = spellPicks[kind][index] ?? "";
       const label =
         kind === "cantrips"
-          ? t(taught.attackCantrip ? "builder.feats.spellSlot.attackCantrip" : "builder.feats.spellSlot.cantrip", { feat, n: index + 1 })
+          ? t(taught.attackCantrip ? "builder.feats.spellSlot.attackCantrip" : "builder.feats.spellSlot.cantrip", { feat: featName, n: index + 1 })
           : t("builder.feats.spellSlot.spell", {
-              feat,
+              feat: featName,
               level: t(`builder.feats.spellLevel.${level === 1 ? "1" : "n"}`, { level: level === 1 ? 1 : level }),
               school: taught.schools.length ? `${taught.schools.join(" or ")} ` : "",
               ritual: taught.ritualBook ? t("builder.feats.spellRitual") : "",
@@ -242,7 +248,7 @@ export default function FeatChoicesFields({
     });
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-amber-900/40 bg-amber-950/10 p-2.5" data-feat-choices={feat}>
-      <p className="text-xs text-amber-200/90">{hasPicks || teaches ? t("builder.feats.choicesTitle", { feat }) : feat}</p>
+      <p className="text-xs text-amber-200/90">{hasPicks || teaches ? t("builder.feats.choicesTitle", { feat: featName }) : featName}</p>
       {spec.any > 0 ? (
         <p className="text-sm text-stone-400" data-feat-shared={feat}>
           {t("builder.feats.anyOf", {
@@ -260,7 +266,7 @@ export default function FeatChoicesFields({
               value={mine.languages[index] ?? ""}
               onChange={(picked) => set("languages", index, picked)}
               className="w-full"
-              label={t("builder.feats.languageN", { feat, n: index + 1 })}
+              label={t("builder.feats.languageN", { feat: featName, n: index + 1 })}
               placeholder={t("builder.feats.chooseLanguage")}
               options={[
                 { value: "", label: t("builder.feats.chooseLanguage") },
@@ -328,7 +334,7 @@ export default function FeatChoicesFields({
               value={mine.weapons[index] ?? ""}
               onChange={(picked) => set("weapons", index, picked)}
               className="w-full"
-              label={t("builder.feats.weaponN", { feat, n: index + 1 })}
+              label={t("builder.feats.weaponN", { feat: featName, n: index + 1 })}
               placeholder={t("builder.feats.chooseWeapon")}
               options={[
                 { value: "", label: t("builder.feats.chooseWeapon") },
@@ -336,7 +342,7 @@ export default function FeatChoicesFields({
                   (weapon) =>
                     !heldWeapons.has(textKey(weapon.name)) &&
                     (mine.weapons[index] === weapon.name || !mine.weapons.includes(weapon.name)),
-                ).map((weapon) => ({ value: weapon.name, label: weapon.name, hint: weapon.damage })),
+                ).map((weapon) => ({ value: weapon.name, label: weapon.name, hint: damageWords(weapon.damage, locale) })),
               ]}
             />
           ))}
@@ -347,11 +353,11 @@ export default function FeatChoicesFields({
           value={picks?.damageType ?? ""}
           onChange={(picked) => onChange({ ...picks, damageType: picked })}
           className="w-full sm:w-64"
-          label={t("builder.feats.damageTypeN", { feat })}
+          label={t("builder.feats.damageTypeN", { feat: featName })}
           placeholder={t("builder.feats.chooseDamageType")}
           options={[
             { value: "", label: t("builder.feats.chooseDamageType") },
-            ...spec.damageTypes.map((type) => ({ value: type, label: capital(type) })),
+            ...spec.damageTypes.map((type) => ({ value: type, label: capital(damageTypeWord(type, locale)) })),
           ]}
         />
       ) : null}
@@ -360,7 +366,7 @@ export default function FeatChoicesFields({
           value={listPicked}
           onChange={(picked) => onChange({ ...picks, list: picked, cantrips: [], spells: [] })}
           className="w-full sm:w-64"
-          label={t("builder.feats.spellListN", { feat })}
+          label={t("builder.feats.spellListN", { feat: featName })}
           placeholder={t("builder.feats.chooseSpellList")}
           options={[
             { value: "", label: t("builder.feats.chooseSpellList") },
@@ -373,7 +379,7 @@ export default function FeatChoicesFields({
           value={picks?.ability ?? ""}
           onChange={(picked) => onChange({ ...picks, ...(picked ? { ability: picked } : {}) })}
           className="w-full sm:w-64"
-          label={t("builder.feats.spellAbilityN", { feat })}
+          label={t("builder.feats.spellAbilityN", { feat: featName })}
           placeholder={t("builder.feats.chooseAbilityWord")}
           options={[
             { value: "", label: t("builder.feats.chooseAbilityWord") },
@@ -399,7 +405,7 @@ export default function FeatChoicesFields({
               value={mine.armor[index] ?? ""}
               onChange={(picked) => set("armor", index, picked)}
               className="w-full"
-              label={t("builder.feats.armorN", { feat, n: index + 1 })}
+              label={t("builder.feats.armorN", { feat: featName, n: index + 1 })}
               placeholder={t("builder.feats.chooseArmor")}
               options={[
                 { value: "", label: t("builder.feats.chooseArmor") },
@@ -419,7 +425,7 @@ export default function FeatChoicesFields({
               value={mine.tools[index] ?? ""}
               onChange={(picked) => set("tools", index, picked)}
               className="w-full"
-              label={t("builder.feats.toolN", { feat, n: index + 1 })}
+              label={t("builder.feats.toolN", { feat: featName, n: index + 1 })}
               placeholder={t("builder.feats.chooseTool")}
               options={[
                 { value: "", label: t("builder.feats.chooseTool") },

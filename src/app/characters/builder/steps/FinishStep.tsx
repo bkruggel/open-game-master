@@ -5,7 +5,8 @@ import { contentSlug } from "@/lib/help";
 import { formatModifier, proficiencyBonus } from "@/lib/srd";
 import { racialFeatCount } from "@/lib/srd/race-id";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 import { HpExplainerButton } from "../AbilityExplainers";
 import { armorClassLine, hitPointsLine, purseViewFor } from "../derivedReasons";
 import type { BackgroundOption, ClassOption, RaceOption } from "../useBuilderOptions";
@@ -60,6 +61,7 @@ export function FinishStep({
   role?: { value: BuilderRole; onChange: (role: BuilderRole) => void };
 }) {
   const t = useT();
+  const locale = useLocale();
   const { preview, acInfo, ac, effectiveLevel } = derived;
   const hp = hpExplainerInput(derived, klass);
   // Hit points, armor class and coin are the server's to work out, so they
@@ -175,7 +177,7 @@ export function FinishStep({
             {state.feats.map((feat) => (
               <Chip
                 key={feat}
-                label={feat}
+                label={contentName("feats", feat, locale)}
                 info={{ reference: { kind: "feats", slug: contentSlug(feat), name: feat } }}
                 onRemove={() => state.setFeats((current) => current.filter((entry) => entry !== feat))}
               />

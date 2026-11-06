@@ -10,7 +10,8 @@ import { PrerequisiteLine } from "./ContentPicker";
 import { uniqueByName } from "./pickerRows";
 import type { PickerEntry } from "./useContentSearch";
 import { textKey } from "@/lib/language/text-logic";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 
 // The whole catalog, not just what you can name.
 //
@@ -93,6 +94,11 @@ export default function CatalogBrowser({
   judge?: (entry: PickerEntry) => { blocked: boolean; note: string } | null;
 }) {
   const t = useT();
+  const locale = useLocale();
+  // A feat's row name reads in the reader's language (the official maps; a
+  // homebrew row stays its author's words) while the pick itself stores the
+  // row's own English name.
+  const rowName = (entry: PickerEntry) => (kind === "feats" ? contentName("feats", entry, locale) : entry.name);
   const [open, setOpen] = useState(defaultOpen);
   const [expanded, setExpanded] = useState<string[]>(openSections);
   const [loaded, setLoaded] = useState<Record<string, Loaded>>({});
@@ -367,7 +373,7 @@ export default function CatalogBrowser({
                                             entry.source === "homebrew" && !on && "text-amber-300",
                                           )}
                                         >
-                                          {entry.name}
+                                          {rowName(entry)}
                                         </span>
                                       </span>
                                       {verdict ? <PrerequisiteLine id={describedBy} {...verdict} /> : null}
@@ -381,7 +387,7 @@ export default function CatalogBrowser({
                                   {/* The row already carries the full entry, so
                                       reading it before adding costs nothing. */}
                                   <InfoButton
-                                    label={entry.name}
+                                    label={rowName(entry)}
                                     meta={kind === "spells" ? spellSummary(entry.data) : undefined}
                                     text={describeContentEntry(entry.data)}
                                     reference={

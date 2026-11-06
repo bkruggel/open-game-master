@@ -400,10 +400,13 @@ export function FeatureChips({
 }
 
 export function FeatChips({ feats, classId, subclass }: { feats: string[]; classId: string; subclass?: string | null }) {
+  const locale = useLocale();
   return (
     <InfoChipList
       items={feats.map((feat) => ({
-        name: feat,
+        // The stored English name reads in the reader's language (the
+        // official maps); the reference lookup stays the stored name.
+        name: contentName("feats", feat, locale),
         icon: { kind: "feat" as const, key: feat },
         text: describeFeature(classId, subclass ?? "", feat) ?? undefined,
         reference: { kind: "feats", slug: contentSlug(feat), name: feat },

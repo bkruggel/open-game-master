@@ -20,7 +20,9 @@ import { classFeaturesFor, subclassLevelFor } from "@/lib/srd/features";
 import { spellbookAllowance, spellStyleFor } from "@/lib/srd/spell-prep";
 import type { ThirdCasterSetting } from "@/lib/srd/third-caster";
 import { translate } from "@/lib/messages-logic";
+import type { Locale } from "@/lib/messages-logic";
 import { ordinalOf } from "@/lib/characters/join-changes";
+import { contentName } from "@/lib/content/names";
 
 // The shape of a translator, as the pure sentence builders take it.
 type T = (key: string, vars?: Record<string, string | number>) => string;
@@ -102,9 +104,11 @@ export type ProgressionRow = {
 
 // An improvement as the player picked it: "+2 Strength", "+1 Strength, +1
 // Constitution", "Feat: Alert". The ability names are the dictionaries'
-// (sheet.ability.*); improvementWords is its English form, kept for the
-// tests and any caller without a translator.
-export function improvementWordsT(t: T, choice: AsiChoice): string {
+// (sheet.ability.*) and the feat's name reads in the reader's language
+// (contentName, the official maps); the stored pick stays English.
+// improvementWords is the English form, kept for the tests and any caller
+// without a translator.
+export function improvementWordsT(t: T, choice: AsiChoice, locale: Locale = "en"): string {
   const abilityWord = (ability: string) => t(`sheet.ability.${ability}`);
   if (choice.mode === "plus2") {
     return t("builder.levels.plusTwo", { ability: abilityWord(choice.ability) });
@@ -116,13 +120,13 @@ export function improvementWordsT(t: T, choice: AsiChoice): string {
       : t("builder.levels.plusOneTwo", { first: abilityWord(first), second: abilityWord(second) });
   }
   return t("builder.levels.featLine", {
-    feat: choice.feat,
+    feat: contentName("feats", choice.feat, locale),
     ability: choice.ability ? t("builder.levels.featAbility", { ability: abilityWord(choice.ability) }) : "",
   });
 }
 
 export function improvementWords(choice: AsiChoice): string {
-  return improvementWordsT(enT, choice);
+  return improvementWordsT(enT, choice, "en");
 }
 
 // The caster cap's label the math builds ("spells known"), in the reader's
@@ -139,9 +143,9 @@ export function spellCapLabel(t: T, label: string): string {
 
 const TEN: AbilityScores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
 
-export function levelProgressionRows(input: ProgressionInput, t: T = enT): ProgressionRow[] {
+export function levelProgressionRows(input: ProgressionInput, t: T = enT, locale: Locale = "en"): ProgressionRow[] {
   if ((input.classes?.length ?? 0) > 1) {
-    return classListRows(input, input.classes ?? [], t);
+    return classListRows(input, input.classes ?? [], t, locale);
   }
   const last = Math.max(1, Math.min(20, Math.floor(input.level)));
   const pickLevel = subclassLevelFor(input.classId);
@@ -192,7 +196,7 @@ export function levelProgressionRows(input: ProgressionInput, t: T = enT): Progr
       features,
       subclass: pickLevel === level ? { pick: input.subclass.trim() || null } : null,
       improvement:
-        slotIndex >= 0 ? { pick: choice ? improvementWordsT(t, choice) : null, takenInPlay: takenInPlay && !choice } : null,
+        slotIndex >= 0 ? { pick: choice ? improvementWordsT(t, choice, locale) : null, takenInPlay: takenInPlay && !choice } : null,
       slots,
       cantrips: caster.casts ? caster.cantripCap : null,
       spells,
@@ -208,7 +212,7 @@ export function levelProgressionRows(input: ProgressionInput, t: T = enT): Progr
 // and the casting of the levels taken so far: the shared slots as the
 // server works them, a warlock's pact slots apart, and the casting class's
 // counts at its own level.
-function classListRows(input: ProgressionInput, classes: ReadonlyArray<ProgressionClass>, t: T = enT): ProgressionRow[] {
+function classListRows(input: ProgressionInput, classes: ReadonlyArray<ProgressionClass>, t: T = enT, locale: Locale = "en"): ProgressionRow[] {
   const last = Math.max(1, Math.min(20, Math.floor(input.level)));
   const styles = [...(input.styles ?? [])];
   const list = classes.map((entry) => ({ ...entry, id: entry.classId }));
@@ -276,7 +280,7 @@ function classListRows(input: ProgressionInput, classes: ReadonlyArray<Progressi
       features,
       subclass: subclassLevelFor(entry.classId) === classLevel ? { pick: entry.subclass.trim() || null } : null,
       improvement:
-        slotIndex >= 0 ? { pick: choice ? improvementWordsT(t, choice) : null, takenInPlay: takenInPlay && !choice } : null,
+        slotIndex >= 0 ? { pick: choice ? improvementWordsT(t, choice, locale) : null, takenInPlay: takenInPlay && !choice } : null,
       slots,
       pact: pactRow ? { level: pactRow.level, count: pactRow.max } : null,
       classLabel: `${entry.name} ${classLevel}`,

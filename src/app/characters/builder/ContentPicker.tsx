@@ -6,7 +6,8 @@ import { cn } from "@/lib/cn";
 import { InfoButton } from "@/components/ui/InfoDialog";
 import { describeContentEntry, spellSummary } from "@/lib/help";
 import { useContentSearch, type PickerEntry } from "./useContentSearch";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import { contentName } from "@/lib/content/names";
 
 export type { PickerEntry } from "./useContentSearch";
 
@@ -40,6 +41,11 @@ export default function ContentPicker({
   judge?: (entry: PickerEntry) => { blocked: boolean; note: string } | null;
 }) {
   const t = useT();
+  const locale = useLocale();
+  // A feat's row name reads in the reader's language (the official maps; a
+  // homebrew row stays its author's words) while the pick itself stores the
+  // row's own English name.
+  const rowName = (entry: PickerEntry) => (kind === "feats" ? contentName("feats", entry, locale) : entry.name);
   const { query, setQuery, results: found, setResults, open, setOpen, loading, unavailable, failed, unadmitted } =
     useContentSearch(kind, extraParams);
   const results = hide ? found.filter((entry) => !hide(entry)) : found;
@@ -126,7 +132,7 @@ export default function ContentPicker({
                     <span
                       className={cn(entry.source === "homebrew" && "text-amber-300")}
                     >
-                      {entry.name}
+                      {rowName(entry)}
                     </span>
                   </span>
                   {verdict ? <PrerequisiteLine id={`${noteId}-${index}`} {...verdict} /> : null}
@@ -140,7 +146,7 @@ export default function ContentPicker({
               {/* The row already carries the full entry, so reading a spell
                   before adding it costs no extra request. */}
               <InfoButton
-                label={entry.name}
+                label={rowName(entry)}
                 meta={kind === "spells" ? spellSummary(entry.data) : undefined}
                 text={describeContentEntry(entry.data)}
                 reference={
