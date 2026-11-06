@@ -1136,13 +1136,6 @@
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
       ]
     ],
-    "app/campaigns/[campaignId]/LeadEditDialog.tsx#str-list": [
-      [
-        "key",
-        5,
-        "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
     "app/campaigns/[campaignId]/LeadEditParts.tsx#str-eq": [
       [
         "key",
@@ -1405,13 +1398,6 @@
         "key",
         1,
         "UI: ids, fixed choices, DOM and keyboard names, stored values"
-      ]
-    ],
-    "app/campaigns/[campaignId]/QuestsPanel.tsx#toLowerCase": [
-      [
-        "display",
-        1,
-        "label in a sentence"
       ]
     ],
     "app/campaigns/[campaignId]/RelationGraph.tsx#str-eq": [

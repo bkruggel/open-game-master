@@ -31,6 +31,7 @@ import { isCantripName } from "@/lib/srd/spell-lists";
 import { spellStyleFor } from "@/lib/srd/spell-prep";
 import MultiContentPicker from "@/app/characters/builder/MultiContentPicker";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
+import { useT } from "@/lib/locale";
 
 // Party lead correction of any character's numbers, items, and spells, for
 // when the AI DM gets something wrong. Server clamps values and writes an
@@ -44,6 +45,7 @@ export function LeadEditDialog({
   sheet: CharacterSheet;
   onClose: () => void;
 }) {
+  const t = useT();
   const [currentHp, setCurrentHp] = useState(String(sheet.currentHp));
   const [tempHp, setTempHp] = useState(String(sheet.tempHp));
   const [maxHp, setMaxHp] = useState(String(sheet.maxHp));
@@ -204,7 +206,7 @@ export function LeadEditDialog({
         });
         const data = (await response.json().catch(() => ({}))) as { error?: string; held?: string[] };
         if (!response.ok) {
-          setError(data.error || "Could not save the correction.");
+          setError(data.error || t("lead.edit.error.save"));
           return;
         }
         offerCorrectionReason(campaignId, data);
@@ -214,7 +216,7 @@ export function LeadEditDialog({
         }
         onClose();
       } catch {
-        setError("Could not reach the server.");
+        setError(t("creator.error.unreachable"));
       } finally {
         setBusy(false);
       }
@@ -237,25 +239,24 @@ export function LeadEditDialog({
           <div className="mb-3 flex items-center justify-between">
             <Dialog.Title className="flex items-center gap-2 font-display text-lg tracking-wide">
               <GameIcon icon={{ kind: "glyph", key: "tab-lead" }} size="size-7" />
-              <span className="gold-title">Adjust {sheet.name}</span>
+              <span className="gold-title">{t("lead.edit.title", { name: sheet.name })}</span>
             </Dialog.Title>
-            <Dialog.Close aria-label="Close" className="pk-tap rounded p-1 text-stone-500 hover:text-amber-200 motion-nudge">
+            <Dialog.Close aria-label={t("board.close")} className="pk-tap rounded p-1 text-stone-500 hover:text-amber-200 motion-nudge">
               <X className="size-4" />
             </Dialog.Close>
           </div>
           <p className="mb-3 text-xs text-stone-500">
-            Party lead correction of stats, items, and spells. Changes are logged to the session
-            event log.
+            {t("lead.edit.intro")}
           </p>
-          <SectionHead title="Numbers" glyph="rest-hp" level="h3" />
+          <SectionHead title={t("lead.edit.numbers")} glyph="rest-hp" level="h3" />
           <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
             {(
               [
-                ["HP", currentHp, setCurrentHp, "rest-hp"],
-                ["Temp HP", tempHp, setTempHp, "rest-temp-hp"],
-                ["Max HP", maxHp, setMaxHp, "rest-hp"],
-                ["Gold", gold, setGold, "coin-gp"],
-                ["XP", xp, setXp, "rest-xp"],
+                [t("lead.edit.hp"), currentHp, setCurrentHp, "rest-hp"],
+                [t("lead.edit.tempHp"), tempHp, setTempHp, "rest-temp-hp"],
+                [t("lead.edit.maxHp"), maxHp, setMaxHp, "rest-hp"],
+                [t("lead.edit.gold"), gold, setGold, "coin-gp"],
+                [t("lead.edit.xp"), xp, setXp, "rest-xp"],
               ] as Array<[string, string, (value: string) => void, string]>
             ).map(([label, value, setter, glyph]) => (
               <div key={label} className="space-y-1">
@@ -269,31 +270,31 @@ export function LeadEditDialog({
           <div className="mt-2 space-y-1.5 rounded-lg border border-stone-700/50 bg-stone-950/40 p-2 text-xs">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-1 text-stone-400">
-                <GameIcon icon={{ kind: "glyph", key: "rest-ac" }} size="size-4" /> AC
+                <GameIcon icon={{ kind: "glyph", key: "rest-ac" }} size="size-4" /> {t("lead.edit.ac")}
               </span>
-              <Switch on={pinned} onChange={setPinned} label="Pin the armor class by hand" />
+              <Switch on={pinned} onChange={setPinned} label={t("lead.edit.pin")} />
             </div>
             {pinned ? (
               <div className="reveal flex flex-wrap items-center gap-2">
-                <NumberStepper size="sm" value={Number(ac) || 0} min={1} max={40} onChange={(next) => setAc(String(next))} label="AC" />
+                <NumberStepper size="sm" value={Number(ac) || 0} min={1} max={40} onChange={(next) => setAc(String(next))} label={t("lead.edit.ac")} />
                 <span className="text-[11px] text-stone-500">
-                  Pinned. Armor would set {derived.ac}. Unpin to hand it back.
+                  {t("lead.edit.pinnedNote", { ac: derived.ac })}
                 </span>
               </div>
             ) : (
               <p className="reveal text-[11px] text-stone-400">
-                Armor sets it: <span className="text-stone-100">{derived.ac}</span>
+                {t("lead.edit.armorSets", { ac: derived.ac })} <span className="text-stone-100"></span>
                 {derived.parts.length ? ` (${derived.parts.join(", ")})` : ""}
               </p>
             )}
             {facing !== (pinned ? Number(ac) : derived.ac) ? (
               <p className="live-in text-[11px] text-sky-300/90">
-                Attacks face {facing} right now: spells and forms on top ride along.
+                {t("lead.edit.facing", { ac: facing })}
               </p>
             ) : null}
           </div>
           <label className="mt-2 block space-y-1 text-xs">
-            <span className="text-stone-400">Conditions (comma separated)</span>
+            <span className="text-stone-400">{t("lead.edit.conditions")}</span>
             <input
               value={conditions}
               onChange={(event) => setConditions(event.target.value)}
@@ -303,7 +304,7 @@ export function LeadEditDialog({
           </label>
 
           <div className="mt-3 space-y-1 text-xs">
-            <SectionHead title="Items" glyph="tab-loot" level="h3" aside={items.length || null} />
+            <SectionHead title={t("lead.edit.items")} glyph="tab-loot" level="h3" aside={items.length || null} />
             {items.map((row, index) => (
               <div key={index} className="live-in space-y-0.5">
               <div className="flex items-center gap-2">
@@ -314,12 +315,12 @@ export function LeadEditDialog({
                   <input
                     value={row.name}
                     onChange={(event) => setItem(index, { name: event.target.value })}
-                    placeholder="Item name"
+                    placeholder={t("market.editor.itemPlaceholder")}
                     className={field}
                   />
                 )}
-                <NumberStepper size="sm" min={1} value={Number(row.qty) || 1} onChange={(next) => setItem(index, { qty: String(next) })} label={`Quantity of ${row.name || "item"}`} className="shrink-0" />
-                <KitButton tone="iconDanger" always onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))} className="shrink-0" aria-label="Remove item">
+                <NumberStepper size="sm" min={1} value={Number(row.qty) || 1} onChange={(next) => setItem(index, { qty: String(next) })} label={t("lead.edit.qtyOf", { name: row.name || t("lead.edit.qtyFallback") })} className="shrink-0" />
+                <KitButton tone="iconDanger" always onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))} className="shrink-0" aria-label={t("lead.edit.remove")}>
                   <Trash2 className="size-4" />
                 </KitButton>
               </div>
@@ -329,7 +330,7 @@ export function LeadEditDialog({
             <div className="mt-1">
               <MultiContentPicker
                 kind="items"
-                placeholder="Search items to add"
+                placeholder={t("lead.edit.searchItems")}
                 selectedNames={items.map((row) => row.name)}
                 onAdd={(entries) =>
                   setItems((rows) => [
@@ -350,9 +351,9 @@ export function LeadEditDialog({
 
           {sheet.spellcasting ? (
             <div className="reveal mt-3 space-y-2 text-xs">
-              <SectionHead title="Spells" glyph="rest-spell-slot" level="h3" />
+              <SectionHead title={t("lead.edit.spells")} glyph="rest-spell-slot" level="h3" />
               <div className="space-y-1">
-                <span className="eyebrow text-[10px] text-amber-400/80">Cantrips</span>
+                <span className="eyebrow text-[10px] text-amber-400/80">{t("lead.edit.cantrips")}</span>
                 <ChipList
                   values={cantrips}
                   onRemove={(value) =>
@@ -362,15 +363,15 @@ export function LeadEditDialog({
                 <MultiContentPicker
                   kind="spells"
                   extraParams={{ class: listClass, level: "0" }}
-                  placeholder="Search cantrips to add"
+                  placeholder={t("lead.edit.searchCantrips")}
                   selectedNames={cantrips}
                   onAdd={(entries) => addCantrips(entries)}
-                  renderMeta={() => "cantrip"}
+                  renderMeta={() => t("lead.edit.cantripMeta")}
                 />
               </div>
               {style === "known" || known.length ? (
               <div className="space-y-1">
-                <span className="eyebrow text-[10px] text-amber-400/80">Known</span>
+                <span className="eyebrow text-[10px] text-amber-400/80">{t("lead.edit.known")}</span>
                 <ChipList
                   values={known}
                   onRemove={(value) => setKnown((list) => list.filter((entry) => entry !== value))}
@@ -378,7 +379,7 @@ export function LeadEditDialog({
                 <MultiContentPicker
                   kind="spells"
                   extraParams={{ class: listClass, level: topLevel }}
-                  placeholder="Search spells to add as known"
+                  placeholder={t("lead.edit.searchKnown")}
                   selectedNames={known}
                   onAdd={(entries) => {
                     addCantrips(entries);
@@ -390,7 +391,7 @@ export function LeadEditDialog({
               ) : null}
               {style === "spellbook" || spellbook.length ? (
                 <div className="space-y-1">
-                  <span className="eyebrow text-[10px] text-amber-400/80">Spellbook</span>
+                  <span className="eyebrow text-[10px] text-amber-400/80">{t("lead.edit.spellbook")}</span>
                   <ChipList
                     values={spellbook}
                     onRemove={(value) => {
@@ -401,7 +402,7 @@ export function LeadEditDialog({
                   <MultiContentPicker
                     kind="spells"
                     extraParams={{ class: listClass, level: topLevel }}
-                    placeholder="Search spells to write in the spellbook"
+                    placeholder={t("lead.edit.searchSpellbook")}
                     selectedNames={spellbook}
                     onAdd={(entries) => {
                       addCantrips(entries);
@@ -413,7 +414,7 @@ export function LeadEditDialog({
               ) : null}
               {style !== "known" || prepared.length ? (
               <div className="space-y-1">
-                <span className="eyebrow text-[10px] text-amber-400/80">Prepared</span>
+                <span className="eyebrow text-[10px] text-amber-400/80">{t("lead.edit.prepared")}</span>
                 <ChipList
                   values={prepared}
                   onRemove={(value) =>
@@ -423,7 +424,7 @@ export function LeadEditDialog({
                 <MultiContentPicker
                   kind="spells"
                   extraParams={{ class: listClass, level: topLevel }}
-                  placeholder="Search spells to add as prepared"
+                  placeholder={t("lead.edit.searchPrepared")}
                   selectedNames={prepared}
                   onAdd={(entries) => {
                     addCantrips(entries);
@@ -440,7 +441,7 @@ export function LeadEditDialog({
               ) : null}
               {pending.length ? (
                 <div className="space-y-1">
-                  <span className="eyebrow text-[10px] text-sky-300/80">Prepared at the next long rest</span>
+                  <span className="eyebrow text-[10px] text-sky-300/80">{t("lead.edit.pending")}</span>
                   <ChipList
                     values={pending}
                     onRemove={(value) => setPending((list) => list.filter((entry) => entry !== value))}
@@ -452,14 +453,14 @@ export function LeadEditDialog({
           ) : null}
 
           <div className="mt-3 space-y-1 text-xs">
-            <SectionHead title="Feats" glyph="rest-level-up" level="h3" aside={feats.length || null} />
+            <SectionHead title={t("lead.edit.feats")} glyph="rest-level-up" level="h3" aside={feats.length || null} />
             <ChipList
               values={feats}
               onRemove={(value) => setFeats((list) => list.filter((entry) => entry !== value))}
             />
             <MultiContentPicker
               kind="feats"
-              placeholder="Search feats to add"
+              placeholder={t("lead.edit.searchFeats")}
               selectedNames={feats}
               onAdd={(entries) =>
                 setFeats((list) => [...list, ...entries.map((entry) => entry.name)])
@@ -467,19 +468,19 @@ export function LeadEditDialog({
             />
           </div>
           <label className="mt-2 block space-y-1 text-xs">
-            <span className="text-stone-400">Reason (shown in the log)</span>
+            <span className="text-stone-400">{t("lead.edit.reason")}</span>
             <input
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               maxLength={300}
-              placeholder="GM double-counted the goblin's hit"
+              placeholder={t("lead.edit.reasonPlaceholder")}
               className={field}
             />
           </label>
           {error ? <PanelError className="mt-2">{error}</PanelError> : null}
           {held.length ? (
             <div role="status" className="reveal mt-2 space-y-1 rounded-lg border border-amber-500/30 bg-amber-950/20 p-2 text-xs text-amber-100">
-              <p>Saved. The server held these to what the sheet has:</p>
+              <p>{t("lead.edit.held")}</p>
               <ul className="stagger list-disc space-y-0.5 pl-4 text-amber-200/90">
                 {held.map((line) => (
                   <li key={line}>{line}</li>
@@ -490,15 +491,15 @@ export function LeadEditDialog({
           <div className="mt-4 flex justify-end gap-2">
             {held.length ? (
               <KitButton tone="primary" onClick={onClose} className="h-10 px-4 text-[13px]">
-                Done
+                {t("action.done")}
               </KitButton>
             ) : (
               <>
                 <button type="button" onClick={onClose} className={ui.btnSmall}>
-                  Cancel
+                  {t("action.cancel")}
                 </button>
                 <KitButton tone="primary" onClick={save} disabled={busy} busy={busy} className="h-10 px-4 text-[13px]">
-                  Save
+                  {t("action.save")}
                 </KitButton>
               </>
             )}

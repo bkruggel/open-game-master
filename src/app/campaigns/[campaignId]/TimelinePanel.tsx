@@ -15,14 +15,15 @@ import { useT } from "@/lib/locale";
 // party marker at now. A list below lg; two columns about a gold rule
 // above it. Filters by kind; read-only.
 
-const KIND_LABEL: Record<TimelineKind, string> = {
-  chapter: "Chapters",
-  act: "Acts",
-  fact: "Facts",
-  session: "Sessions",
-  arc: "World arcs",
-  event: "Calendar",
-  now: "Now",
+// The kinds' words by value; the keys live with the timeline group.
+const KIND_KEYS: Record<TimelineKind, "timeline.kind.chapter" | "timeline.kind.act" | "timeline.kind.fact" | "timeline.kind.session" | "timeline.kind.arc" | "timeline.kind.event" | "timeline.kind.now"> = {
+  chapter: "timeline.kind.chapter",
+  act: "timeline.kind.act",
+  fact: "timeline.kind.fact",
+  session: "timeline.kind.session",
+  arc: "timeline.kind.arc",
+  event: "timeline.kind.event",
+  now: "timeline.kind.now",
 };
 
 const KIND_GLYPH: Record<TimelineKind, string> = {
@@ -79,15 +80,15 @@ export function TimelinePanel({ campaignId, refreshKey }: { campaignId: string; 
   }
 
   if (rows === null) {
-    return <PanelLoading label="Laying out the years..." />;
+    return <PanelLoading label={t("timeline.loading")} />;
   }
-  const kinds = (Object.keys(KIND_LABEL) as TimelineKind[]).filter((kind) => kind !== "now" && rows.some((row) => row.kind === kind));
+  const kinds = (Object.keys(KIND_KEYS) as TimelineKind[]).filter((kind) => kind !== "now" && rows.some((row) => row.kind === kind));
   const shown = rows.filter((row) => !hidden.has(row.kind));
   return (
     <div className="space-y-3">
-      <SectionHead title="Timeline" glyph="tab-timeline" aside={shown.length > 1 ? shown.length - 1 : null} />
+      <SectionHead title={t("timeline.title")} glyph="tab-timeline" aside={shown.length > 1 ? shown.length - 1 : null} />
       {kinds.length ? (
-        <div role="group" aria-label="Show on the line" className="reveal flex flex-wrap items-center gap-1">
+        <div role="group" aria-label={t("timeline.filtersAria")} className="reveal flex flex-wrap items-center gap-1">
           {kinds.map((kind) => {
             const on = !hidden.has(kind);
             return (
@@ -110,7 +111,7 @@ export function TimelinePanel({ campaignId, refreshKey }: { campaignId: string; 
                 className="pk-pill pk-tap motion-press"
               >
                 <GameIcon icon={{ kind: "glyph", key: KIND_GLYPH[kind] }} size="size-4" />
-                {KIND_LABEL[kind]}
+                {t(KIND_KEYS[kind])}
               </button>
             );
           })}
@@ -126,7 +127,7 @@ export function TimelinePanel({ campaignId, refreshKey }: { campaignId: string; 
           <EmptyState
             size="sm"
             art="scrolls"
-            title="Nothing has happened yet. The first closed chapter starts the line."
+            title={t("timeline.empty")}
           />
         ) : null)
       ) : null}
