@@ -12,11 +12,12 @@ import { lineageCard } from "../cardFaces";
 import { flattenGroups, lineageArt, srdRaceFor } from "../lineage";
 import { lineageFits } from "../lineageFits";
 import { SRD_CLASSES } from "@/lib/srd";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import type { CardFacet } from "../OptionCardGrid";
 import type { Ability } from "@/lib/schemas/sheet";
 import { OptionCardGrid, type OptionCardGroup } from "../OptionCardGrid";
 import type { PickerGroup } from "../OptionPicker";
+import { contentName } from "@/lib/content/names";
 import { knownTraining } from "../FeatChoicesFields";
 import { RacialChoicesSection } from "../RacialChoicesSection";
 import type { BackgroundOption, RaceOption } from "../useBuilderOptions";
@@ -25,8 +26,9 @@ import type { BuilderState } from "../useBuilderState";
 import { bonusLanguageCount } from "../submit";
 import { StepPanel, inputClass } from "./shared";
 
-function languageHelp(t: (key: string, vars?: Record<string, string | number>) => string, race: RaceOption, background: BackgroundOption | undefined): string {
-  const parts = [t("builder.ancestry.speaks", { race: race.name, langs: race.languages.join(" and ") })];
+function languageHelp(t: (key: string, vars?: Record<string, string | number>) => string, race: RaceOption, background: BackgroundOption | undefined, locale: "en" | "fr" = "en"): string {
+  const langs = race.languages.join(locale === "fr" ? " et " : " and ");
+  const parts = [t("builder.ancestry.speaks", { race: contentName("species", race.name, locale), langs })];
   const choice = race.languageChoice;
   const open = race.bonusLanguages - (choice?.count ?? 0);
   if (choice) {
@@ -83,6 +85,7 @@ export function AncestryStep({
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const { gender } = state;
   const t = useT();
+  const locale = useLocale();
 
   // One slide per picker row, in the picker's order, so the carousel walks
   // exactly what the grid shows.
@@ -111,12 +114,12 @@ export function AncestryStep({
         title={t("builder.ancestry.title")}
         ornate
         anchor="race"
-        help={race ? t("builder.ancestry.helpChosen", { race: race.name }) : t("builder.ancestry.helpEmpty")}
+        help={race ? t("builder.ancestry.helpChosen", { race: contentName("species", race.name, locale) }) : t("builder.ancestry.helpEmpty")}
       >
         {state.revisedSpecies ? (
           <p role="note" className="mb-3 rounded border border-amber-700/40 bg-amber-950/30 p-2 text-xs text-amber-100">
             {race ? (
-              t("builder.ancestry.revisedKnown", { race: race.name })
+              t("builder.ancestry.revisedKnown", { race: contentName("species", race.name, locale) })
             ) : (
               // A content pack that offers no such lineage: its id, written
               // as a name, and the pick it now owes.
@@ -127,13 +130,13 @@ export function AncestryStep({
         {race?.note ? (
           <span className="mb-3 flex items-start gap-1 text-xs text-stone-500">
             <span className="line-clamp-2 grow">
-              <span className="text-amber-200">{race.name}</span>
+              <span className="text-amber-200">{contentName("species", race.name, locale)}</span>
               {race.source ? <span className="font-mono text-[0.875rem] text-stone-500"> · {race.source}</span> : null}
               <span className="text-amber-200">: </span>
               {race.note}
             </span>
             <InfoButton
-              label={race.name}
+              label={contentName("species", race.name, locale)}
               text={describeRace(race.id) ?? race.note}
               reference={{ kind: "races", slug: race.slug ?? race.id }}
             />
@@ -170,7 +173,7 @@ export function AncestryStep({
               />
             </span>
           }
-          help={languageHelp(t, race, background)}
+          help={languageHelp(t, race, background, locale)}
           anchor="languages"
         >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
