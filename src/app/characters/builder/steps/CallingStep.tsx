@@ -9,7 +9,7 @@ import { useClassFeatureText } from "@/lib/classes/use-feature-text";
 import { firstSentence } from "@/lib/help/rules-text";
 import { CLASS_ROLES, classRoles, type ClassRole } from "@/lib/srd/class-roles";
 import { subclassBlurb } from "@/lib/srd/features";
-import { SRD_SKILLS } from "@/lib/srd";
+import { SRD_SKILLS, skillLabel } from "@/lib/srd";
 import { displayName, type Reskinned } from "@/lib/worlds/reskin-logic";
 import type { WorldPack } from "@/lib/worlds/types";
 import { classCard } from "../cardFaces";
@@ -31,6 +31,7 @@ import FeatChoicesFields, { knownTraining } from "../FeatChoicesFields";
 import { Field, PickForMe, PickPill, StepPanel, inputClass } from "./shared";
 import { featChoice } from "@/lib/schemas/sheet";
 import { useLocale, useT } from "@/lib/locale";
+import { classDisplayNameFor } from "@/lib/characters/class-words";
 import type { Locale } from "@/lib/messages-logic";
 
 // Step 1 (backlog F4: how you want to play comes first): the setting's
@@ -242,7 +243,7 @@ export function CallingStep({
         <Field label={t("builder.calling.class")} className="mt-4">
           {klass ? (
             <span className="mb-3 flex flex-wrap items-center gap-x-1 text-xs text-stone-500">
-              <span className="text-amber-200">{klass.name}:</span>{" "}
+              <span className="text-amber-200">{classDisplayNameFor(klass.id, locale)}:</span>{" "}
               {/* In words first (backlog F11); the die joins them with "Show rules and numbers" on. */}
               <GameTerm id="hit_dice"><CardText text={hitDieChip(klass.hitDie, numbers)} /></GameTerm> ·{" "}
               <GameTerm id="saving_throw">{t("builder.meta.savesWord")}</GameTerm>{" "}
@@ -256,7 +257,7 @@ export function CallingStep({
                 </>
               ) : null}
               <InfoButton
-                label={klass.name}
+                label={classDisplayNameFor(klass.id, locale)}
                 text={classInfoText(klass)}
                 reference={{ kind: "classes", slug: klass.id }}
               />
@@ -353,9 +354,9 @@ export function CallingStep({
           <Field label={t("builder.calling.subclass")} className="mt-3">
             <p className="rounded-lg border border-dashed border-stone-700/70 bg-stone-950/40 px-3 py-2 text-xs text-stone-400">
               {t("builder.calling.locked", {
-                class: klass.name.toLowerCase(),
+                class: classDisplayNameFor(klass.id, locale).toLowerCase(),
                 level: subclassLockedAt,
-                at: derived.multiclass ? t("builder.calling.classLevel", { class: klass.name.toLowerCase() }) : t("builder.calling.levelWord"),
+                at: derived.multiclass ? t("builder.calling.classLevel", { class: classDisplayNameFor(klass.id, locale).toLowerCase() }) : t("builder.calling.levelWord"),
                 then: primaryLevel,
               })}
             </p>
@@ -434,8 +435,8 @@ export function CallingStep({
               ) : suggested?.length && suggested.every((id) => state.chosenSkills.includes(id)) ? (
                 <span key={suggested.join()} className="reveal block text-amber-200/90">
                   {t("builder.calling.suggestedFor", {
-                    class: klass.name.toLowerCase(),
-                    list: suggested.map((id) => SRD_SKILLS.find((entry) => entry.id === id)?.name ?? id).join(", "),
+                    class: classDisplayNameFor(klass.id, locale).toLowerCase(),
+                    list: suggested.map((id) => skillLabel(id, locale)).join(", "),
                   })}
                 </span>
               ) : null}
