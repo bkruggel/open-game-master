@@ -12,21 +12,22 @@ import { Chip, FinePrint, PanelHead, RangeRow, mapButton, mapInput, skinSwatches
 import { useCatalogue, useMapThumb, type Catalogue } from "@/app/campaigns/[campaignId]/useMapPaint";
 import { ForgePreview, type ForgeMap } from "@/app/workshop/maps/ForgePreview";
 import {
-  AMBIENT_LABELS,
+  ambientWord,
   FORGE_START,
   RESTORE_MS,
   clampSize,
   createBodyFor,
   dieSpins,
-  explainForge,
+  explainForgeT,
   floodTotalMs,
   forgeOutcome,
   freshSeed,
   pushHistory,
+  themeWord,
   type ForgeRoll,
   type ForgeSettings,
 } from "@/app/workshop/maps/forge";
-import { THEME_LABELS, type LibraryState, type PreparedMap } from "@/app/workshop/maps/types";
+import type { LibraryState, PreparedMap } from "@/app/workshop/maps/types";
 import { cueById, sceneOptions } from "@/lib/ambience/catalog";
 import { useT } from "@/lib/locale";
 
@@ -84,7 +85,7 @@ function HistoryTile({
       type="button"
       onClick={onRestore}
       aria-pressed={active}
-      title={t("workshop.maps.forge.historyTitle", { seed: entry.roll.seed, width: entry.map.width, height: entry.map.height, theme: THEME_LABELS[entry.map.theme] })}
+      title={t("workshop.maps.forge.historyTitle", { seed: entry.roll.seed, width: entry.map.width, height: entry.map.height, theme: themeWord(entry.map.theme, t) })}
       className={cn(
         "map-seed-roll w-[76px] shrink-0 overflow-hidden rounded-md border text-left motion-press",
         active ? "border-amber-400/80" : "border-stone-700 hover:border-stone-500",
@@ -161,7 +162,7 @@ export function MapForge({
   const named = name.trim().length > 0;
   const canRoll = !busy && !rolling && (!library || named);
   const { theme, ambient } = forgeOutcome(settings);
-  const sentences = explainForge(settings, (value) => THEME_LABELS[value], (scene) => cueById(scene)?.label ?? scene);
+  const sentences = explainForgeT(t, settings, (value) => themeWord(value, t), (scene) => cueById(scene)?.label ?? scene);
   const skinGroups = useMemo(() => skinChoices(genre, t), [genre, t]);
 
   async function show(roll: ForgeRoll, stretch: number) {
@@ -255,10 +256,10 @@ export function MapForge({
             <p className="font-display text-[9px] uppercase tracking-[0.18em] text-amber-400/80">{t("workshop.maps.forge.whatDecided")}</p>
             <div className="flex flex-wrap gap-1.5">
               <FactChip name={t("workshop.maps.theme")} claim={theme}>
-                {THEME_LABELS[theme]}
+                {themeWord(theme, t)}
               </FactChip>
               <FactChip name={t("workshop.maps.addon.light")} claim={ambient}>
-                {AMBIENT_LABELS[ambient].toLowerCase()}
+                {ambientWord(ambient, t).toLowerCase()}
               </FactChip>
             </div>
             <p className="text-[11px] leading-snug text-stone-300">{sentences.join(" ")}</p>
@@ -272,7 +273,7 @@ export function MapForge({
                   key={option}
                   type="button"
                   aria-pressed={settings.theme === option}
-                  title={settings.theme === option ? t("workshop.maps.forge.pressAgain") : t("workshop.maps.forge.alwaysTheme", { theme: THEME_LABELS[option].toLowerCase() })}
+                  title={settings.theme === option ? t("workshop.maps.forge.pressAgain") : t("workshop.maps.forge.alwaysTheme", { theme: themeWord(option, t).toLowerCase() })}
                   onClick={() => setSettings({ ...settings, theme: settings.theme === option ? "" : option })}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-lg border px-1 py-2 motion-press",
@@ -282,7 +283,7 @@ export function MapForge({
                   )}
                 >
                   <ThemeSwatch theme={option} genre={genre} catalogue={catalogue} />
-                  <span className="text-[11px]">{THEME_LABELS[option]}</span>
+                  <span className="text-[11px]">{themeWord(option, t)}</span>
                 </button>
               ))}
             </div>
@@ -292,7 +293,7 @@ export function MapForge({
               </Chip>
               {(["bright", "dim", "dark"] as AmbientLight[]).map((option) => (
                 <Chip key={option} active={settings.ambient === option} onClick={() => setSettings({ ...settings, ambient: option })}>
-                  {AMBIENT_LABELS[option]}
+                  {ambientWord(option, t)}
                 </Chip>
               ))}
             </div>
@@ -434,7 +435,7 @@ export function MapForge({
               {library ? name.trim() || t("workshop.maps.forge.unnamed") : t("workshop.maps.forge.thePreview")}
             </h3>
             <span className="shrink-0 font-mono text-[10px] text-stone-400">
-              {shown ? `${shown.map.width} × ${shown.map.height} · ${THEME_LABELS[shown.map.theme]}` : `${sizeNow.width} × ${sizeNow.height}`}
+              {shown ? `${shown.map.width} × ${shown.map.height} · ${themeWord(shown.map.theme, t)}` : `${sizeNow.width} × ${sizeNow.height}`}
             </span>
           </div>
           {shown ? (
@@ -461,8 +462,8 @@ export function MapForge({
               <FactChip name={t("workshop.maps.seedWord")} claim={shown.roll.seed}>
                 {shown.roll.seed}
               </FactChip>
-              <FactChip name={t("workshop.maps.theme")}>{THEME_LABELS[shown.map.theme]}</FactChip>
-              <FactChip name={t("workshop.maps.addon.light")}>{AMBIENT_LABELS[shown.map.ambient].toLowerCase()}</FactChip>
+              <FactChip name={t("workshop.maps.theme")}>{themeWord(shown.map.theme, t)}</FactChip>
+              <FactChip name={t("workshop.maps.addon.light")}>{ambientWord(shown.map.ambient, t).toLowerCase()}</FactChip>
               <FactChip name={t("workshop.maps.forge.torches")}>{shown.map.lights.length}</FactChip>
               {shown.map.pcSpawns ? (
                 <FactChip name={t("workshop.maps.forge.spawns")}>

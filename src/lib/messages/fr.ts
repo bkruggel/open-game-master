@@ -9337,6 +9337,27 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "dm.action.pickWho": "Choisir qui",
   "dm.action.notSet": "Non défini",
 
+// ---- le tiroir de cartes du MJ (DmMapLibraryPanel.tsx) et ce qui a décidé le tirage de la forge (explainForgeT de forge.ts) ----
+  "dm.maps.forge.foughtOn": "{scene} se bat sur un sol du genre {theme}.",
+  "dm.maps.forge.lightDefault": "La lumière est ce que {theme} a d'habitude.",
+  "dm.maps.forge.lightSet": "Tu règles la lumière : {light}.",
+  "dm.maps.forge.openGround": "Aucun genre d'endroit n'est réglé, donc c'est un terrain ouvert.",
+  "dm.maps.forge.roughGround": "{scene} sème du terrain accidenté.",
+  "dm.maps.forge.saidOutright": "Tu as dit {theme} carrément, donc le genre d'endroit ne choisit pas le sol.",
+  "dm.maps.imported": "Importée.",
+  "dm.maps.mayHaveGone": "C'est peut-être passé ; regarde la table avant de réessayer.",
+  "dm.maps.newMap": "Nouvelle carte",
+  "dm.maps.notUvtt": "Ce fichier n'est pas un export Universal VTT que le tiroir sait lire.",
+  "dm.maps.onTable": "Elle est sur la table.",
+  "dm.maps.opening": "On ouvre le tiroir...",
+  "dm.maps.pictureRefused": "L'image n'a pas suivi : {reason}",
+  "dm.maps.pictureRefusedFallback": "elle n'a pas voulu se téléverser.",
+  "dm.maps.readAgain": "La bibliothèque a été relue ; cherche la carte dedans avant de la refaire.",
+  "dm.maps.sceneOpen": "La scène est ouverte.",
+  "dm.maps.sheetTitle": "Carte",
+  "dm.maps.theme.field": "Terrain ouvert",
+  "dm.maps.theme.riverside": "Rivière",
+
 // ---- le pacte d'un joueur et ses actions secrètes (PactPanel.tsx) ----
   "pact.kind.steal.label": "Voler",
   "pact.kind.steal.hint": "Prendre quelque chose dans le sac d'un autre personnage. Ça quitte son sac aussitôt.",

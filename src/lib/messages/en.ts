@@ -9290,6 +9290,27 @@ export const en = {
   "dm.action.pickWho": "Pick who",
   "dm.action.notSet": "Not set",
 
+// ---- the DM's map drawer (DmMapLibraryPanel.tsx) and what decided the forge's roll (forge.ts explainForgeT) ----
+  "dm.maps.forge.foughtOn": "{scene} is fought on {theme}.",
+  "dm.maps.forge.lightDefault": "The light is what {theme} usually has.",
+  "dm.maps.forge.lightSet": "You set the light to {light}.",
+  "dm.maps.forge.openGround": "No kind of place is set, so it is open ground.",
+  "dm.maps.forge.roughGround": "{scene} scatters rough ground.",
+  "dm.maps.forge.saidOutright": "You said {theme} outright, so the kind of place does not pick the ground.",
+  "dm.maps.imported": "Imported.",
+  "dm.maps.mayHaveGone": "It may have gone through; look at the table before trying again.",
+  "dm.maps.newMap": "New map",
+  "dm.maps.notUvtt": "That file is not a Universal VTT export this can read.",
+  "dm.maps.onTable": "It is on the table.",
+  "dm.maps.opening": "Opening the drawer...",
+  "dm.maps.pictureRefused": "The picture did not come along: {reason}",
+  "dm.maps.pictureRefusedFallback": "it would not upload.",
+  "dm.maps.readAgain": "The library was read again; look for the map there before making it again.",
+  "dm.maps.sceneOpen": "The scene is open.",
+  "dm.maps.sheetTitle": "Map",
+  "dm.maps.theme.field": "Open ground",
+  "dm.maps.theme.riverside": "Water",
+
 // ---- the player's pact and its secret actions (PactPanel.tsx) ----
   "pact.kind.steal.label": "Steal",
   "pact.kind.steal.hint": "Take something from another character's pack. It leaves their pack now.",

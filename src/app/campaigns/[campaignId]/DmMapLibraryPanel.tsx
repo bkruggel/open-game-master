@@ -157,7 +157,7 @@ export function DmMapLibraryPanel({
         t("load.write.fallback"),
       );
       if (sent.error !== null) {
-        setError(sent.unanswered ? `${sent.error} The library was read again; look for the map there before making it again.` : sent.error);
+        setError(sent.unanswered ? `${sent.error} ${t("dm.maps.readAgain")}` : sent.error);
         if (sent.unanswered) await load();
         return null;
       }
@@ -227,10 +227,10 @@ export function DmMapLibraryPanel({
       if (sent.error !== null) {
         // With no answer it may be on the table already; a second press
         // would put it there twice.
-        push(sent.unanswered ? `${sent.error} It may have gone through; look at the table before trying again.` : sent.error);
+        push(sent.unanswered ? `${sent.error} ${t("dm.maps.mayHaveGone")}` : sent.error);
         return;
       }
-      push(action === "deploy" ? "It is on the table." : "The scene is open.", "done");
+      push(action === "deploy" ? t("dm.maps.onTable") : t("dm.maps.sceneOpen"), "done");
       await load();
     } finally {
       setBusy(false);
@@ -349,7 +349,7 @@ export function DmMapLibraryPanel({
         if (upload.ok) {
           backdropPath = payload.url;
         } else {
-          pictureRefused = `The picture did not come along: ${payload.error || "it would not upload."}`;
+          pictureRefused = t("dm.maps.pictureRefused", { reason: payload.error || t("dm.maps.pictureRefusedFallback") });
         }
         // A picture that will not upload is not a reason to lose the walls:
         // the geometry is the part the rules need, but the DM is told.
@@ -366,10 +366,10 @@ export function DmMapLibraryPanel({
       });
       if (result?.map) {
         select(result.map.id);
-        setNote([result.notes?.[0] ?? "Imported.", pictureRefused].filter(Boolean).join(" "));
+        setNote([result.notes?.[0] ?? t("dm.maps.imported"), pictureRefused].filter(Boolean).join(" "));
       }
     } catch {
-      setError("That file is not a Universal VTT export this can read.");
+      setError(t("dm.maps.notUvtt"));
     } finally {
       setBusy(false);
     }
@@ -405,7 +405,7 @@ export function DmMapLibraryPanel({
     <Sheet
       open={editorOpen && selected !== null}
       onOpenChange={showEditor}
-      title={selected?.name ?? "Map"}
+      title={selected?.name ?? t("dm.maps.sheetTitle")}
       // The editor brings its own top bar, with the map's name in it.
       hideTitle
       className="top-0 h-dvh max-h-none rounded-none px-0 pb-0 pt-[env(safe-area-inset-top)] lg:top-1/2 lg:h-[94vh] lg:max-h-[94vh] lg:w-[min(98vw,110rem)] lg:rounded-xl lg:p-0"
@@ -430,7 +430,7 @@ export function DmMapLibraryPanel({
             className="flex w-full items-center gap-2 text-left font-display text-sm tracking-wide text-amber-100"
           >
             <Plus className="size-4 text-amber-300" />
-            New map
+            {t("dm.maps.newMap")}
             {creating ? (
               <ChevronDown className="ml-auto size-4 text-stone-500" />
             ) : (
@@ -454,7 +454,7 @@ export function DmMapLibraryPanel({
         </section>
 
         <div data-tour="maps-gallery">
-          <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading="Opening the drawer...">
+          <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading={t("dm.maps.opening")}>
             <MapGallery maps={state.maps} selectedId={selectedId} genre={state.genre} onOpen={(map) => select(map.id)} />
           </Listed>
         </div>
@@ -475,7 +475,7 @@ export function DmMapLibraryPanel({
       />
       <AddonMapGenerator campaignId={campaignId} onCreated={(id) => void load().then(() => setSelectedId(id))} />
 
-      <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading="Opening the drawer...">
+      <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading={t("dm.maps.opening")}>
       {state.maps.length ? (
         <div data-pill-group="" className="flex flex-wrap gap-1">
           {state.maps.map((map) => (
@@ -499,7 +499,7 @@ export function DmMapLibraryPanel({
         </div>
       ) : (
         <p className="text-xs text-stone-500">
-          Nothing in the drawer yet. Roll one, start from blank rock, or import a drawing.
+          {t("workshop.maps.galleryEmpty")}
         </p>
       )}
       </Listed>
