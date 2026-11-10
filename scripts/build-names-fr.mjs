@@ -25,8 +25,13 @@
 //   from the official French editions of the books (Manuel des Joueurs, Guide
 //   complet de Xanathar, Le chaudron de tout de Tasha) as documented by
 //   aidedd.org's dons pages and cross-checked with the "Glossaire D&D 5"
-//   (gdfl.be); the pack's own reskins (A5E's Ace Driver, Athletic…) stay out
-//   and fall back to English;
+//   (gdfl.be). The feats of the content pack itself (A5E's Ace Driver,
+//   Athletic, Rimecaster…) are translated too, as an adaptation the user
+//   approved: no official French A5E exists (EN Publishing, BBE, GitHub and
+//   5etools-translated carry none), the English name stays searchable on
+//   a5e.tools, and where a pack feat adapts an SRD feat the map carries, its
+//   official French name is reused verbatim (Athletic is Athlète,
+//   Battle Caster is Mage de guerre…);
 // - classes: 12 bare class ids ("cleric") plus class-feature keys of the
 //   canonical form the render helper slugs a display name to
 //   ("cleric:bonus-proficiency-heavy-armor", "cleric:channel-divinity-1-rest",
@@ -109,8 +114,8 @@ const tables = {
 };
 
 const total = Object.values(tables).reduce((sum, entries) => sum + Object.keys(entries).length, 0);
-if (total !== 1517) {
-  throw new Error(`expected 1,517 name pairs, read ${total}`);
+if (total !== 1590) {
+  throw new Error(`expected 1,590 name pairs, read ${total}`);
 }
 
 const tsLiteral = (value) => JSON.stringify(value);
@@ -129,7 +134,14 @@ const header = `// NOMS OFFICIELS FRANÇAIS du Document de Référence du Systè
 // exception : le SRD 5.1 français n'imprime qu'un don (« Empoigneur »), les
 // autres noms viennent du SRD 5.2.1 français officiel (« Dons », pp. 92-94)
 // et des éditions françaises officielles des livres, documentées par
-// aidedd.org et recoupées avec le « Glossaire D&D 5 » (gdfl.be). Généré par
+// aidedd.org et recoupées avec le « Glossaire D&D 5 » (gdfl.be). Les dons du
+// paquet de contenu (Level Up A5E et autres éditeurs tiers) font une seconde
+// exception : il n'existe aucune traduction française officielle de
+// Level Up: Advanced 5th Edition (EN Publishing), ils reçoivent donc une
+// traduction adaptée pour la table francophone, le nom anglais restant
+// recherchable sur a5e.tools ; ceux qui adaptent un don du SRD portent le
+// nom officiel français de celui-ci (Athletic est Athlète, Battle Caster est
+// Mage de guerre…). Généré par
 // scripts/build-names-fr.mjs depuis scripts/data/fr-names/ ; NE PAS ÉDITER
 // À LA MAIN (regénérer).
 //
