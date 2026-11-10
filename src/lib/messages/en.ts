@@ -10736,6 +10736,8 @@ export const en = {
   "library.roleCompanion": "an ally the GM plays",
   "builder.kit.fromToolProficiency": "from your tool proficiency",
   "builder.kit.toolOnAncestry": "the tool you pick on the Ancestry step, beside the background.",
+  "library.back": "Back to your library",
+  "library.notFound": "Character not found.",
   "faction.standing.hunted": "hunted",
   "faction.standing.disliked": "disliked",
   "faction.standing.suspected": "suspected",

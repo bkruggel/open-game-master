@@ -7,13 +7,13 @@ import { AppHeader } from "@/components/AppHeader";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { useHandSpells } from "@/app/campaigns/[campaignId]/HandSpells";
 import { cn } from "@/lib/cn";
+import { useLocale, useT } from "@/lib/locale";
 import { useLowEffects } from "@/lib/effects-mode";
 import { freshPlaySheet, revealLine, threeThingsToTry } from "@/lib/characters/hero-tips";
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
 import { classLevelWords, isSplit } from "@/lib/characters/class-words";
 import { workshopClassName } from "@/lib/classes/workshop-registry";
 import { contentName, subclassName } from "@/lib/content/names";
-import { useLocale } from "@/lib/locale";
 import { CharacterPortrait, ui } from "@/lib/ui";
 import { UseInCampaignDialog } from "../UseInCampaignDialog";
 
@@ -50,6 +50,7 @@ function spaced(value: string) {
 }
 
 export default function HeroReadyPage({ params }: { params: Promise<{ characterId: string }> }) {
+  const t = useT();
   const { characterId } = use(params);
   const locale = useLocale();
   const [character, setCharacter] = useState<ReadyCharacter | null>(null);
@@ -143,9 +144,9 @@ export default function HeroReadyPage({ params }: { params: Promise<{ characterI
       <main className="mx-auto w-full max-w-3xl flex-1 p-4 sm:p-6">
         <AppHeader />
         <div className={cn(ui.card, "ornate texture-noise flex flex-col items-center gap-3 px-6 py-8 text-center")}>
-          <p className="font-serif text-sm text-stone-300">Character not found.</p>
+          <p className="font-serif text-sm text-stone-300">{t("library.notFound")}</p>
           <Link href="/characters" className={ui.btnSecondary}>
-            Back to your library
+            {t("library.back")}
           </Link>
         </div>
       </main>

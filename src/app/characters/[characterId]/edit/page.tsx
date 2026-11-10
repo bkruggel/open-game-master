@@ -146,9 +146,9 @@ function EditCharacterInner({ characterId }: { characterId: string }) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 p-4 sm:p-6">
         <div className={cn(ui.card, "ornate texture-noise flex flex-col items-center gap-3 px-6 py-8 text-center")}>
-          <p className="font-serif text-sm text-stone-300">Character not found.</p>
+          <p className="font-serif text-sm text-stone-300">{t("library.notFound")}</p>
           <Link href="/characters" className={ui.btnSecondary}>
-            Back to your library
+            {t("library.back")}
           </Link>
         </div>
       </main>

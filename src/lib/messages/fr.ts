@@ -10786,6 +10786,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "library.roleCompanion": "un allié que le MJ joue",
   "builder.kit.fromToolProficiency": "de ta maîtrise d'outils",
   "builder.kit.toolOnAncestry": "l'outil que tu choisis à l'étape Origine, à côté de l'historique.",
+  "library.back": "Retour à ta bibliothèque",
+  "library.notFound": "Personnage introuvable.",
   "faction.standing.hunted": "traqué",
   "faction.standing.disliked": "mal vu",
   "faction.standing.suspected": "soupçonné",
