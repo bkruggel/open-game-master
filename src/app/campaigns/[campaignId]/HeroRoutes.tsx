@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useT } from "@/lib/locale";
+import { odmLocaleHeaders, useT } from "@/lib/locale";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { PregenPicker } from "@/app/campaigns/[campaignId]/PregenPicker";
 import { cn } from "@/lib/cn";
@@ -31,7 +31,7 @@ export function HeroRoutes({ campaignId, className }: { campaignId: string; clas
       .catch(() => {
         if (!cancelled) setHeroes([]);
       });
-    fetch("/api/starter")
+    fetch("/api/starter", { headers: odmLocaleHeaders() })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { pregens?: unknown[] } | null) => {
         if (!cancelled) setPregens(Array.isArray(data?.pregens) ? data.pregens.length : 0);

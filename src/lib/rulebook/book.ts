@@ -74,7 +74,15 @@ export function localeFromAcceptLanguage(header: string | null): BookLocale {
   return "en";
 }
 
+// The request's language: the app's own locale header (X-Odm-Locale, set by
+// the client from its stored odm.locale) wins, so a French reader on an
+// English-locale device reads French; a request without it — curl, an old
+// bundle — falls back to the browser's Accept-Language as before.
 export function bookLocaleOf(request: Request): BookLocale {
+  const own = request.headers.get("x-odm-locale");
+  if (own === "fr" || own === "en") {
+    return own;
+  }
   return localeFromAcceptLanguage(request.headers.get("accept-language"));
 }
 

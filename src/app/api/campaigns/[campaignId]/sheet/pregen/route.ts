@@ -11,7 +11,7 @@ import { publishPersisted } from "@/lib/events";
 import { queueLibraryPortrait } from "@/lib/portrait";
 import { pregenById } from "@/lib/starter/pregens";
 import { seatPicksSchema } from "@/lib/characters/seat-picks";
-import { localeFromAcceptLanguage } from "@/lib/rulebook/book";
+import { bookLocaleOf } from "@/lib/rulebook/book";
 import { translate } from "@/lib/messages-logic";
 
 export const runtime = "nodejs";
@@ -35,7 +35,7 @@ export async function POST(
   }
   // The refusals read the asker's language.
   const t = (key: string, vars?: Record<string, string | number>) =>
-    translate(localeFromAcceptLanguage(request.headers.get("accept-language")), key, vars);
+    translate(bookLocaleOf(request), key, vars);
   if (!capsFor(context).needsCharacter) {
     return Response.json({ error: t("preview.problem.gmNoCharacter") }, { status: 400 });
   }
@@ -52,7 +52,7 @@ export async function POST(
     return Response.json({ error: t("preview.problem.picksUnread") }, { status: 400 });
   }
   const pregen = parsed.success
-    ? pregenById(parsed.data.id, localeFromAcceptLanguage(request.headers.get("accept-language")))
+    ? pregenById(parsed.data.id, bookLocaleOf(request))
     : null;
   if (!pregen) {
     return Response.json({ error: t("preview.problem.noSuchHero") }, { status: 404 });

@@ -19084,8 +19084,8 @@
   "lib/rulebook/book.ts#str-eq": [
    [
     "key",
-    2,
-    "Accept-Language tags against the fixed tokens fr/en (protocol tokens, never a person's text)"
+    4,
+    "Accept-Language tags and the app's own X-Odm-Locale header value against the fixed tokens fr/en (protocol tokens, never a person's text)"
    ]
   ],
   "lib/rulebook/book.ts#str-startsWith": [

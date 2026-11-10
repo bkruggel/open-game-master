@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { odmLocaleHeaders, useT } from "@/lib/locale";
 import { refusalText } from "@/app/characters/builder/refusal";
 import {
   EMPTY_DRAFT,
@@ -62,7 +62,7 @@ async function askPreview(
   try {
     const response = await fetch(`/api/campaigns/${campaignId}/sheet/preview`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...odmLocaleHeaders() },
       body: JSON.stringify(body),
     });
     const data = await response.json().catch(() => ({}));

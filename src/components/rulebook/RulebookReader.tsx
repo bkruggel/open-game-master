@@ -4,7 +4,7 @@ import "@/app/styles/rulebook.css";
 import { Bookmark, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { useLocale, useT } from "@/lib/locale";
+import { useLocale, useT, odmLocaleHeaders } from "@/lib/locale";
 import type { RulebookContents as Contents, RulebookPageResponse } from "@/lib/rulebook/types";
 import { RulebookContents, type OpenFromContents } from "./RulebookContents";
 import { RulebookPage } from "./RulebookPage";
@@ -121,7 +121,7 @@ export function RulebookReader({
   const loadContents = useCallback(async () => {
     setContentsFailed(false);
     try {
-      const response = await fetch("/api/rulebook", { headers: { "Accept-Language": localeRef.current } });
+      const response = await fetch("/api/rulebook", { headers: { "Accept-Language": localeRef.current, ...odmLocaleHeaders() } });
       if (!response.ok) throw new Error(String(response.status));
       setContents(await response.json());
     } catch {
@@ -136,7 +136,7 @@ export function RulebookReader({
       const cached = cache.current.get(`${localeRef.current}:${id}`);
       if (cached) return cached;
       try {
-        const response = await fetch(`/api/rulebook/pages/${encodeURIComponent(id)}`, { headers: { "Accept-Language": localeRef.current } });
+        const response = await fetch(`/api/rulebook/pages/${encodeURIComponent(id)}`, { headers: { "Accept-Language": localeRef.current, ...odmLocaleHeaders() } });
         if (!response.ok) return null;
         const data: RulebookPageResponse = await response.json();
         cache.current.set(`${localeRef.current}:${id}`, data);

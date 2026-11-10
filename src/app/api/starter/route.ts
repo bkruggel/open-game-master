@@ -5,7 +5,7 @@ import { campaignCreationRefusal, canCreateCampaigns } from "@/lib/shared-host";
 import { createStarterCampaign, starterSeedFor } from "@/lib/starter/one-shot";
 import { narrationAvailable, NO_STORYTELLER_MESSAGE, storytellerConfigured } from "@/lib/capabilities";
 import { pregenSummaries } from "@/lib/starter/pregens";
-import { localeFromAcceptLanguage } from "@/lib/rulebook/book";
+import { bookLocaleOf } from "@/lib/rulebook/book";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   if (!user) {
     return unauthorized();
   }
-  const locale = localeFromAcceptLanguage(request.headers.get("accept-language"));
+  const locale = bookLocaleOf(request);
   const seed = starterSeedFor(locale);
   return Response.json({
     oneShot: {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   const campaign = createStarterCampaign(user.id, {
     solo: parsed.data.solo,
     narration: await narrationAvailable(),
-    locale: localeFromAcceptLanguage(request.headers.get("accept-language")),
+    locale: bookLocaleOf(request),
   });
   return Response.json({ campaign: publicCampaign(campaign) }, { status: 201 });
 }

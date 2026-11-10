@@ -3,7 +3,7 @@
 import { Loader2, Play, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { odmLocaleHeaders, useT } from "@/lib/locale";
 import { Dialog } from "@/components/ui/Dialog";
 
 type Starter = {
@@ -32,7 +32,7 @@ export function StarterDialog({
     if (!open || starter) {
       return;
     }
-    fetch("/api/starter")
+    fetch("/api/starter", { headers: odmLocaleHeaders() })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: Starter | null) => {
         if (data) {
@@ -48,7 +48,7 @@ export function StarterDialog({
     try {
       const response = await fetch("/api/starter", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...odmLocaleHeaders() },
         body: JSON.stringify({ solo }),
       });
       const data = await response.json().catch(() => ({}));

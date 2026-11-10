@@ -35,6 +35,16 @@ export function readLocaleChoice(): LocaleChoice {
   return stored === "en" || stored === "fr" ? stored : "auto";
 }
 
+// Headers that tell the server which language the reader chose, for the
+// surfaces the app builds per request (the starter's cards, the join
+// previews, the rulebook). An explicit choice wins over the browser's
+// Accept-Language — a French reader on an English-locale desktop reads
+// French; "auto" sends nothing, leaving the browser's word as ever.
+export function odmLocaleHeaders(): Record<string, string> {
+  const choice = readLocaleChoice();
+  return choice === "auto" ? {} : { "X-Odm-Locale": choice };
+}
+
 // The browser's own preference order decides "auto": the first language the
 // app speaks wins, and anything unrecognised lands on English, the source
 // dictionary.

@@ -9,7 +9,7 @@ import { createSheetSchema } from "@/lib/schemas/sheet";
 import { olderBuilderOf } from "@/lib/srd/legality/older-builder";
 import { pregenById } from "@/lib/starter/pregens";
 import { seatPicksSchema } from "@/lib/characters/seat-picks";
-import { localeFromAcceptLanguage } from "@/lib/rulebook/book";
+import { bookLocaleOf } from "@/lib/rulebook/book";
 import { translate, type Locale } from "@/lib/messages-logic";
 import { claimRefusal, offeredPregenFor, pregenSeatRefusal } from "@/lib/db/pregen-offers";
 
@@ -52,7 +52,7 @@ export async function POST(
   }
   // The confirm sheet reads the asker's language: the sentences the route
   // words itself and the ones the shared builders word for it.
-  const locale: Locale = localeFromAcceptLanguage(request.headers.get("accept-language"));
+  const locale: Locale = bookLocaleOf(request);
   const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
   if (!capsFor(context).needsCharacter) {
     return Response.json({ error: t("preview.problem.gmNoCharacter") }, { status: 400 });

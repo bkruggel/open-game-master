@@ -96,10 +96,10 @@ export default function BackgroundKitSection({
                 label={entry.item}
                 reference={{ kind: "items", slug: contentSlug(entry.item), name: entry.item }}
               />
-              <span className="text-stone-500">from your tool proficiency</span>
+              <span className="text-stone-500">{t("builder.kit.fromToolProficiency")}</span>
             </>
           ) : (
-            <span className="text-amber-300">the tool you pick on the Ancestry step, beside the background.</span>
+            <span className="text-amber-300">{t("builder.kit.toolOnAncestry")}</span>
           )}
         </p>
       ))}
