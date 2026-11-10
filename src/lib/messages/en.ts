@@ -1797,6 +1797,12 @@ export const en = {
   "workshop.party.draft.couldNotAsk": "Could not ask whether the AI GM can draft.",
   "workshop.party.draft.askUnreachable": "Could not reach the server to ask whether the AI GM can draft.",
 
+  // The workshop kit's own small pieces (kit.tsx): the words a shared
+  // primitive announces on every system's editor and list.
+  "workshop.kit.clear": "Clear {name}",
+  "workshop.kit.leaveUnset": "Leave unset",
+  "workshop.kit.rowMore": "More for {name}",
+
   // The map editor's words panel (MapDetails.tsx).
   "workshop.maps.nameAria": "Map name",
   "workshop.maps.details": "Details",
@@ -5258,6 +5264,22 @@ export const en = {
   "workshop.bestiary.attack.damageOnFail": "Damage on a failed save",
   "workshop.bestiary.attack.halfOnSuccess": "Half on a success",
   "workshop.bestiary.attack.halfOnSaveSwitch": "Half damage on a successful save",
+  // The attack list both the workshop editor and the table's bestiary panel
+  // render (MonsterFields.tsx).
+  "workshop.bestiary.attack.add": "Attack",
+  "workshop.bestiary.attack.chipBonus": "bonus action",
+  "workshop.bestiary.attack.chipDetails": "Details",
+  "workshop.bestiary.attack.chipOnHit": "on hit",
+  "workshop.bestiary.attack.chipReach": "reach {n}",
+  "workshop.bestiary.attack.chipWeaker": "weaker when bloodied",
+  "workshop.bestiary.attack.engineNote":
+    "The engine swings the Multiattack routine when the block has one, otherwise its best attack as many times as Swings says. Damage has to be something the dice roller can read.",
+  "workshop.bestiary.attack.namePlaceholder": "Bite",
+  "workshop.bestiary.attack.remove": "Remove {name}",
+  "workshop.bestiary.attack.toHitAria": "To hit, {name}",
+  "workshop.bestiary.attack.toHitWord": "to hit",
+  "workshop.bestiary.attack.typePlaceholder": "slashing",
+  "workshop.bestiary.attack.unnamed": "attack",
 
   // The actions with numbers the engine runs (BlockActionFields.tsx): a
   // breath's recharge, a legendary cost, the Regeneration, the Multiattack
@@ -5323,6 +5345,40 @@ export const en = {
   "workshop.bestiary.build.find": "Find",
   "workshop.bestiary.build.crChip": "CR {cr}",
 
+  // The catalogue half of the monster editor, shared by the workshop and the
+  // table's panel (MonsterKitFields.tsx): the pickers that build a block out
+  // of ancestries, classes, the half-dragon template, armour and weapons.
+  "workshop.bestiary.catalogue.abilityMod": "Ability mod",
+  "workshop.bestiary.catalogue.addAttack": "Add it as an attack",
+  "workshop.bestiary.catalogue.ancestry": "Ancestry",
+  "workshop.bestiary.catalogue.attacksFull": "Attack list full",
+  "workshop.bestiary.catalogue.armor": "Armour",
+  "workshop.bestiary.catalogue.chassis": "d{die} hit die: at least {hp} hit points, {saves} saves at +{pb} or better.",
+  "workshop.bestiary.catalogue.chassisJoin": " and ",
+  "workshop.bestiary.catalogue.class": "Class",
+  "workshop.bestiary.catalogue.con": "CON",
+  "workshop.bestiary.catalogue.dragonHalf": "Dragon half",
+  "workshop.bestiary.catalogue.dragonLabel": "Half-dragon template",
+  "workshop.bestiary.catalogue.featuresClick": "(click to add)",
+  "workshop.bestiary.catalogue.featuresFull": "(trait list full)",
+  "workshop.bestiary.catalogue.featuresTitle": "Its abilities at that level",
+  "workshop.bestiary.catalogue.gainedAt": "Gained at level {n}",
+  "workshop.bestiary.catalogue.intro":
+    "Everything these add is an ordinary line on the block below: rename it, retune the numbers, or delete it. Mix as many classes as you like.",
+  "workshop.bestiary.catalogue.makeDragon": "Make it a half-dragon",
+  "workshop.bestiary.catalogue.none": "None",
+  "workshop.bestiary.catalogue.noneAvailable": "None available",
+  "workshop.bestiary.catalogue.pickOne": "Pick one",
+  "workshop.bestiary.catalogue.setAc": "Set the armour class",
+  "workshop.bestiary.catalogue.shield": "Shield",
+  "workshop.bestiary.catalogue.subclass": "Subclass",
+  "workshop.bestiary.catalogue.takeAncestry": "Take its size, speed and traits",
+  "workshop.bestiary.catalogue.takeChassis": "Take its hit points, saves and swings",
+  "workshop.bestiary.catalogue.title": "Build it out of the catalogue",
+  "workshop.bestiary.catalogue.toHitNote": "To hit +{n} at level {level}.",
+  "workshop.bestiary.catalogue.unarmored": "Unarmoured",
+  "workshop.bestiary.catalogue.weapon": "Weapon",
+
   // The monster editor itself (MonsterEditor.tsx): the core numbers, the
   // fold groups, the description, and the rating the numbers support.
   "workshop.bestiary.editor.theBlock": "The block",
@@ -5345,6 +5401,32 @@ export const en = {
   "workshop.bestiary.editor.savingHint": "Saving recalculates the rating from what is on screen.",
   "workshop.bestiary.editor.catalogue": "Catalogue and defences",
 
+  // The folded groups' summary lines (monster-folds.ts): what each closed
+  // section holds, in the workshop and the table's editor alike.
+  "workshop.bestiary.folds.actionsNone": "None yet: Multiattack, a breath weapon and other specials go here",
+  "workshop.bestiary.folds.actionsRoutine": "a Multiattack routine",
+  "workshop.bestiary.folds.attackToHit": "+{attack} to hit",
+  "workshop.bestiary.folds.orJoin": " or ",
+  "workshop.bestiary.folds.regenLine": "Regains {amount} hit points a turn{stoppedBy}",
+  "workshop.bestiary.folds.regenNone": "None",
+  "workshop.bestiary.folds.regenStopped": ", stopped by {list}",
+  "workshop.bestiary.folds.saveDc": "save DC {dc}",
+  "workshop.bestiary.folds.sensesNone": "None set",
+  "workshop.bestiary.folds.skill_one": "skill",
+  "workshop.bestiary.folds.skill_other": "skills",
+  "workshop.bestiary.folds.spell_one": "spell",
+  "workshop.bestiary.folds.spell_other": "spells",
+  "workshop.bestiary.folds.spellsNone": "None: this creature casts no spells",
+  "workshop.bestiary.folds.special_one": "special",
+  "workshop.bestiary.folds.special_other": "specials",
+  "workshop.bestiary.folds.traitLine_one": "trait line",
+  "workshop.bestiary.folds.traitLine_other": "trait lines",
+
+  // The rating line under the editor's numbers (MonsterFields.tsx), shown by
+  // both the workshop and the table's panel.
+  "workshop.bestiary.rating.agree": "The numbers agree: CR {cr}.",
+  "workshop.bestiary.rating.disagree": "Written as CR {cr}; the numbers say CR {derived}.",
+
   // The bestiary's list rows (MonsterRows.tsx): the empty state and the
   // numbers a DM scans a stat block for.
   "workshop.bestiary.rows.emptyTitle": "Nothing built yet. A monster made here answers to its name wherever a fight starts.",
@@ -5355,6 +5437,22 @@ export const en = {
   "workshop.bestiary.rows.hpLine": "{hp} hp",
   "workshop.bestiary.rows.swingLine_one": "{count} swing a turn · Dex {mod}",
   "workshop.bestiary.rows.swingLine_other": "{count} swings a turn · Dex {mod}",
+  // The table's bestiary panel around those rows (DmBestiaryPanel.tsx).
+  "workshop.bestiary.rows.buildFailed": "That could not be built.",
+  "workshop.bestiary.rows.closeBlock": "Close the stat block",
+  "workshop.bestiary.rows.delete": "Delete {name}",
+  "workshop.bestiary.rows.deleteFailed": "That could not be deleted.",
+  "workshop.bestiary.rows.duplicate": "Duplicate {name}",
+  "workshop.bestiary.rows.forgetLine":
+    "Forget {name}? It leaves the bestiary and its pickers. An NPC, a prepared fight or a template that already names it still fights with its stat block as it is now.",
+  "workshop.bestiary.rows.forgetTitle": "Forget this monster?",
+  "workshop.bestiary.rows.forgetWorld": " World entries that link to it keep the link: {names}.",
+  "workshop.bestiary.rows.openBlock": "Open the stat block",
+  "workshop.bestiary.rows.opening": "Opening the bestiary...",
+  "workshop.bestiary.rows.sheetTitle": "Monster",
+  "workshop.bestiary.rows.saveFailed": "That could not be saved.",
+  "workshop.bestiary.rows.unreachable": "Could not reach the server.",
+  "workshop.bestiary.rows.yours": "Your monsters",
 
   // The monster's spellcasting block (SpellcastingFields.tsx): the casting
   // numbers, the slots by level, and the list where each spell says how it
@@ -5409,6 +5507,30 @@ export const en = {
   "workshop.bestiary.stats.section": "Section",
   "workshop.bestiary.stats.removeTrait": "Remove trait",
   "workshop.bestiary.stats.blockFull": "The block is full at {count} lines.",
+  // The size, type, save and defence fields both the workshop editor and the
+  // table's panel render (MonsterFields.tsx).
+  "workshop.bestiary.stats.conditionImmune": "Condition immunities",
+  "workshop.bestiary.stats.conditionResist": "Resistant to conditions (advantage on the save)",
+  "workshop.bestiary.stats.conditionVulnerable": "Vulnerable to conditions (disadvantage on the save)",
+  "workshop.bestiary.stats.immune": "Immune to",
+  "workshop.bestiary.stats.resist": "Resistant to",
+  "workshop.bestiary.stats.saveAbbr.cha": "CHA",
+  "workshop.bestiary.stats.saveAbbr.con": "CON",
+  "workshop.bestiary.stats.saveAbbr.dex": "DEX",
+  "workshop.bestiary.stats.saveAbbr.int": "INT",
+  "workshop.bestiary.stats.saveAbbr.str": "STR",
+  "workshop.bestiary.stats.saveAbbr.wis": "WIS",
+  "workshop.bestiary.stats.saveAria": "{ability} save",
+  "workshop.bestiary.stats.size": "Size",
+  "workshop.bestiary.stats.type": "Type",
+  "workshop.bestiary.stats.vulnerable": "Vulnerable to",
+
+  // The term and speed pickers under those fields (MonsterKitFields.tsx).
+  "workshop.bestiary.speed.label": "Speed",
+  "workshop.bestiary.speed.modeAria": "{mode} speed in feet",
+  "workshop.bestiary.speed.readsAs": "Reads as \"{value}\". Zero hides a mode.",
+  "workshop.bestiary.terms.ownPlaceholder": "or type your own, comma separated",
+  "workshop.bestiary.terms.ownTitle": "Your own; click to remove",
 
   // The bundle preview both importers end on (BundlePreview.tsx): what the
   // unticks cost, the shared records a dependent bundle links to, and the

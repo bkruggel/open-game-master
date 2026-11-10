@@ -31,7 +31,7 @@ import { CR_CHOICES } from "@/app/workshop/bestiary/types";
 import { AbilitiesEditor, RegenerationEditor, RoutineEditor } from "@/app/workshop/bestiary/BlockActionFields";
 import { SpellcastingEditor } from "@/app/workshop/bestiary/SpellcastingFields";
 import { BorrowParts } from "@/app/workshop/bestiary/BorrowParts";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 const CR_OPTIONS = CR_CHOICES.map((cr) => ({ value: String(cr), label: crLabel(cr) }));
 
@@ -79,6 +79,7 @@ export function MonsterEditor({
 }) {
   const sheet = layout === "sheet";
   const t = useT();
+  const locale = useLocale();
   const setStats = (patch: Partial<MonsterDraft["stats"]>) =>
     onDraft({ ...draft, stats: { ...draft.stats, ...patch } });
   const [openFolds, setOpenFolds] = useState<ReadonlySet<MonsterFold>>(new Set());
@@ -87,7 +88,7 @@ export function MonsterEditor({
       id={`monster-${id}`}
       title={title}
       glyph={glyph}
-      summary={monsterFoldSummary(id, draft)}
+      summary={monsterFoldSummary(id, draft, t, locale)}
       open={openFolds.has(id)}
       onToggle={(open) =>
         setOpenFolds((current) => {

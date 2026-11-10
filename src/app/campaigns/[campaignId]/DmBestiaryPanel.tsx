@@ -167,7 +167,7 @@ export function DmBestiaryPanel({
         error?: string;
       };
       if (!response.ok || !payload.monster) {
-        setError(payload.error ?? "That could not be built.");
+        setError(payload.error ?? t("workshop.bestiary.rows.buildFailed"));
         return false;
       }
       await load(query || undefined);
@@ -216,7 +216,7 @@ export function DmBestiaryPanel({
         error?: string;
       };
       if (!response.ok || !payload.monster) {
-        setError(payload.error ?? "That could not be saved.");
+        setError(payload.error ?? t("workshop.bestiary.rows.saveFailed"));
         return;
       }
       setReadout(payload.monster.readout);
@@ -234,11 +234,11 @@ export function DmBestiaryPanel({
     // World entries that link to it keep the link: a forgotten monster still
     // resolves, so they still fight as it.
     const linked = onWorldEntry ? await linkedEntries(campaignId, "monster", `homebrew:${id}`) : [];
-    const worldLine = linked.length ? ` World entries that link to it keep the link: ${linked.map((entry) => entry.name).join(", ")}.` : "";
+    const worldLine = linked.length ? t("workshop.bestiary.rows.forgetWorld", { names: linked.map((entry) => entry.name).join(", ") }) : "";
     if (
       !(await appConfirm(
-        `Forget ${monster.draft.name}? It leaves the bestiary and its pickers. An NPC, a prepared fight or a template that already names it still fights with its stat block as it is now.${worldLine}`,
-        { title: "Forget this monster?", actionLabel: "Forget it" },
+        t("workshop.bestiary.rows.forgetLine", { name: monster.draft.name }) + worldLine,
+        { title: t("workshop.bestiary.rows.forgetTitle"), actionLabel: t("workshop.homebrew.editor.forgetIt") },
       ))
     ) {
       return;
@@ -247,7 +247,7 @@ export function DmBestiaryPanel({
     const response = await fetch(`/api/campaigns/${campaignId}/dm/bestiary/${id}`, { method: "DELETE" }).catch(() => null);
     if (!response?.ok) {
       const payload = (await response?.json().catch(() => ({}))) as { error?: string } | undefined;
-      setError(payload?.error ?? (response ? "That could not be deleted." : "Could not reach the server."));
+      setError(payload?.error ?? (response ? t("workshop.bestiary.rows.deleteFailed") : t("workshop.bestiary.rows.unreachable")));
       return;
     }
     if (openId === id) {
@@ -281,7 +281,7 @@ export function DmBestiaryPanel({
             open={building}
             onToggle={() => setBuilding((current) => !current)}
             glyph="system-bestiary"
-            title="Build a monster"
+            title={t("workshop.create.creature.build.label")}
             tour="bestiary-build"
           />
           {building ? (
@@ -302,7 +302,7 @@ export function DmBestiaryPanel({
         </section>
 
         <div data-tour="bestiary-list">
-          <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading="Opening the bestiary...">
+          <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading={t("workshop.bestiary.rows.opening")}>
             <MonsterRows
               monsters={monsters}
               busy={busy}
@@ -317,7 +317,7 @@ export function DmBestiaryPanel({
         <Sheet
           open={editorOpen && editor !== null}
           onOpenChange={setEditorOpen}
-          title={draft?.name || "Monster"}
+          title={draft?.name || t("workshop.bestiary.rows.sheetTitle")}
           className="top-0 h-dvh max-h-none rounded-none pt-[max(0.5rem,env(safe-area-inset-top))] lg:top-1/2 lg:h-auto lg:max-h-[92vh] lg:w-[min(96vw,64rem)] lg:rounded-xl"
         >
           {onWorldEntry && openId ? <LinkedEntries campaignId={campaignId} kind="monster" record={`homebrew:${openId}`} onWorldEntry={onWorldEntry} /> : null}
@@ -342,13 +342,13 @@ export function DmBestiaryPanel({
 
       <div className="flex flex-col gap-1.5">
         <SectionHead
-          title="Your monsters"
+          title={t("workshop.bestiary.rows.yours")}
           glyph="system-bestiary"
           aside={monsters.length ? <span key={monsters.length} className="count-pop">{monsters.length}</span> : undefined}
         />
-        <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading="Opening the bestiary...">
+        <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading={t("workshop.bestiary.rows.opening")}>
           {monsters.length === 0 ? (
-            <EmptyState size="sm" art="chest" title="Nothing built yet. A monster made here answers to its name wherever a fight starts." />
+            <EmptyState size="sm" art="chest" title={t("workshop.bestiary.rows.emptyTitle")} />
           ) : null}
         </Listed>
         {monsters.map((monster) => {
@@ -356,9 +356,9 @@ export function DmBestiaryPanel({
           const toggle = () => (isOpen ? setOpenId(null) : open(monster));
           // The labels are the names the two icon buttons always announced.
           const items: ContextMenuItem[] = [
-            { id: "open", label: isOpen ? "Close the stat block" : "Open the stat block", glyph: "system-bestiary", onSelect: toggle },
-            { id: "duplicate", label: `Duplicate ${monster.draft.name}`, glyph: "ui-duplicate", disabled: busy, onSelect: () => void duplicate(monster) },
-            { id: "delete", label: `Delete ${monster.draft.name}`, glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(monster) },
+            { id: "open", label: isOpen ? t("workshop.bestiary.rows.closeBlock") : t("workshop.bestiary.rows.openBlock"), glyph: "system-bestiary", onSelect: toggle },
+            { id: "duplicate", label: t("workshop.bestiary.rows.duplicate", { name: monster.draft.name }), glyph: "ui-duplicate", disabled: busy, onSelect: () => void duplicate(monster) },
+            { id: "delete", label: t("workshop.bestiary.rows.delete", { name: monster.draft.name }), glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(monster) },
           ];
           return (
             <ContextMenu key={monster.id} items={items} label={monster.draft.name} className={cn(ui.card, "rounded-lg")}>

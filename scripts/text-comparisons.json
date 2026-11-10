@@ -1267,18 +1267,25 @@
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
-  "app/campaigns/[campaignId]/MonsterFields.tsx#str-list": [
+  "app/campaigns/[campaignId]/MonsterFields.tsx#[a-z]": [
+   [
+    "display",
+    1,
+    "capital(): an SRD damage-type word title-cased"
+   ]
+  ],
+  "app/campaigns/[campaignId]/MonsterFields.tsx#str-key": [
    [
     "key",
-    4,
-    "UI: ids, fixed choices, DOM and keyboard names, stored values"
+    2,
+    "the official French size and creature-type words read by the value's own key (a fixed choice the SIZES and CREATURE_TYPES lists name); a miss is the stored word back"
    ]
   ],
   "app/campaigns/[campaignId]/MonsterFields.tsx#toUpperCase": [
    [
     "display",
     2,
-    "ability abbreviation and creature type shown"
+    "the creature type's and the French damage words' initial capital shown"
    ]
   ],
   "app/campaigns/[campaignId]/MonsterHand.tsx#str-eq": [
@@ -1286,6 +1293,27 @@
     "key",
     1,
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
+   ]
+  ],
+  "app/campaigns/[campaignId]/MonsterKitFields.tsx#[a-z]": [
+   [
+    "display",
+    1,
+    "capital(): a dragon color word capitalized"
+   ]
+  ],
+  "app/campaigns/[campaignId]/MonsterKitFields.tsx#str-key": [
+   [
+    "key",
+    2,
+    "the official French movement-mode and dragon-color words read by the mode's or color's own key (a fixed choice the MOVEMENT_MODES and DRAGON_COLORS lists name); a miss is the stored word back"
+   ]
+  ],
+  "app/campaigns/[campaignId]/MonsterKitFields.tsx#toUpperCase": [
+   [
+    "display",
+    1,
+    "capital(): a dragon color word capitalized"
    ]
   ],
   "app/campaigns/[campaignId]/NarrationNote.tsx#str-eq": [
@@ -5721,13 +5749,6 @@
     "key",
     1,
     "damage types, conditions and movement modes (engine vocabulary)"
-   ]
-  ],
-  "lib/bestiary/kit.ts#toUpperCase": [
-   [
-    "display",
-    1,
-    "ability abbreviations shown"
    ]
   ],
   "lib/bestiary/monster-draft.ts#str-list": [
@@ -19219,6 +19240,13 @@
     "key",
     1,
     "a card ability code read by its fixed sheet.ability message key; the code is the engine's own vocabulary"
+   ]
+  ],
+  "app/workshop/bestiary/monster-folds.ts#str-key": [
+   [
+    "key",
+    1,
+    "UI: the sense names a fold line reads, stored values and map keys"
    ]
   ]
  },

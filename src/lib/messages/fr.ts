@@ -1812,6 +1812,13 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.party.draft.couldNotAsk": "Impossible de demander si le MJ IA peut ébaucher.",
   "workshop.party.draft.askUnreachable": "Impossible de joindre le serveur pour demander si le MJ IA peut ébaucher.",
 
+  // Les petites pièces propres à l'atelier (kit.tsx) : les mots que les
+  // primitives partagées annoncent sur l'éditeur et la liste de chaque
+  // système.
+  "workshop.kit.clear": "Effacer {name}",
+  "workshop.kit.leaveUnset": "Laisser vide",
+  "workshop.kit.rowMore": "Plus pour {name}",
+
   // Le panneau des mots d'une carte (MapDetails.tsx).
   "workshop.maps.nameAria": "Nom de la carte",
   "workshop.maps.details": "Détails",
@@ -5284,6 +5291,22 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.bestiary.attack.damageOnFail": "Dégâts en cas d'échec",
   "workshop.bestiary.attack.halfOnSuccess": "Moitié si réussite",
   "workshop.bestiary.attack.halfOnSaveSwitch": "Dégâts réduits de moitié si le jet de sauvegarde réussit",
+  // La liste d'attaques que l'éditeur de l'atelier et le panneau bestiaire de
+  // la table rendent tous les deux (MonsterFields.tsx).
+  "workshop.bestiary.attack.add": "Attaque",
+  "workshop.bestiary.attack.chipBonus": "action bonus",
+  "workshop.bestiary.attack.chipDetails": "Détails",
+  "workshop.bestiary.attack.chipOnHit": "au toucher",
+  "workshop.bestiary.attack.chipReach": "allonge {n}",
+  "workshop.bestiary.attack.chipWeaker": "plus faible à mi-vie",
+  "workshop.bestiary.attack.engineNote":
+    "Le moteur joue la routine d'Attaques multiples quand le bloc en a une, sinon sa meilleure attaque autant de fois que le champ Coups l'indique. Les dégâts doivent être lisibles par le lanceur de dés.",
+  "workshop.bestiary.attack.namePlaceholder": "Morsure",
+  "workshop.bestiary.attack.remove": "Retirer {name}",
+  "workshop.bestiary.attack.toHitAria": "Pour toucher, {name}",
+  "workshop.bestiary.attack.toHitWord": "pour toucher",
+  "workshop.bestiary.attack.typePlaceholder": "tranchants",
+  "workshop.bestiary.attack.unnamed": "attaque",
 
   // Les actions chiffrées que le moteur joue (BlockActionFields.tsx) : la
   // recharge d'un souffle, le coût légendaire, la Régénération, la routine
@@ -5349,6 +5372,41 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.bestiary.build.find": "Chercher",
   "workshop.bestiary.build.crChip": "FP {cr}",
 
+  // La moitié catalogue de l'éditeur de monstre, partagée par l'atelier et le
+  // panneau de la table (MonsterKitFields.tsx) : les sélecteurs qui
+  // construisent un bloc à partir d'ascendances, de classes, du gabarit
+  // demi-dragon, de l'armure et des armes.
+  "workshop.bestiary.catalogue.abilityMod": "Mod. de caractéristique",
+  "workshop.bestiary.catalogue.addAttack": "L'ajouter comme attaque",
+  "workshop.bestiary.catalogue.ancestry": "Ascendance",
+  "workshop.bestiary.catalogue.attacksFull": "Liste d'attaques pleine",
+  "workshop.bestiary.catalogue.armor": "Armure",
+  "workshop.bestiary.catalogue.chassis": "dé de vie d{die} : au moins {hp} points de vie, {saves} sauvegardes à +{pb} ou mieux.",
+  "workshop.bestiary.catalogue.chassisJoin": " et ",
+  "workshop.bestiary.catalogue.class": "Classe",
+  "workshop.bestiary.catalogue.con": "CON",
+  "workshop.bestiary.catalogue.dragonHalf": "Moitié de dragon",
+  "workshop.bestiary.catalogue.dragonLabel": "Gabarit demi-dragon",
+  "workshop.bestiary.catalogue.featuresClick": "(clique pour ajouter)",
+  "workshop.bestiary.catalogue.featuresFull": "(liste de traits pleine)",
+  "workshop.bestiary.catalogue.featuresTitle": "Ses capacités à ce niveau",
+  "workshop.bestiary.catalogue.gainedAt": "Gagné au niveau {n}",
+  "workshop.bestiary.catalogue.intro":
+    "Tout ce qu'ils ajoutent est une ligne ordinaire du bloc ci-dessous : renomme-la, réajuste les nombres, ou supprime-la. Mélange autant de classes que tu veux.",
+  "workshop.bestiary.catalogue.makeDragon": "Rends-le demi-dragon",
+  "workshop.bestiary.catalogue.none": "Aucune",
+  "workshop.bestiary.catalogue.noneAvailable": "Aucune disponible",
+  "workshop.bestiary.catalogue.pickOne": "Choisis",
+  "workshop.bestiary.catalogue.setAc": "Règle la classe d'armure",
+  "workshop.bestiary.catalogue.shield": "Bouclier",
+  "workshop.bestiary.catalogue.subclass": "Sous-classe",
+  "workshop.bestiary.catalogue.takeAncestry": "Prends sa taille, sa vitesse et ses traits",
+  "workshop.bestiary.catalogue.takeChassis": "Prends ses points de vie, ses sauvegardes et ses attaques",
+  "workshop.bestiary.catalogue.title": "Construis-le avec le catalogue",
+  "workshop.bestiary.catalogue.toHitNote": "Pour toucher +{n} au niveau {level}.",
+  "workshop.bestiary.catalogue.unarmored": "Sans armure",
+  "workshop.bestiary.catalogue.weapon": "Arme",
+
   // L'éditeur de monstre lui-même (MonsterEditor.tsx) : les nombres de base,
   // les groupes pliables, la description, et la cote que les chiffres
   // soutiennent.
@@ -5372,6 +5430,33 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.bestiary.editor.savingHint": "Enregistrer recalcule la cote d'après ce qui est à l'écran.",
   "workshop.bestiary.editor.catalogue": "Catalogue et défenses",
 
+  // Les lignes résumées des volets repliés (monster-folds.ts) : ce que
+  // chaque section fermée contient, dans l'atelier comme dans l'éditeur de
+  // la table.
+  "workshop.bestiary.folds.actionsNone": "Rien encore : les attaques multiples, un souffle et les autres spéciaux vont ici",
+  "workshop.bestiary.folds.actionsRoutine": "une routine d'attaques multiples",
+  "workshop.bestiary.folds.attackToHit": "+{attack} pour toucher",
+  "workshop.bestiary.folds.orJoin": " ou ",
+  "workshop.bestiary.folds.regenLine": "Récupère {amount} points de vie par tour{stoppedBy}",
+  "workshop.bestiary.folds.regenNone": "Aucune",
+  "workshop.bestiary.folds.regenStopped": ", sauf si elle a subi {list}",
+  "workshop.bestiary.folds.saveDc": "DD {dc}",
+  "workshop.bestiary.folds.sensesNone": "Rien de réglé",
+  "workshop.bestiary.folds.skill_one": "compétence",
+  "workshop.bestiary.folds.skill_other": "compétences",
+  "workshop.bestiary.folds.spell_one": "sort",
+  "workshop.bestiary.folds.spell_other": "sorts",
+  "workshop.bestiary.folds.spellsNone": "Aucun : cette créature ne lance pas de sorts",
+  "workshop.bestiary.folds.special_one": "spécial",
+  "workshop.bestiary.folds.special_other": "spéciaux",
+  "workshop.bestiary.folds.traitLine_one": "ligne de trait",
+  "workshop.bestiary.folds.traitLine_other": "lignes de trait",
+
+  // La ligne de cote sous les nombres de l'éditeur (MonsterFields.tsx),
+  // affichée par l'atelier comme par le panneau de la table.
+  "workshop.bestiary.rating.agree": "Les chiffres concordent : FP {cr}.",
+  "workshop.bestiary.rating.disagree": "Écrit FP {cr} ; les chiffres disent FP {derived}.",
+
   // Les lignes de la liste du bestiaire (MonsterRows.tsx) : l'état vide et
   // les nombres qu'un MJ balaye sur un statblock.
   "workshop.bestiary.rows.emptyTitle": "Rien de construit encore. Un monstre fait ici répond à son nom partout où un combat démarre.",
@@ -5382,6 +5467,23 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.bestiary.rows.hpLine": "{hp} PV",
   "workshop.bestiary.rows.swingLine_one": "{count} coup par tour · DEX {mod}",
   "workshop.bestiary.rows.swingLine_other": "{count} coups par tour · DEX {mod}",
+  // Le panneau bestiaire de la table autour de ces lignes
+  // (DmBestiaryPanel.tsx).
+  "workshop.bestiary.rows.buildFailed": "Cela n'a pas pu être construit.",
+  "workshop.bestiary.rows.closeBlock": "Refermer le bloc de stats",
+  "workshop.bestiary.rows.delete": "Supprimer {name}",
+  "workshop.bestiary.rows.deleteFailed": "Cela n'a pas pu être supprimé.",
+  "workshop.bestiary.rows.duplicate": "Dupliquer {name}",
+  "workshop.bestiary.rows.forgetLine":
+    "Oublier {name} ? Il quitte le bestiaire et les listes qui le proposent. Un PNJ, un combat préparé ou un gabarit qui le nomme déjà se bat toujours avec son bloc de stats tel qu'il est maintenant.",
+  "workshop.bestiary.rows.forgetTitle": "Oublier ce monstre ?",
+  "workshop.bestiary.rows.forgetWorld": " Les entrées du monde qui le citent gardent le lien : {names}.",
+  "workshop.bestiary.rows.openBlock": "Ouvrir le bloc de stats",
+  "workshop.bestiary.rows.opening": "On ouvre le bestiaire...",
+  "workshop.bestiary.rows.sheetTitle": "Monstre",
+  "workshop.bestiary.rows.saveFailed": "Cela n'a pas pu être enregistré.",
+  "workshop.bestiary.rows.unreachable": "Impossible de joindre le serveur.",
+  "workshop.bestiary.rows.yours": "Tes monstres",
 
   // Le bloc d'incantation du monstre (SpellcastingFields.tsx) : les nombres
   // d'incantation, les emplacements par niveau, et la liste où chaque sort
@@ -5436,6 +5538,32 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.bestiary.stats.section": "Section",
   "workshop.bestiary.stats.removeTrait": "Retirer le trait",
   "workshop.bestiary.stats.blockFull": "Le bloc est plein à {count} lignes.",
+  // Les champs de taille, de type, de sauvegardes et de défenses que
+  // l'éditeur de l'atelier et le panneau de la table rendent tous les deux
+  // (MonsterFields.tsx).
+  "workshop.bestiary.stats.conditionImmune": "États évités",
+  "workshop.bestiary.stats.conditionResist": "Résiste aux états (avantage au jet)",
+  "workshop.bestiary.stats.conditionVulnerable": "Vulnérable aux états (désavantage au jet)",
+  "workshop.bestiary.stats.immune": "Immunisé à",
+  "workshop.bestiary.stats.resist": "Résiste à",
+  "workshop.bestiary.stats.saveAbbr.cha": "CHA",
+  "workshop.bestiary.stats.saveAbbr.con": "CON",
+  "workshop.bestiary.stats.saveAbbr.dex": "DEX",
+  "workshop.bestiary.stats.saveAbbr.int": "INT",
+  "workshop.bestiary.stats.saveAbbr.str": "STR",
+  "workshop.bestiary.stats.saveAbbr.wis": "SAG",
+  "workshop.bestiary.stats.saveAria": "jet de {ability}",
+  "workshop.bestiary.stats.size": "Taille",
+  "workshop.bestiary.stats.type": "Type",
+  "workshop.bestiary.stats.vulnerable": "Vulnérable à",
+
+  // Les sélecteurs de termes et de vitesse sous ces champs
+  // (MonsterKitFields.tsx).
+  "workshop.bestiary.speed.label": "Vitesse",
+  "workshop.bestiary.speed.modeAria": "vitesse {mode} en pieds",
+  "workshop.bestiary.speed.readsAs": "Se lit « {value} ». Zéro masque un mode.",
+  "workshop.bestiary.terms.ownPlaceholder": "ou tape le tien, séparé par des virgules",
+  "workshop.bestiary.terms.ownTitle": "Le vôtre ; un clic le retire",
 
   // L'aperçu du paquet où aboutissent les deux importations
   // (BundlePreview.tsx) : ce que coûtent les décoches, les fiches partagées

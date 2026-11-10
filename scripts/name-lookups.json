@@ -1326,6 +1326,13 @@
         "UI keys, ids, refs, view choices and documented defaults (a palette, a tile, a peer volume, the first sheet)"
       ]
     ],
+    "app/campaigns/[campaignId]/MonsterFields.tsx#keyed": [
+      [
+        "key",
+        1,
+        "the official French creature-type words read by the type's own key (a fixed choice the CREATURE_TYPES list names); a miss is the English word back, never a near record"
+      ]
+    ],
     "app/campaigns/[campaignId]/MonsterHand.tsx#fallback": [
       [
         "key",
