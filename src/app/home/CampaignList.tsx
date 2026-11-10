@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { CampaignCover } from "@/components/CampaignCover";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
@@ -92,6 +92,7 @@ function SaveSlot({
   onDelete: () => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const ended = campaign.status === "ended";
   const router = useRouter();
   // The same doors as the slot and its three buttons, under a right-click or
@@ -137,7 +138,7 @@ function SaveSlot({
             </span>
           </span>
           <span className="ts-slot-title">{campaign.title}</span>
-          <span className="ts-slot-line">{slotLine(t, campaign, userId)}</span>
+          <span className="ts-slot-line">{slotLine(t, campaign, userId, locale)}</span>
           <span className="ts-slot-meta">
             {t("home.slot.meta", { level: campaign.startingLevel, difficulty: campaign.difficulty })}
             {campaign.maxPlayers === 1 ? t("home.slot.soloSuffix") : ""}

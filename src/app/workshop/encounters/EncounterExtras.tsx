@@ -121,7 +121,7 @@ export function EncounterExtras({
                   fallback={1}
                   min={1}
                   max={EXTRAS_LIMITS.hp}
-                  suffix="hp"
+                  suffix={t("workshop.encounters.hpSuffix")}
                   label={t("workshop.encounters.slotHpLabel", { label: slot.label })}
                   onChange={(next) => setOverride(slot.slot, { hp: next === "" ? undefined : next })}
                 />

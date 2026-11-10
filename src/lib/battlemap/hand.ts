@@ -7,6 +7,10 @@
 // Pure and database-free: scripts/test-hand.mjs drives every branch. What a
 // card says once it is played lives next door in hand-play.ts.
 import { racialNaturalWeapon } from "@/lib/srd/racial-weapons";
+import { translate } from "@/lib/messages-logic";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
 import { optionCards } from "@/lib/battlemap/hand-options";
 import { maneuverDieFor, maneuverUse, type ManeuverUse } from "@/lib/dm/maneuver-rules";
 import { ragingMeleeBonus, weaponAttackProfile, weaponOf } from "@/lib/dm/attack-logic";
@@ -374,7 +378,46 @@ const BASICS: Array<{ id: BasicActionId; name: string; rules: string; target: Ha
 // engine's own reading of the sheet (bonus-routes.ts, which take_action asks).
 const BONUS_MOVES: MoveAction[] = ["dash", "disengage", "hide", "dodge"];
 
-function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders): HandCard[] {
+const BASIC_RULE_KEY: Record<BasicActionId, string> = {
+  dodge: "table.hand.basic.dodge.rules",
+  dash: "table.hand.basic.dash.rules",
+  disengage: "table.hand.basic.disengage.rules",
+  help: "table.hand.basic.help.rules",
+  hide: "table.hand.basic.hide.rules",
+  search: "table.hand.basic.search.rules",
+  escape: "table.hand.basic.escape.rules",
+  "stand-up": "table.hand.basic.stand-up.rules",
+  ready: "table.hand.basic.ready.rules",
+  grapple: "table.hand.basic.grapple.rules",
+  shove: "table.hand.basic.shove.rules",
+  "use-object": "table.hand.basic.use-object.rules",
+  "end-turn": "table.hand.basic.end-turn.rules",
+  stabilize: "table.hand.basic.stabilize.rules",
+  dismount: "table.hand.basic.dismount.rules",
+};
+
+// The basics' own words, keyed so a French reader's cards read like the
+// tutorial that promises them (SRD 5.1 FR print: Esquiver, Foncer,
+// Se désengager, Empoigner, Bousculer).
+const BASIC_NAME_KEYS: Record<BasicActionId, string> = {
+  dodge: "table.hand.basic.dodge",
+  dash: "table.hand.basic.dash",
+  disengage: "table.hand.basic.disengage",
+  help: "table.hand.basic.help",
+  hide: "table.hand.basic.hide",
+  search: "table.hand.basic.search",
+  escape: "table.hand.basic.escape",
+  "stand-up": "table.hand.basic.stand-up",
+  ready: "table.hand.basic.ready",
+  grapple: "table.hand.basic.grapple",
+  shove: "table.hand.basic.shove",
+  "use-object": "table.hand.basic.use-object",
+  "end-turn": "table.hand.basic.end-turn",
+  stabilize: "table.hand.basic.stabilize",
+  dismount: "table.hand.basic.dismount",
+};
+
+function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, t: T = enT): HandCard[] {
   const derived = computeSheetDerived(sheet);
   const allowed = 1 + riders.extraAttacks;
   const grappled = sheet.conditions.some((entry) => entry.trim().toLowerCase() === "grappled");
@@ -392,24 +435,45 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders)
     return {
       id: route ? `basic:${basic.id}:bonus` : `basic:${basic.id}`,
       type: "basic",
-      name: route ? `${route.feature}: ${basic.name}` : basic.name,
+      name: route
+        ? t("table.hand.basic.routeName", { feature: route.feature, name: t(BASIC_NAME_KEYS[basic.id]) })
+        : t(BASIC_NAME_KEYS[basic.id]),
       cost,
-      range: contest || basic.id === "help" ? "5 ft" : "Self",
+      range: contest || basic.id === "help" ? t("table.hand.range.melee") : t("table.hand.range.self"),
       dice: contest || escape
-        ? `Athletics ${signed(athletics)}`
+        ? t("table.hand.dice.athletics", { mod: signed(athletics) })
         : basic.id === "hide"
-          ? `Stealth ${signed(derived.skills.stealth ?? derived.abilityMods.dex)}`
+          ? t("table.hand.dice.stealth", { mod: signed(derived.skills.stealth ?? derived.abilityMods.dex) })
           : basic.id === "search"
-            ? `Perception ${signed(derived.skills.perception ?? derived.abilityMods.wis)}`
+            ? t("table.hand.dice.perception", { mod: signed(derived.skills.perception ?? derived.abilityMods.wis) })
             : "",
-      roll: contest || escape ? "contested check" : basic.id === "hide" || basic.id === "search" ? "skill check" : "no roll",
-      rules: route ? `${basic.rules} ${route.feature}: a bonus action${route.ki ? ` for ${route.ki} ki` : route.counter ? " and one use" : ""}.` : basic.rules,
+      roll: contest || escape
+        ? t("table.hand.roll.contested")
+        : basic.id === "hide" || basic.id === "search"
+          ? t("table.hand.roll.skill")
+          : t("table.hand.roll.none"),
+      rules: route
+        ? t("table.hand.basic.routeRules", {
+            rules: t(`${BASIC_RULE_KEY[basic.id]}`),
+            feature: route.feature,
+            tail: route.ki ? t("table.hand.basic.routeKi", { count: route.ki }) : route.counter ? t("table.hand.basic.routeUse") : "",
+          })
+        : t(`${BASIC_RULE_KEY[basic.id]}`),
       resource: route?.ki && sheet.resources.ki
         ? `Ki ${ki ?? 0}/${sheet.resources.ki.max}`
         : route?.counter
           ? `${route.feature} ${usesLeft(sheet, route.counter) ?? 0}/${sheet.resources[route.counter].max}`
           : "",
-      condition: basic.id === "dodge" ? "Dodging" : basic.id === "grapple" ? "Grappled" : basic.id === "shove" ? "Prone" : basic.id === "ready" ? "Readied" : "",
+      condition:
+        basic.id === "dodge"
+          ? t("table.hand.cond.dodging")
+          : basic.id === "grapple"
+            ? t("table.hand.cond.grappled")
+            : basic.id === "shove"
+              ? t("table.hand.cond.prone")
+              : basic.id === "ready"
+                ? t("table.hand.cond.readied")
+                : "",
       icon: { kind: "action", key: basic.id },
       target: basic.target,
       toHit: null,
@@ -435,14 +499,21 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders)
     const plain = make(basic, null);
     const card: HandCard =
       basic.id === "escape" && hold
-        ? { ...plain, name: `Escape: ${hold.spell}`, rules: hold.rules, dice: hold.dice, roll: hold.roll, condition: "" }
+        ? {
+            ...plain,
+            name: t("table.hand.basic.escapeHold", { spell: hold.spell }),
+            rules: hold.rules,
+            dice: hold.dice,
+            roll: hold.roll,
+            condition: "",
+          }
         : plain;
     if (basic.id === "stand-up") {
       // Movement, not an action (SRD 5.1, Being Prone): no standing at speed
       // 0, whether a condition or exhaustion stops them.
       const still: Gate =
         exhaustionSpeed(sheet.exhaustion ?? 0, effectiveSpeed(sheet.conditions, sheet.speed)) === 0
-          ? { reason: "Your speed is 0, so you cannot stand up.", spent: false }
+          ? { reason: t("table.hand.gate.standSpeed"), spent: false }
           : null;
       cards.push(gated(card, standingGate(sheet, turn, "move"), still));
       continue;
@@ -455,13 +526,15 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders)
     const contest = basic.id === "grapple" || basic.id === "shove";
     const still: Gate =
       basic.id === "dash" && effectiveSpeed(sheet.conditions, sheet.speed) === 0
-        ? { reason: "Your speed is 0, so a Dash goes nowhere.", spent: false }
+        ? { reason: t("table.hand.gate.dashSpeed"), spent: false }
         : null;
     cards.push(
       gated(
         card,
         standingGate(sheet, turn, contest ? "attack" : "action"),
-        contest ? attackGate(turn, allowed, sheet, { hasteOk: false }) : costGate("action", turn, sheet, basic.name),
+        contest
+          ? attackGate(turn, allowed, sheet, { hasteOk: false })
+          : costGate("action", turn, sheet, t(BASIC_NAME_KEYS[basic.id])),
         still,
       ),
     );
@@ -472,11 +545,11 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders)
     if (route) {
       const kiGate: Gate =
         route.ki > 0 && (kiLeft(sheet) ?? 0) < route.ki
-          ? { reason: `${sheet.name} has no ki point left for ${route.feature}. It comes back after a rest.`, spent: true }
+          ? { reason: t("table.hand.gate.noKi", { name: sheet.name, feature: route.feature }), spent: true }
           : null;
       const usesGate: Gate =
         route.counter && !usesLeft(sheet, route.counter)
-          ? { reason: `${sheet.name} has no use of ${route.feature} left. It comes back after a rest.`, spent: true }
+          ? { reason: t("table.hand.gate.noUse", { name: sheet.name, feature: route.feature }), spent: true }
           : null;
       cards.push(
         gated(make(basic, route), standingGate(sheet, turn, "bonus"), costGate("bonus", turn, sheet, `${route.feature} (${basic.name})`), kiGate, usesGate, still),
@@ -490,7 +563,7 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders)
 
 // Attacks, the riders that ride them, spells by level, class features, then
 // the basics every character has, so a level 1 commoner still holds a hand.
-export function deriveHand(sheet: CharacterSheet, turn: HandTurn = FRESH_TURN, options: HandOptions = {}): HandCard[] {
+export function deriveHand(sheet: CharacterSheet, turn: HandTurn = FRESH_TURN, options: HandOptions = {}, t: T = enT): HandCard[] {
   const riders = combatRiders(sheet);
   const spells = spellCards(sheet, turn, riders, options);
   const features = featureCards(sheet, turn);
@@ -504,8 +577,8 @@ export function deriveHand(sheet: CharacterSheet, turn: HandTurn = FRESH_TURN, o
     ...intimidatingPresenceCards(sheet, turn),
     ...subclassSpendCards(sheet, turn, taken),
     ...kiCards(sheet, turn),
-    ...basicCards(sheet, turn, riders).map((card) => (card.id === "basic:ready" ? withReadySpells(card, spells) : card)),
-    ...gearCards(sheet, turn, options.gear),
+    ...basicCards(sheet, turn, riders, t).map((card) => (card.id === "basic:ready" ? withReadySpells(card, spells, t) : card)),
+    ...gearCards(sheet, turn, options.gear, t),
     ...fastHandsCards(sheet, turn),
   ];
 }
@@ -517,30 +590,30 @@ export function deriveHand(sheet: CharacterSheet, turn: HandTurn = FRESH_TURN, o
 // and releases it with the reaction when the trigger comes. The spells
 // offered are the hand's own one-action spell cards the cast guard would
 // take now.
-const READY_PICKS: NonNullable<HandCard["choice"]>["options"] = [
-  { value: "", label: "An attack" },
-  { value: "@move", label: "A move" },
-  { value: "@help", label: "Help" },
-  { value: "@hide", label: "Hide" },
-  { value: "@search", label: "Search" },
-  { value: "@use_object", label: "Use an object" },
-  { value: "@item", label: "Use an item" },
-  { value: "@grapple", label: "Grapple" },
-  { value: "@shove", label: "Shove" },
+const READY_PICKS: Array<{ value: string; labelKey: string }> = [
+  { value: "", labelKey: "table.hand.basic.ready.attack" },
+  { value: "@move", labelKey: "table.hand.basic.ready.move" },
+  { value: "@help", labelKey: "table.hand.basic.ready.help" },
+  { value: "@hide", labelKey: "table.hand.basic.ready.hide" },
+  { value: "@search", labelKey: "table.hand.basic.ready.search" },
+  { value: "@use_object", labelKey: "table.hand.basic.ready.useObject" },
+  { value: "@item", labelKey: "table.hand.basic.ready.item" },
+  { value: "@grapple", labelKey: "table.hand.basic.ready.grapple" },
+  { value: "@shove", labelKey: "table.hand.basic.ready.shove" },
 ];
 
-function withReadySpells(card: HandCard, spells: HandCard[]): HandCard {
+function withReadySpells(card: HandCard, spells: HandCard[], t: T = enT): HandCard {
   const ready = spells.filter(
     (spell) => spell.intent.card === "spell" && spell.cost === "action" && !spell.disabled,
   );
   const levels: Record<string, number> = {};
-  const options: NonNullable<HandCard["choice"]>["options"] = [...READY_PICKS];
+  const options: NonNullable<HandCard["choice"]>["options"] = READY_PICKS.map((pick) => ({ value: pick.value, label: t(pick.labelKey) }));
   for (const spell of ready) {
     if (spell.intent.card !== "spell") continue;
     options.push({ value: spell.name, label: spell.name, note: spell.resource });
     if (spell.intent.slotLevel) levels[spell.name] = spell.intent.slotLevel;
   }
-  return { ...card, choice: { arg: "readySpell", label: "Ready", options, fallback: "", levels } };
+  return { ...card, choice: { arg: "readySpell", label: t("table.hand.basic.ready"), options, fallback: "", levels } };
 }
 
 // The spells the component has to look up before the hand is complete.

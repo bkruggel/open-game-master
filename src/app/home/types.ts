@@ -174,6 +174,7 @@ export function slotLine(
   t: (key: string, vars?: Record<string, string | number>) => string,
   campaign: HomeCampaign,
   userId: string,
+  locale?: string,
 ): string {
   if (campaign.status === "lobby") {
     return t("home.slot.ready", { count: campaign.playerCount, max: campaign.maxPlayers });
@@ -182,7 +183,7 @@ export function slotLine(
     const ago = agoLabel(t, campaign.updatedAt);
     return ago ? t("home.slot.finishedAgo", { ago }) : t("home.slot.finished");
   }
-  const next = nextSessionLine(t, campaign);
+  const next = nextSessionLine(t, campaign, locale);
   if (next) {
     return next;
   }

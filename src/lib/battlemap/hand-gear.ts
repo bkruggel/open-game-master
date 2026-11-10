@@ -11,6 +11,10 @@
 // Dismounting costs half the rider's speed.
 //
 // Pure and database-free: scripts/test-hand-gear.mjs drives it.
+import { translate } from "@/lib/messages-logic";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
 import { handsFullError, handsFullFor, spendInteraction, gearKindOf, inHand } from "@/lib/dm/gear-hands";
 import { dualWields } from "@/lib/dm/attack-rules";
 import { hasFastHands } from "@/lib/dm/bonus-routes";
@@ -104,7 +108,7 @@ function interactionCost(sheet: CharacterSheet, turn: HandTurn): { cost: HandCos
   };
 }
 
-export function gearCards(sheet: CharacterSheet, turn: HandTurn, context: HandGearContext = {}): HandCard[] {
+export function gearCards(sheet: CharacterSheet, turn: HandTurn, context: HandGearContext = {}, t: T = enT): HandCard[] {
   const standing = standingGate(sheet, turn, "action");
   const free = standingGate(sheet, turn, "free");
   const interaction = interactionCost(sheet, turn);
@@ -244,12 +248,12 @@ export function gearCards(sheet: CharacterSheet, turn: HandTurn, context: HandGe
           ...BLANK,
           id: "basic:stabilize",
           type: "basic",
-          name: "Stabilize",
+          name: t("table.hand.basic.stabilize"),
           cost: "action",
-          range: "Touch",
-          dice: "Medicine DC 10",
-          roll: "skill check",
-          rules: "An action: a DC 10 Medicine check, or a healer's kit with no roll, and they stop dying.",
+          range: t("table.hand.range.touch"),
+          dice: t("table.hand.dice.medicine"),
+          roll: t("table.hand.roll.skill"),
+          rules: t("table.hand.basic.stabilize.rules"),
           icon: { kind: "action", key: "help" },
           target: "ally",
           intent: { card: "basic", action: "stabilize" },
@@ -266,9 +270,9 @@ export function gearCards(sheet: CharacterSheet, turn: HandTurn, context: HandGe
           ...BLANK,
           id: "basic:dismount",
           type: "basic",
-          name: "Dismount",
+          name: t("table.hand.basic.dismount"),
           cost: "free",
-          rules: `Off ${context.mount}: half your speed.`,
+          rules: t("table.hand.basic.dismount.rules", { mount: context.mount }),
           icon: { kind: "action", key: "stand-up" },
           target: "none",
           intent: { card: "basic", action: "dismount" },

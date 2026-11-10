@@ -279,7 +279,7 @@ function HandInner({
   const cards = useMemo(() => {
     if (!sheet || !turn) return [];
     if (reactionsOnly) return [...reactions, ...othersReactions];
-    return [...othersReactions, ...holdPendingCards(t, withReactions(reactions, deriveHand(sheet, turn, { spells, trackAmmo, gear, blasts })), waiting)];
+    return [...othersReactions, ...holdPendingCards(t, withReactions(reactions, deriveHand(sheet, turn, { spells, trackAmmo, gear, blasts }, t)), waiting)];
   }, [sheet, turn, reactions, othersReactions, reactionsOnly, spells, trackAmmo, gear, blasts, waiting, t]);
 
   // Cards that spend one thing (spell slots, ki, superiority dice, gear, the
