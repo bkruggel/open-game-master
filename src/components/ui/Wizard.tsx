@@ -371,7 +371,7 @@ export function Wizard({
         ) : null}
         {step > 0 ? (
           <button type="button" onClick={back} className={ui.btnSecondary}>
-            Back
+            {t("wizard.back")}
           </button>
         ) : null}
         {/* Held with aria-disabled rather than disabled when there is a

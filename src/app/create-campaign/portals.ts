@@ -1,6 +1,7 @@
 import { GENRE_PRESETS, genrePreset, genrePresetFor, type GenrePreset } from "@/lib/genres";
 import type { Locale } from "@/lib/messages-logic";
 import { campaignPlaceholder } from "@/lib/placeholders";
+import { translate } from "@/lib/messages-logic";
 import type { Genre } from "@/lib/schemas/game-settings";
 
 // The world step's pure half: what a portal card shows, what the DM flavour
@@ -32,11 +33,14 @@ export function portalPlate(genre: string): string {
   return campaignPlaceholder(genre);
 }
 
-export function portalCards(selected: Genre): PortalCard[] {
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
+
+export function portalCards(selected: Genre, t: T = enT): PortalCard[] {
   return GENRE_PRESETS.map((preset, index) => ({
     id: preset.id,
     name: preset.name,
-    blurb: preset.blurb,
+    blurb: t(`creator.genre.blurb.${preset.id}`),
     climate: preset.climate,
     humansOnly: isHumansOnly(preset),
     plate: portalPlate(preset.id),
@@ -49,13 +53,13 @@ export type WorldFact = { key: string; value: string };
 
 // The four things a preset decides besides the DM's tone. A custom world has
 // no name hints of its own, and says so instead of showing an empty chip.
-export function worldFacts(genre: string): WorldFact[] {
+export function worldFacts(genre: string, t: T = enT): WorldFact[] {
   const preset = genrePreset(genre);
   return [
-    { key: "Maps", value: preset.mapStyle },
-    { key: "Names", value: preset.nameHints || "Yours to invent" },
-    { key: "Who lives here", value: preset.raceHint },
-    { key: "Sky", value: `${preset.climate} weather table` },
+    { key: t("creator.facts.maps"), value: preset.mapStyle },
+    { key: t("creator.facts.names"), value: preset.nameHints || t("creator.facts.yours") },
+    { key: t("creator.facts.who"), value: preset.raceHint },
+    { key: t("creator.facts.sky"), value: `${preset.climate} ${t("creator.facts.weather")}` },
   ];
 }
 

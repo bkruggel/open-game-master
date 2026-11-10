@@ -49,6 +49,14 @@ export const KIND_SINGULAR: Record<EditorKind, string> = {
 
 // One sentence per kind for the empty state, saying what the engine does
 // with the thing rather than what the form asks for.
+// The one-liner in the reader's language (homebrew.kind.*).
+export function kindBlurbT(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  kind: EditorKind,
+): string {
+  return t(`homebrew.kind.${kind}`);
+}
+
 export const KIND_BLURB: Record<EditorKind, string> = {
   item: "Weapons the attack roll reads, armour the AC engine wears, magic items whose effects apply while attuned.",
   spell: "Spells the cast tools resolve: the save, the damage and the condition come from the block, not from memory.",

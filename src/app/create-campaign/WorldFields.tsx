@@ -88,7 +88,7 @@ export function WorldFields({
           </span>
         </FieldLabel>
         <div className="cc-portal-grid">
-          {portalCards(draft.genre).map((card) => (
+          {portalCards(draft.genre, t).map((card) => (
             <div key={card.id} className="cc-portal-slot" style={{ "--cc-delay": `${card.delayMs}ms` } as CSSProperties}>
               <button type="button" onClick={() => pick(card.id)} aria-pressed={card.chosen} className="cc-portal motion-card">
                 <span
@@ -225,7 +225,7 @@ export function WorldDetailsFields({
           {dmFlavorText(draft.genre)}
         </p>
         <div key={`facts-${draft.genre}`} className="cc-facts">
-          {worldFacts(draft.genre).map((fact, index) => (
+          {worldFacts(draft.genre, t).map((fact, index) => (
             <span key={fact.key} className="cc-fact" style={{ animationDelay: `${index * 70}ms` }}>
               <span className="cc-fact-key">{fact.key}</span>
               <span className="cc-fact-value">{fact.value}</span>

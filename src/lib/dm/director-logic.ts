@@ -110,6 +110,16 @@ const ONE_SHOT_DIRECTIVES: Record<
   },
 };
 
+// The labels and one-line blurbs the lead reads; the directive itself stays
+// English (the model reads it). The keys mirror ONE_SHOT_DIRECTIVES.
+export function oneShotBlurbT(t: (key: string, vars?: Record<string, string | number>) => string, id: OneShotEventId): string {
+  return t(`dm.steer.${id}Blurb`);
+}
+
+export function oneShotLabelT(t: (key: string, vars?: Record<string, string | number>) => string, id: OneShotEventId): string {
+  return t(`dm.steer.${id}`);
+}
+
 export function oneShotBlurb(id: OneShotEventId): string {
   return ONE_SHOT_DIRECTIVES[id].blurb;
 }

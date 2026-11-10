@@ -49,6 +49,15 @@ export const BEAT_HINTS: Record<BeatKind, string> = {
   npc_moment: "The scene somebody has been waiting for. Becomes an arc beat.",
 };
 
+// The hints in the reader's language (storyboard.beat.hint.*); the English
+// map stays for anything that reads it without a translator.
+export function beatHintT(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  kind: keyof typeof BEAT_HINTS,
+): string {
+  return t(`storyboard.beat.hint.${kind}`);
+}
+
 export const TITLE_MAX = 120;
 // The same cap a bundle card travels under (src/lib/workshop/bundle-schema.ts
 // reads it from here), so a card that arrived whole can be opened and saved

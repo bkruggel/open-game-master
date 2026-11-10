@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useSearchParams } from "next/navigation";
+import { useT } from "@/lib/locale";
 import { Suspense, use, useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { PIXEL_ICONS, PixelTile, ui } from "@/lib/ui";
@@ -34,6 +35,7 @@ function CampaignCharacterPageInner({ campaignId }: { campaignId: string }) {
   // join = first character; edit = rebuild the current one in place;
   // replace = switch to another or a brand-new one.
   const search = useSearchParams();
+  const t = useT();
   const requested = search.get("mode");
   // "Or build a new one" in the lobby comes straight to the builder.
   const startNew = search.get("start") === "new";

@@ -140,7 +140,7 @@ export function FactionsPanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         }),
-        "That faction could not be saved.",
+        t("faction.saveFailed"),
       );
       if (sent.error !== null) {
         // A new faction whose answer was lost is looked for first: the
@@ -158,8 +158,8 @@ export function FactionsPanel({
           }
           setError(
             found === "missing"
-              ? "The server did not answer and the faction is not in the list, so it was not added. Your words are kept; press Add again."
-              : "The server could not be reached, so it is not known yet whether the faction was added. Your words are kept. Check the list before adding it again.",
+              ? t("faction.missingLost")
+              : t("faction.unknownLost"),
           );
           return;
         }
@@ -175,7 +175,7 @@ export function FactionsPanel({
   }
 
   async function remove(faction: FactionView) {
-    if (!(await appConfirm(`Take ${faction.name} out of the world?`, { actionLabel: "Take them out", tone: "danger" }))) {
+    if (!(await appConfirm(t("faction.removeConfirm", { name: faction.name }), { actionLabel: t("faction.removeAction"), tone: "danger" }))) {
       return;
     }
     setError("");
@@ -199,13 +199,13 @@ export function FactionsPanel({
   }
 
   if (factions === null) {
-    return loadError ? <LoadFailed error={loadError} onRetry={() => setReload((current) => current + 1)} /> : <PanelLoading label="Reading the banners..." />;
+    return loadError ? <LoadFailed error={loadError} onRetry={() => setReload((current) => current + 1)} /> : <PanelLoading label={t("faction.loading")} />;
   }
   return (
     <div className="space-y-2">
       {loaded && loadError ? <LoadFailed error={loadError} onRetry={() => setReload((current) => current + 1)} /> : null}
       <SectionHead
-        title="Factions"
+        title={t("faction.head")}
         glyph="tab-factions"
         aside={
           steersStory && editing === null ? (
@@ -217,7 +217,7 @@ export function FactionsPanel({
               }}
               data-tour="factions-add"
             >
-              <Plus className="size-3.5" /> Add one
+              <Plus className="size-3.5" /> {t("faction.addOne")}
             </KitButton>
           ) : factions.length ? (
             factions.length
@@ -227,14 +227,14 @@ export function FactionsPanel({
       {error ? <PanelError>{error}</PanelError> : null}
       {editing !== null ? (
         <div className="panel reveal space-y-1.5 rounded-lg p-2.5">
-          <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} maxLength={80} placeholder="The Reed Court" aria-label="Faction name" className={panelField} />
-          <DictateField label="What the table knows of them" onTranscript={(text) => setDraft((current) => ({ ...current, blurb: appendDictation(current.blurb, text, 400) }))}>
-            <textarea value={draft.blurb} onChange={(event) => setDraft({ ...draft, blurb: event.target.value })} rows={2} maxLength={400} placeholder="What the table knows of them" aria-label="What the table knows of them" className={panelField} />
+          <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} maxLength={80} placeholder={t("faction.namePlaceholder")} aria-label={t("faction.nameAria")} className={panelField} />
+          <DictateField label={t("faction.knownLabel")} onTranscript={(text) => setDraft((current) => ({ ...current, blurb: appendDictation(current.blurb, text, 400) }))}>
+            <textarea value={draft.blurb} onChange={(event) => setDraft({ ...draft, blurb: event.target.value })} rows={2} maxLength={400} placeholder={t("faction.knownLabel")} aria-label={t("faction.knownLabel")} className={panelField} />
           </DictateField>
-          <DictateField label="What they want" onTranscript={(text) => setDraft((current) => ({ ...current, goal: appendDictation(current.goal, text, 400) }))}>
-            <textarea value={draft.goal} onChange={(event) => setDraft({ ...draft, goal: event.target.value })} rows={2} maxLength={400} placeholder="What they want (only you read this)" aria-label="What they want (only you read this)" className={cn(panelField, "border-violet-900/60 focus:border-violet-500/70")} />
+          <DictateField label={t("faction.wantLabel")} onTranscript={(text) => setDraft((current) => ({ ...current, goal: appendDictation(current.goal, text, 400) }))}>
+            <textarea value={draft.goal} onChange={(event) => setDraft({ ...draft, goal: event.target.value })} rows={2} maxLength={400} placeholder={t("faction.wantPrivate")} aria-label={t("faction.wantPrivate")} className={cn(panelField, "border-violet-900/60 focus:border-violet-500/70")} />
           </DictateField>
-          <div data-pill-group="" role="group" aria-label="Attitude" className="flex flex-wrap items-center gap-1">
+          <div data-pill-group="" role="group" aria-label={t("faction.attitudeAria")} className="flex flex-wrap items-center gap-1">
             {FACTION_ATTITUDES.map((attitude) => (
               <button data-on={draft.attitude === attitude ? "" : undefined} key={attitude} type="button" aria-pressed={draft.attitude === attitude} onClick={() => setDraft({ ...draft, attitude })} className="pk-pill pk-tap motion-press capitalize">
                 <GameIcon icon={{ kind: "glyph", key: attitudeGlyph(attitude) }} size="size-4" />
@@ -244,14 +244,14 @@ export function FactionsPanel({
           </div>
           <div className="flex items-center gap-2 text-xs text-stone-400">
             <span>Power</span>
-            <Slider min={0} max={5} value={draft.power} onChange={(power) => setDraft({ ...draft, power })} label="Power" className="min-w-0 flex-1" />
+            <Slider min={0} max={5} value={draft.power} onChange={(power) => setDraft({ ...draft, power })} label={t("faction.powerLabel")} className="min-w-0 flex-1" />
             <span key={draft.power} className="count-pop w-4 text-right tabular-nums text-stone-200">{draft.power}</span>
           </div>
-          <input value={draft.tags} onChange={(event) => setDraft({ ...draft, tags: event.target.value })} placeholder="Tags, comma separated" aria-label="Tags, comma separated" className={panelField} />
+          <input value={draft.tags} onChange={(event) => setDraft({ ...draft, tags: event.target.value })} placeholder={t("faction.tagsPlaceholder")} aria-label={t("faction.tagsPlaceholder")} className={panelField} />
           <LoreImageField imagePath={draft.portraitPath} onChange={(portraitPath) => setDraft({ ...draft, portraitPath })} />
           <div className="flex gap-1.5">
             <KitButton tone="primary" disabled={busy || !draft.name.trim()} busy={busy} onClick={() => void save()}>
-              {editing === "new" ? "Add" : "Save"}
+              {editing === "new" ? t("faction.add") : t("faction.save")}
             </KitButton>
             <KitButton
               onClick={() => {
@@ -268,12 +268,12 @@ export function FactionsPanel({
       {!factions.length && editing === null ? <EmptyState
           size="sm"
           art="board"
-          title="No factions yet. The powers of this world are unnamed."
+          title={t("faction.emptyTitle")}
           hint={
             steersStory
               ? workshop
-                ? "Name each power, what the table knows of it, what it wants and how it starts out toward the party."
-                : "Name each power, what the table knows of it and what it wants, and set where the party stands with it."
+                ? t("faction.emptyHintWorkshop")
+                : t("faction.emptyHintTable")
               : undefined
           }
         /> : null}
@@ -281,7 +281,7 @@ export function FactionsPanel({
         {factions.map((faction) => {
           const items: ContextMenuItem[] = steersStory
             ? [
-                { id: "edit", label: "Edit", glyph: "ui-edit", onSelect: () => startEdit(faction) },
+                { id: "edit", label: t("faction.menu.edit"), glyph: "ui-edit", onSelect: () => startEdit(faction) },
                 ...(showsStanding ? Array.from({ length: REPUTATION_MAX - REPUTATION_MIN + 1 }, (_, index) => REPUTATION_MIN + index) : []).map((step, index) => ({
                   id: `standing-${step}`,
                   label: t("faction.menu.standing", { step: `${step > 0 ? "+" : ""}${step}`, word: reputationLabel(t, step) }),
@@ -290,7 +290,7 @@ export function FactionsPanel({
                   disabled: step === faction.standing,
                   onSelect: () => void setStanding(faction, step),
                 })),
-                { id: "remove", label: `Remove ${faction.name}`, glyph: "ui-delete", tone: "danger" as const, separated: true, onSelect: () => void remove(faction) },
+                { id: "remove", label: t("faction.menu.remove", { name: faction.name }), glyph: "ui-delete", tone: "danger" as const, separated: true, onSelect: () => void remove(faction) },
               ]
             : [];
           return (

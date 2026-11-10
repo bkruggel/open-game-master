@@ -24,7 +24,7 @@ import { useSearchParams } from "next/navigation";
 import { LinkedEntries, useOpenOnArrival } from "@/app/workshop/world/WorldEntryLink";
 import {
   HOMEBREW_EDITOR_KINDS,
-  KIND_BLURB,
+  kindBlurbT,
   KIND_LABELS,
   KIND_SINGULAR,
   type EditorKind,
@@ -348,7 +348,7 @@ export function HomebrewPanel({
         />
       </div>
 
-      <p className="text-xs text-stone-400">{KIND_BLURB[kind]}</p>
+      <p className="text-xs text-stone-400">{kindBlurbT(t, kind)}</p>
 
       <label className="relative block" data-tour="homebrew-search">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-500" />

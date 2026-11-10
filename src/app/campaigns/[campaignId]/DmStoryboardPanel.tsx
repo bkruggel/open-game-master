@@ -12,7 +12,7 @@ import { findLostCreate, readLoad, readWrite, useLoadStatus } from "@/lib/load-s
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
 import {
-  BEAT_HINTS,
+  beatHintT,
   BEAT_KINDS,
   BEAT_LABELS,
   TITLE_MAX,
@@ -246,7 +246,7 @@ export function DmStoryboardPanel({
             options={BEAT_KINDS.map((kind) => ({
               value: kind,
               label: BEAT_LABELS[kind],
-              hint: BEAT_HINTS[kind],
+              hint: beatHintT(t, kind),
               icon: { kind: "glyph" as const, key: KIND_GLYPH[kind] },
             }))}
             label={t("sb.card")}
@@ -275,7 +275,7 @@ export function DmStoryboardPanel({
           <Plus className="size-4" /> {t("action.add")}
         </button>
       </div>
-      <p key={newKind} className="live-in text-[11px] leading-snug text-stone-400">{BEAT_HINTS[newKind]}</p>
+      <p key={newKind} className="live-in text-[11px] leading-snug text-stone-400">{beatHintT(t, newKind)}</p>
       {error ? <PanelError className="text-[11px]">{error}</PanelError> : null}
       {note ? <p className="live-in text-[11px] text-emerald-400">{note}</p> : null}
     </>
