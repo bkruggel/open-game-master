@@ -187,7 +187,7 @@ export function EncounterExtras({
             value={value.rewards}
             maxLength={EXTRAS_LIMITS.rewards}
             rows={2}
-            placeholder="120 gp in a locked chest, the captain's signet ring, roll once on Marsh treasure."
+            placeholder={t("workshop.encounters.rewardsExample")}
             onChange={(event) => set({ rewards: event.target.value })}
             className={field}
           />
@@ -207,13 +207,13 @@ export function EncounterExtras({
       />
 
       <div className="space-y-1.5 text-sm">
-        <SectionHead title="What happens when" glyph="tab-timeline" className="mb-1" />
+        <SectionHead title={t("workshop.encounters.phasesTitle")} glyph="tab-timeline" className="mb-1" />
         {value.phases.map((phase, index) => (
           <div key={index} className="flex items-center gap-1.5">
             <input
               value={phase}
               maxLength={EXTRAS_LIMITS.phaseText}
-              placeholder="When the shaman drops, the wolves flee."
+              placeholder={t("workshop.encounters.phaseExample")}
               aria-label={t("workshop.encounters.phaseAria", { index: index + 1 })}
               onChange={(event) =>
                 set({ phases: value.phases.map((line, at) => (at === index ? event.target.value : line)) })

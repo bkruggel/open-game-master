@@ -58,7 +58,7 @@ export function EncounterForm({
         value={value.name}
         maxLength={TEMPLATE_NAME_MAX}
         onChange={(event) => set({ name: event.target.value })}
-        placeholder="Ambush at the ford"
+        placeholder={t("workshop.encounters.nameExample")}
         aria-label={t("workshop.encounters.nameAria")}
         className={field}
       />
@@ -74,7 +74,7 @@ export function EncounterForm({
         value={value.enemies}
         onChange={(event) => set({ enemies: event.target.value })}
         rows={3}
-        placeholder={"goblin x4\nhobgoblin"}
+        placeholder={t("workshop.encounters.rosterExample")}
         aria-label={t("workshop.encounters.rosterAria")}
         className={field}
       />
@@ -85,7 +85,7 @@ export function EncounterForm({
       <input
         value={value.battlefield}
         onChange={(event) => set({ battlefield: event.target.value })}
-        placeholder="a rope bridge over a gorge"
+        placeholder={t("workshop.encounters.battlefieldExample")}
         aria-label={t("workshop.encounters.battlefieldAria")}
         className={field}
       />
@@ -123,7 +123,7 @@ export function EncounterForm({
           value={value.notes}
           onChange={(event) => set({ notes: event.target.value })}
           rows={2}
-          placeholder="Tactics, what they want, when they run."
+          placeholder={t("workshop.encounters.notesExample")}
           aria-label={t("table.tab.notes")}
           className={field}
         />

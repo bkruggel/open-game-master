@@ -28,7 +28,7 @@ import {
 import { useOpenOnArrival } from "@/app/workshop/world/WorldEntryLink";
 import { OpenTestFightCard, useTestFight } from "@/app/workshop/encounters/OpenTestFight";
 import { TestFightSheet } from "@/app/workshop/encounters/TestFightSheet";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 // Prepared encounters: the roster a DM writes down before the session and
 // deploys in one action.
@@ -49,27 +49,43 @@ import { useT } from "@/lib/locale";
 // cuts a fight beyond the party down to fit, or holds it when even its
 // strongest creature is too much (src/lib/dm/prepared-fit.ts); a DM's own
 // Deploy is refused as written, for the DM to change.
-function refusedLine(readout: TemplateReadout, cue: boolean): string {
+function refusedLine(t: (key: string, vars?: Record<string, string | number>) => string, readout: TemplateReadout, cue: boolean): string {
   if (!readout.tooDeadly) {
     return "";
   }
   if (cue && readout.held) {
-    return ". Beyond the party even cut down: the storyteller holds it until they are stronger.";
+    return t("dm.prep.refusedHeld");
   }
   if (cue && readout.scaledWithout) {
-    return `. The storyteller cuts it to fit: it runs without ${readout.scaledWithout}.`;
+    return t("dm.prep.refusedScaled", { name: readout.scaledWithout });
   }
-  return ". The engine will refuse this as written.";
+  return t("dm.prep.refusedEngine");
 }
 
+// The verdict the server prints is its own words ("easy for this party",
+// read by the model too); the band word renders in the reader's language,
+// while English keeps the server's line exactly as it was.
+const VERDICT_KEYS: Record<string, string> = {
+  trivial: "dm.prep.verdict.trivial",
+  easy: "dm.prep.verdict.easy",
+  medium: "dm.prep.verdict.medium",
+  hard: "dm.prep.verdict.hard",
+  deadly: "dm.prep.verdict.deadly",
+  beyond_deadly: "dm.prep.verdict.beyondDeadly",
+};
+
 function DifficultyLine({ readout, cue }: { readout: TemplateReadout; cue: boolean }) {
+  const t = useT();
+  const locale = useLocale();
   if (readout.unknownMonster) {
     return (
       <p className="text-[11px] text-red-400">
-        Nothing in this world is called &quot;{readout.unknownMonster}&quot;.
+        {t("dm.prep.unknown", { name: readout.unknownMonster })}
       </p>
     );
   }
+  const band = readout.verdict.replace(/ for this party$/, "");
+  const verdict = locale === "fr" ? t(VERDICT_KEYS[band] ?? "dm.prep.verdict.medium") : readout.verdict;
   return (
     <p
       className={cn(
@@ -77,9 +93,13 @@ function DifficultyLine({ readout, cue }: { readout: TemplateReadout; cue: boole
         !readout.tooDeadly ? "text-stone-400" : cue && readout.scaledWithout && !readout.held ? "text-amber-400" : "text-red-400",
       )}
     >
-      {readout.count} creature{readout.count === 1 ? "" : "s"}, {readout.verdict} ({readout.adjustedXp} XP
-      against a {readout.ceiling} ceiling)
-      {refusedLine(readout, cue)}
+      {t(readout.count === 1 ? "dm.prep.difficultyLine_one" : "dm.prep.difficultyLine_other", {
+        count: readout.count,
+        verdict,
+        xp: readout.adjustedXp,
+        ceiling: readout.ceiling,
+      })}
+      {refusedLine(t, readout, cue)}
     </p>
   );
 }
@@ -253,9 +273,9 @@ export function DmEncounterPrepPanel({
           const name = draft.name.trim();
           const found = await findLostCreate(loaded ? templates : null, load, (template) => template.name === name);
           const prepared = lostCreate(found, {
-            made: "Prepared. The server's answer was lost on the way, so the list was read again to make sure.",
-            missing: "The server did not answer and the fight is not in the list, so it was not prepared. Your roster is kept; press Prepare it again.",
-            unknown: "The server could not be reached, so it is not known yet whether the fight was prepared. Your roster is kept. Check the list before preparing it again.",
+            made: t("dm.prep.madeLost"),
+            missing: t("dm.prep.missingLost"),
+            unknown: t("dm.prep.unknownLost"),
           });
           if (prepared) {
             setDraft(EMPTY_ENCOUNTER_DRAFT);
@@ -264,7 +284,7 @@ export function DmEncounterPrepPanel({
           }
           return;
         }
-        setError(sent.unanswered ? `${sent.error} Your changes are kept here; the list was read again.` : sent.error);
+        setError(sent.unanswered ? `${sent.error}${t("dm.prep.keptSuffix")}` : sent.error);
         // An edit with no answer may have landed all the same.
         if (sent.unanswered) await load();
         return;
@@ -306,9 +326,9 @@ export function DmEncounterPrepPanel({
           const copy = name.trim();
           const found = await findLostCreate(loaded ? templates : null, load, (row) => row.name === copy);
           lostCreate(found, {
-            made: "Copied. The server's answer was lost on the way, so the list was read again to make sure.",
-            missing: "The server did not answer and the copy is not in the list, so it was not made. Duplicate it again.",
-            unknown: "The server could not be reached, so it is not known yet whether the copy was made. Check the list before duplicating it again.",
+            made: t("dm.prep.copyMadeLost"),
+            missing: t("dm.prep.copyMissingLost"),
+            unknown: t("dm.prep.copyUnknownLost"),
           });
           return;
         }
@@ -324,7 +344,7 @@ export function DmEncounterPrepPanel({
   // Asks first, and a refusal is shown rather than swallowed.
   async function remove(template: PreparedEncounter) {
     const id = template.id;
-    if (!(await appConfirm(`Delete the prepared fight "${template.name}"?`, { actionLabel: "Delete" }))) {
+    if (!(await appConfirm(t("dm.prep.deleteConfirm", { name: template.name }), { actionLabel: t("dm.prep.deleteAction") }))) {
       return;
     }
     setError("");
@@ -359,25 +379,17 @@ export function DmEncounterPrepPanel({
       if (sent.error !== null) {
         // A deploy with no answer may have put the fight on the table; a
         // second press would put it there twice.
-        setError(sent.unanswered ? `${sent.error} The fight may already be on the table; look before deploying it again.` : sent.error);
+        setError(sent.unanswered ? `${sent.error}${t("dm.prep.mayBeOnTable")}` : sent.error);
         if (sent.unanswered) await load();
         return;
       }
       const payload = sent.payload;
       if (payload.cued !== undefined) {
-        setNote(
-          payload.cued
-            ? "Cued. The storyteller runs it, map and plan included, as soon as the scene allows. The players are not told."
-            : "Cue taken back.",
-        );
+        setNote(payload.cued ? t("dm.prep.cuedNote") : t("dm.prep.cueTakenBack"));
         await load();
         return;
       }
-      setNote(
-        payload.mapError
-          ? `The fight is on the table. Its saved map could not be used: ${payload.mapError}`
-          : "The fight is on the table. Ask the party for initiative.",
-      );
+      setNote(payload.mapError ? t("dm.prep.mapErrorNote", { error: payload.mapError }) : t("dm.prep.onTableNote"));
     } finally {
       setBusy(false);
     }
@@ -400,8 +412,8 @@ export function DmEncounterPrepPanel({
   if (only) {
     const editing = templates.find((template) => template.id === editingId) ?? null;
     return (
-      <Sheet open={editorOpen} onOpenChange={showEditor} title={editing ? editing.name : "Encounter"} className="lg:w-[min(92vw,40rem)]">
-        <EncounterForm campaignId={campaignId} value={draft} onChange={setDraft} maps={maps} busy={busy} submitLabel="Save" onSubmit={() => void save()} variant="sheet" />
+      <Sheet open={editorOpen} onOpenChange={showEditor} title={editing ? editing.name : t("dm.prep.sheetTitle")} className="lg:w-[min(92vw,40rem)]">
+        <EncounterForm campaignId={campaignId} value={draft} onChange={setDraft} maps={maps} busy={busy} submitLabel={t("dm.prep.save")} onSubmit={() => void save()} variant="sheet" />
         <div ref={sheetFeedback} className="mt-2">{feedback}</div>
       </Sheet>
     );
@@ -414,7 +426,7 @@ export function DmEncounterPrepPanel({
       <div className="space-y-3">
         <DmWorkbenchPanel campaignId={campaignId} collapsible />
         {testFight ? <OpenTestFightCard workshopId={testFight.workshopId} info={test.info} onEnded={test.reload} /> : null}
-        <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading="Opening the fights...">
+        <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading={t("dm.prep.opening")}>
           <EncounterRows
             encounters={templates}
             maps={maps}
@@ -431,7 +443,7 @@ export function DmEncounterPrepPanel({
               test.reload();
               setTesting(template);
             }}
-            deployLabel={testFight ? "Test fight" : undefined}
+            deployLabel={testFight ? t("table.misc.testFight.title") : undefined}
             onDuplicate={(template) => void duplicate(template)}
             onDelete={(template) => void remove(template)}
           />
@@ -443,7 +455,7 @@ export function DmEncounterPrepPanel({
         <Sheet
           open={editorOpen}
           onOpenChange={showEditor}
-          title={editing ? editing.name : "New encounter"}
+          title={editing ? editing.name : t("dm.prep.sheetTitleNew")}
           className="lg:w-[min(92vw,40rem)]"
         >
           <EncounterForm
@@ -452,7 +464,7 @@ export function DmEncounterPrepPanel({
             onChange={setDraft}
             maps={maps}
             busy={busy}
-            submitLabel={editing ? "Save" : "Prepare it"}
+            submitLabel={editing ? t("dm.prep.save") : t("dm.prep.prepareIt")}
             onSubmit={() => void save()}
             variant="sheet"
           />
@@ -466,17 +478,17 @@ export function DmEncounterPrepPanel({
     <div className="space-y-3">
       <section>
         <SectionHead
-          title="Prepared encounters"
+          title={t("dm.prep.head")}
           glyph="system-encounters"
           aside={templates.length ? <span key={templates.length} className="count-pop">{templates.length}</span> : undefined}
         />
-        <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading="Opening the fights...">
+        <Listed loaded={loaded} error={loadError} onRetry={() => void load()} loading={t("dm.prep.opening")}>
         {templates.length ? (
           <ul className="stagger space-y-1.5">
             {templates.map((template) => {
               // Deploy stays the row's one visible button; the two that were
               // icons keep the names they announced, in the row's menu.
-              const deployLabel = cue ? (template.cued ? "Take back the cue" : "Cue the storyteller") : "Deploy";
+              const deployLabel = cue ? (template.cued ? t("dm.prep.takeBackCue") : t("dm.prep.cueStoryteller")) : t("dm.prep.deploy");
               const items: ContextMenuItem[] = [
                 {
                   id: "deploy",
@@ -485,8 +497,8 @@ export function DmEncounterPrepPanel({
                   disabled: busy,
                   onSelect: () => void deploy(template.id, !template.cued),
                 },
-                { id: "duplicate", label: `Duplicate ${template.name}`, glyph: "ui-duplicate", disabled: busy, onSelect: () => void duplicate(template) },
-                { id: "delete", label: `Delete ${template.name}`, glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(template) },
+                { id: "duplicate", label: t("workshop.bestiary.rows.duplicate", { name: template.name }), glyph: "ui-duplicate", disabled: busy, onSelect: () => void duplicate(template) },
+                { id: "delete", label: t("workshop.bestiary.rows.delete", { name: template.name }), glyph: "ui-delete", tone: "danger", separated: true, onSelect: () => void remove(template) },
               ];
               return (
                 <ContextMenu key={template.id} as="li" items={items} label={template.name} className={panelRow}>
@@ -497,13 +509,13 @@ export function DmEncounterPrepPanel({
                         {template.name}
                         {cue && template.cued ? (
                           <span className="live-in ml-1.5 rounded-sm border border-amber-500/40 px-1 text-[10px] text-amber-300">
-                            cued
+                            {t("dm.prep.cuedBadge")}
                           </span>
                         ) : null}
                       </p>
                       <p className="truncate text-xs text-stone-400">
                         {rosterSummary(template.enemies, template.readout.names)}
-                        {template.battlefield ? ` on ${template.battlefield}` : ""}
+                        {template.battlefield ? t("dm.prep.onBattlefield", { name: template.battlefield }) : ""}
                       </p>
                       <DifficultyLine readout={template.readout} cue={cue} />
                       {template.notes ? (
@@ -520,7 +532,7 @@ export function DmEncounterPrepPanel({
                         onClick={() => void deploy(template.id, !template.cued)}
                         className={cn(cue && template.cued ? ui.btnSecondary : ui.btnPrimary, "h-9 px-3 text-[11px]")}
                       >
-                        {cue ? (template.cued ? "Take back" : "Cue") : "Deploy"}
+                        {cue ? (template.cued ? t("dm.prep.takeBack") : t("dm.prep.cue")) : t("dm.prep.deploy")}
                       </button>
                       <RowMenu items={items} label={template.name} />
                     </div>
@@ -533,8 +545,8 @@ export function DmEncounterPrepPanel({
           <EmptyState
             size="sm"
             art="map"
-            title="Nothing prepared. Write a roster below and it is one button at the table."
-            hint="Pick monsters from the Bestiary or the rulebook and a map to fight on; the difficulty is measured against the party."
+            title={t("dm.prep.emptyTitle")}
+            hint={t("dm.prep.emptyHint")}
           />
         )}
         </Listed>
@@ -546,7 +558,7 @@ export function DmEncounterPrepPanel({
         onChange={setDraft}
         maps={maps}
         busy={busy}
-        submitLabel="Prepare it"
+        submitLabel={t("dm.prep.prepareIt")}
         onSubmit={() => void save()}
       />
 

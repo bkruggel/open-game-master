@@ -993,6 +993,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.encounters.removePhase": "Retirer la phase",
   "workshop.encounters.addPhase": "Ajouter une phase",
   "workshop.encounters.phasesHint": "Récompenses et phases arrivent comme une note que toi seul peux lire quand le combat est déployé.",
+  "workshop.encounters.phasesTitle": "Ce qui arrive quand",
+  "workshop.encounters.phaseExample": "Quand le chaman tombe, les loups fuient.",
 
   // Le formulaire de rencontre préparée lui-même (EncounterForm.tsx).
   "workshop.encounters.formTitle": "Le combat",
@@ -1008,6 +1010,11 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.encounters.whichMap": "Sur quelle carte",
   "workshop.encounters.generatorsChoice": "Au choix du générateur",
   "workshop.encounters.notesLabel": "Notes de la rencontre",
+  "workshop.encounters.nameExample": "Une embuscade au gué",
+  "workshop.encounters.rosterExample": "gobelin x4\nhobgobelin",
+  "workshop.encounters.battlefieldExample": "un pont de corde au-dessus d'un ravin",
+  "workshop.encounters.notesExample": "Tactique, ce qu'ils veulent, quand ils fuient.",
+  "workshop.encounters.rewardsExample": "120 po dans un coffre fermé, l'anneau à sceau du capitaine, tire une fois sur un trésor des marais.",
 
   // Les lignes de la liste des rencontres et la barre de difficulté
   // (EncounterRows.tsx).
@@ -7424,6 +7431,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "map.fit": "Toute la carte",
 
   // La largeur du panneau latéral (SidePanel.tsx).
+  "table.panel.kebabAria": "Actions pour {name}",
   "table.panel.widen": "Élargir le panneau",
   "table.panel.narrow": "Rétrécir le panneau",
   "table.panel.empty": "Chaque onglet a son propre volet. Remets-en un depuis sa barre pour le revoir ici.",
@@ -8170,6 +8178,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "load.unreachable": "Le serveur est injoignable.",
   "load.unreadable": "La réponse du serveur n'a pas pu être lue.",
   "load.status": "Le serveur a répondu {code}.",
+  "load.retry": "Réessayer",
   "load.label.blocked": "La liste des bloqués",
   "load.label.agents": "Les agents connectés",
   "load.label.workshops": "Tes ateliers",
@@ -9057,6 +9066,53 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "dm.console.queueEmpty": "Rien à traiter. Tout ce que le groupe a dit a reçu une réponse.",
   "dm.console.actionCount_one": "{count} action",
   "dm.console.actionCount_other": "{count} actions",
+
+  // Les rencontres préparées (DmEncounterPrepPanel.tsx) : la liste qu'un MJ
+  // écrit avant la séance et déploie d'un geste, avec la ligne de difficulté
+  // que le serveur recalcule à chaque lecture.
+  "dm.prep.head": "Rencontres préparées",
+  "dm.prep.opening": "On ouvre les combats...",
+  "dm.prep.emptyTitle": "Rien de préparé. Écris une liste ci-dessous et c'est un bouton à la table.",
+  "dm.prep.emptyHint": "Choisis des monstres dans le Bestiaire ou le livre de règles et une carte où se battre ; la difficulté se mesure au groupe.",
+  "dm.prep.sheetTitle": "Rencontre",
+  "dm.prep.sheetTitleNew": "Nouvelle rencontre",
+  "dm.prep.save": "Enregistrer",
+  "dm.prep.prepareIt": "Prépare-le",
+  "dm.prep.deploy": "Déployer",
+  "dm.prep.cue": "Programmer",
+  "dm.prep.cueStoryteller": "Programmer pour le conteur",
+  "dm.prep.takeBack": "Déprogrammer",
+  "dm.prep.takeBackCue": "Déprogrammer le combat",
+  "dm.prep.cuedBadge": "programmé",
+  "dm.prep.deleteConfirm": "Supprimer le combat préparé « {name} » ?",
+  "dm.prep.deleteAction": "Supprimer",
+  "dm.prep.onBattlefield": " sur {name}",
+  "dm.prep.unknown": "Rien dans ce monde ne s'appelle « {name} ».",
+  "dm.prep.difficultyLine_one": "{count} créature, {verdict} ({xp} XP contre un plafond de {ceiling})",
+  "dm.prep.difficultyLine_other": "{count} créatures, {verdict} ({xp} XP contre un plafond de {ceiling})",
+  "dm.prep.verdict.trivial": "triviale",
+  "dm.prep.verdict.easy": "facile",
+  "dm.prep.verdict.medium": "moyenne",
+  "dm.prep.verdict.hard": "difficile",
+  "dm.prep.verdict.deadly": "mortelle",
+  "dm.prep.verdict.beyondDeadly": "bien au-delà de mortelle",
+  "dm.prep.refusedHeld": ". Au-delà du groupe même une fois réduit : le conteur le retient jusqu'à ce que le groupe soit plus fort.",
+  "dm.prep.refusedScaled": ". Le conteur le réduit pour qu'il passe : il se joue sans {name}.",
+  "dm.prep.refusedEngine": ". Le moteur refusera ce combat tel qu'écrit.",
+  "dm.prep.madeLost": "Préparé. La réponse du serveur s'est perdue en route, alors la liste a été relue pour s'en assurer.",
+  "dm.prep.missingLost": "Le serveur n'a pas répondu et le combat n'est pas dans la liste, donc il n'est pas préparé. Ta liste est gardée ; appuie encore sur Prépare-le.",
+  "dm.prep.unknownLost": "Le serveur était injoignable, donc on ne sait pas encore si le combat est préparé. Ta liste est gardée. Vérifie la liste avant de préparer encore.",
+  "dm.prep.copyMadeLost": "Copié. La réponse du serveur s'est perdue en route, alors la liste a été relue pour s'en assurer.",
+  "dm.prep.copyMissingLost": "Le serveur n'a pas répondu et la copie n'est pas dans la liste, donc elle n'a pas été faite. Duplique encore.",
+  "dm.prep.copyUnknownLost": "Le serveur était injoignable, donc on ne sait pas encore si la copie a été faite. Vérifie la liste avant de dupliquer encore.",
+  "dm.prep.keptSuffix": " Tes changements sont gardés ici ; la liste a été relue.",
+  "dm.prep.mayBeOnTable": " Le combat est peut-être déjà sur la table ; regarde avant de déployer encore.",
+  "dm.prep.cuedNote": "Programmée. Le conteur la mène, carte et plan compris, dès que la scène le permet. Les joueurs ne sont pas prévenus.",
+  "dm.prep.cueTakenBack": "Programmation annulée.",
+  "dm.prep.mapErrorNote": "Le combat est sur la table. Sa carte enregistrée n'a pas pu être utilisée : {error}",
+  "dm.prep.onTableNote": "Le combat est sur la table. Demande l'initiative au groupe.",
+  "dm.prep.searchMonsters": "Cherche des monstres à ajouter : gobelin, ours-hibou, le boss que tu as construit...",
+  "dm.prep.crChip": "FP {cr}",
 
 // ---- la calculatrice de probabilités (DmOddsPanel.tsx) ----
   "dm.odds.title": "Que va-t-il probablement se passer ?",

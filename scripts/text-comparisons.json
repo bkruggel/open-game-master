@@ -19248,6 +19248,20 @@
     1,
     "UI: the sense names a fold line reads, stored values and map keys"
    ]
+  ],
+  "app/campaigns/[campaignId]/DmEncounterPrepPanel.tsx#str-key": [
+   [
+    "key",
+    1,
+    "UI: the difficulty band's verdict id the server printed, mapped to its band word"
+   ]
+  ],
+  "app/campaigns/[campaignId]/DmEncounterPrepPanel.tsx#re-word": [
+   [
+    "key",
+    1,
+    "a fixed suffix the server's own verdict line carries (\" for this party\", read by the model too); its English words are scripts/text-comparisons.json's to classify"
+   ]
   ]
  },
  "humanTextIn": [
