@@ -4,7 +4,7 @@ import { Swords } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { campaignPlaceholder, miscPlaceholder } from "@/lib/placeholders";
 import { agoLabel, chapterLine, nextSessionLine, seatLine, type HomeCampaign } from "@/app/home/types";
 
@@ -90,6 +90,7 @@ export function ContinueHero({ campaign, userId }: { campaign: HomeCampaign; use
 // table, with the drop cap, and a mono line saying where the turn stood.
 export function RecapPanel({ campaign }: { campaign: HomeCampaign }) {
   const t = useT();
+  const locale = useLocale();
   const glance = campaign.glance;
   const floor = (campaign as HomeCampaign & { floor?: { mode?: string; round?: number; currentName?: string } }).floor;
   const recap = glance?.recap?.trim() || "";
@@ -104,7 +105,7 @@ export function RecapPanel({ campaign }: { campaign: HomeCampaign }) {
   if (ago) bits.push(ago);
   // When the table meets next (issue 586), so the title screen answers
   // "when do we play" without opening the table.
-  const next = nextSessionLine(t, campaign);
+  const next = nextSessionLine(t, campaign, locale);
   if (next) bits.push(next);
   const fallback =
     campaign.status === "lobby"

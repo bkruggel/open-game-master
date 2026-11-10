@@ -162,9 +162,10 @@ export function statusLabel(
 export function nextSessionLine(
   t: (key: string, vars?: Record<string, string | number>) => string,
   campaign: HomeCampaign,
+  locale?: string,
 ): string {
   const next = campaign.status === "ended" ? null : campaign.glance?.session?.next;
-  const when = next ? sessionWhenLocal(next.startsAt) : "";
+  const when = next ? sessionWhenLocal(next.startsAt, locale) : "";
   return when ? t("home.nextSession", { when }) : "";
 }
 

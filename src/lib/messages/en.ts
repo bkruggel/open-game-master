@@ -8325,6 +8325,10 @@ export const en = {
   "session.hold.next": "Next session",
   "session.hold.waitsNote": "The story waits where it stopped. Sheets, the chronicle and OOC table talk stay open.",
   "session.hold.scheduleTitle": "The schedule",
+  "session.hold.noNext": "No next session is set yet.",
+  "session.hold.nextLine": "Next session: {when} · {coming}",
+  "session.hold.coming_one": "{count} coming",
+  "session.hold.coming_other": "{count} coming",
   "transcript.deviceReason": "The audio was made, but this device could not play it.",
   "transcript.readFailed": "Could not read that passage aloud.",
   "transcript.notReadTitle": "Not read aloud",
@@ -8404,6 +8408,8 @@ export const en = {
 
 // ---- the hero chooser's headings, card badges and notes (HeroChooser.tsx) ----
   "chooser.own.title": "Your heroes",
+  "chooser.errorSave": "Could not save the character.",
+  "chooser.errorUnreachable": "Could not reach the server.",
   "chooser.backTable": "Back to the table",
   "chooser.backLobby": "Back to the lobby",
   "chooser.titleEdit": "Edit your character",

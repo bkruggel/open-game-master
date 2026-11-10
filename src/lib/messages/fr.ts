@@ -8112,7 +8112,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "creator.genre.blurb.cyberpunk": "Rues de néon, corps chromés, dieux corporatifs. Le 5e relooké.",
   "creator.genre.blurb.steampunk": "Laiton, vapeur, dirigeables et machines impossibles.",
   "creator.genre.blurb.post_apocalyptic": "Récupérer, survivre et reconstruire parmi les ruines.",
-  "creator.genre.blurb.custom": "Décris ton propre monde et ton ton.",
+  "creator.genre.blurb.custom": "Décris ton monde et l'ambiance que tu veux.",
   "creator.facts.maps": "Cartes",
   "creator.facts.names": "Noms",
   "creator.facts.who": "Qui vit ici",
@@ -8367,6 +8367,10 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "session.hold.next": "Prochaine session",
   "session.hold.waitsNote": "L'histoire attend là où elle s'est arrêtée. Les fiches, la chronique et la discussion HRP restent ouvertes.",
   "session.hold.scheduleTitle": "L'horaire",
+  "session.hold.noNext": "Aucune prochaine séance n'est prévue.",
+  "session.hold.nextLine": "Prochaine séance : {when} · {coming}",
+  "session.hold.coming_one": "{count} présent",
+  "session.hold.coming_other": "{count} présents",
   "transcript.deviceReason": "L'audio a été fabriqué, mais cet appareil n'a pas pu le lire.",
   "transcript.readFailed": "Impossible de lire ce passage à voix haute.",
   "transcript.notReadTitle": "Non lu à voix haute",
@@ -8446,6 +8450,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
 
 // ---- titres, badges et notes des cartes du sélecteur de héros (HeroChooser.tsx) ----
   "chooser.own.title": "Tes héros",
+  "chooser.errorSave": "Impossible d'enregistrer le personnage.",
+  "chooser.errorUnreachable": "Impossible de joindre le serveur.",
   "chooser.backTable": "Retour à la table",
   "chooser.backLobby": "Retour au salon",
   "chooser.titleEdit": "Modifier ton personnage",
@@ -9339,7 +9345,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
 
 // ---- le tiroir de cartes du MJ (DmMapLibraryPanel.tsx) et ce qui a décidé le tirage de la forge (explainForgeT de forge.ts) ----
   "dm.maps.forge.foughtOn": "{scene} se bat sur un sol du genre {theme}.",
-  "dm.maps.forge.lightDefault": "La lumière est ce que {theme} a d'habitude.",
+  "dm.maps.forge.lightDefault": "C'est la lumière habituelle de {theme}.",
   "dm.maps.forge.lightSet": "Tu règles la lumière : {light}.",
   "dm.maps.forge.openGround": "Aucun genre d'endroit n'est réglé, donc c'est un terrain ouvert.",
   "dm.maps.forge.roughGround": "{scene} sème du terrain accidenté.",
@@ -10747,7 +10753,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
 
 // ---- factions (faction-logic.ts) ----
   "faction.head": "Factions",
-  "faction.addOne": "Ajouter une",
+  "faction.addOne": "Ajouter une faction",
   "faction.namePlaceholder": "La Cour des Roseaux",
   "faction.nameAria": "Nom de la faction",
   "faction.knownLabel": "Ce que la table sait d'eux",

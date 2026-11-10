@@ -12,6 +12,11 @@
 //
 // The rules here are shared by the route and the table's own controls.
 
+import { translate } from "@/lib/messages-logic";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
+
 export type SessionHold = {
   // When the session ended (ms since the epoch).
   at: number;
@@ -120,10 +125,14 @@ export function sessionWhenLocal(startsAt: string, locale?: string): string {
 }
 
 // The line the banner and the home screen say about it.
-export function nextSessionWords(next: NextSession | null, when: string): string {
+export function nextSessionWordsT(t: T, next: NextSession | null, when: string): string {
   if (!next) {
-    return "No next session is set yet.";
+    return t("session.hold.noNext");
   }
-  const coming = next.coming === 1 ? "1 coming" : `${next.coming} coming`;
-  return `Next session: ${when} · ${coming}`;
+  const coming = t("session.hold.coming", { count: next.coming });
+  return t("session.hold.nextLine", { when, coming });
+}
+
+export function nextSessionWords(next: NextSession | null, when: string): string {
+  return nextSessionWordsT(enT, next, when);
 }

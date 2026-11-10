@@ -140,7 +140,7 @@ function CampaignCharacterPageInner({ campaignId }: { campaignId: string }) {
       clearBuilderDraft(builderDraftKey("table", campaignId));
       navigateTo(`/campaigns/${campaignId}`);
     } catch {
-      setError("Could not reach the server.");
+      setError(t("chooser.errorUnreachable"));
     } finally {
       setBusy(false);
     }
@@ -176,29 +176,29 @@ function CampaignCharacterPageInner({ campaignId }: { campaignId: string }) {
     <main className="mx-auto w-full max-w-3xl flex-1 p-4 sm:p-6">
       <header className="mb-5">
         <a href={`/campaigns/${campaignId}`} className={cn(ui.btnSmall, "text-xs")}>
-          <ChevronLeft className="size-3.5" /> {inPlay ? "Back to the table" : "Back to the lobby"}
+          <ChevronLeft className="size-3.5" /> {inPlay ? t("chooser.backTable") : t("chooser.backLobby")}
         </a>
         <div className="mt-2 flex items-center gap-3">
           <PixelTile src={PIXEL_ICONS.characters} />
           <div>
             <h1 className="gold-title font-display text-2xl">
               {flow === "edit"
-                ? "Edit your character"
+                ? t("chooser.titleEdit")
                 : flow === "replace"
-                  ? "Switch your character"
+                  ? t("chooser.titleReplace")
                   : mode === "choose"
-                    ? "Choose your character"
-                    : "Create your character"}
+                    ? t("chooser.titleChoose")
+                    : t("chooser.titleCreate")}
             </h1>
             <p className="text-sm text-stone-400">
               {fallen
-                ? `${fallen.name} has fallen. Your new hero joins at level ${level}, the level ${fallen.name} reached.`
-                : `This campaign starts at level ${level}.`}
-              {flow !== "join" ? " Changing your character clears your ready status." : ""}
+                ? t("chooser.fallen", { name: fallen.name, level })
+                : t("chooser.startsAt", { level })}
+              {flow !== "join" ? t("chooser.clearsReady") : ""}
             </p>
             {flow === "edit" && editCharacter && libraryLevel !== null && libraryLevel !== level ? (
               <p className="reveal mt-1 text-xs text-amber-200">
-                {editCharacter.name} stays level {libraryLevel} in your library; these changes are for this table.
+                {t("chooser.libraryLevel", { name: editCharacter.name, level: libraryLevel })}
               </p>
             ) : null}
           </div>
@@ -209,7 +209,7 @@ function CampaignCharacterPageInner({ campaignId }: { campaignId: string }) {
         <>
           {companionCount > 0 ? (
             <p className="reveal mb-4 text-xs text-stone-400">
-              {companionCount === 1 ? "One ally the GM plays is" : `${companionCount} allies the GM plays are`} not listed here: whoever runs the story brings them in from the party panel, under Build a companion.
+              {t(companionCount === 1 ? "chooser.alliesOne" : "chooser.alliesMany", { count: companionCount })}
             </p>
           ) : null}
           {/* Every hero this seat can take, on one screen, each through the
@@ -268,10 +268,10 @@ function CampaignCharacterPageInner({ campaignId }: { campaignId: string }) {
             initialLevel={flow === "edit" ? editCharacter?.level : undefined}
             submitLabel={
               flow === "edit"
-                ? "Save changes"
+                ? t("chooser.saveChanges")
                 : flow === "replace"
-                  ? "Replace your character"
-                  : "Join the party"
+                  ? t("chooser.replace")
+                  : t("chooser.join")
             }
             onSubmit={submitNew}
             busy={busy}

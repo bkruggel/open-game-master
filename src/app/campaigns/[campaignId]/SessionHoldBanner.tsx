@@ -5,9 +5,9 @@ import { ScheduleSection } from "@/components/ScheduleSection";
 import { Dialog } from "@/components/ui/Dialog";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { SessionBanner, bannerButtonClass } from "@/app/campaigns/[campaignId]/SessionBanner";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import {
-  nextSessionWords,
+  nextSessionWordsT,
   pickNextSession,
   sessionWhenLocal,
   type NextSession,
@@ -57,6 +57,7 @@ export function SessionHoldBanner({
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [next, setNext] = useState<NextSession | null | undefined>(undefined);
   const t = useT();
+  const locale = useLocale();
   const held = hold !== null;
   // Under the session header, whatever its height (TableBreakBanner.tsx).
   useEffect(() => {
@@ -141,7 +142,7 @@ export function SessionHoldBanner({
           }
         >
           <span role="status" className="block text-sm text-stone-300" data-session-next="">
-            {next === undefined ? " " : nextSessionWords(next, next ? sessionWhenLocal(next.startsAt) : "")}
+            {next === undefined ? " " : nextSessionWordsT(t, next, next ? sessionWhenLocal(next.startsAt, locale) : "")}
           </span>
           <span className="block text-xs text-stone-400">
             {t("session.hold.waitsNote")}
