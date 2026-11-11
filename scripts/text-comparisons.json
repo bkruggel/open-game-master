@@ -19074,27 +19074,6 @@
     "UI: ids, fixed choices, DOM and keyboard names, stored values"
    ]
   ],
-  "lib/rulebook/book.ts#toLowerCase": [
-   [
-    "key",
-    1,
-    "Accept-Language language tags (protocol tokens, not a person's text), parsed for the language prefix, never compared"
-   ]
-  ],
-  "lib/rulebook/book.ts#str-eq": [
-   [
-    "key",
-    4,
-    "Accept-Language tags and the app's own X-Odm-Locale header value against the fixed tokens fr/en (protocol tokens, never a person's text)"
-   ]
-  ],
-  "lib/rulebook/book.ts#str-startsWith": [
-   [
-    "key",
-    2,
-    "the fr-/en- language-tag prefixes (protocol tokens, never a person's text)"
-   ]
-  ],
   "lib/starter/pregens.ts#str-key": [
    [
     "key",
@@ -19261,6 +19240,34 @@
     "key",
     1,
     "a fixed suffix the server's own verdict line carries (\" for this party\", read by the model too); its English words are scripts/text-comparisons.json's to classify"
+   ]
+  ],
+  "lib/request-locale.ts#toLowerCase": [
+   [
+    "key",
+    1,
+    "Accept-Language language tags (protocol tokens, not a person's text), parsed for the language prefix, never compared (moved from lib/rulebook/book.ts)"
+   ]
+  ],
+  "lib/request-locale.ts#str-eq": [
+   [
+    "key",
+    4,
+    "Accept-Language tags and the app's own X-Odm-Locale header value against the fixed tokens fr/en (protocol tokens, never a person's text; moved from lib/rulebook/book.ts)"
+   ]
+  ],
+  "lib/request-locale.ts#str-startsWith": [
+   [
+    "key",
+    2,
+    "the fr-/en- language-tag prefixes (protocol tokens, never a person's text; moved from lib/rulebook/book.ts)"
+   ]
+  ],
+  "lib/characters/hero-tips.ts#str-key": [
+   [
+    "key",
+    1,
+    "the save's three-letter code a hand card carries (engine vocabulary), read for its localized abbreviation (workshop.bestiary.stats.saveAbbr.*)"
    ]
   ]
  },

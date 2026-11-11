@@ -5280,6 +5280,11 @@
         "pattern",
         1,
         "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
+      ],
+      [
+        "english-source",
+        4,
+        "canAct's refusal sentences (src/lib/dm/can-act.ts), matched by prefix and suffix at standingGate to carry them into the reader's words: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English)"
       ]
     ],
     "lib/battlemap/hand-escape.ts#keyed": [
@@ -19568,20 +19573,6 @@
         "tests the subclass helper's answer against the value the sheet stores, to case the label only (title-cased as stored beside a miss); names no record"
       ]
     ],
-    "lib/rulebook/book.ts#normalizer": [
-      [
-        "key",
-        1,
-        "Accept-Language language tags (protocol tokens, not a person's text) folded for the language prefix; no record is ever read by them"
-      ]
-    ],
-    "lib/rulebook/book.ts#partial": [
-      [
-        "pattern",
-        4,
-        "the Accept-Language header cut into its comma and semicolon parts and tag prefixes (header.split, tag.startsWith) — protocol tokens that read no record's name: their words are scripts/text-comparisons.json's to classify"
-      ]
-    ],
     "components/rulebook/RulebookReader.tsx#keyed": [
       [
         "key",
@@ -19699,6 +19690,34 @@
         "key",
         2,
         "the official French damage-type words read by the type's own key (the word a damage expression matched, or the caller's type); a miss is the English word back, never a near record"
+      ]
+    ],
+    "lib/request-locale.ts#normalizer": [
+      [
+        "key",
+        1,
+        "Accept-Language language tags (protocol tokens, not a person's text) folded for the language prefix; no record is ever read by them (moved from lib/rulebook/book.ts)"
+      ]
+    ],
+    "lib/request-locale.ts#partial": [
+      [
+        "pattern",
+        4,
+        "the Accept-Language header cut into its comma and semicolon parts and tag prefixes (header.split, tag.startsWith) — protocol tokens that read no record's name: their words are scripts/text-comparisons.json's to classify (moved from lib/rulebook/book.ts)"
+      ]
+    ],
+    "lib/battlemap/hand-core.ts#whole-single": [
+      [
+        "english-source",
+        10,
+        "canAct's, spendAction's, spendAttack's, handsRuling's and offHandProblem's refusal sentences (src/lib/dm/can-act.ts, src/lib/dm/action-budget.ts, src/lib/dm/attack-rules.ts), rebuilt beside each refusal and compared whole at the hand's gate boundary: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English)"
+      ]
+    ],
+    "lib/battlemap/hand-gear.ts#whole-single": [
+      [
+        "english-source",
+        1,
+        "gear-hands.ts handsFullError's refusal sentence, rebuilt beside the refusal and compared whole at the draw card's gate: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English)"
       ]
     ]
   }

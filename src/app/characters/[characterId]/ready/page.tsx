@@ -111,8 +111,10 @@ export default function HeroReadyPage({ params }: { params: Promise<{ characterI
     [sheet, level, characterId],
   );
   const spells = useHandSpells(play);
-  const tips = useMemo(() => (play ? threeThingsToTry(play, spells) : []), [play, spells]);
-  const reveal = useMemo(() => (play ? revealLine(play) : ""), [play]);
+  // The tips and the reveal read in the reader's own language, like the
+  // heading above them (hero-tips.ts is t-first with the enT default).
+  const tips = useMemo(() => (play ? threeThingsToTry(play, spells, t, locale) : []), [play, spells, t, locale]);
+  const reveal = useMemo(() => (play ? revealLine(play, t) : ""), [play, t]);
 
   async function changeSkip(next: boolean) {
     setSkip(next);

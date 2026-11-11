@@ -712,7 +712,7 @@ function HandInner({
   // hand is held for one reason, the engine's own. The header already says
   // to look the cards over, so a card held only by that stays readable
   // (issue 96): its preview still opens, and the reason is said once.
-  const waitingOn = waitingHand(sheet, turn);
+  const waitingOn = waitingHand(sheet, turn, t);
   const isWaiting = (card: HandCard) => card.disabled !== null && Boolean(waitingOn?.sentences.has(card.disabled));
 
   const { fan, more, displaced, fresh } = arrangement;

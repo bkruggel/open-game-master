@@ -3,6 +3,7 @@ import { z } from "zod";
 import { capsFor, isErrorResponse, isLead, requireMember } from "@/lib/campaign-api";
 import { ADVENTURE_BEGINS_NOTE, CAMPAIGN_DIFFICULTIES } from "@/lib/campaign-types";
 import { deleteCampaignWithFiles } from "@/lib/campaign-deletion";
+import { requestT } from "@/lib/request-locale";
 import {
   allocateSeq,
   campaignSeats,
@@ -242,7 +243,9 @@ export async function PATCH(
   { params }: { params: Promise<{ campaignId: string }> },
 ) {
   const { campaignId } = await params;
-  const context = await requireMember(campaignId);
+  // The refusals read the asker's language; the settings page shows them raw.
+  const t = requestT(request);
+  const context = await requireMember(campaignId, request);
   if (isErrorResponse(context)) {
     return context;
   }
@@ -264,7 +267,7 @@ export async function PATCH(
   // only seeds sheets for future joiners.
   if (infoKeys.length) {
     if (!isLead(context)) {
-      return Response.json({ error: "Only the party lead can edit the campaign." }, { status: 403 });
+      return Response.json({ error: t("refusal.campaignEdit") }, { status: 403 });
     }
     if (campaign.status === "ended") {
       return Response.json({ error: "The campaign has ended." }, { status: 400 });

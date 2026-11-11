@@ -8,6 +8,10 @@
 //
 // Pure; scripts/test-hand-engine.mjs drives it.
 import type { CharacterSheet } from "@/lib/schemas/sheet";
+import { translate } from "@/lib/messages-logic";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
 import { computeSheetDerived } from "@/lib/srd";
 import { gateHolds, heldAuthored, type AuthoredSpend } from "@/lib/srd/authored-effects";
 import { holdsFeature } from "@/lib/srd/trait-rules";
@@ -36,16 +40,16 @@ function targetOf(does: SpendDoes): HandTarget {
   return "none";
 }
 
-function linesOf(does: SpendDoes): { dice: string; condition: string } {
+function linesOf(does: SpendDoes, t: T = enT): { dice: string; condition: string } {
   switch (does.kind) {
     case "buff":
       return { dice: typeof does.condition === "string" ? does.condition : does.condition[0]?.[1] ?? "", condition: typeof does.condition === "string" ? does.condition : "" };
     case "save_effect":
-      return { dice: `${does.save.toUpperCase()} save`, condition: does.condition ?? "" };
+      return { dice: t("table.hand.spell.saveOnly", { ability: does.save.toUpperCase() }), condition: does.condition ?? "" };
     case "temp_hp":
-      return { dice: "temp hp", condition: "" };
+      return { dice: t("table.hand.subclass.tempHp"), condition: "" };
     case "teleport":
-      return { dice: `${does.feet} ft`, condition: "" };
+      return { dice: t("table.hand.range.feet", { feet: does.feet }), condition: "" };
     case "die_damage":
       return { dice: `+${typeof does.dice === "string" ? does.dice : "dice"} ${does.type}`, condition: "" };
     default:
@@ -56,7 +60,7 @@ function linesOf(does: SpendDoes): { dice: string; condition: string } {
 // One card per spend the character holds that is played in a fight. The
 // counters populateResources makes for these features are already cards
 // (hand-spells.ts featureCards); `taken` names them so none shows twice.
-export function subclassSpendCards(sheet: CharacterSheet, turn: HandTurn, taken: Set<string>): HandCard[] {
+export function subclassSpendCards(sheet: CharacterSheet, turn: HandTurn, taken: Set<string>, t: T = enT): HandCard[] {
   const cards: HandCard[] = [];
   for (const held of heldAuthored(sheet)) {
     for (const spend of held.entry.spends ?? []) {
@@ -69,17 +73,17 @@ export function subclassSpendCards(sheet: CharacterSheet, turn: HandTurn, taken:
       const pool = spend.pool;
       const state = pool ? sheet.resources[pool.id] : undefined;
       const left = state ? state.max - state.used : null;
-      const lines = linesOf(does);
+      const lines = linesOf(does, t);
       const perUnit = Boolean(pool?.perUnit);
       const card: HandCard = {
         id: `feature:authored:${textKey(spend.name).replace(/\s+/g, "-")}`,
         type: does.kind === "save_effect" ? (lines.condition ? "control" : "spell") : does.kind === "buff" ? "ward" : "feature",
         name: spend.name,
         cost,
-        range: targetOf(does) === "self" || targetOf(does) === "none" ? "Self" : "",
+        range: targetOf(does) === "self" || targetOf(does) === "none" ? t("table.hand.range.self") : "",
         dice: lines.dice,
-        roll: does.kind === "save_effect" ? "no attack" : "no roll",
-        rules: `${held.feature}: the server resolves it.`,
+        roll: does.kind === "save_effect" ? t("table.hand.spell.noAttack") : t("table.hand.roll.none"),
+        rules: t("table.hand.subclass.rules", { feature: held.feature }),
         resource: state && left !== null ? `${pool!.id.replace(/_/g, " ")} ${left}/${state.max}` : "",
         condition: lines.condition,
         icon: { kind: "feature", key: spend.name, family: `class-${primaryClass(sheet)}` },
@@ -102,21 +106,21 @@ export function subclassSpendCards(sheet: CharacterSheet, turn: HandTurn, taken:
       if (does.kind === "variants") {
         card.choice = {
           arg: "variant",
-          label: "Choose",
+          label: t("table.hand.spell.choice.choose"),
           options: Object.keys(does.options).map((value) => ({ value, label: value.replace(/^./, (c) => c.toUpperCase()) })),
         };
       }
       const need = pool?.optional ? 0 : pool?.amount ?? 1;
       const poolGate: Gate =
         state && left !== null && left < need && !perUnit
-          ? { reason: `${spend.name} needs ${need} ${pool!.id.replace(/_/g, " ")} and ${sheet.name} has ${left}. It comes back after a rest.`, spent: true }
+          ? { reason: t("table.hand.subclass.poolGate", { spend: spend.name, need, pool: pool!.id.replace(/_/g, " "), name: sheet.name, left }), spent: true }
           : null;
       cards.push(
         gated(
           card,
-          standingGate(sheet, turn, cost === "bonus" ? "bonus" : cost === "free" ? "free" : "action"),
+          standingGate(sheet, turn, cost === "bonus" ? "bonus" : cost === "free" ? "free" : "action", t),
           poolGate,
-          cost === "free" ? null : costGate(cost, turn, sheet, spend.name),
+          cost === "free" ? null : costGate(cost, turn, sheet, spend.name, t),
         ),
       );
     }
@@ -128,7 +132,7 @@ export function subclassSpendCards(sheet: CharacterSheet, turn: HandTurn, taken:
 // feet, a WIS save against 8 + proficiency + CHA or frightened until the end
 // of the barbarian's next turn (use_resource with targetEnemyId; the engine's
 // combat-features.ts rolls it).
-export function intimidatingPresenceCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] {
+export function intimidatingPresenceCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT): HandCard[] {
   if (!holdsFeature(sheet, "intimidating presence")) return [];
   const derived = computeSheetDerived(sheet);
   const dc = 8 + derived.proficiencyBonus + derived.abilityMods.cha;
@@ -137,12 +141,12 @@ export function intimidatingPresenceCards(sheet: CharacterSheet, turn: HandTurn)
     type: "control",
     name: "Intimidating Presence",
     cost: "action",
-    range: "30 ft",
-    dice: `WIS save DC ${dc}`,
-    roll: "no attack",
-    rules: "Frightened until the end of your next turn; a creature that saves cannot be frightened by it for 24 hours.",
+    range: t("table.hand.range.feet", { feet: 30 }),
+    dice: t("table.hand.spell.saveDc", { ability: "WIS", dc }),
+    roll: t("table.hand.spell.noAttack"),
+    rules: t("table.hand.subclass.intimidateRules"),
     resource: "",
-    condition: "Frightened",
+    condition: t("table.hand.subclass.frightened"),
     icon: { kind: "feature", key: "Intimidating Presence", family: "class-barbarian" },
     target: "enemy",
     toHit: null,
@@ -156,7 +160,7 @@ export function intimidatingPresenceCards(sheet: CharacterSheet, turn: HandTurn)
     compose: false,
     intent: { card: "feature", resourceId: "Intimidating Presence" },
   };
-  return [gated(card, standingGate(sheet, turn, "action"), costGate("action", turn, sheet, "Intimidating Presence"))];
+  return [gated(card, standingGate(sheet, turn, "action", t), costGate("action", turn, sheet, "Intimidating Presence", t))];
 }
 
 // The once-chosen options of the subclass features a character holds

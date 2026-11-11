@@ -6,6 +6,10 @@
 //
 // Pure; scripts/test-hand-options.mjs drives it.
 import type { CharacterSheet } from "@/lib/schemas/sheet";
+import { translate } from "@/lib/messages-logic";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
 import { channelOptions, psionicOptions, type HeldOption } from "@/lib/dm/option-costs";
 import { maneuverDieFor } from "@/lib/dm/maneuver-rules";
 import { iconPath, isPainted, type IconRef } from "@/lib/icons";
@@ -35,6 +39,7 @@ function card(
   turn: HandTurn,
   pool: { id: string; label: string },
   option: { name: string; cost: HandCost; rules: string; target?: HandTarget; dice?: string; ritual?: boolean; icon?: IconRef },
+  t: T = enT,
 ): HandCard {
   const state = sheet.resources[pool.id];
   const left = state ? state.max - state.used : 0;
@@ -44,9 +49,9 @@ function card(
     type: option.target === "ally" ? "ward" : "feature",
     name: option.name,
     cost,
-    range: option.target === "ally" || option.target === "enemy" ? "" : "Self",
+    range: option.target === "ally" || option.target === "enemy" ? "" : t("table.hand.range.self"),
     dice: option.dice ?? "",
-    roll: "no roll",
+    roll: t("table.hand.roll.none"),
     rules: option.rules,
     resource: state ? `${pool.label} ${left}/${state.max}` : "",
     condition: "",
@@ -74,22 +79,24 @@ function card(
   };
   return gated(
     made,
-    standingGate(sheet, turn, cost === "reaction" ? "reaction" : cost === "bonus" ? "bonus" : cost === "free" ? "free" : "action"),
-    option.ritual && turn.table ? { reason: `${option.name} is an hour-long ritual, not something done in a fight.`, spent: false } : null,
-    left > 0 ? null : { reason: `${pool.label} is spent until a rest.`, spent: true },
-    costGate(cost, turn, sheet, option.name),
+    standingGate(sheet, turn, cost === "reaction" ? "reaction" : cost === "bonus" ? "bonus" : cost === "free" ? "free" : "action", t),
+    option.ritual && turn.table ? { reason: t("table.hand.option.ritualGate", { name: option.name }), spent: false } : null,
+    left > 0 ? null : { reason: t("table.hand.option.spentGate", { pool: pool.label }), spent: true },
+    costGate(cost, turn, sheet, option.name, t),
   );
 }
 
+// What an option costs its holder's turn, keyed; the option names and the
+// pool labels are the resources' own words and stay as they are.
 const RULES: Record<HeldOption["cost"], string> = {
-  action: "Takes their action.",
-  bonus: "Takes their bonus action.",
-  reaction: "Taken with their reaction, when its trigger comes.",
-  none: "Rides a roll they are already making; no action of its own.",
-  ritual: "An hour of ritual work, out of a fight.",
+  action: "table.hand.option.cost.action",
+  bonus: "table.hand.option.cost.bonus",
+  reaction: "table.hand.option.cost.reaction",
+  none: "table.hand.option.cost.none",
+  ritual: "table.hand.option.cost.ritual",
 };
 
-export function optionCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] {
+export function optionCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT): HandCard[] {
   const cards: HandCard[] = [];
   if (sheet.resources.channel_divinity) {
     for (const option of channelOptions(sheet)) {
@@ -97,9 +104,9 @@ export function optionCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] {
         card(sheet, turn, { id: "channel_divinity", label: "Channel Divinity" }, {
           name: option.name,
           cost: COST[option.cost],
-          rules: `Channel Divinity. ${RULES[option.cost]}`,
+          rules: t("table.hand.option.channelRules", { rules: t(RULES[option.cost]) }),
           ritual: option.cost === "ritual",
-        }),
+        }, t),
       );
     }
   }
@@ -111,8 +118,8 @@ export function optionCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] {
         card(sheet, turn, { id: "sub_psionic_energy", label: "Psionic Energy" }, {
           name: option.name,
           cost: COST[option.cost],
-          rules: `A Psionic Energy die. ${RULES[option.cost]}`,
-        }),
+          rules: t("table.hand.option.psionicRules", { rules: t(RULES[option.cost]) }),
+        }, t),
       );
     }
   }
@@ -121,26 +128,26 @@ export function optionCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] {
     const knows = (name: string) => sheet.features.some((feature) => /^maneuver:/i.test(feature.name) && isNamed(feature.name, name));
     if (knows("rally")) {
       cards.push(
-        card(sheet, turn, { id: "sub_superiority_dice", label: "Dice" }, {
+        card(sheet, turn, { id: "sub_superiority_dice", label: t("table.hand.option.poolDice") }, {
           name: "Rally",
           cost: "bonus",
-          rules: "A companion gains temporary hit points: the die plus your Charisma modifier.",
+          rules: t("table.hand.option.rallyRules"),
           target: "ally",
-          dice: `${die} temp hp`,
+          dice: t("table.hand.option.rallyDice", { die }),
           icon: { kind: "option", key: "Maneuver: Rally", family: "option-maneuver" },
-        }),
+        }, t),
       );
     }
     if (knows("commander's strike")) {
       cards.push(
-        card(sheet, turn, { id: "sub_superiority_dice", label: "Dice" }, {
+        card(sheet, turn, { id: "sub_superiority_dice", label: t("table.hand.option.poolDice") }, {
           name: "Commander's Strike",
           cost: "bonus",
-          rules: "Forgo one attack: a companion strikes now with their reaction, the die added to its damage.",
+          rules: t("table.hand.option.commanderRules"),
           target: "ally",
           dice: `+${die}`,
           icon: { kind: "option", key: "Maneuver: Commander's Strike", family: "option-maneuver" },
-        }),
+        }, t),
       );
     }
   }

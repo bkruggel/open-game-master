@@ -13,11 +13,11 @@ export const dynamic = "force-dynamic";
 // reads the table's view: name, blurb, attitude, standing in words and the
 // members they know of. Goal and power are the DM's.
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ campaignId: string }> },
 ) {
   const { campaignId } = await params;
-  const context = await requireMember(campaignId);
+  const context = await requireMember(campaignId, request);
   if (isErrorResponse(context)) {
     return context;
   }
@@ -47,7 +47,7 @@ export async function POST(
   { params }: { params: Promise<{ campaignId: string }> },
 ) {
   const { campaignId } = await params;
-  const context = await requireStoryAuthority(campaignId);
+  const context = await requireStoryAuthority(campaignId, request);
   if (isErrorResponse(context)) {
     return context;
   }

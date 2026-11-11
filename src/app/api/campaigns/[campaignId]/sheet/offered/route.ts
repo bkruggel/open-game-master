@@ -11,8 +11,7 @@ import { claimPregen, claimRefusal, offeredPregenFor } from "@/lib/db/pregen-off
 import { createSheet } from "@/lib/db/sheets";
 import { publishPersisted } from "@/lib/events";
 import { queueLibraryPortrait } from "@/lib/portrait";
-import { bookLocaleOf } from "@/lib/rulebook/book";
-import { translate } from "@/lib/messages-logic";
+import { requestT } from "@/lib/request-locale";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,8 +41,7 @@ export async function POST(
     return context;
   }
   // The refusals read the asker's language.
-  const t = (key: string, vars?: Record<string, string | number>) =>
-    translate(bookLocaleOf(request), key, vars);
+  const t = requestT(request);
   if (!capsFor(context).needsCharacter) {
     return Response.json({ error: t("preview.problem.gmNoCharacter") }, { status: 400 });
   }

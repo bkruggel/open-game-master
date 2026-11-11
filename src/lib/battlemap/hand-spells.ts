@@ -3,6 +3,10 @@
 // spends, read from the same tables the cast and use_resource tools read.
 import { BEST_EFFORT_NOTE, BEST_EFFORT_SHORT } from "@/lib/content/reading-logic";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
+import { translate } from "@/lib/messages-logic";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
 import { bonusCastOf, casterStateProblem, componentProblem, focusProblem, materialPlan, slotPlan, turnCharge } from "@/lib/dm/cast-rules";
 import { computeSheetDerived, spellAttackFor, spellSaveDcFor } from "@/lib/srd";
 import { resourceDef, resourceLevel, type ResourceDef } from "@/lib/srd/class-resources";
@@ -100,17 +104,18 @@ function factFor(name: string, options: HandOptions): SpellFact | null {
 
 const title = (word: string) => word.replace(/^./, (c) => c.toUpperCase());
 
-// Bestow Curse's nine curses, in the words a player picks from.
-const CURSE_LABELS: Record<string, string> = {
-  str: "Strength",
-  dex: "Dexterity",
-  con: "Constitution",
-  int: "Intelligence",
-  wis: "Wisdom",
-  cha: "Charisma",
-  attacks: "Its attacks on you",
-  will: "Its will",
-  necrotic: "Necrotic wounds",
+// Bestow Curse's nine curses, in the words a player picks from. The values
+// sent stay the engine's own ids; the labels are keyed.
+const CURSE_KEYS: Record<string, string> = {
+  str: "table.hand.spell.curse.str",
+  dex: "table.hand.spell.curse.dex",
+  con: "table.hand.spell.curse.con",
+  int: "table.hand.spell.curse.int",
+  wis: "table.hand.spell.curse.wis",
+  cha: "table.hand.spell.curse.cha",
+  attacks: "table.hand.spell.curse.attacks",
+  will: "table.hand.spell.curse.will",
+  necrotic: "table.hand.spell.curse.necrotic",
 };
 
 // The one pick a spell's row asks the caster to make, as the engine names it
@@ -119,16 +124,16 @@ const CURSE_LABELS: Record<string, string> = {
 // on worn armor, the condition a restoration ends, a buff's form
 // (Enlarge/Reduce). The value is what cast_at_enemy's `condition` or
 // cast_buff's `variant` reads (src/lib/dm/spell-riders.ts chosenCondition).
-export function spellChoice(mech: SpellMech): HandChoice | undefined {
+export function spellChoice(mech: SpellMech, t: T = enT): HandChoice | undefined {
   const condition = mech.condition;
   if (condition?.variants && condition.variants.length > 1) {
     return {
       arg: "condition",
-      label: "Choose",
+      label: t("table.hand.spell.choice.choose"),
       options: condition.variants.map((variant) => {
         const inner = /\(([^)]+)\)$/.exec(variant)?.[1];
         return inner
-          ? { value: inner, label: CURSE_LABELS[inner] ?? title(inner) }
+          ? { value: inner, label: (CURSE_KEYS[inner] ? t(CURSE_KEYS[inner]) : title(inner)) }
           : { value: variant, label: title(variant) };
       }),
     };
@@ -136,17 +141,17 @@ export function spellChoice(mech: SpellMech): HandChoice | undefined {
   if (condition?.choices && Object.keys(condition.choices).length) {
     return {
       arg: "condition",
-      label: "The word",
+      label: t("table.hand.spell.choice.word"),
       options: Object.entries(condition.choices).map(([word, adds]) => ({ value: word, label: title(word), note: adds.join(", ") })),
     };
   }
   if (mech.riders?.gripSave) {
     return {
       arg: "condition",
-      label: "The metal",
+      label: t("table.hand.spell.choice.metal"),
       options: [
-        { value: "", label: "A held object" },
-        { value: "armor", label: "Worn armor" },
+        { value: "", label: t("table.hand.spell.choice.heldObject") },
+        { value: "armor", label: t("table.hand.spell.choice.wornArmor") },
       ],
       fallback: "",
     };
@@ -154,12 +159,12 @@ export function spellChoice(mech: SpellMech): HandChoice | undefined {
   if (mech.cures && !mech.cures.all && mech.cures.conditions.length > 1) {
     return {
       arg: "variant",
-      label: "Ends",
-      options: mech.cures.conditions.map((entry) => ({ value: entry, label: entry === "cursed" ? "A curse" : title(entry) })),
+      label: t("table.hand.spell.choice.ends"),
+      options: mech.cures.conditions.map((entry) => ({ value: entry, label: entry === "cursed" ? t("table.hand.spell.choice.curse") : title(entry) })),
     };
   }
   if (mech.buff?.variants && mech.buff.variants.length > 1) {
-    return { arg: "variant", label: "Choose", options: mech.buff.variants.map((variant) => ({ value: variant, label: title(variant) })) };
+    return { arg: "variant", label: t("table.hand.spell.choice.choose"), options: mech.buff.variants.map((variant) => ({ value: variant, label: title(variant) })) };
   }
   return undefined;
 }
@@ -184,7 +189,7 @@ function spellShares(mech: SpellMech, spellLevel: number, slotLevel: number | nu
   return { count, unit: "creature", stack: false };
 }
 
-function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, name: string, fact: SpellFact, blasts = true): HandCard | null {
+function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, name: string, fact: SpellFact, blasts = true, t: T = enT): HandCard | null {
   const cost = castingCost(fact.castingTime);
   if (!cost) return null;
   // The mechanics row the engine reads; the prose is parsed only for what the
@@ -251,9 +256,9 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
           : "none";
   const typed = damage ? `${damage}${mech.damageType ? ` ${mech.damageType}` : ""}` : "";
   const dice = heals
-    ? damage ? `heals ${damage}` : "heals"
+    ? damage ? t("table.hand.spell.heals", { dice: damage }) : t("table.hand.spell.healsOnly")
     : save
-      ? typed ? `${typed}, ${save.ability} save` : `${save.ability} save DC ${save.dc}`
+      ? typed ? t("table.hand.spell.saveTyped", { dice: typed, ability: save.ability }) : t("table.hand.spell.saveDc", { ability: save.ability, dc: save.dc })
       : typed ||
         (mech.buff
           ? // A buff with an aura that hurts (Spirit Guardians) names the
@@ -261,16 +266,20 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
             `${mech.buff.condition}${mech.resolution === "buff" && rolled ? `, ${rolled.dice}${mech.damageType ? ` ${mech.damageType}` : ""}` : ""}`
           : "");
   const roll =
-    toHit !== null ? `${signed(toHit)} to hit` : save ? (typed ? `DC ${save.dc}${mech.halfOnSave ? ", half on a save" : ""}` : "no attack") : "no roll";
+    toHit !== null
+      ? t("table.hand.attack.toHit", { bonus: signed(toHit) })
+      : save
+        ? typed ? t("table.hand.spell.dcRoll", { dc: save.dc, tail: mech.halfOnSave ? t("table.hand.spell.halfOnSave") : "" }) : t("table.hand.spell.noAttack")
+        : t("table.hand.roll.none");
   const notes: string[] = [];
   if (fact.concentration && sheet.concentratingOn && textKey(sheet.concentratingOn) !== textKey(name)) {
-    notes.push(`Ends your concentration on ${sheet.concentratingOn}.`);
+    notes.push(t("table.hand.spell.endsConcentration", { spell: sheet.concentratingOn }));
   }
   // A note the model reads too: its tool directions are not the player's
   // (src/lib/language/player-text.ts).
   const note = mech.note ? forPlayers(mech.note) : "";
   if (note) notes.push(note);
-  if (slot && slot.level > fact.level) notes.push(`Cast with a level ${slot.level} slot.`);
+  if (slot && slot.level > fact.level) notes.push(t("table.hand.spell.upcast", { level: slot.level }));
   // Mechanics the app read from the spell's text that nobody checked
   // (issue #570): the card's details say so.
   if (fact.bestEffort) notes.push(BEST_EFFORT_SHORT);
@@ -295,21 +304,30 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
     bonusCast: bonusCastOf(sheet, facts, null),
   });
   const melee = mech.resolution === "attack" && isMeleeSpellAttack(engine, facts?.range.kind);
-  if (melee) notes.unshift("Melee spell attack: a creature beside you.");
+  if (melee) notes.unshift(t("table.hand.spell.meleeNote"));
   // A feature that moves the spell to the bonus action shows it there.
   const shownCost: HandCost = !("error" in charge) && charge.kind === "budget" && charge.cost === "bonus action" ? "bonus" : cost;
+  // The range the card shows: the structured facts' kind decides Self, Touch
+  // and feet, so the reader's own words appear; a range word the facts do
+  // not carry keeps the data's own text (feet's shortened form).
+  const shownRange = (() => {
+    if (facts?.range.kind === "self") return t("table.hand.range.self");
+    if (facts?.range.kind === "touch") return t("table.hand.range.touch");
+    if (facts?.range.kind === "feet") return t("table.hand.range.feet", { feet: facts.range.feet });
+    return feet(fact.range, t);
+  })();
   const card: HandCard = {
     id: `spell:${textKey(name)}`,
     type,
     name,
     cost: shownCost,
-    range: feet(fact.range),
+    range: shownRange,
     dice,
     roll,
     rules: notes.slice(0, 2).join(" "),
-    description: [fact.desc, fact.higherLevel ? `At higher levels: ${fact.higherLevel}` : "", ...notes.map((note) => (note === BEST_EFFORT_SHORT ? BEST_EFFORT_NOTE : note))].filter(Boolean).join("\n\n"),
-    resource: fact.level === 0 ? "Cantrip" : slot ? slotLine(slot) : `Level ${fact.level} · no slots`,
-    condition: mech.condition?.name ?? (fact.concentration ? "Concentration" : ""),
+    description: [fact.desc, fact.higherLevel ? t("table.hand.spell.higherLevels", { text: fact.higherLevel }) : "", ...notes.map((note) => (note === BEST_EFFORT_SHORT ? BEST_EFFORT_NOTE : note))].filter(Boolean).join("\n\n"),
+    resource: fact.level === 0 ? t("table.hand.spell.cantrip") : slot ? slotLine(slot, t) : t("table.hand.spell.noSlots", { level: fact.level }),
+    condition: mech.condition?.name ?? (fact.concentration ? t("table.hand.spell.concentration") : ""),
     icon: { kind: "spell", key: name, family: fact.school ? `spell-${fact.school.toLowerCase()}` : null },
     target,
     toHit,
@@ -320,7 +338,7 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
     // A touch spell is a melee spell attack with touch reach (the engine's
     // isMeleeSpellAttack): it previews and aims like a swing.
     melee,
-    ...(melee ? { range: "Touch" } : {}),
+    ...(melee ? { range: t("table.hand.range.touch") } : {}),
     disabled: null,
     spent: false,
     compose: false,
@@ -333,7 +351,7 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
         ? { card: "reaction", feature: name, spell: name, slotLevel: slot?.level ?? null }
         : { card: "spell", spell: name, slotLevel: slot?.level ?? null },
   };
-  const choice = cost === "reaction" ? undefined : spellChoice(mech);
+  const choice = cost === "reaction" ? undefined : spellChoice(mech, t);
   if (choice) card.choice = choice;
   // Web, Moonbeam, a wall: the square it is laid on is picked on the board.
   // So is an instant blast's (Fireball, Burning Hands), whose squares the
@@ -357,23 +375,23 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
   if (shared) card.shares = shared;
   return gated(
     card,
-    standingGate(sheet, turn, cost === "reaction" ? "reaction" : "cast"),
+    standingGate(sheet, turn, cost === "reaction" ? "reaction" : "cast", t),
     problem(casterStateProblem(sheet)),
     problem(componentProblem(sheet, facts) ?? focusProblem(sheet, facts)),
     // A reaction spell needs a reaction to spend (slowed takes it away).
-    cost === "reaction" ? costGate("reaction", turn, sheet, name) : null,
+    cost === "reaction" ? costGate("reaction", turn, sheet, name, t) : null,
     "error" in material ? { reason: material.error, spent: false } : null,
     slotRefusal && "error" in slotRefusal ? { reason: slotRefusal.error, spent: true } : null,
     "error" in charge ? { reason: charge.error, spent: charge.error.includes("already used") } : null,
   );
 }
 
-export function spellCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, options: HandOptions): HandCard[] {
+export function spellCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, options: HandOptions, t: T = enT): HandCard[] {
   const rows: Array<{ level: number; card: HandCard }> = [];
   for (const name of spellNames(sheet)) {
     const fact = factFor(name, options);
     if (!fact) continue;
-    const card = spellCard(sheet, turn, riders, name, fact, options.blasts !== false);
+    const card = spellCard(sheet, turn, riders, name, fact, options.blasts !== false, t);
     if (card) rows.push({ level: fact.level, card });
   }
   // Attacks first inside a level, so the cantrip that hurts leads the hand.
@@ -405,7 +423,7 @@ function featureCost(def: ResourceDef): HandCost {
   return "action";
 }
 
-export function featureCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] {
+export function featureCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT): HandCard[] {
   const derived = computeSheetDerived(sheet);
   const cards: HandCard[] = [];
   for (const [id, state] of Object.entries(sheet.resources)) {
@@ -435,12 +453,12 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] 
     let damageType = "";
     if (effect.kind === "heal_self" || effect.kind === "heal_target") {
       damage = effect.dice(level, derived.abilityMods);
-      dice = `heals ${damage}`;
+      dice = t("table.hand.spell.heals", { dice: damage });
       type = "mend";
       heals = true;
       target = effect.kind === "heal_self" ? "self" : "ally";
     } else if (effect.kind === "heal_pool" || effect.kind === "heal_dice_pool") {
-      dice = effect.kind === "heal_pool" ? `heals up to ${left}` : `heals ${effect.die} a die`;
+      dice = effect.kind === "heal_pool" ? t("table.hand.feature.healsUpTo", { count: left }) : t("table.hand.feature.healsDie", { die: effect.die });
       type = "mend";
       heals = true;
       target = "ally";
@@ -448,7 +466,7 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] 
       compose = true;
     } else if (effect.kind === "temp_hp") {
       damage = effect.dice(level, derived.abilityMods);
-      dice = `${damage} temp hp`;
+      dice = t("table.hand.feature.tempHp", { dice: damage });
       type = "ward";
       target = "self";
     } else if (effect.kind === "condition" || effect.kind === "buff") {
@@ -457,7 +475,7 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] 
       type = "ward";
       target = effect.kind === "buff" && effect.target === "ally" ? "ally" : "self";
     } else if (effect.kind === "inspire") {
-      dice = `+1${effect.die(level)} to a roll`;
+      dice = t("table.hand.feature.inspire", { die: effect.die(level) });
       type = "ward";
       target = "ally";
     } else if (effect.kind === "aoe") {
@@ -466,30 +484,30 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] 
       damage = spend.dice;
       damageType = spend.damageType ?? "";
       save = { ability: SAVE_LABEL[spend.saveAbility] ?? spend.saveAbility, dc: 0 };
-      dice = `${damage}${damageType ? ` ${damageType}` : ""}, ${save.ability} save`;
+      dice = t("table.hand.spell.saveTyped", { dice: `${damage}${damageType ? ` ${damageType}` : ""}`, ability: save.ability });
       type = "spell";
       target = "enemy";
     } else if (effect.kind === "enemy_save") {
       damage = effect.dice ? effect.dice(level, derived.abilityMods) : null;
       save = { ability: SAVE_LABEL[effect.save] ?? effect.save, dc: 0 };
-      dice = damage ? `${damage}, ${save.ability} save` : `${save.ability} save`;
+      dice = damage ? t("table.hand.spell.saveTyped", { dice: damage, ability: save.ability }) : t("table.hand.spell.saveOnly", { ability: save.ability });
       condition = effect.condition ?? "";
       type = condition ? "control" : "spell";
       target = "enemy";
     } else if (effect.kind === "teleport") {
-      dice = `${effect.feet} ft`;
+      dice = t("table.hand.range.feet", { feet: effect.feet });
     }
     const card: HandCard = {
       id: `feature:${id}`,
       type,
       name: def.displayName,
       cost,
-      range: target === "self" || target === "none" ? "Self" : "",
+      range: target === "self" || target === "none" ? t("table.hand.range.self") : "",
       dice,
-      roll: save ? "no attack" : "no roll",
+      roll: save ? t("table.hand.spell.noAttack") : t("table.hand.roll.none"),
       rules: def.guidance.split(". ")[0].replace(/\.?$/, "."),
       description: def.guidance,
-      resource: `Uses ${left}/${state.max}`,
+      resource: t("table.hand.feature.uses", { left, max: state.max }),
       condition,
       icon: { kind: "feature", key: def.displayName, family: `class-${primaryClass(sheet)}` },
       target,
@@ -513,9 +531,9 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn): HandCard[] 
     cards.push(
       gated(
         card,
-        standingGate(sheet, turn, cost === "reaction" ? "reaction" : cost === "bonus" ? "bonus" : cost === "free" ? "free" : "action"),
-        left > 0 ? null : { reason: `${def.displayName} is spent until a ${def.recharge} rest.`, spent: true },
-        costGate(cost, turn, sheet, def.displayName),
+        standingGate(sheet, turn, cost === "reaction" ? "reaction" : cost === "bonus" ? "bonus" : cost === "free" ? "free" : "action", t),
+        left > 0 ? null : { reason: t("table.hand.feature.spent", { name: def.displayName, recharge: t(def.recharge === "long" ? "table.hand.feature.restLong" : "table.hand.feature.restShort") }), spent: true },
+        costGate(cost, turn, sheet, def.displayName, t),
       ),
     );
   }

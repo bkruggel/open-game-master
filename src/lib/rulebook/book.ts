@@ -15,7 +15,7 @@ import data from "./srd-5.1.json";
 import frData from "./srd-5.1-fr.json";
 import { buildIndex, buildIndexInSlices, searchRulebook, type RulebookIndex } from "./search";
 import type { TableLanguage } from "../schemas/game-settings-options.ts";
-import type { Locale } from "../messages-logic";
+import type { BookLocale } from "../request-locale";
 import type {
   ContentsChapter,
   QuickLink,
@@ -26,7 +26,11 @@ import type {
   SearchResponse,
 } from "./types";
 
-export type BookLocale = Locale;
+// The request's language itself now lives beside the refusal words that use
+// it (src/lib/request-locale.ts), so the campaign API can resolve a
+// request's language without loading the two books with it.
+export type { BookLocale } from "../request-locale";
+export { bookLocaleOf, localeFromAcceptLanguage } from "../request-locale";
 
 const enBook = data as RulebookData;
 
@@ -60,31 +64,6 @@ export const QUICK_LINKS: QuickLink[] = [
   { label: "Exhaustion", page: "conditions", at: "exhaustion" },
   { label: "Travel pace", page: "adventuring", at: "travel-pace" },
 ];
-
-// The book language a request reads: the reader sends its locale in
-// Accept-Language (the choice lives client-side, src/lib/locale.ts); any
-// request that does not ask for French reads the English book.
-export function localeFromAcceptLanguage(header: string | null): BookLocale {
-  if (!header) return "en";
-  for (const part of header.split(",")) {
-    const tag = part.split(";")[0].trim().toLowerCase();
-    if (tag === "fr" || tag.startsWith("fr-")) return "fr";
-    if (tag === "en" || tag.startsWith("en-")) return "en";
-  }
-  return "en";
-}
-
-// The request's language: the app's own locale header (X-Odm-Locale, set by
-// the client from its stored odm.locale) wins, so a French reader on an
-// English-locale device reads French; a request without it — curl, an old
-// bundle — falls back to the browser's Accept-Language as before.
-export function bookLocaleOf(request: Request): BookLocale {
-  const own = request.headers.get("x-odm-locale");
-  if (own === "fr" || own === "en") {
-    return own;
-  }
-  return localeFromAcceptLanguage(request.headers.get("accept-language"));
-}
 
 type LocaleState = {
   byId: Map<string, { page: RulebookPage; index: number }>;

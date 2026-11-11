@@ -51,12 +51,23 @@ export function heldWorkRefusal(hold: Pick<SessionHold, "number">): string {
 }
 
 // The chronicle's own lines at each end, so the story reads in sessions.
+// These lines are stored messages, so the writer passes the campaign's own
+// language (chronicleT in src/lib/dm/session-hold.ts); the enT default keeps
+// every other reader — and the stored English lines — as they are.
+export function sessionEndedLineT(t: T, number: number): string {
+  return t("chronicle.sessionEnded", { n: number });
+}
+
 export function sessionEndedLine(number: number): string {
-  return `Session ${number} ends.`;
+  return sessionEndedLineT(enT, number);
+}
+
+export function sessionStartedLineT(t: T, number: number): string {
+  return t("chronicle.sessionStarted", { n: number });
 }
 
 export function sessionStartedLine(number: number): string {
-  return `Session ${number} begins.`;
+  return sessionStartedLineT(enT, number);
 }
 
 // A "Previously, on..." opens the next session only after a real gap: a

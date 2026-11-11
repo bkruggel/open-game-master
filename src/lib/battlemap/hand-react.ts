@@ -115,16 +115,16 @@ function spellReaction(
     prompt,
     target,
     { card: "reaction", feature: spell, spell, slotLevel: slot?.level ?? null },
-    { type: "spell", rules, resource: slot ? slotLine(slot) : t("table.hand.react.noSlots"), icon: { kind: "spell", key: spell, family: null }, ...extra },
+    { type: "spell", rules, resource: slot ? slotLine(slot, t) : t("table.hand.react.noSlots"), icon: { kind: "spell", key: spell, family: null }, ...extra },
   );
   const problem = (refusal: ToolError | null): Gate => (refusal ? { reason: refusal.error, spent: false } : null);
   return gated(
     card,
-    standingGate(sheet, turn, "reaction"),
+    standingGate(sheet, turn, "reaction", t),
     problem(casterStateProblem(sheet)),
     problem(componentProblem(sheet, facts) ?? focusProblem(sheet, facts)),
     slot ? null : { reason: t("table.hand.react.noSlotFor", { name: sheet.name, spell }), spent: true },
-    costGate("reaction", turn, sheet, spell),
+    costGate("reaction", turn, sheet, spell, t),
   );
 }
 
@@ -177,7 +177,7 @@ export function reactionCards(
       },
       { rules, ...(icon ? { icon } : {}) },
     );
-    cards.push(gated(card, standingGate(sheet, turn, "reaction"), costGate("reaction", turn, sheet, name)));
+    cards.push(gated(card, standingGate(sheet, turn, "reaction", t), costGate("reaction", turn, sheet, name, t)));
   };
 
   const mine = hits.find((hit) => hit.characterId === sheet.id && hit.hit);
@@ -236,7 +236,7 @@ export function reactionCards(
       rules: t("table.hand.react.commander"),
       icon: MANEUVER_ICON("Commander's Strike"),
     });
-    cards.push(gated(card, standingGate(sheet, turn, "reaction"), costGate("reaction", turn, sheet, "Commander's Strike")));
+    cards.push(gated(card, standingGate(sheet, turn, "reaction", t), costGate("reaction", turn, sheet, "Commander's Strike", t)));
   }
 
   // An ally's hit: Cutting Words from a Lore bard, Protection from a
