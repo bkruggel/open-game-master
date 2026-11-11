@@ -38,9 +38,11 @@ export function maySteerSessions(viewer: { steersStory: boolean; isLead: boolean
 // break's and the X-card's.
 export const SESSION_REASON = "session";
 
-// What a refused move reads while the table is between sessions.
-export function sessionRefusal(hold: Pick<SessionHold, "number">): string {
-  return `Session ${hold.number} is over. Use OOC for table talk until the next session starts.`;
+// What a refused move reads while the table is between sessions. The words
+// follow the asker (t, threaded from the request by refuseDuringBreak); the
+// enT default keeps every other reader — and the English line — as they are.
+export function sessionRefusal(hold: Pick<SessionHold, "number">, t: T = enT): string {
+  return t("refusal.sessionOver", { number: hold.number });
 }
 
 // What work that waits on the storyteller reads between sessions (an Ask,

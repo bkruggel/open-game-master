@@ -5,7 +5,7 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import { cardArtwork } from "@/lib/battlemap/card-art";
 import { Sheet } from "@/components/ui/Sheet";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import type { HandCard } from "@/lib/battlemap/hand";
 import {
   GROUP_SEARCH_OVER,
@@ -18,6 +18,7 @@ import {
   type HandUnit,
 } from "@/lib/battlemap/hand-groups";
 import { costLabel, previewRows, type HandAim } from "@/lib/battlemap/hand-play";
+import { cardDisplayName, conditionWord } from "@/lib/battlemap/hand-display";
 import { HandPreviewRows, typeLabel } from "@/app/campaigns/[campaignId]/HandCardFace";
 import { HandFindTools } from "@/app/campaigns/[campaignId]/HandGroups";
 
@@ -79,6 +80,7 @@ export function HandMoreSheet({
 }) {
   const [filter, setFilter] = useState<HandFilter>(NO_FILTER);
   const t = useT();
+  const locale = useLocale();
   const all = useMemo(() => units.flatMap((unit) => (isGroup(unit) ? unit.cards : [unit])), [units]);
   const chips = useMemo(() => (all.length > GROUP_SEARCH_OVER ? filterChips(all) : []), [all]);
   const searching = filtering(filter);
@@ -125,8 +127,8 @@ export function HandMoreSheet({
           {displaced.length ? (
             <p role="status" className="reveal mb-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-sm text-amber-100/90">
               {t(displaced.length === 1 ? "table.hand.more.displaced_one" : "table.hand.more.displaced_other", {
-                urgent: urgent.map((card) => card.name).join(t("table.hand.join.and")),
-                displaced: displaced.map((card) => card.name).join(", "),
+                urgent: urgent.map((card) => cardDisplayName(card, locale)).join(t("table.hand.join.and")),
+                displaced: displaced.map((unit) => (isGroup(unit) ? unit.name : cardDisplayName(unit, locale))).join(", "),
               })}
             </p>
           ) : null}
@@ -204,8 +206,10 @@ function MoreRow({
   onPick: (card: HandCard) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
+  const name = cardDisplayName(card, locale);
   const artwork = cardArtwork(card.icon, genre);
-  const rows = previewRows(card, card.intent.card === "reaction" ? null : aim, conditions);
+  const rows = previewRows(card, card.intent.card === "reaction" ? null : aim, conditions, {}, t, locale);
   const facts = [card.dice, card.roll, card.range].filter(Boolean).join(" · ");
   return (
     <li className="hand-more-row" style={{ "--i": index } as CSSProperties}>
@@ -221,7 +225,7 @@ function MoreRow({
         <GameIcon icon={artwork} size={artwork.kind === "action" ? "h-10 w-20" : "size-10"} className="mt-0.5" />
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline gap-2">
-            <span className="truncate font-display text-sm font-semibold text-stone-100">{card.name}</span>
+            <span className="truncate font-display text-sm font-semibold text-stone-100">{name}</span>
             <span className="shrink-0 text-[10px] uppercase tracking-wider text-stone-500">{typeLabel(t, card.type)}</span>
             {fresh ? (
               <span className="shrink-0 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-1.5 py-px text-[10px] uppercase tracking-wider text-emerald-200">
@@ -229,14 +233,14 @@ function MoreRow({
               </span>
             ) : null}
             <span className="hand-cost ml-auto shrink-0" data-cost={card.cost}>
-              {costLabel(card.cost)}
+              {costLabel(card.cost, t)}
             </span>
           </span>
           {facts ? <span className="block font-mono text-[11px] text-stone-400">{facts}</span> : null}
           {card.rules ? <span className="mt-1 block text-xs leading-snug text-stone-300">{card.rules}</span> : null}
           {card.resource || card.condition ? (
             <span className="mt-0.5 block text-[11px] text-stone-500">
-              {[card.resource, card.condition].filter(Boolean).join(" · ")}
+              {[card.resource, card.condition ? conditionWord(card.condition, t, locale) : ""].filter(Boolean).join(" · ")}
             </span>
           ) : null}
           {rows.length ? (

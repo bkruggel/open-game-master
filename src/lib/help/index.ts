@@ -19,6 +19,8 @@ import { classFeatureDescription, spellClassFor } from "@/lib/classes";
 import { srdRaceFor } from "@/lib/content/race-options";
 import { normalizeRulesText } from "@/lib/help/rules-text";
 import { matchResource } from "@/lib/srd/class-resources";
+import { resourceGuidance } from "@/lib/srd/class-resources-fr";
+import type { Locale } from "@/lib/messages-logic";
 import { guidanceFor } from "@/lib/srd/feature-effects";
 import { subclassFeatureDescription } from "@/lib/srd/features";
 import { findOptionByFeatureName } from "@/lib/srd/options";
@@ -91,14 +93,17 @@ function stripLeadingLabel(text: string | null, name: string): string | null {
 // One line explaining a feature on a sheet. Resolution runs most specific
 // first: a Life Domain cleric's Divine Strike says "radiant", a Nature
 // Domain one says "cold", and only a feature with no subclass-specific
-// meaning falls through to the shared SRD text.
-export function describeFeature(classId: string, subclass: string, name: string): string | null {
+// meaning falls through to the shared SRD text. `locale` reads a matched
+// resource's line in the reader's words (class-resources-fr.ts); the stored
+// English def stays what the engine and the DM's tools read.
+export function describeFeature(classId: string, subclass: string, name: string, locale: Locale = "en"): string | null {
   // An option pick ("Invocation: Agonizing Blast") explains itself from the
   // option list, before any of the feature tables are consulted.
   const option = findOptionByFeatureName(name);
   if (option) {
     return option.req ? `${option.d} (Requires ${option.req}.)` : option.d;
   }
+  const resource = matchResource(name);
   const found =
     subclassFeatureDescription(classId, subclass, name) ??
     classFeatureDescription(classId, name) ??
@@ -106,7 +111,7 @@ export function describeFeature(classId: string, subclass: string, name: string)
     // The background's feature sits on the sheet as "Shelter of the
     // Faithful (Acolyte)"; the bare name finds its text.
     describeBackgroundFeature(baseName(name)) ??
-    matchResource(name)?.guidance ??
+    (resource ? resourceGuidance(resource.id, locale) ?? resource.guidance : null) ??
     guidanceFor({ class: classId, features: [], feature: name }) ??
     looseSrdText(classId, name);
   return stripLeadingLabel(found, name);

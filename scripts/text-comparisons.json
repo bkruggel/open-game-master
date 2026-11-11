@@ -4846,6 +4846,13 @@
     "bonus attack ids"
    ]
   ],
+  "lib/battlemap/hand-play.ts#toLowerCase": [
+   [
+    "key",
+    1,
+    "a save ability code lowercased to key the reader's abbreviation (saveAbbr reads the workshop's saveAbbr keys, SAG for WIS)"
+   ]
+  ],
   "lib/battlemap/hand-react.ts#re-word": [
    [
     "english-source",
@@ -15992,6 +15999,13 @@
     "ability ids a trait rides"
    ]
   ],
+  "lib/srd/class-resources-fr.ts#str-key": [
+   [
+    "key",
+    1,
+    "the loop-built Mystic Arcanum entries keyed by their own resource id (mystic_arcanum_6..9)"
+   ]
+  ],
   "lib/srd/class-resources.ts#[a-z]": [
    [
     "display",
@@ -19280,6 +19294,27 @@
     "key",
     1,
     "a damage type keyed by its engine word to the reader's word"
+   ]
+  ],
+  "app/api/campaigns/[campaignId]/actions/route.ts#str-eq": [
+   [
+    "english-source",
+    2,
+    "the engine's own words for the unnamed current turn (can-act.ts \"someone else\") and the unnamed reaction spend (action-budget.ts \"The reaction\"), matched exactly at the actions route's boundary to carry the refusal into the reader's keys, as hand-core.ts does at the hand's gate"
+   ]
+  ],
+  "app/api/campaigns/[campaignId]/actions/route.ts#str-startsWith": [
+   [
+    "english-source",
+    1,
+    "the engine's not_your_turn sentence prefix (can-act.ts), cut at the actions route's boundary the way hand-core.ts cuts it at the hand's gate"
+   ]
+  ],
+  "lib/battlemap/hand-display.ts#str-key": [
+   [
+    "key",
+    1,
+    "the condition words' own map read by the engine's word it keys (CONDITION_WORD in conditionWord); the words are the engine's own vocabulary (scripts/text-comparisons.json's to classify elsewhere)"
    ]
   ]
  },

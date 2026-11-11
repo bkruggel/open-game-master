@@ -7,7 +7,7 @@
 // Pure and database-free: scripts/test-hand.mjs drives every branch. What a
 // card says once it is played lives next door in hand-play.ts.
 import { racialNaturalWeapon } from "@/lib/srd/racial-weapons";
-import { translate } from "@/lib/messages-logic";
+import { translate, type Locale } from "@/lib/messages-logic";
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 const enT: T = (key, vars) => translate("en", key, vars);
@@ -608,10 +608,12 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders,
 
 // Attacks, the riders that ride them, spells by level, class features, then
 // the basics every character has, so a level 1 commoner still holds a hand.
-export function deriveHand(sheet: CharacterSheet, turn: HandTurn = FRESH_TURN, options: HandOptions = {}, t: T = enT): HandCard[] {
+// `locale` rides beside `t` for the data prose a builder does not key (the
+// feature resources' names and guidance, class-resources-fr.ts).
+export function deriveHand(sheet: CharacterSheet, turn: HandTurn = FRESH_TURN, options: HandOptions = {}, t: T = enT, locale: Locale = "en"): HandCard[] {
   const riders = combatRiders(sheet);
   const spells = spellCards(sheet, turn, riders, options, t);
-  const features = featureCards(sheet, turn, t);
+  const features = featureCards(sheet, turn, t, locale);
   const taken = new Set(features.map((card) => textKey(card.name)));
   return [
     ...attackCards(sheet, turn, riders, options, t),

@@ -393,7 +393,7 @@ export function FeatureChips({
         icon: { kind: "feature" as const, key: feature.name, family: `class-${classId.toLowerCase()}` },
         note: feature.source === "story" ? t("sheet.featureStory") : undefined,
         meta: feature.level ? t("sheet.featureLevel", { level: feature.level }) : undefined,
-        text: describeFeature(classId, subclass ?? "", feature.name) ?? undefined,
+        text: describeFeature(classId, subclass ?? "", feature.name, locale) ?? undefined,
       }))}
     />
   );
@@ -408,7 +408,7 @@ export function FeatChips({ feats, classId, subclass }: { feats: string[]; class
         // official maps); the reference lookup stays the stored name.
         name: contentName("feats", feat, locale),
         icon: { kind: "feat" as const, key: feat },
-        text: describeFeature(classId, subclass ?? "", feat) ?? undefined,
+        text: describeFeature(classId, subclass ?? "", feat, locale) ?? undefined,
         reference: { kind: "feats", slug: contentSlug(feat), name: feat },
       }))}
     />

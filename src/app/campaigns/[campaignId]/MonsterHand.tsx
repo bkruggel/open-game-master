@@ -151,7 +151,7 @@ function MonsterHandInner({
   const defaultAim = aim ?? chips[0] ?? null;
   const conditions = selected?.conditions ?? EMPTY;
   // Cheap enough to work out each render; the compiler memoizes what it can.
-  const rows = picked ? previewRows(picked, picked.target === "none" ? null : defaultAim, conditions) : [];
+  const rows = picked ? previewRows(picked, picked.target === "none" ? null : defaultAim, conditions, {}, t, locale) : [];
   const sentence = picked && selected ? monsterSentence(t, shown(selected.name), picked, aimed.map((chip) => chip.name)) : "";
   const needsTarget = Boolean(picked && picked.target !== "none");
   const ready = Boolean(picked) && (!needsTarget || aimed.length > 0);

@@ -3,7 +3,7 @@
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { InfoButton } from "@/components/ui/InfoDialog";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { counterView } from "@/components/sheet/sheet-state";
 
 // The character sheet's counters: a spell slot level as marks, and a class
@@ -112,7 +112,8 @@ export function ResourceRow({
   onRecover: () => void;
 }) {
   const t = useT();
-  const counter = counterView(t, id, pool);
+  const locale = useLocale();
+  const counter = counterView(t, id, pool, locale);
   return (
   <div className="flex items-center gap-2">
     <span className="flex w-36 shrink-0 items-center gap-1 text-stone-400">

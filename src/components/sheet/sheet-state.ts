@@ -25,6 +25,8 @@ import { attunementRefusal } from "@/lib/dm/usage-rules";
 import type { CharacterSheet, EquipmentItem } from "@/lib/schemas/sheet";
 import { speedFor } from "@/lib/srd";
 import { UNLIMITED_USES, resourceDef } from "@/lib/srd/class-resources";
+import { resourceGuidance } from "@/lib/srd/class-resources-fr";
+import type { Locale } from "@/lib/messages-logic";
 import { chargeMax, chargeRuleOf, chargesLeft } from "@/lib/srd/item-charge-rules";
 import { gearDefFor } from "@/lib/srd/magic-gear";
 import { matchMagicItem } from "@/lib/srd/magic-items";
@@ -220,14 +222,17 @@ export function itemStatus(t: Translator, sheet: CharacterSheet, item: Equipment
 // is spent by the cast itself, so the sheet offers no minus for it.
 export type CounterView = { line: string; spendable: boolean; note: string | null };
 
-export function counterView(t: Translator, id: string, pool: { max: number; used: number }): CounterView {
+export function counterView(t: Translator, id: string, pool: { max: number; used: number }, locale: Locale = "en"): CounterView {
   const def = resourceDef(id);
   const rest = def?.recharge === "short" ? t("sheet.state.restShort") : t("sheet.state.restLong");
+  // The hover note reads the reader's words where the map carries them
+  // (class-resources-fr.ts); the stored English def stays the engine's.
+  const note = resourceGuidance(id, locale) ?? def?.guidance ?? null;
   if (pool.max >= UNLIMITED_USES) {
     return {
       line: pool.used ? t("sheet.state.usedSince", { count: pool.used, rest }) : t("sheet.state.unusedSince", { rest }),
       spendable: false,
-      note: def?.guidance ?? null,
+      note,
     };
   }
   return {

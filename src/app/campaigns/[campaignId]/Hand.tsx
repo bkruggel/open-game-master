@@ -6,7 +6,7 @@ import { ChevronDown, CircleHelp, SlidersHorizontal } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { CSSProperties, Dispatch, RefObject, SetStateAction } from "react";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { askConcentrationSwap, isConcentrationQuestion } from "@/components/concentration-prompt";
 import type { ConcentrationSwap } from "@/lib/dm/concentration-confirm-logic";
@@ -23,6 +23,8 @@ import { HandPips } from "@/app/campaigns/[campaignId]/HandPips";
 import { handTargets } from "@/app/campaigns/[campaignId]/handTargets";
 import { holdPendingCards, useHandChoices, useHandPending } from "@/app/campaigns/[campaignId]/useHandChoices";
 import { deriveHand, waitingHand, type HandCard, type HandGearContext } from "@/lib/battlemap/hand";
+import { cardDisplayName } from "@/lib/battlemap/hand-display";
+import { contentName } from "@/lib/content/names";
 import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
 import type { PlayerMapView } from "@/lib/battlemap/view-types";
 import { HAND_FAN_CAP, arrangeHand, isUrgentCard, seatPicked, startingLayout } from "@/lib/battlemap/hand-layout";
@@ -207,6 +209,7 @@ function HandInner({
   reactionsOnly?: boolean;
 }) {
   const t = useT();
+  const locale = useLocale();
   const turnId = turnCharacterId(encounter);
   const sheet = useMemo(
     () =>
@@ -279,8 +282,8 @@ function HandInner({
   const cards = useMemo(() => {
     if (!sheet || !turn) return [];
     if (reactionsOnly) return [...reactions, ...othersReactions];
-    return [...othersReactions, ...holdPendingCards(t, withReactions(reactions, deriveHand(sheet, turn, { spells, trackAmmo, gear, blasts }, t)), waiting)];
-  }, [sheet, turn, reactions, othersReactions, reactionsOnly, spells, trackAmmo, gear, blasts, waiting, t]);
+    return [...othersReactions, ...holdPendingCards(t, withReactions(reactions, deriveHand(sheet, turn, { spells, trackAmmo, gear, blasts }, t, locale)), waiting)];
+  }, [sheet, turn, reactions, othersReactions, reactionsOnly, spells, trackAmmo, gear, blasts, waiting, t, locale]);
 
   // Cards that spend one thing (spell slots, ki, superiority dice, gear, the
   // basic actions) gather under one card each (issue 528, hand-groups.ts).
@@ -375,8 +378,8 @@ function HandInner({
   const { choices, resetChoices, barProps } = useHandChoices(picked, aim);
   const sentence = picked ? composeSentence(picked, aim, attachedRiders, choices) : "";
   const rows = useMemo(
-    () => (picked ? previewRows(picked, aim ?? (picked.target === "enemy" ? defaultAim : null), conditions, choices) : []),
-    [picked, aim, defaultAim, conditions, choices],
+    () => (picked ? previewRows(picked, aim ?? (picked.target === "enemy" ? defaultAim : null), conditions, choices, t, locale) : []),
+    [picked, aim, defaultAim, conditions, choices, t, locale],
   );
 
   // Where there is no room for both (a phone, a fight on the stage) the aim
@@ -574,8 +577,8 @@ function HandInner({
     if (!boardNative) return null;
     const close = { id: "panel-close" as const, label: t("table.hand.panel.close"), disabled: null };
     if (boardSwap) {
-      const heldSpell = boardSwap.current;
-      const nextSpell = boardSwap.next;
+      const heldSpell = contentName("spells", boardSwap.current, locale);
+      const nextSpell = contentName("spells", boardSwap.next, locale);
       return { title: t("table.hand.panel.replace", { name: heldSpell }), lines: [t("table.hand.panel.swapLines", { next: nextSpell, current: heldSpell })], controls: [{ id: "hand-confirm", label: t("table.hand.panel.cast", { name: nextSpell }), disabled: null }, { id: "hand-keep", label: t("table.hand.panel.keep", { name: heldSpell }), disabled: null }, close] };
     }
     if (boardChoices) {
@@ -583,22 +586,23 @@ function HandInner({
       return {
         title: boardChoices === "attack" ? t("table.hand.panel.chooseWeapon") : t("table.hand.panel.chooseSpell"),
         lines: [t("table.hand.panel.chooseLine"), ...(!matches.length ? [t("table.hand.panel.loading")] : []), ...(notice ? [notice] : [])],
-        controls: [{ id: "hand-card", label: boardChoices === "attack" ? t("table.hand.panel.weapon") : t("table.hand.panel.spell"), disabled: null, options: matches.map(card => ({ value: card.id, label: `${card.name} · ${costShort(t, card.cost)}${card.resource ? ` · ${card.resource}` : ""}${card.dice ? ` · ${card.dice}` : ""}`, disabled: card.disabled })) }, close] };
+        controls: [{ id: "hand-card", label: boardChoices === "attack" ? t("table.hand.panel.weapon") : t("table.hand.panel.spell"), disabled: null, options: matches.map(card => ({ value: card.id, label: `${cardDisplayName(card, locale)} · ${costShort(t, card.cost)}${card.resource ? ` · ${card.resource}` : ""}${card.dice ? ` · ${card.dice}` : ""}`, disabled: card.disabled })) }, close] };
     }
     if (!picked) return null;
     const option = (value: string, label: string, disabled: string | null = null) => ({ value, label, disabled });
-    return { title: picked.name, boardInput: true, lines: [picked.description ?? picked.rules, ...rows.map(row => `${row.key}: ${row.value}`), ...(picked.area ? [pickHint(t, picked.area, barProps.areaPick), ...(hasPick(picked.area, barProps.areaPick) ? [pickWords(t, picked.area, barProps.areaPick)] : [])] : []), t("table.hand.panel.sends", { sentence }), ...(notice ? [notice] : [])], controls: [
+    const pickedName = cardDisplayName(picked, locale);
+    return { title: pickedName, boardInput: true, lines: [picked.description ?? picked.rules, ...rows.map(row => `${row.key}: ${row.value}`), ...(picked.area ? [pickHint(t, picked.area, barProps.areaPick), ...(hasPick(picked.area, barProps.areaPick) ? [pickWords(t, picked.area, barProps.areaPick)] : [])] : []), t("table.hand.panel.sends", { sentence }), ...(notice ? [notice] : [])], controls: [
       ...(offered.length ? [{ id: "hand-target" as const, label: t("table.hand.panel.target"), value: aim?.id, disabled: null, options: offered.map(target => option(target.id, `${target.name}${target.note ? ` · ${target.note}` : ""}`)) }] : []),
       ...(barProps.options.length ? [{ id: "hand-option" as const, label: t("table.hand.panel.options"), disabled: null, options: barProps.options.map(entry => option(entry.id, `${barProps.chosen.includes(entry.id) ? "✓ " : ""}${entry.label}`, entry.disabled ?? null)) }] : []),
-      ...(picked.intent.card === "attack" && cards.some(card => card.type === "rider") ? [{ id: "hand-rider" as const, label: t("table.hand.panel.riders"), disabled: null, options: cards.filter(card => card.type === "rider").map(card => option(card.id, `${attachedRiders.some(rider => rider.id === card.id) ? "✓ " : ""}${card.name}`, card.disabled)) }] : []),
+      ...(picked.intent.card === "attack" && cards.some(card => card.type === "rider") ? [{ id: "hand-rider" as const, label: t("table.hand.panel.riders"), disabled: null, options: cards.filter(card => card.type === "rider").map(card => option(card.id, `${attachedRiders.some(rider => rider.id === card.id) ? "✓ " : ""}${cardDisplayName(card, locale)}`, card.disabled)) }] : []),
       ...(picked.choice ? [{ id: "hand-choice" as const, label: picked.choice.label, value: barProps.choice ?? picked.choice.fallback ?? picked.choice.options[0]?.value, disabled: null, options: picked.choice.options.map(entry => option(entry.value, entry.label)) }] : []),
       ...(splits && picked.shares && aim && offered.some(target => target.id !== aim.id) ? [shareControl(t, picked, aim, offered, barProps.shares)] : []),
       ...(barProps.trigger !== null ? [{ id: "hand-trigger" as const, label: t("table.hand.trigger"), disabled: null, input: { value: barProps.trigger } }] : []),
       ...(picked.area && hasPick(picked.area, barProps.areaPick) ? [{ id: "hand-area-clear" as const, label: t("table.hand.panel.clearArea"), disabled: null }] : []),
-      { id: "hand-play", label: picked.compose ? t("table.hand.panel.write") : t("table.hand.panel.play", { name: picked.name }), disabled: inputBlocked && picked.cost !== "reaction" ? blockedReason : handReady(picked, aim, { trigger: barProps.trigger ?? "", area: barProps.areaPick }) ? null : t("table.hand.panel.playHeld") },
+      { id: "hand-play", label: picked.compose ? t("table.hand.panel.write") : t("table.hand.panel.play", { name: pickedName }), disabled: inputBlocked && picked.cost !== "reaction" ? blockedReason : handReady(picked, aim, { trigger: barProps.trigger ?? "", area: barProps.areaPick }) ? null : t("table.hand.panel.playHeld") },
       { id: "hand-edit", label: t("table.hand.panel.edit"), disabled: null }, { id: "hand-back", label: t("table.hand.panel.back"), disabled: null }, close,
     ] };
-  }, [t, boardNative, boardSwap, boardChoices, cards, picked, rows, sentence, offered, aim, attachedRiders, barProps.options, barProps.chosen, barProps.choice, barProps.trigger, barProps.areaPick, barProps.shares, splits, notice, inputBlocked, blockedReason]);
+  }, [t, locale, boardNative, boardSwap, boardChoices, cards, picked, rows, sentence, offered, aim, attachedRiders, barProps.options, barProps.chosen, barProps.choice, barProps.trigger, barProps.areaPick, barProps.shares, splits, notice, inputBlocked, blockedReason]);
   const nativeSignature = JSON.stringify([campaignId, sheet?.id, signature, nativePanel, sending && !boardSwap]);
   useEffect(() => {
     if (swapReply.current && swapTurn.current !== `${campaignId}:${sheet?.id}:${signature}`) {

@@ -1,15 +1,15 @@
 // Spell and class-feature cards for the Hand (docs/visual-overhaul-plan.md
 // 5.2): what a prepared spell or a limited-use feature costs, rolls and
 // spends, read from the same tables the cast and use_resource tools read.
-import { BEST_EFFORT_NOTE, BEST_EFFORT_SHORT } from "@/lib/content/reading-logic";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { translate } from "@/lib/messages-logic";
+import { translate, type Locale } from "@/lib/messages-logic";
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 const enT: T = (key, vars) => translate("en", key, vars);
 import { bonusCastOf, casterStateProblem, componentProblem, focusProblem, materialPlan, slotPlan, turnCharge } from "@/lib/dm/cast-rules";
 import { computeSheetDerived, spellAttackFor, spellSaveDcFor } from "@/lib/srd";
 import { resourceDef, resourceLevel, type ResourceDef } from "@/lib/srd/class-resources";
+import { resourceDisplayName, resourceGuidance } from "@/lib/srd/class-resources-fr";
 import { psionicOptions } from "@/lib/dm/option-costs";
 import { BONUS_ATTACK_COUNTERS } from "@/lib/dm/feature-bonus-attacks";
 import { isMeleeSpellAttack } from "@/lib/srd/melee-spell";
@@ -281,8 +281,11 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
   if (note) notes.push(note);
   if (slot && slot.level > fact.level) notes.push(t("table.hand.spell.upcast", { level: slot.level }));
   // Mechanics the app read from the spell's text that nobody checked
-  // (issue #570): the card's details say so.
-  if (fact.bestEffort) notes.push(BEST_EFFORT_SHORT);
+  // (issue #570): the card's details say so. Keyed words, the English ones
+  // byte-identical to reading-logic's constants (test-best-effort.mjs pins
+  // the English line; the equality anchor below maps the short form to the
+  // whole note in either language).
+  if (fact.bestEffort) notes.push(t("table.hand.spell.bestEffortShort"));
   // Every refusal below is the cast guard's own (src/lib/dm/cast-rules.ts),
   // asked of the same sheet: raging, a beast form without Beast Spells,
   // untrained armor, a verbal component while silenced, no free hand, a
@@ -325,7 +328,7 @@ function spellCard(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, 
     dice,
     roll,
     rules: notes.slice(0, 2).join(" "),
-    description: [fact.desc, fact.higherLevel ? t("table.hand.spell.higherLevels", { text: fact.higherLevel }) : "", ...notes.map((note) => (note === BEST_EFFORT_SHORT ? BEST_EFFORT_NOTE : note))].filter(Boolean).join("\n\n"),
+    description: [fact.desc, fact.higherLevel ? t("table.hand.spell.higherLevels", { text: fact.higherLevel }) : "", ...notes.map((note) => (note === t("table.hand.spell.bestEffortShort") ? t("table.hand.spell.bestEffortNote") : note))].filter(Boolean).join("\n\n"),
     resource: fact.level === 0 ? t("table.hand.spell.cantrip") : slot ? slotLine(slot, t) : t("table.hand.spell.noSlots", { level: fact.level }),
     condition: mech.condition?.name ?? (fact.concentration ? t("table.hand.spell.concentration") : ""),
     icon: { kind: "spell", key: name, family: fact.school ? `spell-${fact.school.toLowerCase()}` : null },
@@ -423,7 +426,7 @@ function featureCost(def: ResourceDef): HandCost {
   return "action";
 }
 
-export function featureCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT): HandCard[] {
+export function featureCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT, locale: Locale = "en"): HandCard[] {
   const derived = computeSheetDerived(sheet);
   const cards: HandCard[] = [];
   for (const [id, state] of Object.entries(sheet.resources)) {
@@ -497,16 +500,21 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT):
     } else if (effect.kind === "teleport") {
       dice = t("table.hand.range.feet", { feet: effect.feet });
     }
+    // The reader's words for the name and the guidance, when the locale's
+    // map carries the resource (class-resources-fr.ts); the stored English
+    // def stays what the engine parses and the DM's tools read.
+    const guidance = resourceGuidance(id, locale) ?? def.guidance;
+    const name = resourceDisplayName(id, locale) ?? def.displayName;
     const card: HandCard = {
       id: `feature:${id}`,
       type,
-      name: def.displayName,
+      name,
       cost,
       range: target === "self" || target === "none" ? t("table.hand.range.self") : "",
       dice,
       roll: save ? t("table.hand.spell.noAttack") : t("table.hand.roll.none"),
-      rules: def.guidance.split(". ")[0].replace(/\.?$/, "."),
-      description: def.guidance,
+      rules: guidance.split(". ")[0].replace(/\.?$/, "."),
+      description: guidance,
       resource: t("table.hand.feature.uses", { left, max: state.max }),
       condition,
       icon: { kind: "feature", key: def.displayName, family: `class-${primaryClass(sheet)}` },
@@ -532,8 +540,8 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT):
       gated(
         card,
         standingGate(sheet, turn, cost === "reaction" ? "reaction" : cost === "bonus" ? "bonus" : cost === "free" ? "free" : "action", t),
-        left > 0 ? null : { reason: t("table.hand.feature.spent", { name: def.displayName, recharge: t(def.recharge === "long" ? "table.hand.feature.restLong" : "table.hand.feature.restShort") }), spent: true },
-        costGate(cost, turn, sheet, def.displayName, t),
+        left > 0 ? null : { reason: t("table.hand.feature.spent", { name, recharge: t(def.recharge === "long" ? "table.hand.feature.restLong" : "table.hand.feature.restShort") }), spent: true },
+        costGate(cost, turn, sheet, name, t),
       ),
     );
   }

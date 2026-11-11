@@ -23,7 +23,6 @@ import { DeskPanel } from "@/app/reference/DeskPanel";
 import { CategoryRail } from "@/app/reference/CategoryRail";
 import { ResultBadges, type BadgeRow } from "@/app/reference/ResultBadges";
 import { needsNote } from "@/lib/content/levelup-logic";
-import { BEST_EFFORT_NOTE } from "@/lib/content/reading-logic";
 import { MAX_COMPARE, type CompareKind } from "@/lib/reference/compare";
 import { textKey } from "@/lib/language/text-logic";
 import { useLocale, useT } from "@/lib/locale";
@@ -281,7 +280,7 @@ export default function ReferencePage() {
   function openRow(row: Row) {
     // What an entry built on rules this game does not play means at the
     // table comes first (issue #570).
-    const notes = [needsNote(row.needs ?? []), row.bestEffort ? BEST_EFFORT_NOTE : null].filter(Boolean);
+    const notes = [needsNote(row.needs ?? []), row.bestEffort ? t("table.hand.spell.bestEffortNote") : null].filter(Boolean);
     const text = describeContentEntry(row.data) ?? t("docs.ref.noDescription");
     setOpen({
       title: contentName(kindTable(kind), row, locale),

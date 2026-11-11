@@ -104,6 +104,7 @@ export function renderRules(text: string): ReactNode {
 function ContentBody({ reference }: { reference: ContentRef }) {
   // The table the dialog opened at reads its DMs' homebrew.
   const campaignId = useContentCampaign();
+  const t = useT();
   const [state, setState] = useState<{ text: string | null; loading: boolean }>({
     text: null,
     loading: true,
@@ -115,12 +116,12 @@ function ContentBody({ reference }: { reference: ContentRef }) {
       try {
         const { describeContentEntry } = await import("@/lib/help");
         const { needsNote } = await import("@/lib/content/levelup-logic");
-        const { BEST_EFFORT_NOTE } = await import("@/lib/content/reading-logic");
         // An entry built on rules this game does not play, or played from
         // mechanics the app read and nobody checked, says so first (issue
-        // #570).
+        // #570). The note is the reader's words — the keyed "best effort"
+        // line, whose English is reading-logic's constant.
         const withNote = (entry: { needs?: Parameters<typeof needsNote>[0]; bestEffort?: boolean } | undefined, text: string | null) => {
-          const notes = [needsNote(entry?.needs ?? []), entry?.bestEffort ? BEST_EFFORT_NOTE : null].filter(Boolean);
+          const notes = [needsNote(entry?.needs ?? []), entry?.bestEffort ? t("table.hand.spell.bestEffortNote") : null].filter(Boolean);
           return text && notes.length ? `${notes.join("\n\n")}\n\n${text}` : text;
         };
         const response = await fetch(
@@ -159,7 +160,7 @@ function ContentBody({ reference }: { reference: ContentRef }) {
     return () => {
       cancelled = true;
     };
-  }, [reference.kind, reference.slug, reference.name, campaignId]);
+  }, [reference.kind, reference.slug, reference.name, campaignId, t]);
 
   if (state.loading) {
     return (

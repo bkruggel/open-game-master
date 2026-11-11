@@ -11,7 +11,6 @@ import { MONSTER_NAME_MAX } from "@/lib/bestiary/monster-draft";
 import { crLabel } from "@/lib/bestiary/derive-cr";
 import { CR_CHOICES, type Found } from "@/app/workshop/bestiary/types";
 import { needsLabel } from "@/lib/content/levelup-logic";
-import { BEST_EFFORT_CHIP } from "@/lib/content/reading-logic";
 import { contentName } from "@/lib/content/names";
 import { useLocale, useT } from "@/lib/locale";
 
@@ -147,7 +146,7 @@ export function MonsterBuildControls({
               {/* Built on rules this game does not play: copy it to change
                   that part (issue #570). */}
               {entry.needs?.length ? <span className="text-orange-300/90">{needsLabel(entry.needs)}</span> : null}
-              {entry.bestEffort ? <span className="text-sky-300/80">{BEST_EFFORT_CHIP}</span> : null}
+              {entry.bestEffort ? <span className="text-sky-300/80">{t("table.hand.spell.bestEffortChip")}</span> : null}
             </button>
           ))}
         </div>

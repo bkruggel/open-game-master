@@ -56,6 +56,47 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "refusal.editFacts": "Seul le chef de groupe peut modifier ou retirer des faits.",
   "refusal.acceptRewrite": "Seul le chef de groupe peut accepter une réécriture.",
   "refusal.transferLead": "Seul le chef de groupe ou le propriétaire peut transférer le rôle de chef de groupe.",
+  // Les refus des routes de jeu (POST /actions et ses sœurs, encounter/
+  // end-turn, le mode secret) : le composeur, la main et les panneaux les
+  // montrent brutes, alors la route répond dans la langue de la requête
+  // (requestT). Les phrases du moteur sont rattachées à leurs clés dans les
+  // routes, comme hand-core.ts les porte dans la main (une tournure
+  // inconnue reste en anglais).
+  "refusal.notStarted": "L’aventure n’a pas encore commencé.",
+  "refusal.needCharacter": "Il te faut un personnage pour agir.",
+  "refusal.invalidAction": "Action invalide.",
+  "refusal.tooLong": "{what} peut faire au plus {max} caractères ; ce texte en fait {length}. Raccourcis-le et renvoie-le.",
+  "refusal.tooLong.what.move": "Un déplacement",
+  "refusal.tooLong.what.say": "Une réplique",
+  "refusal.tooLong.what.ooc": "La discussion de table",
+  "refusal.oocTail": "Utilise le HRP pour la discussion de table.",
+  "refusal.enemiesDue": "Les ennemis jouent leurs tours ; le MJ rend la main ensuite. Utilise le HRP pour la discussion de table.",
+  "refusal.holdNotOpenGm": "Le MJ n’a pas encore ouvert les réponses. Utilise le HRP pour la discussion de table.",
+  "refusal.holdNotOpenLead": "Le chef de groupe n’a pas encore ouvert les réponses. Utilise le HRP pour la discussion de table.",
+  "refusal.initiativeTurn": "C’est au tour de {name} dans l’ordre des tours. Utilise le HRP pour la discussion de table.",
+  "refusal.anotherCharacter": "un autre personnage",
+  "refusal.spotlightWaiting": "Le MJ attend {names}. Utilise le HRP pour la discussion de table.",
+  "refusal.notYourMoment": "Ce n’est pas ton moment d’agir.",
+  "refusal.notYourCharacter": "Ce n’est pas un de tes personnages.",
+  "refusal.companionOrders": "{name} suit tes ordres à son tour, pendant un combat ; le MJ le joue sinon.",
+  "refusal.selectFirst": "Sélectionne ce personnage avant d’agir en son nom.",
+  "refusal.waitOwnTurn": "Attends le tour de ce personnage dans l’ordre des tours. Utilise le HRP pour la discussion de table.",
+  "refusal.coordinating": "Le groupe coordonne son prochain mouvement ; mets la part de {name} dans le plan au-dessus de la boîte, ou demande au chef de groupe de mettre le plan de côté.",
+  "refusal.swapQuestion": "Lancer {next} mettra fin à la concentration de {name} sur {current}. Remplacer {current} ?",
+  "refusal.word.reaction": "La réaction",
+  "refusal.breakPaused": "La table est en pause : {name} a demandé une pause. Utilise le HRP pour la discussion de table en attendant la reprise.",
+  "refusal.sessionOver": "La séance {number} est terminée. Utilise le HRP pour la discussion de table en attendant la prochaine.",
+  "refusal.endTurnWaitFirst_one": "{names} agit d’abord : attends son tour, puis prends le tien.",
+  "refusal.endTurnWaitFirst_other": "{names} agissent d’abord : attends leurs tours, puis prends le tien.",
+  "refusal.notCombatTurn": "Ce n’est pas ton tour de combat.",
+  "refusal.secretNeedsKind": "Une action secrète a besoin d’un genre (voler, comploter, nuire ou attaquer) et de ce que tu fais.",
+  "refusal.secretNoPactTable": "Cette table garde ses compagnons : aucun pacte n’agit.",
+  "refusal.secretNeedsTurnAttack": "Frapper le personnage d’un autre joueur demande une table réglée sur Révolte ; celle-ci est réglée sur Départ.",
+  "refusal.secretNeedsTurnHarm": "Le sabotage qui blesse demande une table réglée sur Révolte ; celle-ci ne permet que le sabotage sans blessure.",
+  "refusal.secretNoPact": "{name} n’appartient à aucun pacte, et n’a donc rien à faire en secret.",
+  "refusal.secretWaitFight": "Une action secrète attend la fin du combat.",
+  "refusal.secretSayTarget": "Dis de quel personnage il s’agit : un autre personnage de cette table.",
+  "refusal.secretNoItem": "{name} ne porte rien qui s’appelle « {item} ».",
 
   // The settings page and its sections.
   "settings.title": "Paramètres du compte",
@@ -4125,6 +4166,54 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.hand.cond.grappled": "Empoigné",
   "table.hand.cond.prone": "À terre",
   "table.hand.cond.readied": "Prêt",
+  // Les mots de condition du moteur, sur la ligne « S’applique » d’une carte
+  // et sur son emplacement main (hand-play.ts conditionWord) : les mots que
+  // portent les lignes de mécanique des sorts, les tables de ressources et
+  // les effets rédigés. Les quinze conditions du SRD (à terre, paralysé…)
+  // n’ont pas de clé ici — contentName("conditions") leur donne le libellé
+  // officiel français. Ce qui précède une parenthèse se traduit, la
+  // parenthèse voyage telle quelle (« déstabilisé (d8) »).
+  "table.hand.cond.raging": "en rage",
+  "table.hand.cond.baned": "sous le fléau",
+  "table.hand.cond.banished": "banni",
+  "table.hand.cond.calmed": "apaisé",
+  "table.hand.cond.commanded": "sous injonction",
+  "table.hand.cond.confused": "confus",
+  "table.hand.cond.dancing": "danse irrésistible",
+  "table.hand.cond.enclosed": "enfermé",
+  "table.hand.cond.faerieFire": "lueurs féeriques",
+  "table.hand.cond.feebleminded": "esprit faible",
+  "table.hand.cond.levitating": "en lévitation",
+  "table.hand.cond.mazed": "perdu dans le dédale",
+  "table.hand.cond.mocked": "moqué",
+  "table.hand.cond.slowed": "ralenti",
+  "table.hand.cond.suggested": "sous suggestion",
+  "table.hand.cond.aspectOfTheWyrm": "aspect du wyrm : effroi",
+  "table.hand.cond.bladesong": "chant de lame",
+  "table.hand.cond.celestialRevelation": "révélation céleste : ailes célestes",
+  "table.hand.cond.fightingSpirit": "esprit combatif",
+  "table.hand.cond.flying": "en vol",
+  "table.hand.cond.formOfDread": "forme d’effroi",
+  "table.hand.cond.giantsMight": "puissance de géant",
+  "table.hand.cond.manifestMind": "esprit manifesté",
+  "table.hand.cond.mantleOfMajesty": "manteau de majesté",
+  "table.hand.cond.spiritProjection": "projection spirituelle",
+  "table.hand.cond.spiritTotem": "totem spirituel : ours",
+  "table.hand.cond.starryForm": "forme stellaire : archer",
+  "table.hand.cond.tentacleOfTheDeep": "tentacule des profondeurs",
+  "table.hand.cond.tranceOfOrder": "transe d’ordre",
+  "table.hand.cond.darkOnesOwnLuck": "chance du ténébreux (d10)",
+  "table.hand.cond.ancestralProtectors": "ancêtres protecteurs",
+  "table.hand.cond.blessingOfTheForge": "bénédiction de la forge (armure)",
+  "table.hand.cond.blessingOfTheTrickster": "bénédiction du filou",
+  "table.hand.cond.coronaOfLight": "couronne de lumière",
+  "table.hand.cond.emboldeningBond": "lien d’encouragement",
+  "table.hand.cond.ordersWrath": "colère de l’ordre",
+  "table.hand.cond.stormAura": "aura de la tempête",
+  "table.hand.cond.stormAuraDesert": "aura de la tempête (désert)",
+  "table.hand.cond.stormAuraSea": "aura de la tempête (mer)",
+  "table.hand.cond.unsettled": "déstabilisé",
+  "table.hand.cond.vigilantBlessing": "bénédiction vigilante",
   "table.hand.gate.standSpeed": "Ta vitesse est de 0 : impossible de se relever.",
   "table.hand.gate.dashSpeed": "Ta vitesse est de 0 : foncer ne mène à rien.",
   "table.hand.gate.noKi": "Il ne reste aucun point de ki à {name} pour {feature}. Il revient après un repos.",
@@ -4242,6 +4331,15 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.hand.spell.cantrip": "Tour de magie",
   "table.hand.spell.noSlots": "Niveau {level} · aucun emplacement",
   "table.hand.spell.concentration": "Concentration",
+  // Les mots « au mieux » par clés (constantes de reading-logic.ts, dont
+  // l’anglais est ici identique à l’octet près — scripts/test-best-effort.mjs
+  // épingle la ligne anglaise de la carte) : la carte de sort de la main, la
+  // fenêtre d’info, la liste de construction du bestiaire, les badges et la
+  // note de ligne de la référence.
+  "table.hand.spell.bestEffortShort": "Au mieux : lu dans son texte, pas encore vérifié.",
+  "table.hand.spell.bestEffortNote":
+    "Au mieux : l’app a lu les règles de cette entrée dans son texte, et personne n’a encore vérifié cette lecture. Si elle se joue autrement que ne le dit le texte, le texte et le MJ l’emportent, et une copie d’atelier peut corriger ça pour ta table.",
+  "table.hand.spell.bestEffortChip": "au mieux",
   "table.hand.spell.choice.choose": "Choisir",
   "table.hand.spell.choice.word": "Le mot",
   "table.hand.spell.choice.metal": "Le métal",
@@ -4460,6 +4558,33 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.hand.area.hintWallToward": "Touche où il court, ou laisse-le traverser ton écran.",
   "table.hand.area.hintMove": "Touche une autre case pour la déplacer.",
   "table.hand.area.hintCentre": "Touche le plateau à l’endroit du centre.",
+  // Les lignes de l’aperçu au survol (previewRows de hand-play.ts) : les
+  // étiquettes et les cadres autour des nombres du moteur. La
+  // caractéristique de sauvegarde voyage comme l’abréviation du lecteur
+  // (workshop.bestiary.stats.saveAbbr.*), le type de dégâts comme le mot de
+  // damageTypeWord.
+  "table.hand.preview.restores": "Restaure",
+  "table.hand.preview.damage": "Dégâts",
+  "table.hand.preview.effect": "Effet",
+  "table.hand.preview.expected": "Attendus",
+  "table.hand.preview.expectedDmg": "Dégâts attendus",
+  "table.hand.preview.save": "Sauvegarde",
+  "table.hand.preview.saveVsDc": "jet de sauvegarde de {ability} contre DD {dc}",
+  "table.hand.preview.saveOnly": "jet de sauvegarde de {ability}",
+  "table.hand.preview.toHit": "Toucher",
+  "table.hand.preview.toHitFrame": "{bonus} contre CA {ac} · {odds}{mark}",
+  "table.hand.preview.noLine": "aucune ligne de tir (abri total)",
+  "table.hand.preview.cover": "Abri",
+  "table.hand.preview.coverHalf": "demi-couvert : +{cover} CA",
+  "table.hand.preview.coverThreeQuarters": "couvert aux trois quarts : +{cover} CA",
+  "table.hand.preview.flanking": "Flanc",
+  "table.hand.preview.flankingValue": "un allié à l’opposé : avantage",
+  "table.hand.preview.roll": "Jet",
+  "table.hand.preview.type": "Type",
+  "table.hand.preview.applies": "S’applique",
+  "table.hand.preview.cost": "Coût",
+  "table.hand.preview.advantage": "avantage",
+  "table.hand.preview.disadvantage": "désavantage",
 
   // Une carte que le MJ n’a jamais jouée est retournée à sa joueuse ou son
   // joueur (CardReturnedNote.tsx) : sa ligne le dit, avec la raison, et on

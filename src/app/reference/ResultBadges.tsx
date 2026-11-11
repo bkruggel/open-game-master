@@ -2,8 +2,12 @@
 
 import { needsLabel, offeredInPlay } from "@/lib/content/levelup-logic";
 import type { Need } from "@/lib/content/needs-logic";
-import { BEST_EFFORT_CHIP } from "@/lib/content/reading-logic";
 import { GameIcon } from "@/components/ui/GameIcon";
+import { translate, type Locale } from "@/lib/messages-logic";
+import { useT } from "@/lib/locale";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
 
 // What a reference result is, at a glance: its kind, its level or rarity or
 // challenge, and where it came from, as chips. A chip wears a painted family
@@ -53,7 +57,7 @@ function text(value: unknown): string {
   return typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
 }
 
-export function badgesFor(category: string, row: BadgeRow): Badge[] {
+export function badgesFor(category: string, row: BadgeRow, t: T = enT): Badge[] {
   const badges: Badge[] = [];
   if (category === "spells") {
     if (typeof row.level === "number") {
@@ -87,7 +91,9 @@ export function badgesFor(category: string, row: BadgeRow): Badge[] {
     badges.push({ key: "needs", text: needs, tone: offeredInPlay(row.needs ?? []) ? "neutral" : "orange" });
   }
   if (row.bestEffort) {
-    badges.push({ key: "best-effort", text: BEST_EFFORT_CHIP, tone: "blue" });
+    // The keyed chip, the reader's words (English identical to
+    // reading-logic's constant).
+    badges.push({ key: "best-effort", text: t("table.hand.spell.bestEffortChip"), tone: "blue" });
   }
   if (row.source === "homebrew") {
     badges.push({ key: "source", text: "homebrew", tone: "gold" });
@@ -98,7 +104,8 @@ export function badgesFor(category: string, row: BadgeRow): Badge[] {
 }
 
 export function ResultBadges({ category, row }: { category: string; row: BadgeRow }) {
-  const badges = badgesFor(category, row);
+  const t = useT();
+  const badges = badgesFor(category, row, t);
   if (!badges.length) {
     return null;
   }

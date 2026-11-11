@@ -847,7 +847,7 @@ export function LevelUpDialog({
                       <InfoChipList
                         items={newFeatureNames.map((name) => ({
                           name,
-                          text: describeFeature(classChoice, effectiveSubclass, name),
+                          text: describeFeature(classChoice, effectiveSubclass, name, locale),
                         }))}
                       />
                     </div>

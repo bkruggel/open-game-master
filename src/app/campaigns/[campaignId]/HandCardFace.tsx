@@ -7,7 +7,8 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import { cardArtwork } from "@/lib/battlemap/card-art";
 import type { HandCard, HandCardType, HandCost } from "@/lib/battlemap/hand";
 import { previewRows, type HandAim, type PreviewRow } from "@/lib/battlemap/hand-play";
-import { useT } from "@/lib/locale";
+import { cardDisplayName, conditionWord } from "@/lib/battlemap/hand-display";
+import { useLocale, useT } from "@/lib/locale";
 
 // One card of the Hand and the outcome preview that floats over it. Styles
 // are in src/app/styles/hand.css; the tilt, the sheen and the art parallax
@@ -82,6 +83,8 @@ export function HandPreviewRows({ rows }: { rows: PreviewRow[] }) {
 // mockup's card-play and card-spend, both in hand-motion.css. Decoration only,
 // the fan's own card is the one a screen reader hears about.
 export function HandPlayedCard({ card, t }: { card: HandCard; t: Translator }) {
+  const locale = useLocale();
+  const name = cardDisplayName(card, locale);
   return (
     <div className="hand-played" aria-hidden="true">
       <span className="hand-played-top">
@@ -90,7 +93,7 @@ export function HandPlayedCard({ card, t }: { card: HandCard; t: Translator }) {
         </span>
         <span className="hand-range">{card.range}</span>
       </span>
-      <span className="hand-played-name">{card.name}</span>
+      <span className="hand-played-name">{name}</span>
       {card.dice ? (
         <span className="hand-dice" data-heals={card.heals ? "true" : undefined}>
           {card.dice}
@@ -139,7 +142,9 @@ function HandCardFaceInner({
   onPick: (card: HandCard) => void;
 }) {
   const t = useT();
-  const rows = useMemo(() => previewRows(card, aim, conditions), [card, aim, conditions]);
+  const locale = useLocale();
+  const name = cardDisplayName(card, locale);
+  const rows = useMemo(() => previewRows(card, aim, conditions, {}, t, locale), [card, aim, conditions, t, locale]);
   const artwork = cardArtwork(card.icon, genre);
   const aimName = aim && card.target === "enemy" && aim.kind === "enemy" ? aim.name : "";
   const slotStyle = {
@@ -168,8 +173,8 @@ function HandCardFaceInner({
       aria-pressed={card.type === "rider" ? attached : undefined}
       aria-label={
         card.disabled
-          ? t("table.hand.card.ariaBlocked", { name: card.name, cost, reason: card.disabled })
-          : t("table.hand.card.aria", { name: card.name, cost })
+          ? t("table.hand.card.ariaBlocked", { name, cost, reason: card.disabled })
+          : t("table.hand.card.aria", { name, cost })
       }
       onClick={() => onPick(card)}
     >
@@ -195,7 +200,7 @@ function HandCardFaceInner({
             className="hand-art-icon"
           />
         </span>
-        <span className="hand-name">{card.name}</span>
+        <span className="hand-name">{name}</span>
         <span className="hand-numbers">
           {card.dice ? (
             <span className="hand-dice" data-heals={card.heals ? "true" : undefined}>
@@ -207,7 +212,7 @@ function HandCardFaceInner({
         <span className="hand-rules">{card.rules}</span>
         <span className="hand-foot">
           <span className="hand-resource">{card.resource}</span>
-          <span className="hand-cond">{card.condition}</span>
+          <span className="hand-cond">{conditionWord(card.condition, t, locale)}</span>
         </span>
       </span>
     </button>
@@ -242,7 +247,7 @@ function HandCardFaceInner({
             <span className="hand-type-chip" style={{ "--chip-tone": TYPE_TONE[card.type] } as CSSProperties}>
               {type}
             </span>
-            <span className="hand-preview-name">{aimName ? `${card.name} · ${aimName}` : card.name}</span>
+            <span className="hand-preview-name">{aimName ? `${name} · ${aimName}` : name}</span>
           </span>
           <HandPreviewRows rows={rows} />
         </span>

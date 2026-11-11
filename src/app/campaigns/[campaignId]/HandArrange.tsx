@@ -5,7 +5,7 @@ import { useRef, useState, type CSSProperties } from "react";
 import { GameIcon } from "@/components/ui/GameIcon";
 import { cardArtwork } from "@/lib/battlemap/card-art";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import type { HandCard } from "@/lib/battlemap/hand";
 import {
   END_TURN_ID,
@@ -17,6 +17,7 @@ import {
   type HandLayout,
 } from "@/lib/battlemap/hand-layout";
 import { costLabel } from "@/lib/battlemap/hand-play";
+import { cardDisplayName } from "@/lib/battlemap/hand-display";
 import { groupSummary, isGroup, type HandGroup, type HandUnit } from "@/lib/battlemap/hand-groups";
 import { replayAnimation } from "@/lib/motion/replay";
 
@@ -62,6 +63,7 @@ export function HandArrange({
 }) {
   const [notice, setNotice] = useState("");
   const t = useT();
+  const locale = useLocale();
   const [moved, setMoved] = useState<{ id: string; seq: number } | null>(null);
   // The groups whose cards are listed for seating one on its own.
   const [openGroups, setOpenGroups] = useState<string[]>([]);
@@ -110,8 +112,8 @@ export function HandArrange({
         const seat = working.fan.indexOf(card.id);
         return (
           <li key={card.id} className="hand-arrange-member">
-            <span className="min-w-0 flex-1 truncate text-sm text-stone-200">{card.name}</span>
-            <span className="hand-cost shrink-0" data-cost={card.cost}>{costLabel(card.cost)}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-stone-200">{cardDisplayName(card, locale)}</span>
+            <span className="hand-cost shrink-0" data-cost={card.cost}>{costLabel(card.cost, t)}</span>
             {seat >= 0 ? (
               <span className="shrink-0 text-[10px] uppercase tracking-wider text-amber-200">{t("table.hand.arrange.inHandSeat", { seat: seat + 1 })}</span>
             ) : (
@@ -141,7 +143,7 @@ export function HandArrange({
           <GameIcon icon={artwork} size={artwork.kind === "action" ? "h-9 w-[72px]" : "size-9"} />
           <span className="min-w-[120px] flex-1">
             <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="truncate font-display text-sm font-semibold text-stone-100">{card.name}</span>
+              <span className="truncate font-display text-sm font-semibold text-stone-100">{group ? card.name : cardDisplayName(card as HandCard, locale)}</span>
               <span
                 className={cn(
                   "hand-arrange-badge shrink-0 rounded-full border px-1.5 py-px text-[10px] uppercase tracking-wider",
@@ -161,7 +163,7 @@ export function HandArrange({
             {group ? (
               <span className="block text-[11px] text-stone-400">{groupSummary(group)}</span>
             ) : (
-              <span className="hand-cost mt-0.5" data-cost={(card as HandCard).cost}>{costLabel((card as HandCard).cost)}</span>
+              <span className="hand-cost mt-0.5" data-cost={(card as HandCard).cost}>{costLabel((card as HandCard).cost, t)}</span>
             )}
           </span>
           {place === "hand" ? (
@@ -169,7 +171,7 @@ export function HandArrange({
               <button
                 type="button"
                 className="hand-arrange-step motion-press"
-                aria-label={t("table.hand.arrange.moveLeft", { name: card.name })}
+                aria-label={t("table.hand.arrange.moveLeft", { name: group ? card.name : cardDisplayName(card as HandCard, locale) })}
                 disabled={seat <= 0}
                 onClick={() => void apply(moveInHand(working, card.id, -1), card.id)}
               >
@@ -178,7 +180,7 @@ export function HandArrange({
               <button
                 type="button"
                 className="hand-arrange-step motion-press"
-                aria-label={t("table.hand.arrange.moveRight", { name: card.name })}
+                aria-label={t("table.hand.arrange.moveRight", { name: group ? card.name : cardDisplayName(card as HandCard, locale) })}
                 disabled={seat >= working.fan.length - 1}
                 onClick={() => void apply(moveInHand(working, card.id, 1), card.id)}
               >
@@ -230,11 +232,11 @@ export function HandArrange({
       {urgent.length ? (
         <p className="reveal mb-2 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/90">
           {t(urgent.length === 1 ? "table.hand.arrange.urgent_one" : "table.hand.arrange.urgent_other", {
-            names: urgent.map((card) => card.name).join(t("table.hand.join.and")),
+            names: urgent.map((card) => cardDisplayName(card, locale)).join(t("table.hand.join.and")),
           })}
           {displaced.length
             ? t(displaced.length === 1 ? "table.hand.arrange.urgentDisplaced_one" : "table.hand.arrange.urgentDisplaced_other", {
-                names: displaced.map((card) => card.name).join(", "),
+                names: displaced.map((unit) => (isGroup(unit) ? unit.name : cardDisplayName(unit, locale))).join(", "),
               })
             : ""}
           {t("table.hand.arrange.urgentKept")}

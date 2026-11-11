@@ -396,7 +396,7 @@ export function CallingStep({
                 <InfoButton
                   label={feature.name}
                   meta={feature.level ? t("sheet.featureLevel", { level: feature.level }) : undefined}
-                  text={klass ? describeFeature(klass.id, subclass, feature.name) : null}
+                  text={klass ? describeFeature(klass.id, subclass, feature.name, locale) : null}
                 />
               </span>
             ))}

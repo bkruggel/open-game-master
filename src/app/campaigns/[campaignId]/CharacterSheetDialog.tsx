@@ -50,6 +50,7 @@ import { workshopClassName } from "@/lib/classes/workshop-registry";
 import { StoryHopes } from "@/app/campaigns/[campaignId]/StoryHopes";
 import { classWordsAfterLevel, isSplit } from "@/lib/characters/class-words";
 import { contentName, subclassName } from "@/lib/content/names";
+import { resourceDisplayName, resourceGuidance } from "@/lib/srd/class-resources-fr";
 import { useLocale } from "@/lib/locale";
 
 function titleCase(value: string) {
@@ -58,7 +59,10 @@ function titleCase(value: string) {
 
 const RESOURCE_NAMES = new Map(RESOURCE_DEFS.map((def) => [def.id, def.displayName]));
 // Every resource already carries a line explaining what spending it does; it
-// was written for the DM model and reads just as well for the player.
+// was written for the DM model and reads just as well for the player. The
+// reader's words come from the render-time map (class-resources-fr.ts) —
+// the stored English line stays what the engine and the DM's tools read —
+// so both are per-locale lookups over this English map.
 const RESOURCE_HELP = new Map(RESOURCE_DEFS.map((def) => [def.id, def.guidance]));
 
 // Full character sheet, opened by selecting any party member. Read-only,
@@ -515,8 +519,8 @@ export function CharacterSheetDialog({
                     key={id}
                     id={id}
                     pool={pool}
-                    name={RESOURCE_NAMES.get(id) ?? titleCase(id)}
-                    help={RESOURCE_HELP.get(id)}
+                    name={resourceDisplayName(id, locale) ?? RESOURCE_NAMES.get(id) ?? titleCase(id)}
+                    help={resourceGuidance(id, locale) ?? RESOURCE_HELP.get(id)}
                     spends={spends}
                     corrects={corrects}
                     busy={busy}

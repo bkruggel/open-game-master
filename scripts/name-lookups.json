@@ -133,6 +133,27 @@
         "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
       ]
     ],
+    "app/api/campaigns/[campaignId]/actions/route.ts#helper": [
+      [
+        "parse",
+        1,
+        "engineRefusalKey, the boundary helper matching the engine's refusal sentences (src/lib/dm/can-act.ts, src/lib/dm/action-budget.ts) and answering the reader's key; it names no record (the name it carries rides along)"
+      ]
+    ],
+    "app/api/campaigns/[campaignId]/actions/route.ts#partial": [
+      [
+        "parse",
+        7,
+        "canAct's and the spend's refusal sentences (src/lib/dm/can-act.ts, src/lib/dm/action-budget.ts), matched by prefix and suffix at the actions route to carry them into the reader's words — the boundary hand-core.ts keeps at the hand's gate (the English line is the same sentence; a drift keeps the engine's English) — the sentences' English words are scripts/text-comparisons.json's to classify"
+      ]
+    ],
+    "app/api/campaigns/[campaignId]/actions/route.ts#whole-single": [
+      [
+        "parse",
+        6,
+        "the engine's refusal sentences (src/lib/dm/can-act.ts, src/lib/dm/action-budget.ts) matched whole at the actions route's boundary, as hand-core.ts matches them at the hand's gate; the words are the engine's own vocabulary (scripts/text-comparisons.json's to classify)"
+      ]
+    ],
     "app/api/campaigns/[campaignId]/battle-map/move/route.ts#partial": [
       [
         "key",
@@ -173,6 +194,13 @@
         "key",
         1,
         "the party's first level"
+      ]
+    ],
+    "app/api/campaigns/[campaignId]/encounter/end-turn/route.ts#partial": [
+      [
+        "parse",
+        5,
+        "endTurnRefusal's sentences (src/lib/dm/encounter-tools.ts), matched by prefix and suffix at the end-turn route to carry them into the reader's words (the English line is the same sentence; a drift keeps the engine's English) — the sentences' English words are scripts/text-comparisons.json's to classify"
       ]
     ],
     "app/api/campaigns/[campaignId]/item-proposals/[proposalId]/route.ts#keyed": [
@@ -1241,6 +1269,13 @@
         "selling a carried line by its own name (the line itself)"
       ]
     ],
+    "app/campaigns/[campaignId]/MarketPanel.tsx#keyed": [
+      [
+        "key",
+        2,
+        "the market kinds' and sizes' label keys, read by the stored values"
+      ]
+    ],
     "app/campaigns/[campaignId]/MarketPanel.tsx#whole": [
       [
         "key",
@@ -1749,6 +1784,13 @@
         "digits a regex already captured, ids, headers, stored and form numbers (number inputs), dice parts, the pack's English text (\"1,000 feet\", a purse); src/: every site read"
       ]
     ],
+    "app/campaigns/[campaignId]/mapCatalogue.ts#keyed": [
+      [
+        "key",
+        1,
+        "SKIN_ROLES by terrain character (with materialChoices' GROUP_EN, same shape): tile characters and the code's own group words, never a record's name"
+      ]
+    ],
     "app/campaigns/[campaignId]/mapCatalogue.ts#partial": [
       [
         "search",
@@ -1957,6 +1999,13 @@
         "an id turned into words for display"
       ]
     ],
+    "app/characters/[characterId]/ready/page.tsx#whole-single": [
+      [
+        "parse",
+        1,
+        "tests the subclass helper's answer against the value the sheet stores, to case the label only (title-cased as stored beside a miss); names no record"
+      ]
+    ],
     "app/characters/builder/AbilityEditor.tsx#number": [
       [
         "key",
@@ -1990,6 +2039,13 @@
         "key",
         1,
         "the build math table's own row keys (a row id and its number), read to tell a moved number from the first table; no record is looked up by a name"
+      ]
+    ],
+    "app/characters/builder/CardText.tsx#partial": [
+      [
+        "parse",
+        10,
+        "the card phrases our own builders compose, cut back apart (\"suits Bard\", \"choose +1\", \"all +2\", \"str caster\", \"very low hp, d6\", the lineage id path)"
       ]
     ],
     "app/characters/builder/CatalogBrowser.tsx#bypass": [
@@ -2040,6 +2096,13 @@
         "UI section keys"
       ]
     ],
+    "app/characters/builder/CharacterBuilder.tsx#keyed": [
+      [
+        "key",
+        2,
+        "the drop labels' key, read by the drop's stored label in lowercase; the scope nouns' and other label maps by their stored kind"
+      ]
+    ],
     "app/characters/builder/CharacterBuilder.tsx#whole": [
       [
         "identity",
@@ -2059,6 +2122,13 @@
         "key",
         5,
         "builder gear picked from the catalog, keyed by its row name"
+      ]
+    ],
+    "app/characters/builder/EquipmentSection.tsx#keyed": [
+      [
+        "key",
+        1,
+        "the gear shelves' English headings read to their builder.gear.section.* message keys"
       ]
     ],
     "app/characters/builder/EquipmentSection.tsx#partial": [
@@ -2118,6 +2188,13 @@
         "key",
         1,
         "the gate names an owed pick on the sheet first, else the build's earliest owed pick: an order of blocks, never a name lookup"
+      ]
+    ],
+    "app/characters/builder/LineageCarousel.tsx#normalizer": [
+      [
+        "key",
+        1,
+        "sizeWords folds the SRD size word to look up its builder.lineage.size.* message key"
       ]
     ],
     "app/characters/builder/MultiContentPicker.tsx#bypass": [
@@ -2245,6 +2322,20 @@
         "the tier word key, read by the stored tier value"
       ]
     ],
+    "app/characters/builder/abilityGains.ts#number": [
+      [
+        "parse",
+        1,
+        "the level read out of the at-level gain's source text"
+      ]
+    ],
+    "app/characters/builder/abilityGains.ts#partial": [
+      [
+        "pattern",
+        1,
+        "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
+      ]
+    ],
     "app/characters/builder/cardFaces.ts#partial": [
       [
         "pattern",
@@ -2321,6 +2412,13 @@
         "key",
         1,
         "the first casting class among those held so far, by position"
+      ]
+    ],
+    "app/characters/builder/levelProgression.ts#keyed": [
+      [
+        "key",
+        1,
+        "SPELL_CAP_KEYS read by the label the math itself builds; no record's name is read"
       ]
     ],
     "app/characters/builder/levelProgression.ts#number": [
@@ -2598,6 +2696,13 @@
         "key",
         1,
         "digits a regex already captured, ids, headers, stored and form numbers (number inputs), dice parts, the pack's English text (\"1,000 feet\", a purse); src/: every site read"
+      ]
+    ],
+    "app/characters/builder/steps/CallingSetup.tsx#partial": [
+      [
+        "parse",
+        2,
+        "the stored party-level note cut back open (the English and French sentence forms) to retell it in the reader's words"
       ]
     ],
     "app/characters/builder/steps/CallingStep.tsx#fallback": [
@@ -4142,6 +4247,13 @@
         "the most recent workshop"
       ]
     ],
+    "components/rulebook/RulebookContents.tsx#keyed": [
+      [
+        "key",
+        2,
+        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
+      ]
+    ],
     "components/rulebook/RulebookContents.tsx#partial": [
       [
         "key",
@@ -4192,6 +4304,13 @@
         "search",
         1,
         "the rulebook search's highlighted words"
+      ]
+    ],
+    "components/rulebook/RulebookReader.tsx#keyed": [
+      [
+        "key",
+        1,
+        "the page cache is keyed by locale and page id, not by a text name"
       ]
     ],
     "components/rulebook/RulebookReader.tsx#partial": [
@@ -5287,6 +5406,13 @@
         "canAct's refusal sentences (src/lib/dm/can-act.ts), matched by prefix and suffix at standingGate to carry them into the reader's words: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English) — the sentences' English words are scripts/text-comparisons.json's to classify"
       ]
     ],
+    "lib/battlemap/hand-core.ts#whole-single": [
+      [
+        "parse",
+        10,
+        "engine condition words matched to key the reader's word at the hand's gate and card boundary; the words are the engine's own vocabulary (scripts/text-comparisons.json's to classify)"
+      ]
+    ],
     "lib/battlemap/hand-escape.ts#keyed": [
       [
         "key",
@@ -5299,6 +5425,13 @@
         "identity",
         1,
         "a hold rule by whole condition name"
+      ]
+    ],
+    "lib/battlemap/hand-display.ts#partial": [
+      [
+        "key",
+        6,
+        "the card id prefixes that pick which table reads the card's displayed name (spell:, feature:, rider:, attack:, offhand:; a group or a basic/gear/monster card returns unchanged)"
       ]
     ],
     "lib/battlemap/hand-gear.ts#bypass": [
@@ -5329,6 +5462,13 @@
         "a hand card's weapon by the carried line's whole name (the card carries it)"
       ]
     ],
+    "lib/battlemap/hand-gear.ts#whole-single": [
+      [
+        "parse",
+        1,
+        "an engine condition word matched to key the reader's word on a gear card"
+      ]
+    ],
     "lib/battlemap/hand-groups.ts#partial": [
       [
         "key",
@@ -5346,6 +5486,13 @@
         "pattern",
         1,
         "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
+      ]
+    ],
+    "lib/battlemap/hand-play.ts#normalizer": [
+      [
+        "key",
+        1,
+        "a save ability code trimmed and lowercased only to key its reader's abbreviation (saveAbbr); display text, never a record's name"
       ]
     ],
     "lib/battlemap/hand-options.ts#partial": [
@@ -5379,6 +5526,13 @@
         "identity",
         1,
         "a target by whole name"
+      ]
+    ],
+    "lib/battlemap/hand-play.ts#whole-single": [
+      [
+        "key",
+        1,
+        "the dictionary's own miss fallback (translate() renders an unknown key as itself), spotted by comparing the word to the key it was asked for (saveAbbr)"
       ]
     ],
     "lib/battlemap/hand-react.ts#partial": [
@@ -5502,6 +5656,13 @@
         "key",
         2,
         "the basics' fixed key records (BASIC_NAME_KEYS, BASIC_RULE_KEY) and the damage types' (DTYPE_KEY)"
+      ]
+    ],
+    "lib/battlemap/hand.ts#normalizer": [
+      [
+        "key",
+        1,
+        "a damage type word trimmed and lowercased only to key its reader's word (dmgWithType); display text, never a record's name"
       ]
     ],
     "lib/battlemap/hand.ts#partial": [
@@ -5689,6 +5850,13 @@
         "key",
         1,
         "a board skin by id, else the first"
+      ]
+    ],
+    "lib/battlemap/skins.ts#keyed": [
+      [
+        "key",
+        1,
+        "SKIN_ROLES (with skinChoices' GROUP_EN and resolveSkin's bind reads, same shape): tile characters and the code's own group words, never a record's name"
       ]
     ],
     "lib/battlemap/skins.ts#normalizer": [
@@ -6462,6 +6630,13 @@
         "the homebrew id prefix on a species or class id shown as a name"
       ]
     ],
+    "lib/characters/class-words.ts#whole-single": [
+      [
+        "identity",
+        1,
+        "the official content-name maps' answer compared with the id or stored label, to know whether the map named it; a miss keeps the id as the name"
+      ]
+    ],
     "lib/characters/hero-tips.ts#bypass": [
       [
         "identity",
@@ -6944,6 +7119,13 @@
         "key",
         2,
         "an official name, a class id or a feature name folded into the generated French-name tables' own key shape (lowercase slugs, \"class:feature\"); a miss is the English name back, never a near record"
+      ]
+    ],
+    "lib/content/names.ts#partial": [
+      [
+        "key",
+        3,
+        "a trait line's or a background feature's name cut from its trailing bracket note or its trailing measurement by a fixed pattern before the name's canonical key reads the generated French-name tables; a miss is the line as written, never a near record"
       ]
     ],
     "lib/content/needs-logic.ts#keyed": [
@@ -9905,6 +10087,13 @@
         "a cured condition by whole name"
       ]
     ],
+    "lib/dm/damage-logic.ts#keyed": [
+      [
+        "key",
+        2,
+        "the official French damage-type words read by the type's own key (the word a damage expression matched, or the caller's type); a miss is the English word back, never a near record"
+      ]
+    ],
     "lib/dm/damage-logic.ts#normalizer": [
       [
         "key",
@@ -10673,6 +10862,13 @@
         "search",
         1,
         "factions named in a text"
+      ]
+    ],
+    "lib/dm/faction-logic.ts#keyed": [
+      [
+        "key",
+        1,
+        "STANDING_KEYS (and ATTITUDE_KEYS, same shape): the standing/attitude words the code itself picks, read to their faction.* message keys; no record's name is read"
       ]
     ],
     "lib/dm/feat-reactions.ts#whole": [
@@ -13100,6 +13296,13 @@
         "slugs, hosts, file names, ids, env values, display text, throttle keys, model ids (src/: every site read)"
       ]
     ],
+    "lib/dm/secret-action-request.ts#partial": [
+      [
+        "parse",
+        3,
+        "the pact engine's refusal sentences (src/lib/dm/pact-logic.ts, src/lib/dm/pact-players.ts), matched by prefix and suffix at the secret mode's boundary to carry them into the reader's words (the English line is the same sentence; a drift keeps the engine's English) — the sentences' English words are scripts/text-comparisons.json's to classify"
+      ]
+    ],
     "lib/dm/session-hold-logic.ts#first": [
       [
         "key",
@@ -15014,6 +15217,13 @@
         "the message dictionaries and a template's variables, read by a message key or placeholder name the code wrote (fixed keys, never a person's text naming a record)"
       ]
     ],
+    "lib/messages/en.ts#sql": [
+      [
+        "authoring",
+        1,
+        "the dictionary's own English lines are display prose for the authoring UI; this hint's 'named like a published one' reads no record"
+      ]
+    ],
     "lib/model-client.ts#keyed": [
       [
         "key",
@@ -15700,6 +15910,27 @@
         "key",
         1,
         "a host matched against the public services by its exact name (protocol)"
+      ]
+    ],
+    "lib/request-locale.ts#normalizer": [
+      [
+        "key",
+        1,
+        "Accept-Language language tags (protocol tokens, not a person's text) folded for the language prefix; no record is ever read by them (moved from lib/rulebook/book.ts)"
+      ]
+    ],
+    "lib/request-locale.ts#partial": [
+      [
+        "pattern",
+        4,
+        "the Accept-Language header cut into its comma and semicolon parts and tag prefixes (header.split, tag.startsWith) — protocol tokens that read no record's name: their words are scripts/text-comparisons.json's to classify (moved from lib/rulebook/book.ts)"
+      ]
+    ],
+    "lib/roll-labels.ts#keyed": [
+      [
+        "key",
+        1,
+        "ROLL_KIND_KEYS: the roll kinds the engine stores, read to their rollmap.kind message keys; no record's name is read"
       ]
     ],
     "lib/rulebook/catalog-rows.ts#fallback": [
@@ -19550,181 +19781,6 @@
         "key",
         1,
         "request paths against the data roots"
-      ]
-    ],
-    "components/rulebook/RulebookContents.tsx#keyed": [
-      [
-        "key",
-        2,
-        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
-      ]
-    ],
-    "lib/content/names.ts#partial": [
-      [
-        "key",
-        3,
-        "a trait line's or a background feature's name cut from its trailing bracket note or its trailing measurement by a fixed pattern before the name's canonical key reads the generated French-name tables; a miss is the line as written, never a near record"
-      ]
-    ],
-    "app/characters/[characterId]/ready/page.tsx#whole-single": [
-      [
-        "parse",
-        1,
-        "tests the subclass helper's answer against the value the sheet stores, to case the label only (title-cased as stored beside a miss); names no record"
-      ]
-    ],
-    "components/rulebook/RulebookReader.tsx#keyed": [
-      [
-        "key",
-        1,
-        "the page cache is keyed by locale and page id, not by a text name"
-      ]
-    ],
-    "lib/messages/en.ts#sql": [
-      [
-        "authoring",
-        1,
-        "the dictionary's own English lines are display prose for the authoring UI; this hint's 'named like a published one' reads no record"
-      ]
-    ],
-    "lib/characters/class-words.ts#whole-single": [
-      [
-        "identity",
-        1,
-        "the official content-name maps' answer compared with the id or stored label, to know whether the map named it; a miss keeps the id as the name"
-      ]
-    ],
-    "app/campaigns/[campaignId]/MarketPanel.tsx#keyed": [
-      [
-        "key",
-        2,
-        "the market kinds' and sizes' label keys, read by the stored values"
-      ]
-    ],
-    "app/characters/builder/abilityGains.ts#partial": [
-      [
-        "pattern",
-        1,
-        "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
-      ]
-    ],
-    "app/characters/builder/abilityGains.ts#number": [
-      [
-        "parse",
-        1,
-        "the level read out of the at-level gain's source text"
-      ]
-    ],
-    "app/characters/builder/CharacterBuilder.tsx#keyed": [
-      [
-        "key",
-        2,
-        "the drop labels' key, read by the drop's stored label in lowercase; the scope nouns' and other label maps by their stored kind"
-      ]
-    ],
-    "lib/dm/faction-logic.ts#keyed": [
-      [
-        "key",
-        1,
-        "STANDING_KEYS (and ATTITUDE_KEYS, same shape): the standing/attitude words the code itself picks, read to their faction.* message keys; no record's name is read"
-      ]
-    ],
-    "lib/battlemap/skins.ts#keyed": [
-      [
-        "key",
-        1,
-        "SKIN_ROLES (with skinChoices' GROUP_EN and resolveSkin's bind reads, same shape): tile characters and the code's own group words, never a record's name"
-      ]
-    ],
-    "lib/roll-labels.ts#keyed": [
-      [
-        "key",
-        1,
-        "ROLL_KIND_KEYS: the roll kinds the engine stores, read to their rollmap.kind message keys; no record's name is read"
-      ]
-    ],
-    "app/campaigns/[campaignId]/mapCatalogue.ts#keyed": [
-      [
-        "key",
-        1,
-        "SKIN_ROLES by terrain character (with materialChoices' GROUP_EN, same shape): tile characters and the code's own group words, never a record's name"
-      ]
-    ],
-    "app/characters/builder/CardText.tsx#partial": [
-      [
-        "parse",
-        10,
-        "the card phrases our own builders compose, cut back apart (\"suits Bard\", \"choose +1\", \"all +2\", \"str caster\", \"very low hp, d6\", the lineage id path)"
-      ]
-    ],
-    "app/characters/builder/LineageCarousel.tsx#normalizer": [
-      [
-        "key",
-        1,
-        "sizeWords folds the SRD size word to look up its builder.lineage.size.* message key"
-      ]
-    ],
-    "app/characters/builder/steps/CallingSetup.tsx#partial": [
-      [
-        "parse",
-        2,
-        "the stored party-level note cut back open (the English and French sentence forms) to retell it in the reader's words"
-      ]
-    ],
-    "app/characters/builder/EquipmentSection.tsx#keyed": [
-      [
-        "key",
-        1,
-        "the gear shelves' English headings read to their builder.gear.section.* message keys"
-      ]
-    ],
-    "app/characters/builder/levelProgression.ts#keyed": [
-      [
-        "key",
-        1,
-        "SPELL_CAP_KEYS read by the label the math itself builds; no record's name is read"
-      ]
-    ],
-    "lib/dm/damage-logic.ts#keyed": [
-      [
-        "key",
-        2,
-        "the official French damage-type words read by the type's own key (the word a damage expression matched, or the caller's type); a miss is the English word back, never a near record"
-      ]
-    ],
-    "lib/request-locale.ts#normalizer": [
-      [
-        "key",
-        1,
-        "Accept-Language language tags (protocol tokens, not a person's text) folded for the language prefix; no record is ever read by them (moved from lib/rulebook/book.ts)"
-      ]
-    ],
-    "lib/request-locale.ts#partial": [
-      [
-        "pattern",
-        4,
-        "the Accept-Language header cut into its comma and semicolon parts and tag prefixes (header.split, tag.startsWith) — protocol tokens that read no record's name: their words are scripts/text-comparisons.json's to classify (moved from lib/rulebook/book.ts)"
-      ]
-    ],
-    "lib/battlemap/hand-core.ts#whole-single": [
-      [
-        "parse",
-        10,
-        "engine condition words matched to key the reader's word at the hand's gate and card boundary; the words are the engine's own vocabulary (scripts/text-comparisons.json's to classify)"
-      ]
-    ],
-    "lib/battlemap/hand-gear.ts#whole-single": [
-      [
-        "parse",
-        1,
-        "an engine condition word matched to key the reader's word on a gear card"
-      ]
-    ],
-    "lib/battlemap/hand.ts#normalizer": [
-      [
-        "key",
-        1,
-        "a damage type word trimmed and lowercased only to key its reader's word (dmgWithType); display text, never a record's name"
       ]
     ]
   }
