@@ -10,6 +10,7 @@ import { bonusCastOf, casterStateProblem, componentProblem, focusProblem, materi
 import { computeSheetDerived, spellAttackFor, spellSaveDcFor } from "@/lib/srd";
 import { resourceDef, resourceLevel, type ResourceDef } from "@/lib/srd/class-resources";
 import { resourceDisplayName, resourceGuidance } from "@/lib/srd/class-resources-fr";
+import { conditionWord } from "@/lib/battlemap/hand-display";
 import { psionicOptions } from "@/lib/dm/option-costs";
 import { BONUS_ATTACK_COUNTERS } from "@/lib/dm/feature-bonus-attacks";
 import { isMeleeSpellAttack } from "@/lib/srd/melee-spell";
@@ -473,7 +474,10 @@ export function featureCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT, 
       type = "ward";
       target = "self";
     } else if (effect.kind === "condition" || effect.kind === "buff") {
-      dice = effect.condition;
+      // The condition rides the dice line too (the Rage card's "raging"), so
+      // it reads the reader's word there the way the card's condition slot
+      // does at render; the card's own field stays the engine word.
+      dice = conditionWord(effect.condition, t, locale);
       condition = effect.condition;
       type = "ward";
       target = effect.kind === "buff" && effect.target === "ally" ? "ally" : "self";

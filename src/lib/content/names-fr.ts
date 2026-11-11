@@ -370,6 +370,7 @@ export const WEAPON_NAMES_FR: Record<string, string> = {
   "net": "Filet",
   "pike": "Pique",
   "quarterstaff": "Bâton de combat",
+  "unarmed-strike": "Attaque à mains nues",
   "rapier": "Rapière",
   "scimitar": "Cimeterre",
   "shortbow": "Arc court",
@@ -1677,5 +1678,5 @@ export const FR_NAMES_BY_TABLE: Record<string, Record<string, string>> = {
   subclasses: SUBCLASS_NAMES_FR,
 };
 
-// 1,590 official pairs in total, by table.
-export const FR_NAME_COUNTS: Record<string, number> = {"spells":319,"weapons":37,"armor":17,"gear":154,"magicitems":239,"conditions":15,"feats":129,"species":9,"backgrounds":1,"monsters":317,"classes":12,"classFeatures":270,"speciesTraits":50,"backgroundFeatures":1,"subclasses":20};
+// 1,591 official pairs in total, by table.
+export const FR_NAME_COUNTS: Record<string, number> = {"spells":319,"weapons":38,"armor":17,"gear":154,"magicitems":239,"conditions":15,"feats":129,"species":9,"backgrounds":1,"monsters":317,"classes":12,"classFeatures":270,"speciesTraits":50,"backgroundFeatures":1,"subclasses":20};

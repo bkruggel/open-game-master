@@ -2,6 +2,7 @@
 
 import { useT } from "@/lib/locale";
 import type { TurnPip } from "@/lib/battlemap/hand-table";
+import { costShort } from "@/app/campaigns/[campaignId]/HandCardFace";
 
 // The Hand's turn pips, the engine's count (src/lib/battlemap/hand-table.ts
 // turnPips), and the Flurry of Blows strikes bought and not yet made (the
@@ -27,9 +28,11 @@ export function HandPips({
           data-used={pip.used ? "true" : undefined}
           // The strike through a spent pip is drawn by hand-motion.css, which eases it in.
           className="hand-pip rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider"
-          aria-label={t(pip.used ? "table.hand.pip.spent" : "table.hand.pip.available", { label: pip.label })}
+          aria-label={t(pip.used ? "table.hand.pip.spent" : "table.hand.pip.available", { label: costShort(t, pip.cost) })}
         >
-          {pip.label}
+          {/* The engine's pip labels are data ("Reaction"); the reader's word
+              comes from the cost keys, the same one the card corner wears. */}
+          {costShort(t, pip.cost)}
         </span>
       ))}
       {flurryStrikes ? (

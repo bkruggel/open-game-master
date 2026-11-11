@@ -114,8 +114,8 @@ const tables = {
 };
 
 const total = Object.values(tables).reduce((sum, entries) => sum + Object.keys(entries).length, 0);
-if (total !== 1590) {
-  throw new Error(`expected 1,590 name pairs, read ${total}`);
+if (total !== 1591) {
+  throw new Error(`expected 1,591 name pairs, read ${total}`);
 }
 
 const tsLiteral = (value) => JSON.stringify(value);
