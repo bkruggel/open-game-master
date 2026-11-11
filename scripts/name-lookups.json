@@ -5282,9 +5282,9 @@
         "a fixed pattern over text that reads no record's name: its English words are scripts/text-comparisons.json's to classify"
       ],
       [
-        "english-source",
+        "parse",
         4,
-        "canAct's refusal sentences (src/lib/dm/can-act.ts), matched by prefix and suffix at standingGate to carry them into the reader's words: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English)"
+        "canAct's refusal sentences (src/lib/dm/can-act.ts), matched by prefix and suffix at standingGate to carry them into the reader's words: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English) — the sentences' English words are scripts/text-comparisons.json's to classify"
       ]
     ],
     "lib/battlemap/hand-escape.ts#keyed": [
@@ -5500,8 +5500,8 @@
     "lib/battlemap/hand.ts#keyed": [
       [
         "key",
-        1,
-        "ids, refs, slugs, tool names, field names, env names, event kinds, UI keys, caches, door and map keys; a sheet's conditionMeta by the condition key it was written under; the usage route's gear map by the sheet's own stored item names (src/: every site read)"
+        2,
+        "the basics' fixed key records (BASIC_NAME_KEYS, BASIC_RULE_KEY) and the damage types' (DTYPE_KEY)"
       ]
     ],
     "lib/battlemap/hand.ts#partial": [
@@ -19708,16 +19708,23 @@
     ],
     "lib/battlemap/hand-core.ts#whole-single": [
       [
-        "english-source",
+        "parse",
         10,
-        "canAct's, spendAction's, spendAttack's, handsRuling's and offHandProblem's refusal sentences (src/lib/dm/can-act.ts, src/lib/dm/action-budget.ts, src/lib/dm/attack-rules.ts), rebuilt beside each refusal and compared whole at the hand's gate boundary: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English)"
+        "engine condition words matched to key the reader's word at the hand's gate and card boundary; the words are the engine's own vocabulary (scripts/text-comparisons.json's to classify)"
       ]
     ],
     "lib/battlemap/hand-gear.ts#whole-single": [
       [
-        "english-source",
+        "parse",
         1,
-        "gear-hands.ts handsFullError's refusal sentence, rebuilt beside the refusal and compared whole at the draw card's gate: the engine's own refusal sentences matched at the hand's gate boundary, so the card carries them in the reader's words (the English line is the same sentence; a drift keeps the engine's English)"
+        "an engine condition word matched to key the reader's word on a gear card"
+      ]
+    ],
+    "lib/battlemap/hand.ts#normalizer": [
+      [
+        "key",
+        1,
+        "a damage type word trimmed and lowercased only to key its reader's word (dmgWithType); display text, never a record's name"
       ]
     ]
   }

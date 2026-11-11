@@ -204,7 +204,7 @@ function attackCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders
       name: offHand ? t("table.hand.attack.offHand", { name }) : name,
       cost: offHand ? "bonus" : "action",
       range: weaponRange(srd, profile.reachTiles, profile.thrown, profile.ranged, t),
-      dice: `${damage} ${profile.damageType}`.trim(),
+      dice: dmgWithType(damage, profile.damageType, t),
       roll: t("table.hand.attack.toHit", { bonus: signed(profile.toHit) }),
       rules: notes.slice(0, 2).join(" "),
       description: notes.join(" "),
@@ -397,6 +397,31 @@ const BASICS: Array<{ id: BasicActionId; name: string; rules: string; target: Ha
 // The moves a feature lets a character make as the bonus action, by the
 // engine's own reading of the sheet (bonus-routes.ts, which take_action asks).
 const BONUS_MOVES: MoveAction[] = ["dash", "disengage", "hide", "dodge"];
+
+// The damage types a swing names, keyed to the reader's word (the same
+// words the FR book prints: Tranchants, Perforants, Contondants).
+const DTYPE_KEY: Record<string, string> = {
+  acid: "table.hand.dtype.acid",
+  bludgeoning: "table.hand.dtype.bludgeoning",
+  cold: "table.hand.dtype.cold",
+  fire: "table.hand.dtype.fire",
+  force: "table.hand.dtype.force",
+  lightning: "table.hand.dtype.lightning",
+  necrotic: "table.hand.dtype.necrotic",
+  piercing: "table.hand.dtype.piercing",
+  poison: "table.hand.dtype.poison",
+  psychic: "table.hand.dtype.psychic",
+  radiant: "table.hand.dtype.radiant",
+  slashing: "table.hand.dtype.slashing",
+  thunder: "table.hand.dtype.thunder",
+  healing: "table.hand.dtype.healing",
+};
+
+export function dmgWithType(damage: string, type: string, t: T): string {
+  if (!type) return damage.trim();
+  const key = DTYPE_KEY[type.trim().toLowerCase()];
+  return key ? `${damage} ${t(key)}` : `${damage} ${type}`.trim();
+}
 
 const BASIC_RULE_KEY: Record<BasicActionId, string> = {
   dodge: "table.hand.basic.dodge.rules",

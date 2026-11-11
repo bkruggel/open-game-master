@@ -5000,6 +5000,11 @@
     "key",
     3,
     "SRD weapon name as a proficiency key; condition labels (engine vocabulary)"
+   ],
+   [
+    "key",
+    1,
+    "a damage type word lowercased to key the reader's word (dmgWithType)"
    ]
   ],
   "lib/battlemap/intent.ts#str-list": [
@@ -19268,6 +19273,13 @@
     "key",
     1,
     "the save's three-letter code a hand card carries (engine vocabulary), read for its localized abbreviation (workshop.bestiary.stats.saveAbbr.*)"
+   ]
+  ],
+  "lib/battlemap/hand.ts#str-key": [
+   [
+    "key",
+    1,
+    "a damage type keyed by its engine word to the reader's word"
    ]
   ]
  },

@@ -15,6 +15,7 @@ const enT: T = (key, vars) => translate("en", key, vars);
 import { hasOpenHandTechnique, hurlProblem, OPEN_HAND_NOT_FLURRY } from "@/lib/dm/attack-choice-rules";
 import { inspirationProblem, strokeOfLuckProblem } from "@/lib/dm/attack-features";
 import { weaponAttackProfile, type AttackProfile } from "@/lib/dm/attack-logic";
+import { dmgWithType } from "@/lib/battlemap/hand";
 import { handsRuling } from "@/lib/dm/attack-rules";
 import { hasFastHands, kiLeft } from "@/lib/dm/bonus-routes";
 import { checkAttackOptions, martialArtsApplies, type AnyBonusAttack } from "@/lib/dm/pc-attack-options";
@@ -231,7 +232,7 @@ export function bonusStrikeCards(
       name,
       cost: "bonus",
       range: profile.ranged && srd?.rangeFt ? t("table.hand.range.feet", { feet: srd.rangeFt }) : t("table.hand.range.feet", { feet: profile.reachTiles * 5 }),
-      dice: `${profile.damageExpression} ${profile.damageType}`.trim(),
+      dice: dmgWithType(profile.damageExpression, profile.damageType, t),
       roll: t("table.hand.attack.toHit", { bonus: signed(profile.toHit) }),
       rules,
       resource: "",
