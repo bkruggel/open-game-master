@@ -13,7 +13,7 @@ import {
 } from "@/lib/battlemap/condition-glyphs";
 import { HEALTH_RING, healthLabel, type HealthWord } from "@/lib/battlemap/health-words";
 import { iconPath } from "@/lib/icons";
-import { variantUrl } from "@/lib/image-format";
+import { variantUrl } from "@/lib/image-variant-url";
 import { HostSvgImage } from "@/components/ui/HostSvgImage";
 import type { Footprint } from "@/lib/battlemap/footprint";
 import type { MapDrawing } from "@/lib/battlemap/scene";

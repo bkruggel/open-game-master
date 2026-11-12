@@ -417,7 +417,7 @@ export function MapEditor({
               selected.seed ? (
                 <span className="flex shrink-0 items-baseline gap-1.5">
                   <span className="font-display text-[8px] uppercase tracking-[0.16em] text-stone-600">{t("workshop.maps.seedWord")}</span>
-                  <span className="font-mono text-[10px] text-stone-300">{selected.seed}</span>
+                  <span className="font-code text-[10px] text-stone-300">{selected.seed}</span>
                 </span>
               ) : null
             }

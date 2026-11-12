@@ -112,6 +112,7 @@ export function MonsterRosterPicker({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t("dm.prep.searchMonsters")}
+          aria-label={t("dm.prep.searchMonstersAria")}
           className={cn(input, "w-full pl-7")}
         />
         {loading ? (

@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
-import { useState } from "react";
+import { Plus, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
 import { NumberStepper } from "@/components/ui/NumberStepper";
@@ -9,19 +8,22 @@ import { SectionHead } from "@/components/ui/SectionHead";
 import { Select } from "@/components/ui/Select";
 import { SelectField, TextArea, TextField, ToggleChips } from "@/app/workshop/homebrew/fields";
 import { ChipList } from "@/app/workshop/plugin/fields";
-import { MechGroup, list, sub } from "@/app/workshop/homebrew/MechGroup";
+import { list, sub } from "@/app/workshop/homebrew/MechGroup";
+import { ChoiceOptionList } from "@/app/workshop/homebrew/ChoiceOptionList";
 import { addChip, rowIcon } from "@/app/workshop/kit";
 import type { Data } from "@/app/workshop/homebrew/draft";
 import { LANGUAGES, TOOL_PROFICIENCIES } from "@/lib/workshop/pickers";
 import { SKILL_IDS } from "@/lib/homebrew/item-magic-schema";
 import { DAMAGE_TYPES } from "@/lib/dm/damage-logic";
 import { raceMechanics } from "@/lib/content/mechanics";
+import { readSpeciesSpells } from "@/lib/content/species-spells";
+import { SpeciesSpellFields } from "@/app/workshop/homebrew/SpeciesSpellFields";
+import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
 import { ABILITIES, type Ability } from "@/lib/schemas/abilities";
 import { useT } from "@/lib/locale";
 import {
   BREATH_AREAS,
   VARIANT_LIMITS,
-  uniqueVariantId,
   variantSummary,
   type BreathShape,
   type SpeciesVariantOption,
@@ -31,8 +33,8 @@ import {
 // ancestry, a lineage, a bloodline (issue #538). Hidden behind one button
 // until the author asks for it, since most species offer none. Each option
 // holds only what the table runs (scores, resistances, a breath, skills,
-// tools, languages) and the words its player reads; the save checks it
-// whole (src/lib/content/species-variants.ts).
+// tools, languages, spells from issue #833) and the words its player reads;
+// the save checks it whole (src/lib/content/species-variants.ts).
 
 type Props = { data: Data; set: (patch: Data) => void };
 
@@ -54,6 +56,7 @@ function readOption(raw: Data): SpeciesVariantOption {
     skills: list(raw.skills),
     tools: list(raw.tools),
     languages: list(raw.languages),
+    ...(readSpeciesSpells(raw.spells) ? { spells: readSpeciesSpells(raw.spells) } : {}),
     ...(breath.damageType
       ? { breath: { damageType: String(breath.damageType), save: (breath.save ?? "dex") as Ability, shape: (breath.shape ?? "cone") as BreathShape } }
       : {}),
@@ -61,7 +64,7 @@ function readOption(raw: Data): SpeciesVariantOption {
 }
 
 // A field emptied is left out, so the entry holds only what it gives.
-function withField(option: Data, key: string, value: unknown): Data {
+export function withField(option: Data, key: string, value: unknown): Data {
   const next: Data = { ...option, [key]: value };
   if (value === undefined || value === "" || (Array.isArray(value) && !value.length)) {
     delete next[key];
@@ -79,7 +82,10 @@ function Increases({ option, put }: { option: Data; put: (asi: Data | undefined)
     <div className="col-span-2 space-y-1.5 sm:col-span-4">
       <span className="text-[11px] text-stone-400">{t("workshop.homebrew.speciesChoice.asiTitle")}</span>
       {rows.map(([ability, value], index) => (
-        <div key={ability} className="live-in flex flex-wrap items-center gap-1.5">
+        // Keyed by place, not by ability: a row keyed by the ability it
+        // picks remounted with the pick, and the keyboard's focus, back on
+        // the picker as the menu closed, fell to the dialog instead.
+        <div key={index} className="live-in flex flex-wrap items-center gap-1.5">
           <span className="w-44">
             <Select<Ability>
               value={ability}
@@ -118,9 +124,10 @@ function Increases({ option, put }: { option: Data; put: (asi: Data | undefined)
   );
 }
 
-function OptionFields({ option, put }: { option: Data; put: (next: Data) => void }) {
+function OptionFields({ option, put, spells }: { option: Data; put: (next: Data) => void; spells: boolean }) {
   const t = useT();
   const field = (key: string, value: unknown) => put(withField(option, key, value));
+  const optionName = String(option.name ?? "").trim() || t("workshop.homebrew.speciesChoice.thisOption");
   const breath = sub(option.breath);
   const breathType = String(breath.damageType ?? "");
   const putBreath = (patch: Data) => {
@@ -187,15 +194,23 @@ function OptionFields({ option, put }: { option: Data; put: (next: Data) => void
           />
         </>
       ) : null}
+      {/* Spells the option gives (issue #833), on a host that keeps them. */}
+      {spells ? (
+        <SpeciesSpellFields
+          value={option.spells}
+          put={(next) => field("spells", next)}
+          title={t("workshop.homebrew.speciesChoice.spellTitle")}
+          hint={t("workshop.homebrew.speciesChoice.spellGivesHint")}
+          pickLabel={t("workshop.homebrew.speciesChoice.spellPickLabel", { name: optionName })}
+        />
+      ) : null}
     </>
   );
 }
 
 export function SpeciesChoiceFields({ data, set }: Props) {
   const t = useT();
-  const [newName, setNewName] = useState("");
-  // The option just added opens, ready for its grants.
-  const [fresh, setFresh] = useState<string | null>(null);
+  const spells = hostOffers(useCapabilities(), "speciesSpells");
   const raw = data.variants;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return (
@@ -213,23 +228,6 @@ export function SpeciesChoiceFields({ data, set }: Props) {
   const group = raw as Data;
   const options = Array.isArray(group.options) ? (group.options as Data[]) : [];
   const putGroup = (patch: Data) => set({ variants: { ...group, ...patch } });
-  const putOptions = (next: Data[]) => putGroup({ options: next });
-  const move = (index: number, by: number) => {
-    const next = [...options];
-    const [moved] = next.splice(index, 1);
-    next.splice(index + by, 0, moved);
-    putOptions(next);
-  };
-  const name = newName.trim();
-  const full = options.length >= L.options;
-  const add = () => {
-    if (!name || full) return;
-    // The id is made once, here, and a rename keeps it.
-    const id = uniqueVariantId(name, options.map((option) => String(option.id ?? "")).filter(Boolean));
-    putOptions([...options, { id, name }]);
-    setFresh(id);
-    setNewName("");
-  };
   const baseAsi = raceMechanics({ asi: data.asi }).asi;
   return (
     <div className="space-y-2 text-sm" data-species-choice>
@@ -244,57 +242,16 @@ export function SpeciesChoiceFields({ data, set }: Props) {
           hint={t("workshop.homebrew.speciesChoice.whatPlayerChoosesHint")}
         />
       </div>
-      <ul className="space-y-1.5" aria-label={t("workshop.homebrew.speciesChoice.optionsAria")}>
-        {options.map((option, index) => {
-          const optionName = String(option.name ?? "").trim() || t("workshop.homebrew.speciesChoice.optionN", { index: index + 1 });
-          const key = String(option.id ?? "") || `at-${index}`;
-          return (
-            <li key={key} className="live-in flex items-start gap-1" data-species-option={String(option.id ?? "")}>
-              <div className="min-w-0 grow">
-                <MechGroup title={optionName} summary={variantSummary(readOption(option))} open={fresh === option.id}>
-                  <OptionFields option={option} put={(next) => putOptions(options.map((entry, at) => (at === index ? next : entry)))} />
-                </MechGroup>
-              </div>
-              <button
-                type="button"
-                aria-label={t("workshop.homebrew.speciesChoice.moveUp", { name: optionName })}
-                disabled={index === 0}
-                onClick={() => move(index, -1)}
-                className={cn(ui.iconAction, rowIcon, "disabled:opacity-40")}
-              >
-                <ArrowUp className="size-4" />
-              </button>
-              <button
-                type="button"
-                aria-label={t("workshop.homebrew.speciesChoice.moveDown", { name: optionName })}
-                disabled={index === options.length - 1}
-                onClick={() => move(index, 1)}
-                className={cn(ui.iconAction, rowIcon, "disabled:opacity-40")}
-              >
-                <ArrowDown className="size-4" />
-              </button>
-              <button
-                type="button"
-                aria-label={t("workshop.bestiary.block.removeNamed", { name: optionName })}
-                onClick={() => putOptions(options.filter((_, at) => at !== index))}
-                className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}
-              >
-                <X className="size-4" />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="flex flex-wrap items-end gap-2">
-        <TextField label={t("workshop.homebrew.speciesChoice.newOptionName")} value={newName} onChange={setNewName} placeholder="Ashen" maxLength={L.name} className="min-w-48 grow sm:grow-0" />
-        <button type="button" onClick={add} disabled={!name || full} className={cn(ui.btnSmall, addChip)}>
-          <Plus className="size-3" /> {t("workshop.homebrew.speciesChoice.addOption")}
-        </button>
-        <span className="pb-2 text-[11px] text-stone-400" data-species-option-count>
-          {t("workshop.homebrew.speciesChoice.ofTotal", { count: options.length, total: L.options })}
-          {options.length < L.minOptions ? t("workshop.homebrew.speciesChoice.needsMin", { min: L.minOptions }) : ""}
-        </span>
-      </div>
+      {/* The option rows a subclass's choice shares (ChoiceOptionList.tsx). */}
+      <ChoiceOptionList
+        options={options}
+        putOptions={(next) => putGroup({ options: next })}
+        renderFields={(option, put) => <OptionFields option={option} spells={spells} put={put} />}
+        summary={(option) => variantSummary(readOption(option))}
+        attr="species"
+        limits={{ options: L.options, minOptions: L.minOptions, name: L.name }}
+        placeholder="Ashen"
+      />
       {options.length ? (
         <div className="space-y-0.5" data-species-choice-preview>
           <span className="text-[11px] text-stone-400">{t("workshop.homebrew.speciesChoice.previewLabel")}</span>

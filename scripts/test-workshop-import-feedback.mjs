@@ -250,7 +250,11 @@ await test("F08: the Ruleset Library no longer offers Homebrew ticks, and says w
   const library = fs.readFileSync(new URL("../src/app/workshop/RulesetLibrary.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(library, /Homebrew this ruleset ships/);
   assert.doesNotMatch(library, /toggleHomebrew/);
-  assert.match(library, /A ruleset carries variant rules and house rules, not Homebrew/);
+  // The note reads through the dictionary (workshop.rules.homebrewNote), the
+  // i18n pass; the sentence it pins lives in the English dictionary now.
+  assert.match(library, /t\("workshop\.rules\.homebrewNote"\)/);
+  const en = fs.readFileSync(new URL("../src/lib/messages/en.ts", import.meta.url), "utf8");
+  assert.match(en, /A ruleset carries variant rules and house rules, not Homebrew/);
 });
 
 console.log(`workshop import feedback: ${passed} checks passed.`);

@@ -42,7 +42,9 @@ import {
   recordRelationshipEvent,
   resolveActor,
   resolveSubject,
+  type Subject,
 } from "@/lib/dm/relationship-subject";
+import { refusedLeavesNothing } from "@/lib/dm/refusal-rollback";
 import { handleNpcAdvance } from "@/lib/dm/npc-advance";
 import { conscienceNotes, landBeat, landBystanders, landOnVictim, settleUnrecordedDeeds, type DeedOptions, type Landing } from "@/lib/dm/beat-landing";
 import { DEED_KINDS, DEED_SEVERITIES, deedSeverity, doneToDelta, isDeedKind, valueLabel, type DeedKind } from "@/lib/dm/companion-values-logic";
@@ -52,10 +54,10 @@ import { getActiveEncounter } from "@/lib/db/encounters";
 import { actNote, outwardApproval } from "@/lib/dm/scheme-logic";
 import { revealAct, runningAct, schemesPossible, schemeTool } from "@/lib/dm/scheme-tools";
 import type { DmTurn } from "@/lib/db/dm-turns";
-import { rollExpression } from "@/lib/dice";
 import { publishWithSeq } from "@/lib/events";
 import { resolveRollExpression, unknownSheetRef } from "@/lib/dm/rolls";
-import { rollExtrasFor, spendRollCarriers } from "@/lib/dm/forced-save";
+import { heldDieWaits, rollExtrasFor, spendRollCarriers } from "@/lib/dm/forced-save";
+import { rollCharacterD20 } from "@/lib/dm/character-roll";
 import type { RollArgs } from "@/lib/dm/rolls";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { toolError, type ToolResult } from "@/lib/dm/tool-errors";
@@ -65,6 +67,13 @@ import { heroFell } from "@/lib/characters/fallen-logic";
 import { listSheets } from "@/lib/db/sheets";
 import { NOTE_LIMIT_WORDS, parseToolArguments, relationshipNote } from "@/lib/dm/relationship-note";
 import { heldStepError, stepTakenThisExchange } from "@/lib/dm/step-exchange";
+import { holdForTheFight, settleHeldStep } from "@/lib/dm/romance-held";
+import { exclusiveBetween, landPartnerReactions, momentText, partnerResult } from "@/lib/dm/romance-exclusive";
+import { exclusiveRefusal } from "@/lib/dm/romance-exclusive-logic";
+import { amendsNote } from "@/lib/dm/amends-logic";
+import { recordRomanceStep, romanceStepTooSoon } from "@/lib/dm/romance-scenes";
+import { settleMoveNotes } from "@/lib/dm/story-moves";
+import { fittedText } from "@/lib/dm/fitted-text";
 
 export { publishRelationshipsUpdated };
 
@@ -254,7 +263,7 @@ const beatSchema = z.object({
   objected: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
   severity: z.enum(DEED_SEVERITIES).optional(),
   faction: z.string().trim().max(80).optional(),
-  demand: z.string().trim().max(160).optional(),
+  demand: fittedText(160).optional(),
   deadlineHours: z.number().int().min(1).max(MAX_DEADLINE_HOURS).optional(),
 });
 
@@ -273,7 +282,7 @@ export function handleRelationshipBeat(
     return read;
   }
   const args = read.args;
-  const spec = beatSpec(args.beat);
+  const spec = (RELATIONSHIP_BEAT_NAMES as readonly string[]).includes(args.beat) ? beatSpec(args.beat) : null;
   if (!spec) {
     return {
       error: `Unknown beat "${args.beat}". Use one of: ${RELATIONSHIP_BEAT_NAMES.join(", ")}.`,
@@ -330,19 +339,29 @@ export function handleRelationshipBeat(
   if (spec.skill) {
     // Held carriers and lasting effects ride the check, and the carrier is
     // spent by it.
+    // An NPC keeping up an act takes a charm as the warmth they show would
+    // (src/lib/dm/scheme-logic.ts): every outward rule reads the act.
+    const target = beatDc(outwardApproval(relationship));
+    const waits = heldDieWaits(sheet, target);
     const resolved = resolveRollExpression(
       { kind: "skill_check", skill: spec.skill } as unknown as RollArgs,
       sheet,
-      rollExtrasFor(campaign, sheet, "skill_check"),
+      { ...rollExtrasFor(campaign, sheet, "skill_check"), keepHeldDie: waits },
     );
     if ("error" in resolved || "autoFail" in resolved) {
       return "error" in resolved ? resolved : { error: `${sheet.name} cannot make that check.`, refused: "rules" };
     }
     spendRollCarriers(campaign.id, sheet.id, resolved.spendInspiration);
-    // An NPC keeping up an act takes a charm as the warmth they show would
-    // (src/lib/dm/scheme-logic.ts): every outward rule reads the act.
-    dc = beatDc(outwardApproval(relationship));
-    const rolled = rollExpression(resolved.expression);
+    dc = target;
+    // The player's own d20 (src/lib/dm/character-roll.ts): on physical dice
+    // they roll it, and a roll that falls short waits on what they hold.
+    const rolled = rollCharacterD20(campaign, sheet, {
+      kind: "skill_check",
+      expression: resolved.expression,
+      detail: `${sheet.name}: ${spec.skill} toward ${subject.name}`,
+      dc: target,
+      settleHeldDie: waits,
+    });
     rollTotal = rolled.total;
     const roll = insertRoll({
       campaignId: campaign.id,
@@ -388,7 +407,13 @@ export function handleRelationshipBeat(
   }
   const subjectHarmed = !ended && victimKeys.has(textKey(subject.name)) ? landOnVictim(campaign, sheet, subject, relationship, beat as DeedKind, args.note, deed!) : null;
   const landing = ended ? null : (subjectHarmed ?? landBeat(campaign, sheet, subject, relationship, beat, outcome, args.note, deed));
-  const landings = [...(landing ? [landing] : []), ...(others?.landed ?? []), ...(harmed?.landed ?? [])];
+  // A romantic move toward someone else is a deed a partner who saw it
+  // judges, unless both of them are open (issue 642).
+  const partners =
+    landing && spec.track === "romantic"
+      ? landPartnerReactions(campaign, sheet, subject.name, { witnesses: args.witnesses, narration: momentText(campaign.id, turn), sheets })
+      : null;
+  const landings = [...(landing ? [landing] : []), ...(others?.landed ?? []), ...(harmed?.landed ?? []), ...(partners?.landings ?? [])];
   // The party's own who were there (issue 563): those who stood by bear a
   // share of the cost, those who objected none.
   const objectors = deedKind ? partyCharactersNamed(args.objected ?? [], sheets, sheet) : [];
@@ -397,6 +422,7 @@ export function handleRelationshipBeat(
   if (deedKind) {
     settleUnrecordedDeeds(campaign.id, sheet);
   }
+  settleMoveNotes(campaign.id, sheet.name, subject.name);
   publishRelationshipsUpdated(campaign.id);
   // A composed companion the deed left uneasy keeps it in, and the party
   // reads them now (issue 615): whoever's Insight beats it is told alone.
@@ -406,8 +432,10 @@ export function handleRelationshipBeat(
     subjectHarmed
       ? victimNote(sheet.name, subjectHarmed)
       : landing
-        ? buildBeatNote(sheet.name, subject.name, spec.label, landing.delta, landing.alignment, landing.updated, outcome)
+        ? ((beat === "amends" ? amendsNote(subject.name, sheet.name, landing.before.owed) : null) ??
+          buildBeatNote(sheet.name, subject.name, spec.label, landing.delta, landing.alignment, landing.updated, outcome))
         : `${sheet.name} and ${subject.name} are finished: the deed changes nothing between them, but others saw it.`,
+    ...(partners?.notes ?? []),
     ...(harmed?.landed.map((victim) => victimNote(sheet.name, victim)) ?? []),
     ...(others?.landed.map((other) => `${other.subject.name} saw it too: ${TIER_LABEL[friendshipTier(other.updated.approval)]} toward ${sheet.name} now.`) ?? []),
     ...shares,
@@ -447,6 +475,7 @@ export function handleRelationshipBeat(
           })),
         }
       : {}),
+    ...partnerResult(partners?.landings ?? []),
     note: notes.join(" "),
     ...(landing ? actResult(subject.name, sheet.name, landing.updated) : {}),
   };
@@ -702,6 +731,27 @@ export function handleRomanceAdvance(
   if ("error" in subject) {
     return subject;
   }
+  // The step opens the bond its rules read, so a refusal rolls that back
+  // (refusal-rollback.ts); a held step the refused one answered stays
+  // answered.
+  let answered: string | null = null;
+  const out = refusedLeavesNothing(() => romanceStep(campaign, turn, args, to, sheet, subject, sheets, (id) => (answered = id)));
+  if ("error" in out && answered) {
+    settleHeldStep(campaign.id, answered, to);
+  }
+  return out;
+}
+
+function romanceStep(
+  campaign: Campaign,
+  turn: DmTurn,
+  args: z.infer<typeof advanceSchema>,
+  to: NonNullable<z.infer<typeof advanceSchema>["to"]>,
+  sheet: CharacterSheet,
+  subject: Subject,
+  sheets: CharacterSheet[],
+  onAnswered: (relationshipId: string) => void,
+): ToolResult {
   const relationship = openLedger(campaign, sheet, subject);
   if (relationship.status === "parted") {
     return {
@@ -709,12 +759,28 @@ export function handleRomanceAdvance(
       refused: "rules",
     };
   }
+  // Romance is exclusive by default (issue 642): no romance starts or goes
+  // on beside another, either way, unless everyone in it is open. Asked
+  // first, so a step it refuses is not held through a fight to be refused
+  // after it.
+  const exclusive = exclusiveBetween(campaign.id, sheet.id, subject.name, { sheets });
+  if (exclusive) {
+    return { error: exclusiveRefusal(exclusive), refused: "rules" };
+  }
+  // Asked mid-fight, the step is held for an answer after it, never rolled
+  // there nor lost (issue 640, src/lib/dm/romance-held.ts).
+  if (getActiveEncounter(campaign.id)) {
+    return holdForTheFight(campaign, turn, sheet, subject.name, relationship, to, args.note);
+  }
   // One step per exchange, exactly like an NPC's attitude: no ratcheting a
   // stranger to married inside a single reply, and no asking a refusal
   // again at the console until the die says yes (issue 638).
   if (stepTakenThisExchange(campaign.id, relationship.lastShiftTurn, turn)) {
     return { error: heldStepError(sheet.name, subject.name, turn), retry: true };
   }
+  // A step held in a fight is answered now, whatever the answer.
+  settleHeldStep(campaign.id, relationship.id, to);
+  onAnswered(relationship.id);
   // An act is played to the letter: the step reads the warmth shown.
   const shown = outwardApproval(relationship);
   const act = runningAct(relationship);
@@ -735,7 +801,14 @@ export function handleRomanceAdvance(
       ...actResult(subject.name, sheet.name, relationship),
     };
   }
+  // A rung needs some story time after the last (issue 643).
+  const tooSoon = romanceStepTooSoon(campaign, relationship, to, turn);
+  if (tooSoon) {
+    return { ...tooSoon, romance: relationship.romance, ...actResult(subject.name, sheet.name, relationship) };
+  }
 
+  // The ask is answered, either way (issue 641's note, story-moves.ts).
+  settleMoveNotes(campaign.id, sheet.name, subject.name);
   const warmth = subject.personality?.warmth ?? 0;
   const consent = consentCheck(
     shown,
@@ -786,6 +859,7 @@ export function handleRomanceAdvance(
       }),
     }) ?? relationship;
 
+  recordRomanceStep(campaign.id, relationship.id);
   recordMilestone(campaign, sheet, subject, to, args.note);
   publishRelationshipsUpdated(campaign.id);
 
@@ -965,7 +1039,9 @@ export function relationshipRosterForPrompt(
       (relationship) =>
         relationship.status !== "ended" &&
         !fallen.has(relationship.characterId) &&
-        (relationship.approval !== 0 || relationship.romance !== "none"),
+        // A bond at Neutral with a history still says something: someone the
+        // party knew before the story, at "acquainted" (issue 731).
+        (relationship.approval !== 0 || relationship.romance !== "none" || relationship.memories.length > 0),
     )
     .slice(0, 14)
     .map((relationship) => relationshipFragment(relationship, options.leaving));

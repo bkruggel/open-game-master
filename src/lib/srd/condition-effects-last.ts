@@ -108,7 +108,7 @@ export const LAST_CONDITION_EFFECTS: ConditionEffectRow[] = [
     // nothing read the condition, and a turned zombie still struck).
     id: "turned",
     match: ["turned"],
-    summary: "Turned (Turn Undead): it runs as far from the cleric as it can and never willingly within 30 feet of them; its action is only a Dash, an escape, or a Dodge when cornered; no reactions. Any damage ends it.",
+    summary: "Turned: it runs as far from whoever turned it as it can and never willingly within 30 feet of them; its action is only a Dash, an escape, or a Dodge when cornered; no reactions. Any damage ends it.",
     noAttacks: true,
     noCasting: true,
     noReactions: true,
@@ -134,6 +134,19 @@ export const LAST_CONDITION_EFFECTS: ConditionEffectRow[] = [
     match: ["jump (spell)", "jumping"],
     summary: "Jump: their jump distance is tripled.",
     jumpMultiplier: 3,
+  },
+  // SRD 5.1, Longer Casting Times: a spell of a minute or more takes the
+  // caster's action on each turn of it (src/lib/dm/long-casting-logic.ts).
+  {
+    id: "casting",
+    match: ["casting"],
+    summary: "Casting a spell of a minute or more: their action on each of their turns goes on it, and their concentration holds it. If the concentration breaks, the spell fails and no slot is spent; when the rounds run out it takes effect as their turn starts.",
+    holdsAction: true,
+  },
+  {
+    id: "casting_complete",
+    match: ["casting complete"],
+    summary: "Their casting is complete: the spell is resolved now with its tool, which spends its slot and no action; unresolved by the end of their turn, it is lost and nothing is spent.",
   },
   {
     id: "wind_walk",

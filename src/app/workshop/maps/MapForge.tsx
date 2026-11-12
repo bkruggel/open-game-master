@@ -96,7 +96,7 @@ function HistoryTile({
         className="block w-full bg-stone-900 bg-cover"
         style={{ aspectRatio: `${entry.map.width} / ${entry.map.height}`, backgroundImage: thumb ? `url("${thumb}")` : undefined }}
       />
-      <span className="block truncate px-1 py-0.5 font-mono text-[8px] text-stone-400">{entry.roll.seed}</span>
+      <span className="block truncate px-1 py-0.5 font-code text-[8px] text-stone-400">{entry.roll.seed}</span>
     </button>
   );
 }
@@ -215,14 +215,14 @@ export function MapForge({
         {/* Controls */}
         <div className="panel space-y-3 rounded-xl p-4">
           {showHeading ? (
-            <p className="flex items-center gap-1.5 font-display text-[10px] uppercase tracking-[0.2em] text-amber-400/90">
+            <p className="flex items-center gap-1.5 font-display text-[10px] uppercase tracking-[0.14em] text-amber-400/90">
               <Library className="size-3.5" />
               {library ? t("workshop.maps.forge.drawerTitle") : t("workshop.maps.forge.boardTitle")}
             </p>
           ) : null}
           {library ? (
             <label className="block space-y-1">
-              <span className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("workshop.maps.forge.nameIt")}</span>
+              <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.maps.forge.nameIt")}</span>
               <input
                 value={name}
                 maxLength={80}
@@ -234,7 +234,7 @@ export function MapForge({
           ) : null}
           <div className="block space-y-1">
             <span className="flex items-baseline justify-between">
-              <span className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("workshop.maps.kindOfPlace")}</span>
+              <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.maps.kindOfPlace")}</span>
               <span className="font-mono text-[9px] text-stone-600">{t("workshop.maps.forge.steersGenerator")}</span>
             </span>
             <Select<string>
@@ -253,7 +253,7 @@ export function MapForge({
               settings.scene ? "border-amber-500/35 bg-amber-400/[0.06]" : "border-stone-700/60 bg-stone-950/40",
             )}
           >
-            <p className="font-display text-[9px] uppercase tracking-[0.18em] text-amber-400/80">{t("workshop.maps.forge.whatDecided")}</p>
+            <p className="font-display text-[9px] uppercase tracking-[0.14em] text-amber-400/80">{t("workshop.maps.forge.whatDecided")}</p>
             <div className="flex flex-wrap gap-1.5">
               <FactChip name={t("workshop.maps.theme")} claim={theme}>
                 {themeWord(theme, t)}
@@ -266,7 +266,7 @@ export function MapForge({
           </div>
 
           <div className="space-y-1.5">
-            <p className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("workshop.maps.orSayOutright")}</p>
+            <p className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.maps.orSayOutright")}</p>
             <div data-pill-group="" className="grid grid-cols-3 gap-1.5">
               {MAP_THEMES.map((option) => (
                 <button data-on={settings.theme === option ? "" : undefined}
@@ -300,7 +300,7 @@ export function MapForge({
           </div>
 
           <div className="space-y-1">
-            <p className="flex items-baseline justify-between font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">
+            <p className="flex items-baseline justify-between font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">
               {t("workshop.maps.forge.size")}
               <span className="font-mono normal-case tracking-normal text-stone-400">
                 {sizeNow.width * TILE_FEET} × {sizeNow.height * TILE_FEET} ft
@@ -336,7 +336,7 @@ export function MapForge({
 
           {library ? (
             <label className="block space-y-1">
-              <span className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("workshop.maps.forge.paintedAs")}</span>
+              <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.maps.forge.paintedAs")}</span>
               <Select<string>
                 value={skin.id}
                 label={t("workshop.maps.forge.skin")}

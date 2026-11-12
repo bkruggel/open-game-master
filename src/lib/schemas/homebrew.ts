@@ -33,6 +33,22 @@ export const magicItemEffectSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("save_bonus"), amount: z.number() }),
   z.object({ kind: z.literal("set_ability"), ability: abilityEnum, score: z.number() }),
   z.object({ kind: z.literal("resistance"), types: z.array(z.string()) }),
+  z.object({ kind: z.literal("increase_ability"), ability: abilityEnum, amount: z.number(), max: z.number() }),
+  z.object({ kind: z.literal("spell_attack_bonus"), amount: z.union([z.number(), z.literal("named")]), classes: z.array(z.string()).optional() }),
+  z.object({ kind: z.literal("spell_dc_bonus"), amount: z.number() }),
+  z.object({ kind: z.literal("spell_save_advantage") }),
+  z.object({ kind: z.literal("immunity"), types: z.array(z.string()) }),
+  z.object({ kind: z.literal("condition_immunity"), conditions: z.array(z.string()) }),
+  z.object({ kind: z.literal("speed"), mode: z.enum(["fly", "swim", "climb"]), feet: z.union([z.number(), z.literal("walk")]) }),
+  z.object({
+    kind: z.literal("weapon_rider"),
+    weapons: z.array(z.string()),
+    ranged: z.boolean().optional(),
+    attack: z.number().optional(),
+    damage: z.number().optional(),
+    proficient: z.boolean().optional(),
+    unarmed: z.object({ die: z.string(), damageType: z.string() }).optional(),
+  }),
 ]);
 
 // The same shapes as SrdWeapon and SrdArmor (src/lib/srd/weapons.ts,
@@ -107,7 +123,9 @@ export const homebrewDataSchema = z
     // spell hints
     level: z.number().int().min(0).max(9).optional(),
     school: z.string().trim().max(40).optional(),
-    classes: z.array(z.string().trim().max(40)).max(20).optional(),
+    // Class ids: an SRD class's ("wizard") or a workshop class's
+    // ("homebrew-" and its 36-letter entry id, issue #833), which 40 cut.
+    classes: z.array(z.string().trim().max(60)).max(20).optional(),
     ritual: z.boolean().optional(),
     concentration: z.boolean().optional(),
     // item hints

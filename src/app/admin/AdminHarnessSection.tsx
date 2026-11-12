@@ -19,6 +19,7 @@ import { agentSpeedEligibility } from "@/lib/speed-tier";
 import type { SpeedChannel, SpeedNote } from "@/lib/speed-status";
 import { effortChoices, utilityEffortChoices, withOfferedEffort } from "@/lib/harness/effort-choices";
 import type { HarnessConfig, HarnessId, HarnessStatus } from "@/lib/harness/types";
+import { useRecheckOnReturn } from "@/app/admin/recheck-on-return";
 
 type Payload = {
   statuses: HarnessStatus[];
@@ -171,6 +172,9 @@ export function AdminHarnessSection({
       live = false;
     };
   }, [phone]);
+
+  // The server asks the saved program again on every load.
+  useRecheckOnReturn(useCallback(() => void load(false), [load]));
 
   if (!data || !draft) {
     return (

@@ -108,9 +108,15 @@ export function speciesNameFor(source: { race: string; raceLabel?: string | null
 // as a card's second line reads. In French the official names
 // (« Humain », « Guerrier 3 / Roublard 2 ») read when the maps carry them.
 export function speciesAndClassWords(
-  source: ClassWordsSource & { race: string; raceLabel?: string | null },
+  source: ClassWordsSource & { race: string; raceLabel?: string | null; summon?: { form: string; creatureType: string; spell: string } | null },
   locale: Locale = "en",
 ): string {
+  // A summoned creature is its form and the kind it was made (Find Steed's
+  // fey warhorse), not the placeholder race and class its sheet carries.
+  // The form and its kind are the content's own words; they keep them.
+  if (source.summon) {
+    return `${source.summon.form}${source.summon.creatureType ? `, ${source.summon.creatureType}` : ""}${source.summon.spell ? ` (${source.summon.spell})` : ""}`;
+  }
   return [speciesNameFor(source, locale), classLevelWords(source, (id) => classDisplayNameFor(id, locale))]
     .filter(Boolean)
     .join(" ");

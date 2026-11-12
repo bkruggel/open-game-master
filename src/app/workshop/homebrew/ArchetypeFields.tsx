@@ -5,7 +5,7 @@ import { subclassLevelFor } from "@/lib/srd/features";
 import { Check, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { ContentPick } from "@/components/ui/ContentPick";
+import { SpellSearch } from "@/app/workshop/homebrew/SpellListFields";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { SelectField } from "@/app/workshop/homebrew/fields";
@@ -14,6 +14,7 @@ import { engineRunsFeature, subclassFeatureCatalog, type CatalogFeature } from "
 import { addChip, rowIcon } from "@/app/workshop/kit";
 import type { Data } from "@/app/workshop/homebrew/draft";
 import { textKey } from "@/lib/language/text-logic";
+import { useT } from "@/lib/locale";
 import {
   THIRD_CASTER_PROFILES,
   defaultThirdCasterProfile,
@@ -23,7 +24,8 @@ import {
 import { subclassMayCast } from "@/lib/srd/features";
 import { FEATURE_LIMITS, SUBCLASS_SPELLS_PER_LEVEL } from "@/lib/homebrew/class-data";
 import { featureCounts } from "@/lib/homebrew/limits";
-import { useT } from "@/lib/locale";
+import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
+import { SubclassChoiceFields } from "@/app/workshop/homebrew/SubclassChoiceFields";
 
 // A subclass: its class, its features by level and the always-prepared
 // spells it hands out (a domain's, an oath's). A character who takes it is
@@ -94,11 +96,20 @@ function BorrowFeature({ onPick, taken, full }: { onPick: (feature: CatalogFeatu
   );
 }
 
+// Spells by the class level they arrive at: the always-prepared ones a
+// subclass hands out (`spells`), or the ones it adds to what its class may
+// learn or prepare (`expanded`, a warlock patron's list, issue #833).
+const SPELL_SECTIONS = {
+  spells: { title: "workshop.homebrew.archetype.alwaysPrepared", find: "workshop.homebrew.archetype.findSpell" },
+  expanded: { title: "workshop.homebrew.archetype.expandedTitle", find: "workshop.homebrew.archetype.expandedFind" },
+} as const;
+
 function SpellLists({
   data,
   set,
   castsNothing,
   classLabel,
+  field = "spells",
 }: {
   data: Data;
   set: (patch: Data) => void;
@@ -106,19 +117,20 @@ function SpellLists({
   // always-prepared spells have nothing to be cast with.
   castsNothing: boolean;
   classLabel: string;
+  field?: keyof typeof SPELL_SECTIONS;
 }) {
   const t = useT();
-  const spells = (data.spells ?? {}) as Record<string, string[]>;
+  const spells = (data[field] ?? {}) as Record<string, string[]>;
   const rows = Object.entries(spells).sort(([a], [b]) => Number(a) - Number(b));
-  const put = (next: Record<string, string[]>) => set({ spells: Object.keys(next).length ? next : undefined });
+  const put = (next: Record<string, string[]>) => set({ [field]: Object.keys(next).length ? next : undefined });
   const [level, setLevel] = useState(3);
   return (
-    <div className="space-y-1.5">
-      <SectionHead title={t("workshop.homebrew.archetype.alwaysPrepared")} glyph="rest-spell-slot" className="mb-1" />
+    <div className="space-y-1.5" data-testid={`subclass-${field}`}>
+      <SectionHead title={t(SPELL_SECTIONS[field].title)} glyph="rest-spell-slot" className="mb-1" />
       {rows.map(([at, names]) => (
         <div key={at} className="live-in flex flex-wrap items-center gap-1.5 text-xs">
           <span className="w-28 shrink-0 text-stone-400">
-            {t("workshop.homebrew.archetype.levelCount", { level: at, count: names.length, total: SUBCLASS_SPELLS_PER_LEVEL })}
+            {t("workshop.homebrew.archetype.levelCount", { level: Number(at), count: names.length, total: SUBCLASS_SPELLS_PER_LEVEL })}
           </span>
           {names.map((name) => (
             <span key={name} className="inline-flex items-center gap-1 rounded-md border border-stone-700 px-1.5 py-0.5 text-stone-200">
@@ -147,11 +159,11 @@ function SpellLists({
           <NumberStepper size="sm" label={t("workshop.homebrew.archetype.classLevelLabel")} min={1} max={20} value={level} onChange={setLevel} />
         </span>
         {(spells[String(level)] ?? []).length < SUBCLASS_SPELLS_PER_LEVEL ? (
-          <ContentPick
-            kind="spells"
-            label={t("workshop.homebrew.archetype.findSpell")}
+          <SpellSearch
+            label={t(SPELL_SECTIONS[field].find)}
             placeholder={t("workshop.homebrew.archetype.findSpellPlaceholder")}
             className="min-w-48 flex-1"
+            exclude={new Set((spells[String(level)] ?? []).map(textKey))}
             onPick={(entry) => {
               const list = spells[String(level)] ?? [];
               if (list.some((name) => textKey(name) === textKey(entry.name))) return;
@@ -167,6 +179,10 @@ function SpellLists({
       {castsNothing && rows.length ? (
         <p className="reveal text-[11px] text-amber-300/90">
           {t("workshop.homebrew.archetype.castsNothingWarn", { class: classLabel })}
+        </p>
+      ) : field === "expanded" ? (
+        <p className="text-[11px] text-stone-500">
+          {t("workshop.homebrew.archetype.expandedHint", { class: classLabel })}
         </p>
       ) : (
         <p className="text-[11px] text-stone-500">{t("workshop.homebrew.archetype.freePreparedHint")}</p>
@@ -219,6 +235,8 @@ export function ArchetypeFields({
         ? "none"
         : (featureProfile ?? "none");
   const rules = THIRD_CASTER_PROFILES.find((profile) => profile.id === casting);
+  const offersChoices = hostOffers(useCapabilities(), "subclassChoices");
+  const offersExpanded = hostOffers(useCapabilities(), "customSpellLists") || Boolean(data.expanded);
 
   return (
     <div className="space-y-3">
@@ -326,6 +344,15 @@ export function ArchetypeFields({
         </p>
       </div>
       <SpellLists data={data} set={set} castsNothing={casting === "none" && !casterClass(classId)} classLabel={classLabel} />
+      {/* A subclass that casts may widen its class's list (issue #833); an
+          older host drops `expanded` unread (src/lib/capabilities.ts). */}
+      {offersExpanded && (casting !== "none" || casterClass(classId)) ? (
+        <SpellLists data={data} set={set} castsNothing={false} classLabel={classLabel} field="expanded" />
+      ) : null}
+      {/* What its player picks at a level: a bloodline, an element (issue
+          #833). An older host drops the field on save, so it waits for the
+          flag. */}
+      {offersChoices ? <SubclassChoiceFields data={data} set={set} /> : null}
     </div>
   );
 }

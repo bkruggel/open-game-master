@@ -11,21 +11,28 @@
 //     against the caster until the END of that turn ("undead dread (chill touch)").
 //   - Vampiric Touch: the caster regains half the necrotic damage dealt.
 //   - Acid Arrow: half the initial damage on a miss.
+//   - Contagion: the target is poisoned, and its CON saves at the end of each
+//     of its turns are counted (src/lib/dm/spell-turn-end.ts).
 // The conditions are rows of src/lib/srd/condition-effects.ts, so the
 // engines that read conditions (attack rolls, reactions, speed) hold them.
 // A "until the start of" effect is untilTurnOf; a "before the end of" one is
 // untilTurnEndOf, ended as that turn ends (src/lib/dm/turn-end.ts).
 
+import { regainHitPoints } from "@/lib/dm/regain";
 import { getFoe } from "@/lib/dm/sheet-foe";
-import { allocateSeq, type Campaign } from "@/lib/db/campaigns";
+import type { Campaign } from "@/lib/db/campaigns";
 import { patchEnemyConditions } from "@/lib/db/encounters";
-import { insertSheetAudit } from "@/lib/db/sheet-audit";
-import { getSheetById, patchSheet } from "@/lib/db/sheets";
-import { publishPersisted } from "@/lib/events";
-import { effectiveMaxHp, type ConditionMetaMap } from "@/lib/dm/condition-logic";
+import { getSheetById } from "@/lib/db/sheets";
+import type { ConditionMetaMap } from "@/lib/dm/condition-logic";
 import { publishEncounter } from "@/lib/dm/enemy-damage";
 import { untilTurnEnd } from "@/lib/dm/turn-end";
 import { layEnfeeblement } from "@/lib/dm/spell-retort";
+import { connectBeam } from "@/lib/dm/witch-bolt";
+import { layAreaConditions } from "@/lib/dm/spell-riders";
+import { spellAuthorsFor } from "@/lib/dm/spell-authors";
+import { spellMechanicsFor } from "@/lib/content";
+import { spellSaveDcFor } from "@/lib/srd";
+import { ABILITY_NAMES } from "@/lib/srd/legality/types";
 
 // Chill Touch's hold on an undead's attacks against the caster.
 export const CHILL_TOUCH_DREAD = "undead dread (chill touch)";
@@ -42,6 +49,11 @@ type SpellAttackRider = {
   // The hit lays a condition the target shakes off with a save at the end of
   // each of its turns (Ray of Enfeeblement), against the caster's DC.
   saveEnds?: { condition: string; ability: "con" };
+  // The hit connects a beam, and a miss ends the spell (src/lib/dm/witch-bolt.ts).
+  beam?: string;
+  // The hit lays the spell row's own condition with its end-of-turn mark
+  // (Contagion's poison and its count of saves), named by the spell.
+  rowCondition?: string;
 };
 
 const RIDERS: SpellAttackRider[] = [
@@ -54,6 +66,8 @@ const RIDERS: SpellAttackRider[] = [
   // (src/lib/dm/spell-turn-end.ts).
   { match: /^(?:melf's )?acid arrow$/i, halfOnMiss: true, onHit: { condition: "acid arrow", until: "target", at: "end" } },
   { match: /^ray of enfeeblement$/i, saveEnds: { condition: "enfeebled", ability: "con" } },
+  { match: /^contagion$/i, rowCondition: "Contagion" },
+  { match: /^witch bolt$/i, beam: "Witch Bolt" },
 ];
 
 export function spellAttackRider(spell: string | undefined): SpellAttackRider | null {
@@ -72,8 +86,14 @@ export function applySpellHitCondition(
   enemyId: string,
   casterId: string,
 ): string | null {
+  if (rider.beam) {
+    return connectBeam(campaign, enemyId, casterId, rider.beam);
+  }
   if (rider.saveEnds) {
     return layEnfeeblement(campaign, rider.saveEnds, enemyId, casterId);
+  }
+  if (rider.rowCondition) {
+    return layRowCondition(campaign, rider.rowCondition, enemyId, casterId);
   }
   if (!rider.onHit) {
     return null;
@@ -100,6 +120,26 @@ export function applySpellHitCondition(
   return `${enemy.displayName} is marked by the spell: ${condition}`;
 }
 
+// SRD 5.1 contagion: "On a hit, the target is poisoned." The poison holds
+// the spell's save and its end-of-turn mark, as a failed save against Flesh
+// to Stone holds its restraint (spell-riders.ts layAreaConditions).
+function layRowCondition(campaign: Campaign, spell: string, enemyId: string, casterId: string): string | null {
+  const resolved = spellMechanicsFor({ spell, userIds: spellAuthorsFor(campaign) });
+  const condition = resolved?.mech.condition;
+  const caster = getSheetById(casterId);
+  const enemy = getFoe(enemyId);
+  if (!resolved?.mech.save || !condition || !caster || !enemy || enemy.status !== "alive") {
+    return null;
+  }
+  const save = { ability: resolved.mech.save, dc: spellSaveDcFor(caster, resolved.name) ?? 13 };
+  const landed = layAreaConditions({ spell: resolved.name, caster, slotLevel: null, mech: resolved.mech, conditions: [condition.name] }, enemyId, save);
+  if (!landed.length) {
+    return null;
+  }
+  publishEncounter(campaign.id);
+  return `${enemy.displayName} is ${landed.join(" and ")} by ${resolved.name}: a ${ABILITY_NAMES[save.ability]} save (DC ${save.dc}) at the end of each of its turns, three successes end it, three failures bring the disease`;
+}
+
 // Vampiric Touch: the caster regains half the damage the hit dealt.
 export function healCasterHalf(campaign: Campaign, casterId: string, dealt: number, spell: string): string | null {
   const sheet = getSheetById(casterId);
@@ -107,26 +147,11 @@ export function healCasterHalf(campaign: Campaign, casterId: string, dealt: numb
   if (!sheet || amount <= 0 || sheet.currentHp <= 0) {
     return null;
   }
-  const currentHp = Math.min(effectiveMaxHp(sheet), sheet.currentHp + amount);
-  if (currentHp === sheet.currentHp) {
+  // Under the heal tool's rules (regain.ts): a caster Chill Touch grips, or in
+  // a beast form, is healed as any heal would heal them.
+  const gained = regainHitPoints(campaign, null, sheet, amount, `${spell}: half the necrotic damage dealt`);
+  if (gained <= 0) {
     return null;
   }
-  const patch = { currentHp };
-  const updated = patchSheet(sheet.id, patch);
-  const entry = insertSheetAudit({
-    campaignId: campaign.id,
-    characterId: sheet.id,
-    turnId: null,
-    kind: "heal",
-    delta: { amount: currentHp - sheet.currentHp, currentHp },
-    reason: `${spell}: half the necrotic damage dealt`,
-    seq: allocateSeq(campaign.id),
-    before: sheet,
-    patch,
-  });
-  publishPersisted(campaign.id, "sheet_audit", { entry, characterName: sheet.name });
-  if (updated) {
-    publishPersisted(campaign.id, "sheet_updated", { sheet: updated });
-  }
-  return `${spell}: ${sheet.name} regains ${currentHp - sheet.currentHp} hit points`;
+  return `${spell}: ${sheet.name} regains ${gained} hit points`;
 }

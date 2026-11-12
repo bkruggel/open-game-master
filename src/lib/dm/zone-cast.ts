@@ -11,7 +11,8 @@
 // squares from the caster toward the nearest foe. A spell recast while the
 // first casting still holds moves the area; a concentration spell ends the
 // caster's other areas. Gust of Wind blows away the clouds it crosses;
-// Daylight dispels overlapping darkness of 3rd level or lower.
+// Daylight dispels overlapping darkness of 3rd level or lower, and Radiance
+// of the Dawn any darkness within 30 feet of the cleric (dispelZones).
 //
 // Off the map nothing is laid, and the spell resolves as before.
 
@@ -22,7 +23,8 @@ import { getActiveBoard, getEnemy, patchEnemyConditions, setEnemyConcentration }
 import { getSheetById, patchSheet } from "@/lib/db/sheets";
 import { publishPersisted } from "@/lib/events";
 import { chebyshev, TERRAIN, type XY } from "@/lib/battlemap/types";
-import { layZone, type SpellZone, type ZoneCasterKind } from "@/lib/battlemap/zones";
+import { darknessWithin, layZone, type SpellZone, type ZoneCasterKind } from "@/lib/battlemap/zones";
+import { spaceOf } from "@/lib/dm/board-reach";
 import { LIGHT_SPELLS, zoneKey, zoneOwnKey, zoneRowFor } from "@/lib/battlemap/zones-spells";
 import { holdGasesBack } from "@/lib/battlemap/zones-walls";
 import { hasLineOfSight } from "@/lib/battlemap/los";
@@ -264,6 +266,41 @@ export function moveZoneTo(map: BattleMap, zoneId: string, origin: XY): boolean 
   return true;
 }
 
+// Radiance of the Dawn (SRD 5.1): "Any magical darkness within 30 feet of
+// you is dispelled", whatever the level of the spell that made it, where
+// Daylight stops at 3rd. Without this the drow's Darkness stayed on the
+// board, still held, after the cleric's burst. The areas in reach are found
+// first and ended by dispelZones, so a use refused for another reason
+// leaves them be.
+export function darknessNear(campaign: Campaign, refId: string, feet: number): SpellZone[] {
+  const encounter = getActiveBoard(campaign.id);
+  const map = encounter ? getBattleMapForEncounter(encounter.id) : null;
+  const token = map ? getTokenByRef(map.id, refId) : null;
+  if (!encounter || !map || !token) {
+    return [];
+  }
+  return darknessWithin(liveZones(map, encounter), map.width, spaceOf(token), Math.floor(feet / 5));
+}
+
+// The areas leave the board and their casters' concentration on them ends,
+// as Daylight's dispel does. Returns a line for each, naming the caster.
+export function dispelZones(campaign: Campaign, zones: SpellZone[], by: string): string[] {
+  const encounter = getActiveBoard(campaign.id);
+  const map = encounter ? getBattleMapForEncounter(encounter.id) : null;
+  if (!map || !zones.length) {
+    return [];
+  }
+  const ids = new Set(zones.map((zone) => zone.id));
+  saveZones(map.id, map.spellZones.filter((zone) => !ids.has(zone.id)));
+  for (const zone of zones) {
+    endCasting(campaign, zone);
+  }
+  publishZones(campaign.id);
+  return zones.map(
+    (zone) => `${by} dispels ${zone.casterName}'s ${zone.spell}: its area leaves the board${zone.concentration ? ` and ${zone.casterName} no longer concentrates on it` : ""}.`,
+  );
+}
+
 // A spell dispelled or blown away: its caster's concentration on it ends,
 // and with it whatever else it held.
 function endCasting(campaign: Campaign, zone: SpellZone) {
@@ -365,7 +402,7 @@ export function holdEnemyAreaConcentration(campaign: Campaign, enemyId: string, 
 // Light and Continual Flame on the object the caster holds: their token
 // carries the light the board's vision already reads (bright 20 feet, dim
 // 20 more), Light for an hour of the clock, Continual Flame until dispelled.
-function lightTheCaster(campaign: Campaign, cast: ZoneCast, light: { radiusTiles: number; minutes: number }): string | null {
+function lightTheCaster(campaign: Campaign, cast: ZoneCast, light: { radiusTiles: number; dimTiles: number; minutes: number }): string | null {
   const encounter = getActiveBoard(campaign.id);
   const map = encounter ? getBattleMapForEncounter(encounter.id) : null;
   const token = map ? getTokenByRef(map.id, cast.caster.id) : null;
@@ -373,7 +410,7 @@ function lightTheCaster(campaign: Campaign, cast: ZoneCast, light: { radiusTiles
     return null;
   }
   const instant = getClock(campaign.id).instant;
-  setTokenLight(token.id, light.radiusTiles, light.minutes ? instant + light.minutes : 0, light.minutes);
+  setTokenLight(token.id, light.radiusTiles, light.minutes ? instant + light.minutes : 0, light.minutes, light.dimTiles);
   publishZones(campaign.id);
   return `${cast.caster.name}'s ${cast.spell} sheds bright light 20 feet and dim light 20 feet more${light.minutes ? " for an hour" : ""}; the board's light and sight read it.`;
 }

@@ -186,7 +186,7 @@ export function AdvancedBlock({ mech, onChange }: { mech: Mech; onChange: (next:
       </button>
       {open ? (
         <div className="reveal space-y-1">
-          <textarea value={text} rows={10} spellCheck={false} onChange={(event) => setText(event.target.value)} className={cn(ui.input, "w-full font-mono text-[11px]")} aria-label={t("workshop.homebrew.spellMore.blockTextAria")} />
+          <textarea value={text} rows={10} spellCheck={false} onChange={(event) => setText(event.target.value)} className={cn(ui.input, "w-full font-code text-[11px]")} aria-label={t("workshop.homebrew.spellMore.blockTextAria")} />
           {problem ? <p className="motion-shake text-[11px] text-red-400">{problem}</p> : null}
           <button
             type="button"

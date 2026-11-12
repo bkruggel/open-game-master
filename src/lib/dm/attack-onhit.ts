@@ -23,6 +23,7 @@ import { getSheetById, listSheets, patchSheet } from "@/lib/db/sheets";
 import { rollExpression } from "@/lib/dice";
 import { publishPersisted, publishWithSeq } from "@/lib/events";
 import { isIncapacitated, removeConditions, type ConditionMeta, type ConditionMetaMap } from "@/lib/dm/condition-logic";
+import { immuneToCondition } from "@/lib/dm/damage-logic";
 import { applyEnemyDamage, publishEncounter } from "@/lib/dm/enemy-damage";
 import { rollEnemySave } from "@/lib/dm/forced-save";
 import { pushTokenAway } from "@/lib/dm/map-tools";
@@ -37,6 +38,7 @@ import {
   type OpenHandChoice,
 } from "@/lib/dm/attack-choice-rules";
 import { matchWeapon } from "@/lib/srd/weapons";
+import { coatsAsBonusAction } from "@/lib/srd/feat-combat";
 import { poisonAt } from "@/lib/srd/table-hazards";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import type { ToolError } from "@/lib/dm/tool-errors";
@@ -67,7 +69,7 @@ function damageEnemy(campaign: Campaign, enemy: EncounterEnemy, amount: number, 
 
 // Spends one use of a feature's counter the hit (or the miss it rescued)
 // paid for, with its audit row. False when none was left.
-export function spendFeatureUse(campaign: Campaign, sheetId: string, resourceId: string, label: string): boolean {
+export function spendFeatureUse(campaign: Campaign, sheetId: string, resourceId: string, label: string, actor?: "player"): boolean {
   const sheet = getSheetById(sheetId);
   const state = sheet?.resources?.[resourceId];
   if (!sheet || !state || state.max - state.used <= 0) {
@@ -79,6 +81,7 @@ export function spendFeatureUse(campaign: Campaign, sheetId: string, resourceId:
     campaignId: campaign.id,
     characterId: sheet.id,
     turnId: null,
+    ...(actor ? { actor } : {}),
     kind: "use_resource",
     delta: { resource: label, spent: 1 },
     reason: label,
@@ -102,11 +105,21 @@ export const POISON_COAT = "poisoned weapon";
 // Poison, Wyvern Poison: src/lib/srd/afflictions.ts) or the table's workshop
 // (src/lib/srd/table-hazards.ts), by the row the vial is (src/lib/srd/
 // item-row.ts). Null for anything else.
-function coatOf(item: RowItem, campaignId?: string): { name: string; dc: number; damage?: string; halfOnSave?: boolean; conditions?: string[]; minutes?: number; unconsciousIfFailBy?: number } | null {
+// The Poisoner's coat (ODM's Poisoner: "you can coat a weapon as a bonus
+// action so its next hit forces a DC 14 Constitution save for 2d8 poison
+// damage and the poisoned condition"), the potent poison of the feat's
+// source, poisoned until the end of the poisoner's next turn: about a round.
+type Coat = { name: string; dc: number; damage?: string; halfOnSave?: boolean; conditions?: string[]; minutes?: number; unconsciousIfFailBy?: number; basic?: true };
+const POTENT_POISON: Coat = { name: "potent poison", dc: 14, damage: "2d8", conditions: ["poisoned"], minutes: 0.1 };
+
+function coatOf(item: RowItem, campaignId?: string): Coat | null {
+  if (textKey(rowName(item)) === textKey(POTENT_POISON.name)) {
+    return POTENT_POISON;
+  }
   const row = rowName(item);
   // The SRD's basic poison, by its row (src/lib/srd/adventuring-gear.ts).
   if (catalogName(row) === "Poison, Basic (vial)") {
-    return { name: "basic poison", dc: 10, damage: "1d4" };
+    return { name: "basic poison", dc: 10, damage: "1d4", basic: true };
   }
   const poison = poisonAt(row, campaignId);
   return poison && poison.type === "injury" ? poison : null;
@@ -137,10 +150,14 @@ export function poisonCoatRefusal(sheet: CharacterSheet, item: RowItem): ToolErr
 // The vial just used: the coat goes on, for a minute (ten rounds). Which
 // poison it is rides in the coat's source.
 export function coatWithPoison(campaign: Campaign, user: CharacterSheet, item: RowItem): Record<string, unknown> | null {
-  const coat = coatOf(item, campaign.id);
-  if (!coat) {
+  const vial = coatOf(item, campaign.id);
+  if (!vial) {
     return null;
   }
+  // A Poisoner makes a vial of basic poison their potent poison; a stronger
+  // injury poison stays itself. The engines coated a Poisoner's blade with
+  // the vial's DC 10 and 1d4, and the feat's DC 14 and 2d8 ran nowhere.
+  const coat = vial.basic && coatsAsBonusAction(user) ? POTENT_POISON : vial;
   const fresh = getSheetById(user.id) ?? user;
   const meta: ConditionMetaMap = { ...(fresh.conditionMeta as ConditionMetaMap), [POISON_COAT]: { rounds: 10, source: coat.name.toLowerCase() } };
   const conditions = fresh.conditions.some((entry) => textKey(entry) === POISON_COAT) ? fresh.conditions : [...fresh.conditions, POISON_COAT];
@@ -208,16 +225,25 @@ export function poisonOnHit(campaign: Campaign, sheetId: string, enemyId: string
     const fresh = getFoe(enemyId);
     if (fresh && fresh.status === "alive") {
       const failBy = save.autoFailed ? 99 : coat.dc - (save.total ?? 0);
-      const laid = [...coat.conditions, ...(coat.unconsciousIfFailBy && failBy >= coat.unconsciousIfFailBy ? ["unconscious"] : [])];
+      // Its own immunities, and a petrified creature's to poison: a creature
+      // poison cannot touch is not poisoned by a coated blade.
+      const laid = [...coat.conditions, ...(coat.unconsciousIfFailBy && failBy >= coat.unconsciousIfFailBy ? ["unconscious"] : [])].filter(
+        (name) => !immuneToCondition(fresh, name),
+      );
       const rounds = Math.min(14400, Math.max(1, Math.round((coat.minutes ?? 1) * 10)));
       const meta: ConditionMetaMap = { ...(fresh.conditionMeta as ConditionMetaMap) };
       for (const name of laid) {
         meta[name] = { rounds, source: coat.name, ...(name === "unconscious" ? { endsOnDamage: true } : {}) };
       }
-      patchEnemyConditions(fresh.id, [...new Set([...fresh.conditions, ...laid])], meta);
-      settleEnemyIncapacitation(fresh.id, isIncapacitated(fresh.conditions));
-      publishEncounter(campaign.id);
-      lines.push(`${label}: ${enemy.displayName} fails the CON save (${save.autoFailed ? "automatic" : save.total} vs DC ${coat.dc}) and is ${laid.join(" and ")}.`);
+      const failedSave = `${label}: ${enemy.displayName} fails the CON save (${save.autoFailed ? "automatic" : save.total} vs DC ${coat.dc})`;
+      if (laid.length) {
+        patchEnemyConditions(fresh.id, [...new Set([...fresh.conditions, ...laid])], meta);
+        settleEnemyIncapacitation(fresh.id, isIncapacitated(fresh.conditions));
+        publishEncounter(campaign.id);
+        lines.push(`${failedSave} and is ${laid.join(" and ")}.`);
+      } else {
+        lines.push(`${failedSave}, but it cannot be ${coat.conditions.join(" or ")}.`);
+      }
     }
   }
   return lines.join(" ") || `${label}: the coat is spent.`;
@@ -251,7 +277,8 @@ export function openHandOnHit(
     return `Open Hand Technique: ${enemy.displayName} cannot take reactions until the end of the monk's next turn.`;
   }
   const ability = choice === "prone" ? "dex" : "str";
-  const save = rollEnemySave(campaign.id, enemy, ability, dc, { against: choice === "prone" ? "prone" : [] });
+  // The DEX save against the knock-down takes the cover between monk and target.
+  const save = rollEnemySave(campaign.id, enemy, ability, dc, { against: choice === "prone" ? "prone" : [], origin: { ref: monkId } });
   const rolled = save.autoFailed ? "automatic" : String(save.total);
   if (save.success) {
     return `Open Hand Technique: ${enemy.displayName} holds (${ability.toUpperCase()} save ${rolled} vs DC ${dc}).`;

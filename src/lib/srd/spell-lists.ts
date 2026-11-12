@@ -1,5 +1,6 @@
 import spellManifest from "@/lib/srd/manifest/spells.json";
 import { textKey } from "@/lib/language/text-logic";
+import { spellOnListKey } from "@/lib/classes/class-spell-list";
 
 // Cantrips live in their own list on a sheet (spellcasting.cantrips), apart
 // from prepared and known spells: they are never prepared and never count
@@ -38,7 +39,7 @@ export function spellLevelOf(name: string): number | null {
 }
 
 const CHECKLIST = new Map(
-  (spellManifest as { spells: Array<ManifestSpell & { c?: string }> }).spells.flatMap((spell) =>
+  (spellManifest as { spells: Array<ManifestSpell & { c?: string; s?: string; d?: number | string }> }).spells.flatMap((spell) =>
     [spell.n, ...(spell.a ?? [])].map((name) => [textKey(name), spell] as const),
   ),
 );
@@ -55,7 +56,7 @@ export function checklistClassSpell(
   if (!spell || spell.l < 1 || spell.l > maxLevel) {
     return null;
   }
-  return classesOf(spell).includes(classSlug.toLowerCase()) ? spell.n : null;
+  return classesOf(spell).includes(classSlug.toLowerCase()) || spellOnListKey(classSlug, { name: spell.n, classes: classesOf(spell) }) ? spell.n : null;
 }
 
 // The checklist's class lists come from Open5e's spell lists, which leave the
@@ -108,25 +109,30 @@ function classesOf(spell: ManifestSpell & { c?: string }): string[] {
   return [...new Set([...listed, ...more])];
 }
 
-// What the checklist says of a spell by name: its canonical name, its level
-// and the class lists it is on. Null for a name it does not carry.
+// What the checklist says of a spell by name: its canonical name, its level,
+// the class lists it is on, its school and its range as the checklist keeps
+// it (feet, a word, or the SRD's own "Self (15-foot cone)"). Null for a name
+// it does not carry.
 export function checklistSpell(
   name: string,
-): { name: string; level: number; classes: string[] } | null {
+): { name: string; level: number; classes: string[]; school: string | null; range: number | string | null } | null {
   const spell = CHECKLIST.get(textKey(name));
   if (!spell) {
     return null;
   }
-  return { name: spell.n, level: spell.l, classes: classesOf(spell) };
+  return { name: spell.n, level: spell.l, classes: classesOf(spell), school: spell.s ?? null, range: spell.d ?? null };
 }
 
 // Every spell the checklist puts on one class's list, cantrips included, by
 // canonical name in the checklist's own order. For a caller that has to
 // CHOOSE spells (a companion the engine builds) rather than judge a choice.
+// A workshop class's id names its own list, or the one it borrows
+// (src/lib/classes/class-spell-list.ts), so a companion or a quick build of
+// one chooses from the list its sheet is checked against (issue #833).
 export function checklistSpellsOn(classSlug: string): Array<{ name: string; level: number }> {
   const wanted = classSlug.trim().toLowerCase();
   return (spellManifest as { spells: Array<ManifestSpell & { c?: string }> }).spells
-    .filter((spell) => classesOf(spell).includes(wanted))
+    .filter((spell) => classesOf(spell).includes(wanted) || spellOnListKey(wanted, { name: spell.n, classes: classesOf(spell) }))
     .map((spell) => ({ name: spell.n, level: spell.l }));
 }
 
@@ -190,4 +196,22 @@ export function normalizeSpellcasting<
     top.casters = spellcasting.casters.map((caster) => splitCantrips(caster));
   }
   return top;
+}
+
+// The checklist's spells whose name holds `query` (by name key), level and
+// name, for a picker that searches the server too: on a server without the
+// content pack the checklist is where the SRD's spells are (issue #833).
+export function checklistSpellsMatching(query: string, limit = 30): Array<{ name: string; level: number }> {
+  const wanted = textKey(query);
+  if (!wanted) {
+    return [];
+  }
+  const out: Array<{ name: string; level: number }> = [];
+  for (const spell of (spellManifest as { spells: ManifestSpell[] }).spells) {
+    if (textKey(spell.n).includes(wanted)) {
+      out.push({ name: spell.n, level: spell.l });
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
 }

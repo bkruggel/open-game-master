@@ -301,7 +301,7 @@ export function HandGroupView({
             </button>
           </p>
         ) : tabs ? (
-          <div role="tablist" aria-label={t("table.hand.group.levelsAria", { name: group.name })} className="hand-group-tabs">
+          <div role="tablist" aria-label={t("table.hand.group.byKey", { name: group.name, key: group.key === "items" ? t("table.hand.group.keyItem") : t("table.hand.group.keyLevel") })} className="hand-group-tabs">
             {group.sections.map((entry, at) => {
               const chosen = entry.id === section?.id;
               return (

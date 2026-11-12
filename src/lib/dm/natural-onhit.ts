@@ -6,8 +6,8 @@
 // a pseudodragon's or a sprite's poison adds on a bad enough save; a
 // grapple held by the attacker at the block's escape DC; and every sentence
 // no engine models, named to the DM. Shared by pc_attack (a beast form, a
-// summoned creature, src/lib/dm/pc-attack-resolve.ts and its physical-dice
-// path) and pet_attack (src/lib/dm/pet-tools.ts).
+// summoned creature, src/lib/dm/attack-blow.ts on either dice path) and
+// pet_attack (src/lib/dm/pet-tools.ts).
 
 import { allocateSeq, type Campaign } from "@/lib/db/campaigns";
 import type { DmTurn } from "@/lib/db/dm-turns";
@@ -18,6 +18,7 @@ import { rollExpression } from "@/lib/dice";
 import { publishWithSeq } from "@/lib/events";
 import { sizeRank } from "@/lib/bestiary/statblock";
 import { isIncapacitated, type ConditionMeta, type ConditionMetaMap } from "@/lib/dm/condition-logic";
+import { immuneToCondition } from "@/lib/dm/damage-logic";
 import { applyEnemyDamage, publishEncounter } from "@/lib/dm/enemy-damage";
 import { settleEnemyIncapacitation } from "@/lib/dm/enemy-incapacitation";
 import { rollEnemySave } from "@/lib/dm/forced-save";
@@ -64,6 +65,8 @@ export function landNaturalOnHit(campaign: Campaign, hit: NaturalHit): string[] 
       // A rider that binds the creature asks for its Legendary Resistance.
       resist: Boolean(onHit.condition),
       against: onHit.condition,
+      // Cover between the character's form and its target counts on a DEX rider.
+      ...(hit.attacker.kind === "sheet" ? { origin: { ref: hit.attacker.sheetId } } : {}),
     });
     saved = save.success;
     total = save.total;
@@ -124,9 +127,9 @@ function layConditions(campaign: Campaign, hit: NaturalHit, failedBy: number, to
     (onHit.unconsciousFailBy !== undefined && failedBy >= onHit.unconsciousFailBy) ||
     (onHit.unconsciousAtMost !== undefined && (total === null || total <= onHit.unconsciousAtMost));
   const wanted = [onHit.condition, ...(onHit.alsoCondition ? [onHit.alsoCondition] : []), ...(unconscious ? ["unconscious"] : [])];
-  const immune = fresh.stats.conditionImmune.toLowerCase();
-  const laid = wanted.filter((name) => !immune.split(/,\s*/).includes(name) && !fresh.conditions.includes(name));
-  const skipped = wanted.filter((name) => immune.split(/,\s*/).includes(name));
+  // Its own immunities, and a petrified creature's to poison.
+  const laid = wanted.filter((name) => !immuneToCondition(fresh, name) && !fresh.conditions.includes(name));
+  const skipped = wanted.filter((name) => immuneToCondition(fresh, name));
   const meta: ConditionMetaMap = { ...(fresh.conditionMeta as ConditionMetaMap) };
   for (const name of laid) {
     const entry: ConditionMeta = {

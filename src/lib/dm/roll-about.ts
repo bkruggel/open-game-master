@@ -62,12 +62,12 @@ export const CHECK_KEY_PROPERTIES = {
     type: "string",
     enum: [...CHECK_ABOUT, NONE],
     description:
-      "The circumstance a check is about, or 'none': the server applies the features keyed to it. They are Favored Enemy and Stalker on tracking, Stonecunning, Artificer's Lore on devices, Stone Camouflage on rocky terrain, Actor on a disguise, and the feats' riders.",
+      "The circumstance a check is about, or 'none': the server applies the features keyed to it.",
   },
   creature: {
     type: "string",
     description:
-      "A check about a creature: its singular rules type or humanoid race ('undead', 'orc'), or 'none'. Favored Enemy and Giant Foe read it ('giant', 'fey').",
+      "A check about a creature: its singular rules type or humanoid race ('undead', 'orc'), or 'none'.",
   },
   terrain: {
     type: "string",
@@ -94,6 +94,11 @@ export type SaveAgainst = {
   magical?: boolean;
   // The creature type of the spell's caster (Holy Nimbus).
   casterType?: CreatureType;
+  // The full type, subtype and all ("fiend (demon)"), of the creature whose
+  // spell or ability forced the save (Demon Armor's curse). The engine sets
+  // it from the creature it knows (forced-save.ts rollCharacterSave); a save
+  // with no known source has none.
+  sourceType?: string;
 };
 
 // An engine's own condition or damage type as a save's `against`, or none

@@ -15,6 +15,8 @@ register("./lib/register-alias.mjs", import.meta.url);
 
 // Windows CI checks out with CRLF.
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+// The dictionary the keyed pins read: the sentences live there now.
+const en = () => read("src/lib/messages/en.ts");
 const submit = await import("../src/app/characters/builder/submit.ts");
 const { translate } = await import("../src/lib/messages-logic.ts");
 const t = (key, vars) => translate("en", key, vars);
@@ -45,7 +47,11 @@ await test("the steps run class, ancestry, abilities, spells and gear, hero, fin
 
 await test("the first step asks how you want to play, with Help me build, the notices and the level", () => {
   const calling = stepOf("calling");
-  assert.match(calling, /question: quizVoice === "party" \? "What does the party need\?" : "In a fight, what's your job\?"/);
+  // The two asks read through the dictionary (builder.shell.playstyle*), the
+  // i18n pass; the sentences they pin live in the English dictionary now.
+  assert.match(calling, /question: quizVoice === "party" \? t\("builder\.shell\.playstyleParty"\) : t\("builder\.shell\.playstyleJob"\)/);
+    assert.match(en(), /"builder\.shell\.playstyleParty": "What does the party need\?"/);
+  assert.match(en(), /"builder\.shell\.playstyleJob": "In a fight, what's your job\?"/);
   assert.match(calling, /onHelpMeBuild: \(role\) => setQuiz\(\{ role \}\)/);
   assert.match(calling, /notices=\{<ContentNotices pack=\{pack\} packInstalled=\{packInstalled\} \/>\}/);
   assert.match(calling, /levelField=\{<LevelField state=\{state\} fixedLevel=\{fixedLevel\} levelNote=\{levelNote\}/);
@@ -91,13 +97,19 @@ await test("nothing before the identity step needs a name", () => {
   assert.match(builder, /const firstOwed = blockers\.calling \?\? blockers\.ancestry \?\? blockers\.abilities \?\? blockers\.spells \?\? blockers\.identity;/);
   const source = read("src/app/characters/builder/submit.ts");
   assert.match(source, /gearBlocker\(t, derived\) \?\?\n\s+identityBlocker\(t, state\);/, "the final check asks for the name last");
-  // Until the name is given, the hero is "Your hero".
-  assert.match(builder, /title=\{state\.name\.trim\(\) \|\| "Your hero"\}/);
+  // Until the name is given, the hero is "Your hero" — the words are the
+  // dictionary's (builder.shared.yourHero), the i18n pass.
+  assert.match(builder, /title=\{state\.name\.trim\(\) \|\| t\("builder\.shared\.yourHero"\)\}/);
+  assert.match(en(), /"builder\.shared\.yourHero": "Your hero",/);
 });
 
 await test("the name, alignment, looks and story are the last step before the summary", () => {
   const identity = stepOf("identity");
-  assert.match(identity, /label: "Hero",\n\s+title: "Name your hero and tell their story",/);
+  // The step's words are the dictionary's (builder.shell.step.*), the i18n
+  // pass; the pinned sentences live in the English dictionary now.
+  assert.match(identity, /label: t\("builder\.shell\.step\.hero"\),\n\s+title: t\("builder\.shell\.step\.heroTitle"\),/);
+  assert.match(en(), /"builder\.shell\.step\.hero": "Hero",/);
+  assert.match(en(), /"builder\.shell\.step\.heroTitle": "Name your hero and tell their story",/);
   assert.match(identity, /alignmentGroups=\{pickers\.alignmentGroups\}/);
   assert.match(identity, /onUploadPortrait=\{\(\) => setCropping\(true\)\}/);
   const step = read("src/app/characters/builder/steps/IdentityStep.tsx");
@@ -127,7 +139,10 @@ await test("a kept draft resumes on its step by key, an old one on the same step
   assert.match(builder, /writeBuilderDraft\(draftAt, STEP_ORDER\[step\] \?\? STEP_ORDER\[0\], JSON\.parse\(draftJson\)\)/);
   assert.match(builder, /return Math\.max\(0, STEP_ORDER\.indexOf\(draft\.step\)\);/);
   assert.match(builder, /setStep\(draftStepIndex\(draftOffer\)\);/);
-  assert.match(builder, /left on step \{draftStepIndex\(draftOffer\) \+ 1\} of \{steps\.length\}/);
+  // The draft's sentence reads through the dictionary
+  // (builder.shell.draftLeft), the i18n pass.
+  assert.match(builder, /t\("builder\.shell\.draftLeft", \{ step: draftStepIndex\(draftOffer\) \+ 1, total: steps\.length \}\)/);
+  assert.match(en(), /"builder\.shell\.draftLeft": ", left on step \{step\} of \{total\}\.",/);
 });
 
 console.log(`test-builder-calling-first: ${passed} passed`);

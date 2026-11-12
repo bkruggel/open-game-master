@@ -7,6 +7,7 @@ import { GameIcon } from "@/components/ui/GameIcon";
 import { CountPop } from "@/components/ui/Reveal";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useT } from "@/lib/locale";
+import { formatPrice, purseCoins, purseCopper, type Purse } from "@/lib/srd/currency";
 import {
   coinWeightLb,
   COINS_PER_POUND,
@@ -44,23 +45,23 @@ export function LoadBreakdown({
   onOpenChange,
   name,
   equipment,
-  gold,
+  purse,
   load,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   name: string;
   equipment: Array<{ name: string; qty?: number; weight?: number; equipped?: boolean }>;
-  // Whole gold pieces: the coins the load weighs, as every caller of
-  // encumbranceFor counts them.
-  gold: number;
+  // The purse whose coins the load weighs, as every caller of encumbranceFor
+  // counts them (src/lib/srd/currency.ts purseCoins).
+  purse: Purse;
   load: Encumbrance;
 }) {
   const t = useT();
   const [key, setKey] = useState<LoadSort>("total");
   const [order, setOrder] = useState<LoadOrder>("desc");
   const lines = sortLoadLines(loadLines(equipment), key, order);
-  const coins = Math.max(0, gold);
+  const coins = purseCoins(purse);
   const floor = load.unweighed > 0;
   const total = `${load.carriedLb}${floor ? "+" : ""} lb`;
   return (
@@ -148,7 +149,7 @@ export function LoadBreakdown({
               <th scope="row">
                 <span className="block text-stone-200">{t("sheet.load.coins")}</span>
                 <span className="block text-[11px] text-stone-500">
-                  {t("sheet.load.coinsNote", { coins, perPound: COINS_PER_POUND })}
+                  {t("sheet.load.coinsNote", { price: formatPrice(purseCopper(purse)), perPound: COINS_PER_POUND })}
                 </span>
               </th>
               <td className="load-num">{coins}</td>

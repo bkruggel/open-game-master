@@ -1,5 +1,6 @@
 import { resolveOutdoors } from "@/lib/battlemap/daylight";
 import { getDatabase, nowIso, parseJson } from "@/lib/db/core";
+import { keepNew, keepRow, keepRowsWhere } from "@/lib/db/turn-rows";
 import type {
   AmbientLight,
   BattleToken,
@@ -119,6 +120,7 @@ type TokenRow = {
   y: number;
   moved_this_round: number;
   light_radius: number;
+  light_dim_radius: number;
   burns_until: number;
   light_minutes: number;
   hidden: number;
@@ -128,7 +130,7 @@ type TokenRow = {
 
 // Every token read selects the same columns, in one place, so adding one
 // cannot leave a projection quietly missing it.
-const TOKEN_COLUMNS = `id, kind, ref_id, name, x, y, moved_this_round, light_radius, burns_until, light_minutes, hidden, movement, stamp`;
+const TOKEN_COLUMNS = `id, kind, ref_id, name, x, y, moved_this_round, light_radius, light_dim_radius, burns_until, light_minutes, hidden, movement, stamp`;
 
 function mapRow(row: MapRow): BattleMap {
   const doors = normalizeDoors(parseJson<unknown>(row.doors_json ?? "{}", {}), row.terrain, row.width, row.height);
@@ -185,6 +187,7 @@ function mapToken(row: TokenRow): BattleToken {
     y: row.y,
     movedThisRound: row.moved_this_round,
     lightRadius: row.light_radius,
+    lightDimRadius: row.light_dim_radius ?? 0,
     burnsUntil: row.burns_until ?? 0,
     lightMinutes: row.light_minutes ?? 0,
     hidden: row.hidden === 1,
@@ -244,6 +247,8 @@ export function createBattleMap(input: {
       now,
       now,
     );
+  // A board a GM turn laid goes with the turn's revert (issue 685).
+  keepNew("battle_maps", id, input.campaignId);
   if (input.outdoors !== undefined && input.outdoors !== null) {
     setBattleMapOutdoors(id, input.outdoors);
   }
@@ -263,6 +268,7 @@ export function createBattleMap(input: {
 // replaced, the rest stay. Doors are checked against the DRAWN terrain,
 // because that is where the door glyphs are.
 export function setBattleMapScene(mapId: string, extras: SceneExtras) {
+  keepRow("battle_maps", mapId);
   const map = getBattleMap(mapId);
   if (!map) {
     return;
@@ -326,6 +332,7 @@ export function replaceBattleMapTerrain(
     addonView?: MapAddonView | null;
   },
 ) {
+  keepRow("battle_maps", mapId);
   const scene = sceneColumns(input.scene, input.terrain, input.width, input.height);
   getDatabase()
     .prepare(
@@ -355,6 +362,7 @@ export function replaceBattleMapTerrain(
 // The skin a board is painted with, normalised on the way in like every
 // other JSON column here.
 export function setBattleMapSkin(mapId: string, skin: unknown) {
+  keepRow("battle_maps", mapId);
   getDatabase()
     .prepare(`UPDATE battle_maps SET skin_json = ? WHERE id = ?`)
     .run(JSON.stringify(normalizeMapSkin(skin)), mapId);
@@ -367,6 +375,7 @@ export function setBattleMapBackdrop(
   path: string,
   transform: BackdropTransform | null,
 ) {
+  keepRow("battle_maps", mapId);
   const backdrop = normalizeBackdrop(path, transform);
   getDatabase()
     .prepare(
@@ -384,6 +393,7 @@ export function setBattleMapBackdrop(
 // terrain handed in is the DRAWN one (door glyphs and all); a door state on
 // a tile that is no longer a door is dropped on the next read.
 export function setBattleMapTerrain(mapId: string, terrain: string) {
+  keepRow("battle_maps", mapId);
   getDatabase()
     .prepare(`UPDATE battle_maps SET terrain = ?, updated_at = ? WHERE id = ?`)
     .run(terrain, nowIso(), mapId);
@@ -405,16 +415,20 @@ export function insertToken(input: {
   x: number;
   y: number;
   lightRadius?: number;
+  lightDimRadius?: number;
   burnsUntil?: number;
   lightMinutes?: number;
   hidden?: boolean;
   stamp?: string;
 }): BattleToken {
+  // A token the GM turn moves by laying it again keeps where it stood; one it
+  // lays down new goes with the turn's revert (issue 685).
+  keepRowsWhere("battle_tokens", "map_id = ? AND ref_id = ?", [input.mapId, input.refId]);
   const id = crypto.randomUUID();
   getDatabase()
     .prepare(
-      `INSERT INTO battle_tokens (id, map_id, campaign_id, kind, ref_id, name, x, y, moved_this_round, light_radius, burns_until, light_minutes, hidden, stamp, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO battle_tokens (id, map_id, campaign_id, kind, ref_id, name, x, y, moved_this_round, light_radius, light_dim_radius, burns_until, light_minutes, hidden, stamp, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (map_id, ref_id) DO UPDATE SET x = excluded.x, y = excluded.y, updated_at = excluded.updated_at`,
     )
     .run(
@@ -427,13 +441,16 @@ export function insertToken(input: {
       input.x,
       input.y,
       input.lightRadius ?? 0,
+      input.lightDimRadius ?? 0,
       input.burnsUntil ?? 0,
       input.lightMinutes ?? 0,
       input.hidden ? 1 : 0,
       isStampId(input.stamp) ? input.stamp : "",
       nowIso(),
     );
-  return getTokenByRef(input.mapId, input.refId) as BattleToken;
+  const token = getTokenByRef(input.mapId, input.refId) as BattleToken;
+  keepNew("battle_tokens", token.id, input.campaignId);
+  return token;
 }
 
 export function listTokens(mapId: string): BattleToken[] {
@@ -455,6 +472,7 @@ export function getTokenByRef(mapId: string, refId: string): BattleToken | null 
 }
 
 export function moveToken(tokenId: string, x: number, y: number, movedThisRound: number) {
+  keepRow("battle_tokens", tokenId);
   getDatabase()
     .prepare(`UPDATE battle_tokens SET x = ?, y = ?, moved_this_round = ?, updated_at = ? WHERE id = ?`)
     .run(x, y, movedThisRound, nowIso(), tokenId);
@@ -473,6 +491,7 @@ export function getToken(tokenId: string): BattleToken | null {
 // is not the combatant walking. It also skips terrain and reach entirely;
 // the caller checks what it wants to check (src/lib/dm/board.ts).
 export function placeToken(tokenId: string, x: number, y: number) {
+  keepRow("battle_tokens", tokenId);
   getDatabase()
     .prepare(`UPDATE battle_tokens SET x = ?, y = ?, updated_at = ? WHERE id = ?`)
     .run(x, y, nowIso(), tokenId);
@@ -480,18 +499,21 @@ export function placeToken(tokenId: string, x: number, y: number) {
 
 // Under the sky or a roof. Null hands the decision back to the theme.
 export function setBattleMapOutdoors(mapId: string, outdoors: boolean | null) {
+  keepRow("battle_maps", mapId);
   getDatabase()
     .prepare(`UPDATE battle_maps SET outdoors = ?, updated_at = ? WHERE id = ?`)
     .run(outdoors === null ? null : outdoors ? 1 : 0, nowIso(), mapId);
 }
 
 export function setTokenMovement(tokenId: string, movement: TokenMovement) {
+  keepRow("battle_tokens", tokenId);
   getDatabase()
     .prepare(`UPDATE battle_tokens SET movement = ?, updated_at = ? WHERE id = ?`)
     .run(movement, nowIso(), tokenId);
 }
 
 export function setTokenHidden(tokenId: string, hidden: boolean) {
+  keepRow("battle_tokens", tokenId);
   getDatabase()
     .prepare(`UPDATE battle_tokens SET hidden = ?, updated_at = ? WHERE id = ?`)
     .run(hidden ? 1 : 0, nowIso(), tokenId);
@@ -500,6 +522,7 @@ export function setTokenHidden(tokenId: string, hidden: boolean) {
 // A token's label follows its combatant's name, so a prepared encounter that
 // calls one goblin "Snik" shows Snik on the board too.
 export function renameTokenByRef(mapId: string, refId: string, name: string) {
+  keepRowsWhere("battle_tokens", "map_id = ? AND ref_id = ?", [mapId, refId]);
   getDatabase()
     .prepare(`UPDATE battle_tokens SET name = ?, updated_at = ? WHERE map_id = ? AND ref_id = ?`)
     .run(name.slice(0, 80), nowIso(), mapId, refId);
@@ -516,15 +539,19 @@ export function listHiddenRefIds(mapId: string): string[] {
 }
 
 export function deleteToken(tokenId: string) {
+  keepRow("battle_tokens", tokenId);
   getDatabase().prepare(`DELETE FROM battle_tokens WHERE id = ?`).run(tokenId);
 }
 
 export function removeTokenByRef(mapId: string, refId: string) {
+  keepRowsWhere("battle_tokens", "map_id = ? AND ref_id = ?", [mapId, refId]);
   getDatabase().prepare(`DELETE FROM battle_tokens WHERE map_id = ? AND ref_id = ?`).run(mapId, refId);
 }
 
 // New round: everyone's movement budget refills.
 export function resetRoundBudgets(mapId: string, round: number) {
+  keepRowsWhere("battle_tokens", "map_id = ?", [mapId]);
+  keepRow("battle_maps", mapId);
   const now = nowIso();
   const db = getDatabase();
   db.transaction(() => {
@@ -538,6 +565,7 @@ export function resetRoundBudgets(mapId: string, round: number) {
 // (a Thief's Reflexes, an ambusher's own turn after the one it was owed)
 // brings its own.
 export function resetTurnBudgets(mapId: string, refIds: string[]) {
+  keepRowsWhere("battle_tokens", `map_id = ? AND ref_id IN (${refIds.map(() => "?").join(", ")})`, [mapId, ...refIds]);
   getDatabase()
     .prepare(
       `UPDATE battle_tokens SET moved_this_round = 0, updated_at = ? WHERE map_id = ? AND ref_id IN (${refIds.map(() => "?").join(", ")})`,
@@ -605,7 +633,7 @@ export function mergeExplored(
 export function placeTokens(
   mapId: string,
   campaignId: string,
-  tokens: Array<{ kind: TokenKind; refId: string; name: string; spot: XY; lightRadius?: number; burnsUntil?: number; lightMinutes?: number; stamp?: string }>,
+  tokens: Array<{ kind: TokenKind; refId: string; name: string; spot: XY; lightRadius?: number; lightDimRadius?: number; burnsUntil?: number; lightMinutes?: number; stamp?: string }>,
 ) {
   const db = getDatabase();
   db.transaction(() => {
@@ -619,6 +647,7 @@ export function placeTokens(
         x: token.spot.x,
         y: token.spot.y,
         lightRadius: token.lightRadius,
+        lightDimRadius: token.lightDimRadius,
         burnsUntil: token.burnsUntil,
         lightMinutes: token.lightMinutes,
         stamp: token.stamp,
@@ -627,12 +656,14 @@ export function placeTokens(
   })();
 }
 
-// A carried light, lit or relit: the radius and, when it burns down, the
-// instant it gutters out at.
-export function setTokenLight(tokenId: string, lightRadius: number, burnsUntil = 0, lightMinutes = 0) {
+// A carried light, lit or relit: the bright radius, where its dim light
+// ends (0 for twice the bright, types.ts carriedDimRadius) and, when it
+// burns down, the instant it gutters out at.
+export function setTokenLight(tokenId: string, lightRadius: number, burnsUntil = 0, lightMinutes = 0, lightDimRadius = 0) {
+  keepRow("battle_tokens", tokenId);
   getDatabase()
-    .prepare(`UPDATE battle_tokens SET light_radius = ?, burns_until = ?, light_minutes = ?, updated_at = ? WHERE id = ?`)
-    .run(lightRadius, burnsUntil, lightMinutes, nowIso(), tokenId);
+    .prepare(`UPDATE battle_tokens SET light_radius = ?, light_dim_radius = ?, burns_until = ?, light_minutes = ?, updated_at = ? WHERE id = ?`)
+    .run(lightRadius, lightDimRadius, burnsUntil, lightMinutes, nowIso(), tokenId);
 }
 
 // Every burning light in the campaign that has run out by `instant`, put
@@ -645,7 +676,8 @@ export function expireBurntLights(campaignId: string, instant: number): BattleTo
   if (!rows.length) {
     return [];
   }
-  db.prepare(`UPDATE battle_tokens SET light_radius = 0, burns_until = 0, light_minutes = 0, updated_at = ? WHERE campaign_id = ? AND burns_until > 0 AND burns_until <= ?`).run(
+  keepRowsWhere("battle_tokens", "campaign_id = ? AND burns_until > 0 AND burns_until <= ?", [campaignId, instant]);
+  db.prepare(`UPDATE battle_tokens SET light_radius = 0, light_dim_radius = 0, burns_until = 0, light_minutes = 0, updated_at = ? WHERE campaign_id = ? AND burns_until > 0 AND burns_until <= ?`).run(
     nowIso(),
     campaignId,
     instant,

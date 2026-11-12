@@ -293,6 +293,11 @@ export function DmEncounterPrepPanel({
       setEditingId(null);
       showEditor(false);
       await load();
+      // A roster edit that let go of a saved set-up's creatures says which.
+      const setupNote = (sent.payload as { setupNote?: unknown } | null)?.setupNote;
+      if (typeof setupNote === "string") {
+        setNote(setupNote);
+      }
     } finally {
       setBusy(false);
     }
@@ -359,6 +364,31 @@ export function DmEncounterPrepPanel({
     if (editingId === id) {
       setEditingId(null);
       setEditorOpen(false);
+    }
+    await load();
+  }
+
+  // Forgets the moment a test saved (issue 685): the fight opens as its
+  // roster and plan make it again, at a test and at a table.
+  async function removeSetup(template: PreparedEncounter) {
+    if (
+      !(await appConfirm(`Remove the saved set-up of "${template.name}"? Its tests and tables open as the roster and plan make it again. The map it kept stays.`, {
+        actionLabel: "Remove the set-up",
+      }))
+    ) {
+      return;
+    }
+    setError("");
+    setNote("");
+    const sent = await readWrite(
+      t,
+      fetch(`/api/campaigns/${campaignId}/dm/encounter-templates/${template.id}/setup`, { method: "DELETE" }),
+      t("load.write.setupRemove"),
+    );
+    if (sent.error !== null) {
+      setError(sent.error);
+      if (sent.unanswered) await load();
+      return;
     }
     await load();
   }
@@ -446,6 +476,7 @@ export function DmEncounterPrepPanel({
             deployLabel={testFight ? t("table.misc.testFight.title") : undefined}
             onDuplicate={(template) => void duplicate(template)}
             onDelete={(template) => void remove(template)}
+            onRemoveSetup={(template) => void removeSetup(template)}
           />
         </Listed>
         {feedback}

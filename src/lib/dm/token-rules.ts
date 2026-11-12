@@ -1,4 +1,5 @@
 import { readiedReleaseFor } from "@/lib/dm/readied-release";
+import { endShadowInvisibility } from "@/lib/dm/one-with-shadows";
 import { tokenSides } from "@/lib/dm/combatant";
 import type { Campaign } from "@/lib/db/campaigns";
 import type { DmTurn } from "@/lib/db/dm-turns";
@@ -18,11 +19,13 @@ import { describeDistances } from "@/lib/battlemap/serialize";
 import { standUpTiles } from "@/lib/srd/authored-effects-more";
 import { budgetApplies } from "@/lib/dm/action-budget";
 import { canAct } from "@/lib/dm/can-act";
+import { heldTurnRefusal } from "@/lib/dm/held-turn";
 import { removeConditions } from "@/lib/dm/condition-logic";
 import { awayFromFear, fearSourceAt } from "@/lib/dm/enemy-approach";
 import { abilityNames } from "@/lib/dm/monster-abilities";
 import { applyDmMutation } from "@/lib/dm/mutations";
 import { characterDrag, dragLandings } from "@/lib/dm/drag-move";
+import { walkCostFactor } from "@/lib/dm/drag";
 import { releaseGrapplesOutOfReach } from "@/lib/dm/grapple";
 import { resolveOpportunityAttacks } from "@/lib/dm/opportunity";
 import { resolveSheetRef, unknownSheetRef } from "@/lib/dm/rolls";
@@ -31,6 +34,8 @@ import { toolError, type ToolError, type ToolResult } from "@/lib/dm/tool-errors
 import { textKey } from "@/lib/language/text-logic";
 import { takeFeatureTeleport } from "@/lib/dm/feature-teleport";
 import { unknownEnemyRef } from "@/lib/dm/enemy-damage";
+import { afterMoveLeashes } from "@/lib/dm/condition-leash";
+import { swallowWalk } from "@/lib/dm/swallow";
 
 // The rules behind two board moves the model can make: a teleport, which
 // the AI makes only through the spell or ability that does it (cast and
@@ -172,8 +177,9 @@ export function walkCharacter(
   // whole: a walk the movement cannot finish is refused, nothing moved
   // (pc_attack's approach walks only when the swing can follow). dryRun:
   // the same walk worked out and nothing moved, to ask whether it can be
-  // made (companion-approach.ts companionShot).
-  options: { drag?: boolean; whole?: boolean; dryRun?: boolean } = {},
+  // made (companion-approach.ts companionShot). careful: at half speed, so
+  // caltrops and ball bearings ask no save.
+  options: { drag?: boolean; whole?: boolean; dryRun?: boolean; careful?: boolean } = {},
 ): ToolResult {
   // Off their turn, the move they readied (SRD 5.1, Ready): their reaction,
   // up to their full speed, their own turn's movement untouched.
@@ -186,9 +192,19 @@ export function walkCharacter(
     if (!allowed.ok) {
       return toolError(allowed);
     }
+    const heldOff = heldTurnRefusal(encounter, sheet);
+    if (heldOff) {
+      return heldOff;
+    }
   }
   if (destination.x < 0 || destination.y < 0 || destination.x >= map.width || destination.y >= map.height) {
     return { error: `(${destination.x},${destination.y}) is outside the ${map.width}x${map.height} map.`, retry: true };
+  }
+  // Swallowed: no walk inside a living creature, and out of a dead one the
+  // walk is the climb out of its corpse (src/lib/dm/swallow.ts).
+  const inside = options.dryRun ? null : swallowWalk(campaign, encounter, map, sheet, token);
+  if (inside) {
+    return inside;
   }
   const budget = pcMoveBudget(campaign.id, encounter, map, sheet, token);
   const speed = budget.speed;
@@ -221,7 +237,8 @@ export function walkCharacter(
   if (drag && "error" in drag) {
     return toolError(drag);
   }
-  const factor = drag?.factor ?? 1;
+  // Walking carefully halves the speed as a drag does (drag.ts).
+  const factor = walkCostFactor(drag?.factor ?? 1, Boolean(options.careful));
   // The board's own walking traits: allies' spaces, a swimming or climbing
   // speed, Halfling Nimbleness, and the spell areas underfoot.
   const traits = withZoneSteps(
@@ -267,12 +284,16 @@ export function walkCharacter(
   }
   const spent = walk.spent * factor + standCost;
   moveToken(token.id, walk.at.x, walk.at.y, token.movedThisRound + (readied ? 0 : spent));
+  // Moving ends One with Shadows' invisibility (one-with-shadows.ts).
+  endShadowInvisibility(campaign.id, sheet.id, "moves");
   for (const entry of carried) {
     moveToken(entry.token.id, entry.at.x, entry.at.y, entry.token.movedThisRound);
   }
-  // Walking away from a grapple ends it (grapple.ts), and the board shows the
-  // walk at once rather than at the end of the DM turn.
+  // Walking away from a grapple ends it (grapple.ts), and away from a
+  // creature it leashes ends the leash (condition-leash.ts); the board shows
+  // the walk at once rather than at the end of the DM turn.
   releaseGrapplesOutOfReach(campaign);
+  afterMoveLeashes(campaign);
   publishEphemeral(campaign.id, "battle_map_updated", {});
   if (prone) {
     const stood = removeConditions(sheet.conditions, sheet.conditionMeta, [prone]);
@@ -293,7 +314,7 @@ export function walkCharacter(
   const landed = opportunity.downedAt ?? walk.at;
   // The walk was made, so the readied move is released, struck down or not.
   const released = readied ? readied.release() : {};
-  const zoneEffects = opportunity.downedAt ? [] : zonesAfterMove(campaign, encounter.id, { kind: "pc", refId: sheet.id }, origin, walked);
+  const zoneEffects = opportunity.downedAt ? [] : zonesAfterMove(campaign, encounter.id, { kind: "pc", refId: sheet.id }, origin, walked, { careful: options.careful });
   return {
     ok: true,
     name: token.name,

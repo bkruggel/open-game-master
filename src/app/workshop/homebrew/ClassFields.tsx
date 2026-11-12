@@ -24,13 +24,17 @@ import {
   LIST_ABILITY,
   NONMETAL_SHIELDS,
   SPELL_LISTS,
+  CUSTOM_SPELL_LIST,
   WEAPON_TRAINING,
   blankClassData,
+  customListRules,
   type ClassFeatureRow,
 } from "@/lib/homebrew/class-data";
 import { SRD_WEAPONS, weaponNamed } from "@/lib/srd/weapons";
 import { featureCounts } from "@/lib/homebrew/limits";
 import { useT } from "@/lib/locale";
+import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
+import { CustomSpellList } from "@/app/workshop/homebrew/SpellListFields";
 
 // A class: the numbers every class has (hit die, saves, skills, training,
 // how it casts), the level its subclass is picked at, and its features by
@@ -53,6 +57,17 @@ const CASTING = [
 ] as const;
 // The lists whose own class learns its spells for good.
 const LEARNS = new Set(["bard", "ranger", "sorcerer", "warlock"]);
+
+// How a class with a list of its own holds its spells (issue #833), said by
+// the published caster that holds them the same way at its pace.
+function styleOptions(t: (key: string, vars?: Record<string, string | number>) => string, casting: string) {
+  const prepares = customListRules(casting as "full" | "half", "prepared") ?? "cleric";
+  const learns = customListRules(casting as "full" | "half", "known") ?? "sorcerer";
+  return [
+    { value: "prepared", label: t("workshop.homebrew.class.stylePrepares", { class: prepares }) },
+    { value: "known", label: t("workshop.homebrew.class.styleLearns", { class: learns }) },
+  ];
+}
 
 // Whether any class the engines know runs a feature of this name.
 function engineTag(name: string): string | null {
@@ -262,7 +277,14 @@ export function ClassFields({ data, set }: { data: Data; set: (patch: Data) => v
   const skills = (data.skillChoices ?? blank.skillChoices) as { count: number; from: string[] };
   const tools = (Array.isArray(data.tools) ? data.tools : []) as string[];
   const casting = String(data.casterType ?? "none");
-  const list = String(data.spellListFrom ?? "wizard") as (typeof SPELL_LISTS)[number];
+  const listChoice = String(data.spellListFrom ?? "wizard");
+  const custom = listChoice === CUSTOM_SPELL_LIST;
+  // A list of its own needs a host that keeps one (src/lib/capabilities.ts
+  // customSpellLists); an older one drops it unread, so it is not offered.
+  const offersCustom = hostOffers(useCapabilities(), "customSpellLists");
+  const list = (custom ? "wizard" : listChoice) as (typeof SPELL_LISTS)[number];
+  const style = casting === "pact" ? "known" : String(data.spellStyle ?? "prepared");
+  const rules = custom ? customListRules(casting as "full" | "half" | "pact", style as "prepared" | "known") : null;
   return (
     <div className="space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
@@ -333,17 +355,32 @@ export function ClassFields({ data, set }: { data: Data; set: (patch: Data) => v
             set(
               casterType === "none"
                 ? { casterType, spellListFrom: null, spellAbility: null }
-                : { casterType, spellListFrom: list, spellAbility: data.spellAbility ?? LIST_ABILITY[list] },
+                : { casterType, spellListFrom: custom ? CUSTOM_SPELL_LIST : list, spellAbility: data.spellAbility ?? LIST_ABILITY[list] },
             )
           }
         />
         {casting !== "none" ? (
-          <SelectField
+          <SelectField<string>
             label={t("workshop.homebrew.class.spellList")}
-            value={list}
-            options={SPELL_LISTS.map((value) => ({ value, label: t("workshop.homebrew.class.listLabel", { list: value }) }))}
-            onChange={(spellListFrom) => set({ spellListFrom, spellAbility: LIST_ABILITY[spellListFrom] })}
-            hint={LEARNS.has(list) ? t("workshop.homebrew.class.learnsHint") : t("workshop.homebrew.class.preparesHint")}
+            value={custom ? CUSTOM_SPELL_LIST : list}
+            options={[
+              ...SPELL_LISTS.map((value) => ({ value: value as string, label: t("workshop.homebrew.class.listLabel", { list: value }) })),
+              ...(offersCustom || custom ? [{ value: CUSTOM_SPELL_LIST, label: t("workshop.homebrew.class.listOwn") }] : []),
+            ]}
+            onChange={(spellListFrom) =>
+              set(
+                spellListFrom === CUSTOM_SPELL_LIST
+                  ? { spellListFrom, spellList: Array.isArray(data.spellList) ? data.spellList : [], spellStyle: data.spellStyle ?? "prepared" }
+                  : { spellListFrom, spellAbility: LIST_ABILITY[spellListFrom as (typeof SPELL_LISTS)[number]], spellList: undefined, spellStyle: undefined },
+              )
+            }
+            hint={
+              custom
+                ? t("workshop.homebrew.class.customListHint", { rules: rules ?? "cleric" })
+                : LEARNS.has(list)
+                  ? t("workshop.homebrew.class.learnsHint")
+                  : t("workshop.homebrew.class.preparesHint")
+            }
           />
         ) : null}
         {casting !== "none" ? (
@@ -354,7 +391,30 @@ export function ClassFields({ data, set }: { data: Data; set: (patch: Data) => v
             onChange={(spellAbility) => set({ spellAbility })}
           />
         ) : null}
+        {casting !== "none" && custom && casting !== "pact" ? (
+          <SelectField<string>
+            label={t("workshop.homebrew.class.getsSpells")}
+            value={style}
+            options={styleOptions(t, casting)}
+            onChange={(spellStyle) => set({ spellStyle })}
+            hint={t("workshop.homebrew.class.styleHint")}
+          />
+        ) : null}
       </div>
+      {casting !== "none" && custom ? (
+        <div className="space-y-1.5">
+          <SectionHead title={t("workshop.homebrew.class.ownSpellsTitle")} glyph="rest-spell-slot" className="mb-1" />
+          {casting === "pact" ? (
+            <p className="text-[11px] text-stone-500">{t("workshop.homebrew.class.pactLearnsNote")}</p>
+          ) : null}
+          <CustomSpellList
+            names={Array.isArray(data.spellList) ? (data.spellList as string[]) : []}
+            onChange={(spellList) => set({ spellList })}
+            // Counted as a paladin's or a ranger's: no cantrips to learn.
+            noCantrips={casting === "half"}
+          />
+        </div>
+      ) : null}
 
       <Features data={data} set={set} />
     </div>

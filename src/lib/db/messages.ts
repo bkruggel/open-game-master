@@ -4,6 +4,8 @@ import { touchCampaign } from "@/lib/db/campaigns";
 import type { GeneratedImage, ImageRequest } from "@/lib/types";
 import { parseMessageIntent, type MessageIntent } from "@/lib/dm/intent-logic";
 import { isSystemGlyph, type SystemGlyph } from "@/lib/system-glyphs";
+import { noteNamesHeard } from "@/lib/dm/cast";
+import { isHaltedTurnNotice } from "@/lib/campaign-types";
 
 export type CampaignMessage = {
   id: string;
@@ -41,6 +43,9 @@ export type CampaignMessage = {
   // Why that card did not happen: no call of the turn carried it out, so it
   // went back to its player's hand (issue 570). Absent when it happened.
   cardReturned?: string;
+  // When the GM resolved that card as played from the console's waiting
+  // list (issue 685): it is answered. Absent otherwise.
+  cardResolvedAt?: string;
   // A system line's icon, stored by its writer. Absent on other messages and
   // on lines written before it, which draw the neutral bell.
   glyph?: SystemGlyph;
@@ -50,6 +55,11 @@ export type CampaignMessage = {
   // The shop a "<shop> is open" system line announces; the chat draws it
   // with a Browse wares button that opens the Market on that shop.
   shopId?: string;
+  // The rolls a table note carries, drawn as cards above its line (a
+  // person's adjudication, src/lib/dm/persons-record.ts). Its words stand
+  // alone for a screen that does not know this field. Only rolls every seat
+  // is sent; absent everywhere else.
+  rollIds?: string[];
   createdAt: string;
 };
 
@@ -71,11 +81,19 @@ type MessageRow = {
   speaker_json: string | null;
   intent_json?: string | null;
   card_returned?: string | null;
+  card_resolved_at?: string | null;
   glyph?: string | null;
   speech_json?: string | null;
   shop_id?: string | null;
+  roll_ids_json?: string | null;
   created_at: string;
 };
+
+function rollIdsOf(json: string | null | undefined): { rollIds?: string[] } {
+  const ids = parseJson<unknown>(json ?? "null", null);
+  const rollIds = Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
+  return rollIds.length ? { rollIds } : {};
+}
 
 function mapMessage(row: MessageRow): CampaignMessage {
   return {
@@ -96,9 +114,11 @@ function mapMessage(row: MessageRow): CampaignMessage {
     speaker: normalizeSpeaker(parseJson<unknown>(row.speaker_json ?? "null", null)) ?? undefined,
     intent: parseMessageIntent(parseJson<unknown>(row.intent_json ?? "null", null)) ?? undefined,
     ...(row.card_returned ? { cardReturned: row.card_returned } : {}),
+    ...(row.card_resolved_at ? { cardResolvedAt: row.card_resolved_at } : {}),
     glyph: isSystemGlyph(row.glyph) ? row.glyph : undefined,
     speech: normalizeSpokenLines(parseJson<unknown>(row.speech_json ?? "null", null)),
     shopId: row.shop_id ?? undefined,
+    ...rollIdsOf(row.roll_ids_json),
     createdAt: row.created_at,
   };
 }
@@ -120,7 +140,7 @@ export function insertCampaignMessage(
   } & (
     | { authorType: "player"; glyph?: never; speech?: never }
     | { authorType: "dm"; glyph?: never; speech: readonly SpokenLine[] }
-    | { authorType: "system"; glyph: SystemGlyph; speech?: never; shopId?: string }
+    | { authorType: "system"; glyph: SystemGlyph; speech?: never; shopId?: string; rollIds?: readonly string[] }
   ),
 ): CampaignMessage {
   const id = crypto.randomUUID();
@@ -129,9 +149,9 @@ export function insertCampaignMessage(
       `
         INSERT INTO campaign_messages (
           id, campaign_id, seq, author_type, user_id, character_id, content,
-          image_request_json, location_id, dm_turn_id, speaker_json, intent_json, glyph, speech_json, shop_id, created_at
+          image_request_json, location_id, dm_turn_id, speaker_json, intent_json, glyph, speech_json, shop_id, roll_ids_json, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .run(
@@ -150,6 +170,7 @@ export function insertCampaignMessage(
       input.glyph ?? null,
       input.speech?.length ? JSON.stringify(input.speech) : null,
       (input.authorType === "system" && input.shopId) || null,
+      input.authorType === "system" && input.rollIds?.length ? JSON.stringify(input.rollIds) : null,
       nowIso(),
     );
   touchCampaign(input.campaignId);
@@ -158,7 +179,18 @@ export function insertCampaignMessage(
   if (!message) {
     throw new Error("Failed to insert campaign message.");
   }
+  namesHeardIn(message);
   return message;
+}
+
+// The names a GM or system message says to the table, as it now reads,
+// are known from here on (src/lib/dm/cast.ts noteNamesHeard, issue 650).
+// The speakers counted are those of the lines this text still holds: a
+// reroll's speech covers every take, and a take not shown said nothing.
+function namesHeardIn(message: CampaignMessage | null) {
+  if (message && message.authorType !== "player") {
+    noteNamesHeard(message.campaignId, message.content, message.speech.filter((spoken) => message.content.includes(spoken.line)));
+  }
 }
 
 export function getCampaignMessage(messageId: string): CampaignMessage | null {
@@ -201,6 +233,21 @@ export function listRecentMessages(campaignId: string, limit = 100): CampaignMes
       `,
     )
     .all(campaignId, limit) as MessageRow[];
+  return rows.map(mapMessage);
+}
+
+// The GM's own messages from `sinceSeq` on, the newest `limit` of them, in
+// ascending seq order (src/lib/dm/improvise.ts reads the place's narration).
+export function listDmMessagesSince(campaignId: string, sinceSeq: number, limit: number): CampaignMessage[] {
+  const rows = getDatabase()
+    .prepare(
+      `
+        SELECT * FROM (
+          SELECT * FROM campaign_messages WHERE campaign_id = ? AND author_type = 'dm' AND seq >= ? ORDER BY seq DESC LIMIT ?
+        ) ORDER BY seq ASC
+      `,
+    )
+    .all(campaignId, sinceSeq, limit) as MessageRow[];
   return rows.map(mapMessage);
 }
 
@@ -279,11 +326,15 @@ export function clearMessageDmTurn(messageId: string, dmTurnId: string): Campaig
 }
 
 // The halted notice pointing at a turn, if it is still offering a retry.
+// The notice alone: a lair action the turn posted carries the same link, and
+// sits after the notice when the notice took the narration's earlier slot
+// (src/lib/dm/narration-slot.ts), so the newest linked row was the lair's
+// and the Retry cleared its link while the notice kept offering itself.
 export function findMessageForDmTurn(dmTurnId: string): CampaignMessage | null {
-  const row = getDatabase()
-    .prepare(`SELECT * FROM campaign_messages WHERE dm_turn_id = ? ORDER BY seq DESC LIMIT 1`)
-    .get(dmTurnId) as MessageRow | undefined;
-  return row ? mapMessage(row) : null;
+  const rows = getDatabase()
+    .prepare(`SELECT * FROM campaign_messages WHERE dm_turn_id = ? AND author_type = 'system' ORDER BY seq DESC`)
+    .all(dmTurnId) as MessageRow[];
+  return rows.map(mapMessage).find(isHaltedTurnNotice) ?? null;
 }
 
 // A card no call of its turn carried out goes back to its player (issue
@@ -294,6 +345,26 @@ export function markCardReturned(messageId: string, reason: string): CampaignMes
     .prepare(`UPDATE campaign_messages SET card_returned = ? WHERE id = ? AND author_type = 'player'`)
     .run(reason.slice(0, 300), messageId);
   return result.changes > 0 ? getCampaignMessage(messageId) : null;
+}
+
+// The GM resolving a waiting card as played (issue 685,
+// src/lib/dm/resolve-card.ts) claims it first, in one statement, so two
+// presses or two GM seats cannot both cast it: false when it was answered
+// already, returned to its player, or is no player's card. The claim is let
+// go again when the engine refuses the card's first call, since nothing
+// happened.
+export function claimCardResolution(messageId: string): boolean {
+  return (
+    getDatabase()
+      .prepare(
+        `UPDATE campaign_messages SET card_resolved_at = ? WHERE id = ? AND author_type = 'player' AND intent_json IS NOT NULL AND card_resolved_at IS NULL AND card_returned IS NULL`,
+      )
+      .run(nowIso(), messageId).changes > 0
+  );
+}
+
+export function releaseCardResolution(messageId: string): void {
+  getDatabase().prepare(`UPDATE campaign_messages SET card_resolved_at = NULL WHERE id = ?`).run(messageId);
 }
 
 // Lore-check accept: replaces a message's text in place (the lead applying
@@ -308,7 +379,9 @@ export function updateMessageContent(messageId: string, content: string, speech:
       `UPDATE campaign_messages SET content = ?, speech_json = ?, variants_json = NULL, variant_index = NULL, edited_take = NULL WHERE id = ?`,
     )
     .run(content, speech.length ? JSON.stringify(speech) : null, messageId);
-  return result.changes > 0 ? getCampaignMessage(messageId) : null;
+  const message = result.changes > 0 ? getCampaignMessage(messageId) : null;
+  namesHeardIn(message);
+  return message;
 }
 
 // The newest DM narration in the campaign. Rerolls are offered on this
@@ -354,5 +427,7 @@ export function setMessageVariants(
       : db
           .prepare(`UPDATE campaign_messages SET variants_json = ?, variant_index = ?, content = ?, speech_json = ?, edited_take = ? WHERE id = ?`)
           .run(JSON.stringify(variants), index, selected, speech.length ? JSON.stringify(speech) : null, editedTake, messageId);
-  return result.changes > 0 ? getCampaignMessage(messageId) : null;
+  const message = result.changes > 0 ? getCampaignMessage(messageId) : null;
+  namesHeardIn(message);
+  return message;
 }

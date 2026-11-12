@@ -171,7 +171,8 @@ function preview(
     ok: true,
     problems: [],
     rollsHp: Boolean(admitted.rolledHp),
-    ...joinChanges(stored, fromLevel, admitted.sheet, toLevel, t, locale),
+    // The table's workshop subclasses and feats open picks too (owed-picks-logic.ts).
+    ...joinChanges(stored, fromLevel, admitted.sheet, toLevel, t, locale, { extras: seatPicksContextFor(campaign).subclassExtras, campaignId: campaign.id }),
     ...(picks ? { picks } : {}),
   };
 }

@@ -10,11 +10,18 @@ import type { Encounter, EncounterEnemy } from "@/lib/db/encounters";
 import { insertCampaignMessage } from "@/lib/db/messages";
 import { publishWithSeq } from "@/lib/events";
 import { holyNimbusTurnStart } from "@/lib/dm/combat-features";
+import { draconicPresenceTurnStart } from "@/lib/dm/draconic-spends";
 import { refillLegendaryForTurn } from "@/lib/dm/legendary-tools";
 import { landTheFlightless } from "@/lib/dm/map-tools";
 import { regenerationTurnStart } from "@/lib/dm/regeneration-turn";
 import { sunlightTurnStart } from "@/lib/dm/sunlight-turn";
 import { beginTurns, endTurns } from "@/lib/dm/turn-end";
+import { burningTurnStart } from "@/lib/dm/gear-weapon-hit";
+import { laughterTurnStart } from "@/lib/dm/afflictions";
+import { swallowTurnStart, swallowTurnsStarted } from "@/lib/dm/swallow";
+import { applyEnemyDamage } from "@/lib/dm/enemy-damage";
+import { withOpportunityTurn } from "@/lib/dm/opportunity-strike";
+import { listSheets } from "@/lib/db/sheets";
 
 export function turnStartEffects(
   campaign: Campaign,
@@ -39,19 +46,36 @@ export function turnStartEffects(
     // Holy Nimbus burns the enemies whose turns start in its light
     // (src/lib/dm/combat-features.ts).
     ...holyNimbusTurnStart(campaign, encounter, starting),
+    // Draconic Presence's aura asks a save of each hostile creature whose
+    // turn starts in it (src/lib/dm/draconic-spends.ts).
+    ...draconicPresenceTurnStart(campaign, encounter, starting),
     // A character aloft whose flight has ended comes down.
     ...landTheFlightless(campaign, encounter.id),
+    // Cackle fever's laughter spreads to a character starting beside it.
+    ...laughterTurnStart(campaign, encounter.id, starting.filter((id) => !enemiesById.has(id))),
   ];
   for (const id of starting) {
     const enemy = enemiesById.get(id);
+    // Alchemist's fire burns the creature whose turn starts (gear-weapon-hit.ts).
+    turnStartLines.push(...burningTurnStart(campaign, encounter, id, enemy));
     if (enemy?.status === "alive") {
       // A troll down at 0 rises or dies as its turn starts (regeneration-turn.ts).
       turnStartLines.push(...regenerationTurnStart(campaign, encounter, enemy));
       // A vampire in sunlight burns (sunlight-turn.ts).
       turnStartLines.push(...sunlightTurnStart(campaign, encounter, enemy));
       turnStartLines.push(...refillLegendaryForTurn(encounter, enemy));
+      // What it swallowed takes its acid (swallow.ts).
+      turnStartLines.push(
+        ...swallowTurnStart(campaign, enemy, (row, amount, type) => {
+          const sheets = listSheets(campaign.id);
+          withOpportunityTurn(campaign.id, (turn) => applyEnemyDamage(campaign, turn, encounter, row, amount, sheets, new Map(sheets.map((sheet) => [sheet.id, sheet])), type, { holdVictory: true }));
+        }),
+      );
     }
   }
+  // What a creature inside dealt its swallower as the swallower's turn began
+  // is that turn's, apart from the one the pointer lands on (swallow.ts).
+  swallowTurnsStarted(campaign, encounter, starting);
   if (turnStartLines.length) {
     const seq = allocateSeq(campaign.id);
     const message = insertCampaignMessage({

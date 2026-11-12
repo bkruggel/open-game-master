@@ -10,6 +10,7 @@ import { extraTurnTagT, litOrderRows, orderRowKey } from "@/lib/battlemap/initia
 import { floorNoticeKey, liveNotice, type HandNotice } from "@/lib/battlemap/hand-table";
 import { useT } from "@/lib/locale";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
+import { TurnHoldNote, useTurnHeld } from "@/app/campaigns/[campaignId]/TurnHoldNote";
 
 // Spotlight, held-responses, and initiative banners above the composer;
 // the lead gets the release/skip buttons, the current player gets End turn.
@@ -42,6 +43,8 @@ export function FloorBanners({
   const setRefusal = (text: string) => setRefusalEntry(text ? { text, key: refusalKey } : null);
   const myInitiativeTurn =
     floor.mode === "initiative" && meUserId !== "" && floor.userIds.includes(meUserId);
+  // The End Turn is in and the move waits on a watcher's stop.
+  const held = useTurnHeld(encounter);
 
   // Attacks no longer end the turn by themselves (movement and bonus
   // actions stay open), so this is the player's way to say "done".
@@ -75,11 +78,12 @@ export function FloorBanners({
                   <button
                     type="button"
                     onClick={endTurn}
-                    disabled={endingTurn}
+                    disabled={endingTurn || Boolean(held)}
+                    aria-busy={held ? true : undefined}
                     className={bannerButtonClass(true)}
                     title={t("lead.floor.endTurnTitle")}
                   >
-                    {t("board.order.endTurn")}
+                    {held ? t("board.order.endingTurn") : t("board.order.endTurn")}
                   </button>
                 ) : null}
                 {steersStory ? (
@@ -87,6 +91,9 @@ export function FloorBanners({
                     type="button"
                     onClick={onRelease}
                     className={bannerButtonClass()}
+                    // Marks the banner as holding something only it offers
+                    // (world.css keeps it over a docked Hand for this).
+                    data-banner-lead=""
                     title={t("lead.floor.skipTurnTitle")}
                   >
                     {t("lead.floor.skipTurn")}
@@ -125,6 +132,7 @@ export function FloorBanners({
                 <>{t("table.hand.header.turn", { name: floor.currentName })}</>
               )}
           </span>
+          {held ? <TurnHoldNote held={held} mine={myInitiativeTurn} className="mt-0.5" /> : null}
           {refusal ? (
             <span key={refusal} role="alert" className="mt-0.5 block animate-fade-up text-xs text-amber-200">
               {refusal}

@@ -43,7 +43,7 @@ export function SheetBetween({ sheet, className }: { sheet: CharacterSheet; clas
   if (!lines.length) return null;
   return (
     <div className={cn("reveal rounded-lg border border-stone-800 bg-stone-950/40 px-3 py-2", className)}>
-      <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-stone-500">{t("sheet.between.title")}</p>
+      <p className="mb-1 text-[10px] uppercase tracking-[0.14em] text-stone-500">{t("sheet.between.title")}</p>
       <ul className="stagger-up space-y-0.5 text-xs">
         {lines.map((line) => (
           <li

@@ -12,7 +12,7 @@ import type { EncounterEnemy } from "@/lib/db/encounters";
 import { getSheetById } from "@/lib/db/sheets";
 import type { Advantage } from "@/lib/dice";
 import { enemyFlanks, enemyShootsInMelee } from "@/lib/dm/attack-spatial";
-import { attackSight, characterSenses, enemySenses, lightOnAttack } from "@/lib/dm/attack-light";
+import { attackSenses, attackSight, characterSenses, enemySenses, fearAsRolled, lightOnAttack } from "@/lib/dm/attack-light";
 import { authoredIncomingAttack } from "@/lib/dm/authored-hooks";
 import { normalizeClock } from "@/lib/dm/calendar";
 import { attackContext, isIncapacitated, mergeAdvantage } from "@/lib/dm/condition-logic";
@@ -24,8 +24,9 @@ import { CHILL_TOUCH_DREAD } from "@/lib/dm/spell-attack-riders";
 import { cursedAgainst } from "@/lib/dm/spell-retort";
 import { inDirectSunlight } from "@/lib/dm/sunlight";
 import type { underwaterSwing } from "@/lib/dm/underwater";
-import { conditionsOf } from "@/lib/dm/vitals-logic";
+import { conditionsOf, PRONE, UNCONSCIOUS } from "@/lib/dm/vitals-logic";
 import type { ConditionRollRiders } from "@/lib/srd/condition-effects";
+import { isConditionNamed } from "@/lib/srd/feature-names";
 import { weatherRangedRider } from "@/lib/srd/weather";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 
@@ -52,6 +53,11 @@ export function enemySwingOdds(input: {
   riders: ConditionRollRiders;
   // Multiattack Defense's +4 is already up.
   defended: number;
+  // The odds against the target as if it stood: a character at 0 without
+  // the unconsciousness and the fall that lying there lays (vitals-logic.ts
+  // downConditions). Kept with a hit on them at 0, for a reaction that leaves
+  // them standing when it lands (last-hit.ts standingAdvantage).
+  standingTarget?: boolean;
 }): {
   advantage: Advantage;
   notes: string[];
@@ -64,16 +70,30 @@ export function enemySwingOdds(input: {
   const effect = effectOutcome(campaign.id, { kind: "enemy", id: standing.id }, "attack");
   // Conditions on both sides drive advantage and auto-crits; the model's
   // situational claim merges in as one more source.
+  // Light on a mapped fight: who can see whom (src/lib/dm/attack-light.ts).
+  const sight = attackSight({
+    campaignId: campaign.id,
+    encounterId,
+    attacker: { refId: standing.id, senses: enemySenses(standing) },
+    target: { refId: target.id, senses: characterSenses(target) },
+  });
+  const live = getSheetById(target.id) ?? target;
+  // Blindsight or truesight past an invisible or blinded side (attack-light.ts).
+  const senses = attackSenses(encounterId, { refId: standing.id, senses: enemySenses(standing) }, { refId: target.id, senses: characterSenses(target) });
+  const upright = input.standingTarget ? live.conditions.filter((entry) => !isConditionNamed(entry, UNCONSCIOUS) && !isConditionNamed(entry, PRONE)) : null;
   const conditionContext = attackContext({
-    attackerConditions: standing.conditions,
+    ...senses,
+    // Frightened weighs on the roll only with its source in sight.
+    attackerConditions: fearAsRolled(encounterId, standing.id, standing.conditions, standing.conditionMeta),
     attackerType: standing.stats.type,
     // Dodge is lost with the dodger's speed, and a character at 0 hit
     // points is unconscious and prone whatever wrote the 0.
-    targetConditions: withLiveDodge(conditionsOf(getSheetById(target.id) ?? target)),
+    targetConditions: withLiveDodge(upright ?? conditionsOf(live)),
     melee: !ranged,
     adjacent: distance === null ? !ranged : distance <= 1,
     // The AI names a circumstance the engine does not decide (pc-attack-options.ts).
     requested: claimedAdvantage({ requested: requested.advantage, source: requested.advantageSource, reason: requested.advantageReason, byAi: turn.actor === "ai" }).requested,
+    targetSeesAttacker: sight?.targetSees !== false,
   });
   // A gale over an outdoor board: disadvantage on ranged attacks past 30
   // ft, for the monsters exactly as for the party.
@@ -91,16 +111,7 @@ export function enemySwingOdds(input: {
   const worn = enemyExhaustion(standing.conditions) >= 3;
   // Sunlight Sensitivity: disadvantage in direct sunlight (sunlight.ts).
   const sunlit = hasTrait(standing.stats, "sunlightSensitivity") && inDirectSunlight(campaign.id);
-  // Light on a mapped fight: who can see whom (src/lib/dm/attack-light.ts).
-  const light = lightOnAttack(
-    attackSight({
-      campaignId: campaign.id,
-      encounterId,
-      attacker: { refId: standing.id, senses: enemySenses(standing) },
-      target: { refId: target.id, senses: characterSenses(target) },
-    }),
-    { attacker: standing.displayName, target: target.name },
-  );
+  const light = lightOnAttack(sight, { attacker: standing.displayName, target: target.name });
   // Chill Touch: an undead the caster struck attacks the caster at
   // disadvantage until the end of the caster's next turn (CHILL_TOUCH_DREAD,
   // src/lib/dm/spell-attack-riders.ts; an older row carries only the spell).
@@ -112,8 +123,8 @@ export function enemySwingOdds(input: {
     );
   // Elusive (rogue 18): no attack roll against them has advantage while
   // they are not incapacitated.
-  const liveTarget = getSheetById(target.id) ?? target;
-  const elusive = hasFeatureNamed(liveTarget, /^elusive$/i) && !isIncapacitated(liveTarget.conditions);
+  const liveTarget = live;
+  const elusive = hasFeatureNamed(liveTarget, /^elusive$/i) && !isIncapacitated(upright ?? liveTarget.conditions);
   // Authored subclass features (Among the Dead, Fungal Body, a guardian's mark): authored-hooks.ts.
   const authored = authoredIncomingAttack({ campaignId: campaign.id, encounterId, attacker: standing, target: liveTarget });
   const sources: Advantage[] = [
@@ -176,13 +187,22 @@ export function enemyRowSwingOdds(input: {
 }): { advantage: Advantage; notes: string[]; autoCrit: boolean; attackBonus: number } {
   const { campaign, encounterId, standing, target, ranged, distance } = input;
   const effect = effectOutcome(campaign.id, { kind: "enemy", id: standing.id }, "attack");
+  const sight = attackSight({
+    campaignId: campaign.id,
+    encounterId,
+    attacker: { refId: standing.id, senses: enemySenses(standing) },
+    target: { refId: target.id, senses: enemySenses(target) },
+  });
   const conditionContext = attackContext({
-    attackerConditions: standing.conditions,
+    ...attackSenses(encounterId, { refId: standing.id, senses: enemySenses(standing) }, { refId: target.id, senses: enemySenses(target) }),
+    // Frightened weighs on the roll only with its source in sight.
+    attackerConditions: fearAsRolled(encounterId, standing.id, standing.conditions, standing.conditionMeta),
     attackerType: standing.stats.type,
     targetConditions: withLiveDodge(target.conditions),
     melee: !ranged,
     adjacent: distance === null ? !ranged : distance <= 1,
     requested: input.requested,
+    targetSeesAttacker: sight?.targetSees !== false,
   });
   const gale = input.outdoorsOnMap ? weatherRangedRider(normalizeClock(campaign.clock).weather, ranged, distance ?? 0) : { disadvantage: false, note: null };
   const crowded = ranged && enemyShootsInMelee(encounterId, standing.id, standing.conditions);
@@ -191,12 +211,7 @@ export function enemyRowSwingOdds(input: {
   const worn = enemyExhaustion(standing.conditions) >= 3;
   const sunlit = hasTrait(standing.stats, "sunlightSensitivity") && inDirectSunlight(campaign.id);
   const light = lightOnAttack(
-    attackSight({
-      campaignId: campaign.id,
-      encounterId,
-      attacker: { refId: standing.id, senses: enemySenses(standing) },
-      target: { refId: target.id, senses: enemySenses(target) },
-    }),
+    sight,
     { attacker: standing.displayName, target: target.displayName },
   );
   const marks: Array<[boolean, Advantage, string]> = [

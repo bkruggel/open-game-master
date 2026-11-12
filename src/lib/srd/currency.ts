@@ -17,6 +17,9 @@
 // can load it and the client can format a purse without a request.
 
 import { writtenWholeNumber } from "../language/text-logic.ts";
+// Pure still (no request), but the unread-coins words are the dictionaries',
+// so the translate comes along for the enT default.
+import { translate } from "../messages-logic.ts";
 
 export const DENOMINATIONS = ["cp", "sp", "ep", "gp", "pp"] as const;
 export type Denomination = (typeof DENOMINATIONS)[number];
@@ -39,8 +42,20 @@ export type Purse = { gold: number; copper: number };
 export const COPPER_PER_GOLD = DENOMINATION_COPPER.gp;
 
 // A purse's true value, which is the number every calculation should use.
+// A sheet saved before copper was kept has no copper at all (a library
+// character's stored JSON is read as it was written), and NaN would show
+// its 50 gp as "0 gp".
 export function purseCopper(purse: Purse): number {
-  return Math.round(purse.gold) * COPPER_PER_GOLD + Math.round(purse.copper);
+  return Math.round(Number(purse.gold) || 0) * COPPER_PER_GOLD + Math.round(Number(purse.copper) || 0);
+}
+
+// How many coins the purse is, for the load they weigh (50 to the pound,
+// whatever the metal): the gold pieces, and the remainder under a gold piece
+// in the fewest silver and copper. Counting only the gold left a pouch of
+// silver weightless.
+export function purseCoins(purse: Purse): number {
+  const remainder = purseCopper(purse) % COPPER_PER_GOLD;
+  return Math.max(0, Math.round(Number(purse.gold) || 0)) + Math.floor(remainder / DENOMINATION_COPPER.sp) + (remainder % DENOMINATION_COPPER.sp);
 }
 
 // The inverse. Negative totals clamp to empty rather than producing a debt:
@@ -83,15 +98,30 @@ export function formatCopper(total: number): string {
 // for what is left under a gold piece: "55 gp", "1 gp 5 sp", "2 sp 2 cp".
 // Platinum belongs to the coins in a purse (formatCopper), not to prices:
 // "5 pp 5 gp" for a 55 gp item made every Market tile a sum.
-export function formatPrice(total: number): string {
+// `space` goes between a coin's number and its code: a narrow cell passes a
+// no-break space, so it breaks between coins and never inside one.
+export function formatPrice(total: number, space = " "): string {
   const value = Math.max(0, Math.round(total));
   const parts = [
     [Math.floor(value / COPPER_PER_GOLD), "gp"],
     [Math.floor((value % COPPER_PER_GOLD) / DENOMINATION_COPPER.sp), "sp"],
     [value % DENOMINATION_COPPER.sp, "cp"],
   ] as const;
-  const written = parts.filter(([count]) => count > 0).map(([count, code]) => `${count} ${code}`);
-  return written.length ? written.join(" ") : "0 gp";
+  const written = parts.filter(([count]) => count > 0).map(([count, code]) => `${count}${space}${code}`);
+  return written.length ? written.join(" ") : `0${space}gp`;
+}
+
+// A price as the content pack or an author wrote it, put in the notation
+// every other price takes (formatPrice). The pack prints a part of a gold
+// piece as a decimal ("0.05 gp", "0.4 gp") and its newer rows a bare gold
+// figure ("0.01"), so the builder's gear list said "0.05 gp" beside a
+// receipt that said "5 cp" for the same candle. A whole amount already in
+// the codes keeps its own marks ("2,000 gp"), and text that is no amount
+// ("varies") is passed through.
+export function priceText(text: string): string {
+  const written = String(text ?? "").trim();
+  const copper = packCostCopper(written);
+  return copper !== null && /\.|^[\d,]+$/.test(written) ? formatPrice(copper) : written;
 }
 
 export function formatPurse(purse: Purse): string {
@@ -146,6 +176,7 @@ export function packCostCopper(text: string): number | null {
 
 // The shape of a translator, as the pure sentence builders take it.
 type T = (key: string, vars?: Record<string, string | number>) => string;
+const enT: T = (key, vars) => translate("en", key, vars);
 
 // Why a coin amount cannot be read, for the refusal that asks for it again:
 // the mark a number was written with, else the codes. The words are the
@@ -155,6 +186,35 @@ export function unreadCoins(t: T, text: string): string {
   return number
     ? t("coins.unread.whole", { written: number.unread })
     : t("coins.unread.codes", { text });
+}
+
+// What a coin change moves, in copper, from the two ways it can be said: a
+// whole-gold delta, or coins in the codes. Coins win over the delta's size.
+// Their direction is their own written sign, else the delta's sign, and with
+// neither it is asked for again: "5 sp" with a zero delta used to pay the
+// character five silver when the fiction had them hand it over. The other
+// problems are the engine's own words (the model reads them), but an
+// unparseable amount reuses unreadCoins, so it takes the translator last
+// with the English default.
+export type CoinMove = { copper: number } | { problem: string };
+
+export function coinMove(delta: unknown, coins: unknown, t: T = enT): CoinMove {
+  const whole = Number(delta ?? 0) || 0;
+  const written = String(coins ?? "").trim();
+  if (!written) {
+    return whole
+      ? { copper: whole * COPPER_PER_GOLD }
+      : { problem: 'needs a nonzero delta, or signed coins like "-5 sp"' };
+  }
+  const amount = written.replace(/^[-\u2212+]\s*/u, "");
+  const copper = parseCoins(amount);
+  if (copper === null) {
+    return { problem: unreadCoins(t, amount) };
+  }
+  const sign = amount === written ? Math.sign(whole) : written.startsWith("+") ? 1 : -1;
+  return sign
+    ? { copper: sign * copper }
+    : { problem: `"${written}" does not say gain or spend: write "-${written}" to spend it or "+${written}" to gain it` };
 }
 
 export type PurseChange = {

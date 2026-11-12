@@ -18,15 +18,19 @@ import { encumbranceFor } from "@/lib/srd/encumbrance";
 import { sizeForRace } from "@/lib/srd";
 import { LIFESTYLES } from "@/lib/dm/between-state";
 import { tableNote, writeLifestyle } from "@/lib/dm/between-io";
-import { LIFESTYLE_COST_CP, downtimeProblem, spendDowntime, type DowntimeEntry } from "@/lib/dm/lifestyle";
+import { LIFESTYLE_COST_CP, coverOf, downtimeProblem, spendDowntime, type DowntimeEntry } from "@/lib/dm/lifestyle";
 import { srdNameFor } from "@/lib/dm/item-logic";
 import { infectDisease, infectWorkshopDisease, inflictMadness } from "@/lib/dm/afflictions";
 import { diseaseAt, hazardNamesAt, poisonAt } from "@/lib/srd/table-hazards";
 import { applyPoison } from "@/lib/dm/affliction-poisons";
+import { petrifiedRefusal } from "@/lib/dm/damage-logic";
 import { DISEASES, MADNESS_KINDS, POISONS, findDisease } from "@/lib/srd/afflictions";
-import { formatPrice } from "@/lib/srd/currency";
+import { formatPrice, purseCoins } from "@/lib/srd/currency";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import type { ToolResult } from "@/lib/dm/tool-errors";
+import { argumentsRefusal, type ToolResult } from "@/lib/dm/tool-errors";
+import { matchGear } from "@/lib/srd/adventuring-gear";
+import { rowName } from "@/lib/srd/item-row";
+import { fittedText } from "@/lib/dm/fitted-text";
 
 type ToolDef = {
   type: "function";
@@ -118,7 +122,7 @@ export const exploreTools: ToolDef[] = [
     function: {
       name: "afflict",
       description:
-        `Lay an SRD disease (${Object.values(DISEASES).map((disease) => disease.name).join(", ")}), a madness or a poison on a character; the server rolls the save and holds the effects from then on. A disease is a CON save against catching it, symptoms after their incubation, then the disease's own saves after each long rest; lesser restoration cures it. For a madness, pass its duration (short, long or indefinite); the server rolls that table and how long it lasts, and applies the conditions; pass saveDc (and saveAbility wis or cha) for an effect that allows a save. The SRD poisons are ${POISONS.filter((poison) => poison.type !== "injury").map((poison) => poison.name).join(", ")}, and the injury poisons when a poisoned blade strikes a character; the server rolls the CON save, the damage and the conditions. The table's own diseases and poisons from the workshop are named under GAME STATE and work the same way. Never narrate a disease, madness or poison taking hold without this call.`,
+        `Lay an SRD disease (${Object.values(DISEASES).map((disease) => disease.name).join(", ")}), a madness or a poison on a character; the server rolls the save and holds the effects from then on (lesser restoration cures a disease). For a madness, pass its duration, and saveDc for an effect that allows a save. The SRD poisons are ${POISONS.filter((poison) => poison.type !== "injury").map((poison) => poison.name).join(", ")}, and the injury poisons when a poisoned blade strikes a character. The table's own diseases and poisons from the workshop are named under GAME STATE and work the same way. Never narrate a disease, madness or poison taking hold without this call.`,
       parameters: {
         type: "object",
         additionalProperties: false,
@@ -127,7 +131,7 @@ export const exploreTools: ToolDef[] = [
           kind: { type: "string", enum: ["disease", "madness", "poison"], description: "What it is." },
           name: { type: "string", description: "Disease or poison only: which, by name." },
           duration: { type: "string", enum: [...MADNESS_KINDS], description: "Madness only: how long it lasts." },
-          save: { type: "boolean", description: "Whether the server rolls the save against it; false when already infected or with no save. Default: true. False for a madness from a failed save you already rolled." },
+          save: { type: "boolean", description: "Whether the server rolls the save against it. False when already infected, with no save, or for a madness from a failed save already rolled. Default: true." },
           saveDc: { type: "integer", minimum: 1, maximum: 30, description: "The save's DC, if the source sets one: a disease's infection, a madness's save. A poison uses its own." },
           saveAbility: { type: "string", enum: ["wis", "cha"], description: "Madness only: the save's ability. Default: 'wis'." },
           symptomsNow: { type: "boolean", description: "Disease only: the symptoms show now rather than after the incubation." },
@@ -150,11 +154,14 @@ function resolveTargets(ids: unknown, sheets: CharacterSheet[], sheetsById: Map<
 
 // ---- lift ----
 
+// The SRD's block and tackle row, every spelling of it.
+const BLOCK_AND_TACKLE = matchGear("Block and Tackle");
+
 const liftSchema = z.object({
   characterId: z.string(),
-  weightLb: z.coerce.number().min(1).max(100000),
+  weightLb: z.coerce.number().min(1),
   how: z.enum(["lift", "push", "drag"]).optional(),
-  reason: z.string().max(200).optional(),
+  reason: fittedText(200).optional(),
 });
 
 function handleLift(args: z.infer<typeof liftSchema>, sheets: CharacterSheet[], sheetsById: Map<string, CharacterSheet>): ToolResult {
@@ -165,16 +172,26 @@ function handleLift(args: z.infer<typeof liftSchema>, sheets: CharacterSheet[], 
   }
   const how = args.how ?? "lift";
   const limits = liftLimits(sheet);
-  if (args.weightLb > limits.liftLb) {
+  // SRD 5.1 Adventuring Gear, Block and Tackle: "a block and tackle allows
+  // you to hoist up to four times the weight you can normally lift" (issue
+  // #570, EQP-26).
+  const pulleys = how === "lift" && sheet.equipment.some((item) => matchGear(rowName(item)) === BLOCK_AND_TACKLE);
+  const hoistLb = pulleys ? limits.liftLb * 4 : limits.liftLb;
+  if (args.weightLb > hoistLb) {
     return {
-      error: `${sheet.name} can push, drag or lift at most ${limits.liftLb} lb (30 x Strength); ${args.weightLb} lb does not move. Narrate the strain; more hands (another character's own lift) or a lever are the way.`,
+      error: pulleys
+        ? `${sheet.name} can hoist at most ${hoistLb} lb with a block and tackle (four times their ${limits.liftLb} lb lift); ${args.weightLb} lb does not move. Narrate the strain; more hands (another character's own lift) are the way.`
+        : `${sheet.name} can push, drag or lift at most ${limits.liftLb} lb (30 x Strength); ${args.weightLb} lb does not move. Narrate the strain; more hands (another character's own lift) or a lever are the way.`,
       refused: "rules",
     };
+  }
+  if (pulleys && args.weightLb > limits.liftLb) {
+    return { ok: true, lifted: `${args.weightLb} lb`, limitLb: hoistLb, note: `${sheet.name} hoists ${args.weightLb} lb with a block and tackle, up to four times the ${limits.liftLb} lb they lift by hand. Narrate the haul on the ropes.` };
   }
   const load = encumbranceFor({
     strength: sheet.abilities.str,
     equipment: weighed(sheet.equipment),
-    coins: sheet.gold ?? 0,
+    coins: purseCoins({ gold: sheet.gold ?? 0, copper: sheet.copper ?? 0 }),
     size: sizeForRace(sheet.race),
     wearer: sheet,
   });
@@ -197,7 +214,7 @@ function handleLift(args: z.infer<typeof liftSchema>, sheets: CharacterSheet[], 
 const lifestyleSchema = z.object({
   characterIds: z.array(z.string()).optional(),
   lifestyle: z.enum([...LIFESTYLES, "none"]),
-  reason: z.string().max(200).optional(),
+  reason: fittedText(200).optional(),
 });
 
 // ---- downtime ----
@@ -220,7 +237,7 @@ const entrySchema = z.object({
 const downtimeSchema = entrySchema.partial().extend({
   days: z.coerce.number().int().min(1).max(365),
   activities: z.array(entrySchema).max(12).optional(),
-  reason: z.string().max(200).optional(),
+  reason: fittedText(200).optional(),
 });
 
 // ---- afflict ----
@@ -234,7 +251,7 @@ const afflictSchema = z.object({
   saveDc: z.coerce.number().int().min(1).max(30).optional(),
   saveAbility: z.enum(["wis", "cha"]).optional(),
   symptomsNow: z.boolean().optional(),
-  reason: z.string().max(200).optional(),
+  reason: fittedText(200).optional(),
 });
 
 function parse<T>(schema: z.ZodType<T>, rawArguments: string): T | null {
@@ -255,12 +272,12 @@ export function handleExploreCall(
 ): ToolResult {
   if (name === "lift") {
     const args = parse(liftSchema, rawArguments);
-    return args ? handleLift(args, sheets, sheetsById) : { error: "Invalid arguments: lift needs characterId and weightLb.", retry: true };
+    return args ? handleLift(args, sheets, sheetsById) : argumentsRefusal("Invalid arguments: lift needs characterId and weightLb.", liftSchema, rawArguments);
   }
   if (name === "set_lifestyle") {
     const args = parse(lifestyleSchema, rawArguments);
     if (!args) {
-      return { error: `Invalid arguments: set_lifestyle needs a lifestyle (${LIFESTYLES.join(", ")}, or none).`, retry: true };
+      return argumentsRefusal(`Invalid arguments: set_lifestyle needs a lifestyle (${LIFESTYLES.join(", ")}, or none).`, lifestyleSchema, rawArguments);
     }
     const targets = resolveTargets(args.characterIds, sheets, sheetsById);
     if (!targets.length) {
@@ -282,7 +299,7 @@ export function handleExploreCall(
   if (name === "downtime") {
     const args = parse(downtimeSchema, rawArguments);
     if (!args) {
-      return { error: "Invalid arguments: downtime needs days, and a characterId with an activity (or activities).", retry: true };
+      return argumentsRefusal("Invalid arguments: downtime needs days, and a characterId with an activity (or activities).", downtimeSchema, rawArguments);
     }
     if (getActiveEncounter(campaign.id)) {
       return { error: "Downtime is time between adventures; end the fight first.", refused: "rules" };
@@ -296,6 +313,7 @@ export function handleExploreCall(
       return { error: "downtime needs a characterId and an activity, or activities.", retry: true };
     }
     const resolved: DowntimeEntry[] = [];
+    const lifestyle: Record<string, number> = {};
     for (const entry of entries) {
       const stale = resolveSheetRef(entry.characterId, sheets, sheetsById);
       const sheet = stale ? (getSheetById(stale.id) ?? stale) : null;
@@ -312,8 +330,11 @@ export function handleExploreCall(
         return { ...problem, error: `${problem.error} No time passed.` };
       }
       resolved.push(fixed);
+      // Their lifestyle is charged for the days, less what their work covers
+      // (spendDowntime), so those dawns feed them.
+      lifestyle[sheet.id] = coverOf(sheet, fixed);
     }
-    const moved = advanceClock(campaign.id, args.days, "days");
+    const moved = advanceClock(campaign.id, args.days, "days", { lifestyle });
     if ("error" in moved) {
       return moved;
     }
@@ -327,7 +348,7 @@ export function handleExploreCall(
   if (name === "afflict") {
     const args = parse(afflictSchema, rawArguments);
     if (!args) {
-      return { error: "Invalid arguments: afflict needs characterId and kind (disease, madness, poison), with a name, or a duration for madness.", retry: true };
+      return argumentsRefusal("Invalid arguments: afflict needs characterId and kind (disease, madness, poison), with a name, or a duration for madness.", afflictSchema, rawArguments);
     }
     const stale = resolveSheetRef(args.characterId, sheets, sheetsById);
     const sheet = stale ? (getSheetById(stale.id) ?? stale) : null;
@@ -336,6 +357,11 @@ export function handleExploreCall(
     }
     if (sheet.deathSaves?.dead) {
       return { error: `${sheet.name} is dead; nothing more takes hold.`, retry: true };
+    }
+    // SRD 5.1, Conditions, Petrified: "immune to poison and disease".
+    const stone = petrifiedRefusal(sheet.conditions, args.kind);
+    if (stone) {
+      return { error: `${sheet.name} cannot take a new ${args.kind}: ${stone}.`, refused: "rules" };
     }
     if (args.kind === "madness") {
       if (!args.duration) {

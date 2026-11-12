@@ -1,19 +1,27 @@
 import type { AuditEntry } from "@/app/campaigns/[campaignId]/useCampaignStream";
 import type { CharacterEvent } from "@/lib/db/character-events";
 import type { ClockTurn } from "@/lib/db/clock-moves";
+import type { TurnChangeView } from "@/lib/db/turn-changes";
 import { quietTick } from "@/lib/sheet-audit-logic";
+import { translate } from "@/lib/messages-logic";
+import { COPPER_PER_GOLD, formatPrice } from "@/lib/srd/currency";
 
 // What the event log lists and which turns it offers to revert. Pure, so a
 // suite reads it without a browser (scripts/test-event-log-logic.mjs). The
 // clock turns (src/lib/db/clock-moves.ts) come from the campaign snapshot
 // and the clock_changed event; an older host sends none, and the log keeps
-// its old rule.
+// its old rule. So do the other things a turn kept for its revert (issue
+// 685, src/lib/db/turn-changes.ts), from the snapshot's turnChanges and the
+// turn_changed event.
 
 export type FeedItem =
   | { type: "audit"; seq: number; entry: AuditEntry }
   // A run of changes that only counted time down, from one turn.
   | { type: "ticks"; seq: number; turnId: string; entries: AuditEntry[] }
   | { type: "time"; seq: number; move: ClockTurn }
+  // A prepared event that fired, a test die forced, a card resolved as
+  // played: what else the turn's revert takes back.
+  | { type: "change"; seq: number; change: TurnChangeView }
   | { type: "milestone"; seq: number; event: CharacterEvent };
 
 // Rows the trail keeps for the engine's own reading, which change no sheet:
@@ -25,11 +33,19 @@ export const BOOKKEEPING_KINDS: ReadonlySet<string> = new Set(["death_moment"]);
 // moved on, with each run of one turn's quiet ticks (src/lib/
 // sheet-audit-logic.ts) folded into one item: the turn's revert puts them
 // back, but none is news.
-export function buildFeed(auditLog: AuditEntry[], characterEvents: CharacterEvent[], clockTurns: ClockTurn[] = []): FeedItem[] {
+export function buildFeed(
+  auditLog: AuditEntry[],
+  characterEvents: CharacterEvent[],
+  clockTurns: ClockTurn[] = [],
+  turnChanges: TurnChangeView[] = [],
+): FeedItem[] {
   const items: FeedItem[] = [
     ...auditLog.filter((entry) => !BOOKKEEPING_KINDS.has(entry.kind)).map((entry) => ({ type: "audit" as const, seq: entry.seq, entry })),
     ...characterEvents.map((event) => ({ type: "milestone" as const, seq: event.seq, event })),
     ...clockTurns.map((move) => ({ type: "time" as const, seq: move.seq, move })),
+    // A seed's run of dice says nothing of its own: it counts toward the
+    // turn's revert without a row.
+    ...turnChanges.filter((change) => change.line).map((change) => ({ type: "change" as const, seq: change.seq, change })),
   ].sort((a, b) => b.seq - a.seq);
   const feed: FeedItem[] = [];
   for (const item of items) {
@@ -56,21 +72,26 @@ export function turnOfItem(item: FeedItem): string | null {
   if (item.type === "ticks") {
     return item.turnId || null;
   }
+  if (item.type === "change") {
+    return item.change.turnId;
+  }
   return item.type === "time" ? item.move.turnId : null;
 }
 
 // The turns the log offers "Revert this turn" for, with how many live sheet
 // changes each would undo: two or more, as before; or any number (none
 // included) when the turn moved the clock and the time is not back yet,
-// since an undo of one change never moves the clock (issue #622).
-export function revertableTurns(auditLog: AuditEntry[], clockTurns: ClockTurn[] = []): Map<string, number> {
+// since an undo of one change never moves the clock (issue #622); or when it
+// kept something else for its revert (issue 685), which no undo of one sheet
+// change takes back.
+export function revertableTurns(auditLog: AuditEntry[], clockTurns: ClockTurn[] = [], turnChanges: TurnChangeView[] = []): Map<string, number> {
   const live = new Map<string, number>();
   for (const entry of auditLog) {
     if (entry.turnId && entry.undoable && !entry.revertedAt && entry.kind !== "undo") {
       live.set(entry.turnId, (live.get(entry.turnId) ?? 0) + 1);
     }
   }
-  const timed = new Set(clockTurns.map((move) => move.turnId));
+  const timed = new Set([...clockTurns.map((move) => move.turnId), ...turnChanges.map((change) => change.turnId)]);
   const turns = new Map<string, number>();
   for (const [turnId, count] of live) {
     if (count >= 2 || timed.has(turnId)) {
@@ -102,6 +123,19 @@ type Delta = Record<string, unknown>;
 
 // The translator a caller binds to its own locale (useT in a component).
 type Say = (key: string, vars?: Record<string, string | number>) => string;
+
+// English, for the callers that carry no translator (the test suite, an old
+// reader): the same words the dictionaries hold.
+const enT: Say = (key, vars) => translate("en", key, vars);
+
+// A caller either hands (t, entry, name) t-first, or the older (entry, name)
+// shape that reads English; both land on the same words.
+function sayOf(t: Say | { kind: string; delta: Delta }, entry?: { kind: string; delta: Delta } | string, name?: string): [Say, { kind: string; delta: Delta }, string] {
+  if (typeof t === "function") {
+    return [t, entry as { kind: string; delta: Delta }, name ?? ""];
+  }
+  return [enT, t, (entry as string) ?? ""];
+}
 
 const word = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value.trim() : null);
 const amount = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
@@ -141,8 +175,18 @@ function deathState(t: Say, name: string, delta: Delta): string {
 }
 
 // The sentence for a kind the server writes, or null for one it does not
-// know (a row from an older or newer version).
-export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }, name: string): string | null {
+// know (a row from an older or newer version). Public in both shapes: t-first
+// (the components' own locale) or plain (entry, name), which reads English.
+export function describeKnownEntry(
+  t: Say | { kind: string; delta: Delta },
+  entry?: { kind: string; delta: Delta } | string,
+  name?: string,
+): string | null {
+  const [say, row, who] = sayOf(t, entry, name);
+  return knownEntryText(say, row, who);
+}
+
+function knownEntryText(t: Say, entry: { kind: string; delta: Delta }, name: string): string | null {
   const delta = entry.delta ?? {};
   const item = word(delta.name) ?? word(delta.item) ?? t("table.log.anItem");
   const qty = amount(delta.qty);
@@ -161,6 +205,9 @@ export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }
           : t("table.log.wildHitPlain", { name, form, amount: amount(delta.amount) ?? t("table.log.someHealed") });
       }
       if (delta.relentlessEndurance) return t("table.log.relentlessEndurance", { name });
+      if (delta.undyingSentinel) return t("table.log.undyingSentinel", { name });
+      if (delta.strengthOfTheGrave) return t("table.log.strengthOfTheGrave", { name });
+      if (delta.blazingRevival) return t("table.log.blazingRevival", { name });
       if (delta.relentlessRage) return t("table.log.relentlessRage", { name });
       if (delta.deathWard) return t("table.log.deathWard", { name });
       const type = word(delta.type);
@@ -184,6 +231,13 @@ export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }
       const temp = amount(delta.tempHp);
       return temp !== null ? t("table.log.tempHp", { name, temp }) : t("table.log.tempHpPlain", { name });
     }
+    // An effect's move of the hit point maximum (Aid, a drain), with the hit
+    // points it carried along (src/lib/db/active-effects.ts).
+    case "set_effect": {
+      const max = amount(delta.maxHp);
+      const hp = amount(delta.currentHp);
+      return max !== null ? `${name}'s hit point maximum is now ${max}${hp !== null ? ` (${hp} HP)` : ""}` : `${name}'s hit point maximum changes`;
+    }
     case "award_xp": {
       const xp = amount(delta.amount);
       const total = amount(delta.newXp);
@@ -191,11 +245,19 @@ export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }
     }
     case "modify_gold": {
       const change = amount(delta.delta);
-      const purse = amount(delta.gold);
+      const copper = amount(delta.copper);
+      const purse = amount(delta.purseCopper);
+      const held = purse !== null ? formatPrice(purse) : amount(delta.gold) !== null ? `${amount(delta.gold)} gp` : null;
+      const after = held ? t("table.log.goldNoteAny", { purse: held }) : "";
+      // Five silver spent was "gains 0 gold": the whole-gold figure rounds a
+      // part of a gold piece away, and the copper it came from is recorded.
+      if (copper !== null && copper % COPPER_PER_GOLD !== 0) {
+        return copper >= 0
+          ? t("table.log.copperGain", { name, amount: formatPrice(Math.abs(copper)), after })
+          : t("table.log.copperLose", { name, amount: formatPrice(Math.abs(copper)), after });
+      }
       if (change === null) return t("table.log.purseChanges", { name });
-      const moved = Math.abs(change);
-      const line = change >= 0 ? t("table.log.goldGain", { name, amount: moved }) : t("table.log.goldLose", { name, amount: moved });
-      return `${line}${purse !== null ? t("table.log.goldNote", { purse }) : ""}`;
+      return `${change >= 0 ? t("table.log.goldGain", { name, amount: Math.abs(change) }) : t("table.log.goldLose", { name, amount: Math.abs(change) })}${after}`;
     }
     case "grant_item":
       return t("table.log.receives", { name, item, times: times(qty) });
@@ -239,6 +301,9 @@ export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }
     }
     case "drop_item":
       return t("table.log.drops", { name, item, times: times(amount(delta.dropped)) });
+    // A net thrown, now on the ground (src/lib/dm/gear-ground.ts throwToGround).
+    case "throw_item":
+      return t("table.log.throws", { name, item });
     case "pick_up_item":
       return t("table.log.picksUp", { name, item, times: times(amount(delta.taken)) });
     case "use_item": {
@@ -249,6 +314,11 @@ export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }
       return t("table.log.dawnRecharge", { name });
     case "set_condition": {
       if (delta.inspiration) return t("table.log.gainsInspiration", { name });
+      // A swallowed creature's running count toward its swallower's
+      // regurgitation save (src/lib/dm/swallow.ts noteBlowFromInside).
+      const inside = amount(delta.hurtInside);
+      if (inside !== null)
+        return t("table.log.hurtInside", { name, who: word(delta.swallower) ?? t("table.log.swallowerUnknown"), amount: inside });
       const condition = word(delta.condition);
       return condition ? t("table.log.isCondition", { name, condition }) : t("table.log.gainsCondition", { name });
     }
@@ -289,6 +359,11 @@ export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }
     case "use_spell_slot": {
       const level = amount(delta.level);
       return level !== null ? t("table.log.spendsSlotLevel", { name, level }) : t("table.log.spendsSlot", { name });
+    }
+    // What a reaction itself did to the sheet (reaction-refund.ts reactionPatch).
+    case "reaction": {
+      const what = word(delta.reaction);
+      return what ? `${name}: ${what}` : `${name} takes a reaction`;
     }
     case "use_resource": {
       const resource = word(delta.resource) ?? t("table.log.aFeature");
@@ -339,7 +414,12 @@ export function describeKnownEntry(t: Say, entry: { kind: string; delta: Delta }
 }
 
 // The row as the event log reads it: a kind no version of this server knows
-// still reads as words.
-export function describeAuditEntry(t: Say, entry: { kind: string; delta: Delta }, name: string): string {
-  return describeKnownEntry(t, entry, name) ?? `${name}: ${entry.kind.replace(/_/g, " ")}`;
+// still reads as words. Same two shapes as describeKnownEntry.
+export function describeAuditEntry(
+  t: Say | { kind: string; delta: Delta },
+  entry?: { kind: string; delta: Delta } | string,
+  name?: string,
+): string {
+  const [say, row, who] = sayOf(t, entry, name);
+  return knownEntryText(say, row, who) ?? `${who}: ${row.kind.replace(/_/g, " ")}`;
 }

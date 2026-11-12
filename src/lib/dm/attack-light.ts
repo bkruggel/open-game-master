@@ -20,16 +20,19 @@ import { getBattleMapForEncounter, getTokenByRef, listTokens } from "@/lib/db/ba
 import type { EncounterEnemy } from "@/lib/db/encounters";
 import { effectiveAmbient } from "@/lib/battlemap/daylight";
 import { cachedLitTiles } from "@/lib/battlemap/lit-cache";
-import { darkvisionTilesFromText } from "@/lib/battlemap/los";
+import { darkvisionTilesFromText, hasLineOfSight } from "@/lib/battlemap/los";
 import { ambientAt, magicalDarknessAt } from "@/lib/battlemap/scene";
 import { chebyshev, tileIndex, type BattleToken } from "@/lib/battlemap/types";
 import { breakDown } from "@/lib/dm/calendar";
 import { sensesFromBlock, sensesFromText, type Senses } from "@/lib/srd/senses";
 import { weatherObscurementTiles } from "@/lib/srd/weather";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { lightsWithZones, zoneHidesFrom } from "@/lib/dm/zone-rules";
+import { lightSourcesWithZones, lightsWithZones, zoneHidesFrom } from "@/lib/dm/zone-rules";
 import { conditionTruesightFeet } from "@/lib/srd/condition-effect-queries";
 import { authoredDarkvisionFeet } from "@/lib/srd/authored-effects-more";
+import { isConditionNamed } from "@/lib/srd/feature-names";
+import { instancesOf, type ConditionMetaMap, type PastSight } from "@/lib/dm/condition-logic";
+import { tilesApart } from "@/lib/dm/board-reach";
 
 export function characterSenses(sheet: Pick<CharacterSheet, "features" | "race"> & { conditions?: string[] }): Senses {
   const texts = [...sheet.features.map((feature) => feature.name), sheet.race];
@@ -42,16 +45,47 @@ export function characterSenses(sheet: Pick<CharacterSheet, "features" | "race">
   return { ...senses, darkvision: Math.max(named, authored), truesight: Math.max(senses.truesight, seeing) };
 }
 
-export function enemySenses(enemy: Pick<EncounterEnemy, "stats">): Senses {
+export function enemySenses(enemy: Pick<EncounterEnemy, "stats"> & { conditions?: string[] }): Senses {
   const block = sensesFromBlock(enemy.stats.senses);
   const text = sensesFromText(enemy.stats.traits ?? []);
   return {
     darkvision: Math.max(block.darkvision, text.darkvision, darkvisionTilesFromText(enemy.stats.traits ?? [])),
     blindsight: Math.max(block.blindsight, text.blindsight),
     tremorsense: Math.max(block.tremorsense, text.tremorsense),
-    truesight: Math.max(block.truesight, text.truesight),
+    // True Seeing's truesight, in squares, as on a character.
+    truesight: Math.max(block.truesight, text.truesight, Math.floor(conditionTruesightFeet(enemy.conditions ?? []) / 5)),
     devilsSight: Math.max(block.devilsSight, text.devilsSight),
   };
+}
+
+// Which of a viewer's senses reach another creature past what eyes need:
+// blindsight perceives without them, so blindness and invisibility do not
+// stop it, and truesight sees the invisible (SRD 5.1, Senses). Measured on
+// the board between their tokens; off it, a sense the viewer has reaches.
+// The one rule every sight check reads: an attack roll (condition-logic.ts
+// attackContext), "a creature you can see" (authored-saves.ts), and who
+// provokes an opportunity attack.
+export function sensesReaching(encounterId: string | null, viewer: { refId: string; senses: Senses }, seen: { refId: string }): PastSight {
+  const { blindsight, truesight } = viewer.senses;
+  if (!blindsight && !truesight) {
+    return { blindsight: false, truesight: false };
+  }
+  const map = encounterId ? getBattleMapForEncounter(encounterId) : null;
+  const from = map ? getTokenByRef(map.id, viewer.refId) : null;
+  const to = map ? getTokenByRef(map.id, seen.refId) : null;
+  const apart = from && to ? tilesApart(from, to) : null;
+  const reaches = (tiles: number) => tiles > 0 && (apart === null || apart <= tiles);
+  return { blindsight: reaches(blindsight), truesight: reaches(truesight) };
+}
+
+// Both ways round, for an attack: what the attacker's senses reach of the
+// target, and the target's of the attacker.
+export function attackSenses(
+  encounterId: string | null,
+  attacker: { refId: string; senses: Senses },
+  target: { refId: string; senses: Senses },
+): { attackerSenses: PastSight; targetSenses: PastSight } {
+  return { attackerSenses: sensesReaching(encounterId, attacker, target), targetSenses: sensesReaching(encounterId, target, attacker) };
 }
 
 export type Sight = {
@@ -97,7 +131,7 @@ export function attackSight(input: {
     zones: patches,
     obscureBeyond: map.outdoors ? weatherObscurementTiles(clock.weather) : Infinity,
   };
-  const lit = cachedLitTiles({ ...vision, id: map.id }, listTokens(map.id), map.lights);
+  const lit = cachedLitTiles({ ...vision, id: map.id }, listTokens(map.id), lightSourcesWithZones(map));
   const sees = (viewer: BattleToken, senses: Senses, subject: BattleToken): boolean => {
     const distance = chebyshev(viewer.x, viewer.y, subject.x, subject.y);
     if (distance <= senses.blindsight) {
@@ -146,4 +180,34 @@ export function lightOnAttack(
     notes.push(`${names.target} cannot see ${names.attacker} in the dark: advantage`);
   }
   return { sources, notes };
+}
+
+// A creature's conditions as its attack rolls and ability checks read them:
+// "A frightened creature has disadvantage on ability checks and attack rolls
+// while the source of its fear is within line of sight" (SRD 5.1,
+// Conditions, Frightened). On a board where every source of the fear stands
+// behind something that blocks sight, frightened drops out of the list the
+// roll reads (it still keeps the creature from moving closer). Off a board,
+// or with a source not on it, the list is as written.
+export function fearAsRolled(
+  // The fight or scene whose board is read; null reads no board.
+  encounterId: string | null,
+  refId: string,
+  conditions: string[],
+  meta: unknown,
+): string[] {
+  const frightened = conditions.find((entry) => isConditionNamed(entry, "frightened"));
+  const map = frightened && encounterId ? getBattleMapForEncounter(encounterId) : null;
+  const self = map ? getTokenByRef(map.id, refId) : null;
+  if (!frightened || !map || !self) {
+    return conditions;
+  }
+  const sources = instancesOf((meta as ConditionMetaMap | null)?.[frightened]).flatMap((entry) => (entry.source ? [entry.source] : []));
+  const unseen =
+    sources.length > 0 &&
+    sources.every((source) => {
+      const token = getTokenByRef(map.id, source);
+      return token !== null && !hasLineOfSight(map.terrain, map.width, token.x, token.y, self.x, self.y);
+    });
+  return unseen ? conditions.filter((entry) => entry !== frightened) : conditions;
 }

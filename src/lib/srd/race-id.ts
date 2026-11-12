@@ -7,6 +7,7 @@
 
 import { textKey } from "@/lib/language/text-logic";
 import { EDITION_2024_DOCUMENTS } from "@/lib/content/edition";
+import type { SpeciesSpellGroup } from "@/lib/content/species-spells";
 
 // A sheet saved while the pack still carried 2024 species holds its row's
 // id with the document in front ("srd-2024-goliath"). That species is the
@@ -42,6 +43,12 @@ export type SpeciesRules = {
   size?: string;
   heavyArmorSpeed?: boolean;
   traitNames: string[];
+  // A workshop species' own spells, and each option's by its id with the
+  // record the option is written as (issue #833,
+  // src/lib/content/species-spells.ts). With its own spells a species casts
+  // those, not the ones a published trait it names would borrow.
+  spells?: SpeciesSpellGroup;
+  variantSpells?: Record<string, SpeciesSpellGroup & { from?: string }>;
 };
 
 let speciesReader: ((raceId: string) => SpeciesRules | null) | null = null;
@@ -115,6 +122,13 @@ export function revisedSpecies(raceId: string, raceTraitNames: readonly string[]
 const DWARVES = new Set(["dwarf", "hill_dwarf", "mountain_dwarf"]);
 export function isDwarf(raceId: string): boolean {
   return DWARVES.has(srdRaceId(raceId));
+}
+
+// The bundled gnomes under every spelling of their ids: SRD 5.1 Cackle
+// Fever "targets humanoids, although gnomes are strangely immune."
+const GNOMES = new Set(["gnome", "rock_gnome", "forest_gnome"]);
+export function isGnome(raceId: string): boolean {
+  return GNOMES.has(srdRaceId(raceId));
 }
 
 // Dwarven Toughness: +1 hit point per level, under every Hill Dwarf id and

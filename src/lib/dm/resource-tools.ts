@@ -1,4 +1,5 @@
 import { allocateSeq, type Campaign } from "@/lib/db/campaigns";
+import { shadowInvisibility, shadowLightProblem } from "@/lib/dm/one-with-shadows";
 import { insertRoll } from "@/lib/db/rolls";
 import { getSheetById } from "@/lib/db/sheets";
 import { breakConcentration } from "@/lib/dm/concentration";
@@ -7,14 +8,18 @@ import { rollExpression } from "@/lib/dice";
 import { publishWithSeq } from "@/lib/events";
 import { computeSheetDerived } from "@/lib/srd";
 import { ELEMENTAL_WILD_SHAPE_COST, elementalWildShape, wildShapeUse, type WildShapeAsk } from "@/lib/dm/wild-shape-use";
-import { isUnlimited, matchResource, RAGING, recoveringPrefix, resourceLevel, type ResourceDef } from "@/lib/srd/class-resources";
+import { heldUnlimitedState, isUnlimited, matchResource, RAGING, recoveringPrefix, resourceLevel, type ResourceDef, type SaveAbilityId, type SaveTerms } from "@/lib/srd/class-resources";
+import { counterGate, counterSaveDc } from "@/lib/srd/counter-rules";
+import { sheetSize } from "@/lib/dm/sheet-foe-stats";
+import { resolveCounterHit, resolveCounterSave, type CounterSaveAim } from "@/lib/dm/counter-saves";
+import { getActiveEncounter } from "@/lib/db/encounters";
 import { effectiveMaxHp, incapacitatedBy, wearsHeavyArmor } from "@/lib/dm/condition-logic";
 import { conditionEffectsFor } from "@/lib/srd/condition-effects";
 import { consumableEffect, findCarriedItem, notCarried } from "@/lib/dm/item-logic";
 import { kiTechnique, spendKiTechnique, spendQuickenedSpell } from "@/lib/dm/bonus-actions";
 import { removeItemMath } from "@/lib/dm/mutation-math";
 import { textKey } from "@/lib/language/text-logic";
-import { optionsOfKind } from "@/lib/srd/options";
+import { chosenOptions, optionsOfKind } from "@/lib/srd/options";
 import type { CharacterSheet, FullPatchSheetInput } from "@/lib/schemas/sheet";
 import { holdsMote } from "@/lib/srd/authored-effects-more";
 import { noneNamed, type ToolError, type ToolResult } from "@/lib/dm/tool-errors";
@@ -112,6 +117,35 @@ export function computeUseItem(
 // rides in the name so one string carries the whole effect.
 export function inspirationCondition(die: string): string {
   return `bardic inspiration (${die})`;
+}
+
+// What a Metamagic option costs. SRD 5.1 sorcerer, Metamagic: "You gain two
+// of the following Metamagic options of your choice", each at the price its
+// paragraph names: Careful, Distant, Empowered, Extended and Subtle Spell 1
+// point, Quickened Spell 2, Heightened Spell 3; Twinned Spell "a number of
+// sorcery points equal to the spell's level (1 sorcery point if the spell is
+// a cantrip)", which the call gives in amount. Seeking and Transmuted Spell
+// (the options list's later two) at their printed 2 and 1.
+const METAMAGIC_POINTS: Record<string, number> = {
+  "careful spell": 1,
+  "distant spell": 1,
+  "empowered spell": 1,
+  "extended spell": 1,
+  "subtle spell": 1,
+  "transmuted spell": 1,
+  "quickened spell": 2,
+  "seeking spell": 2,
+  "heightened spell": 3,
+};
+
+// The points a named option costs this sorcerer, or the refusal when they
+// never learned it (a Metamagic Adept's picks count: they are filed the
+// same way).
+export function metamagicPrice(sheet: Pick<CharacterSheet, "name" | "features">, option: string, amount: number): { points: number } | ToolError {
+  if (!chosenOptions(sheet.features, "metamagic").some((name) => textKey(name) === textKey(option))) {
+    return { error: `${sheet.name} has not learned the ${option} Metamagic option. Ask the player whether to cast the spell without it. Nothing was spent.`, retry: true };
+  }
+  return { points: METAMAGIC_POINTS[textKey(option)] ?? Math.max(1, amount) };
 }
 
 // 10 minutes of rounds, the SRD duration for a held inspiration die.
@@ -258,6 +292,42 @@ function recoveryMarker(campaign: Campaign, sheet: CharacterSheet, def: Resource
   };
 }
 
+// A counter's save, its row's terms filled in (src/lib/dm/counter-saves.ts).
+function rollCounterSave(
+  campaign: Campaign,
+  sheet: CharacterSheet,
+  def: ResourceDef,
+  base: { save: SaveAbilityId; dc: number; dice?: string | null; type?: string; half?: boolean; condition?: string },
+  variant: string | undefined,
+  aim: CounterSaveAim | undefined,
+): ReturnType<typeof resolveCounterSave> {
+  const effect = def.effect as SaveTerms;
+  let type = base.type ?? effect.type;
+  if (effect.typeFromVariant?.length) {
+    const named = effect.typeFromVariant.find((entry) => textKey(entry) === textKey(variant ?? ""));
+    if (variant?.trim() && !named) {
+      return noneNamed(`${def.displayName} has no damage type called`, variant.trim(), effect.typeFromVariant);
+    }
+    type = named ?? effect.typeFromVariant[0];
+  }
+  const mods = computeSheetDerived(sheet).abilityMods;
+  const most = typeof effect.most === "string" ? Math.max(1, mods[effect.most] ?? 0) : effect.most;
+  return resolveCounterSave(campaign, sheet, {
+    name: def.displayName,
+    save: base.save,
+    dc: base.dc,
+    dice: base.dice,
+    ...(type ? { type } : {}),
+    half: base.half ?? effect.half,
+    condition: base.condition,
+    rounds: effect.rounds,
+    rangeFt: effect.rangeFt,
+    types: effect.types,
+    ...(most ? { most } : {}),
+    magical: effect.magical ?? def.id !== "breath_weapon",
+  }, aim ?? {});
+}
+
 export function computeUseResource(
   campaign: Campaign,
   sheet: CharacterSheet,
@@ -270,9 +340,12 @@ export function computeUseResource(
   // that dropped them (a reaction that answers it, or one taken on dropping
   // to 0): the use goes ahead at 0 hit points (issue 233).
   reacting?: { beforeDrop?: boolean },
+  // The creatures a save the counter forces is rolled for, and the turn its
+  // dice cards belong to (src/lib/dm/counter-saves.ts).
+  aim?: CounterSaveAim,
 ): Outcome | ToolError {
   const def = matchResource(resourceName);
-  const state = def ? sheet.resources[def.id] : undefined;
+  const state = def ? (sheet.resources[def.id] ?? heldUnlimitedState(def, sheet) ?? undefined) : undefined;
   if (!def || !state) {
     const available = Object.keys(sheet.resources);
     const theirs = available.length ? ` Their resources: ${available.join(", ")}.` : " They have no limited-use resources.";
@@ -282,9 +355,13 @@ export function computeUseResource(
       ? { error: `${sheet.name} has no tracked resource "${resourceName}".${theirs}`, refused: "rules" }
       : { error: `No resource called "${resourceName}" is known.${theirs} Send the one meant, by the name on the sheet.`, retry: true };
   }
-  if (def.passive) {
+  // A pool another call spends refuses a bare spend, with that call named
+  // in its guidance; one whose options this tool spends takes them by
+  // variant (WAVE1 R10: "refuses a bare use_resource spend with a pointer
+  // to the right call, spending nothing").
+  if (def.passive && !(def.options && variant?.trim())) {
     return {
-      error: `${def.displayName} is not spent by choice: ${def.guidance} Do not call use_resource for it.`,
+      error: `${def.displayName} is not spent by a use_resource call of its own: ${def.guidance} Nothing was spent.`,
       retry: true,
     };
   }
@@ -325,6 +402,8 @@ export function computeUseResource(
   // Font of Magic: sorcery points convert into a spell slot and back, the
   // direction in the variant and the slot level in amount; a plain spend
   // (Metamagic) falls through to the generic path below.
+  // A named Metamagic option's own price (metamagicPrice).
+  let metamagicPoints: number | null = null;
   if (def.id === "sorcery_points") {
     // The variant as its rules text lists it (class-resources.ts).
     if (textKey(variant ?? "") === "quickened spell") {
@@ -336,11 +415,19 @@ export function computeUseResource(
     }
     // Any other variant is a value off the list, never a spend: a plain
     // Metamagic spend names no variant, or the option it pays for.
-    if (variant?.trim() && !optionsOfKind("metamagic").some((option) => textKey(option.n) === textKey(variant))) {
+    const option = variant?.trim() ? optionsOfKind("metamagic").find((entry) => textKey(entry.n) === textKey(variant)) : undefined;
+    if (variant?.trim() && !option) {
       return {
         error: `${def.displayName} takes variant 'create slot' or 'convert slot' (Font of Magic, the slot's level in amount), 'Quickened Spell', or a Metamagic option by its name; "${variant}" is none of them. For a Metamagic spend give the points in amount. Nothing was spent.`,
         retry: true,
       };
+    }
+    if (option) {
+      const priced = metamagicPrice(sheet, option.n, amount);
+      if ("error" in priced) {
+        return priced;
+      }
+      metamagicPoints = priced.points;
     }
   }
 
@@ -366,13 +453,14 @@ export function computeUseResource(
     return elementalAsk;
   }
   const elemental = elementalAsk?.form ?? null;
-  const cost = elemental ? ELEMENTAL_WILD_SHAPE_COST : amount;
+  const cost = elemental ? ELEMENTAL_WILD_SHAPE_COST : (metamagicPoints ?? amount);
 
-  if (def.requires === "below_half" && sheet.currentHp >= effectiveMaxHp(sheet) / 2) {
-    return {
-      error: `${def.displayName} is used when ${sheet.name} has fewer than half of their hit points left, and they have ${sheet.currentHp}/${effectiveMaxHp(sheet)}. Nothing was spent.`,
-      refused: "rules",
-    };
+  // The counter's own preconditions, as its Hand card reads them
+  // (src/lib/srd/counter-rules.ts).
+  const live = getActiveEncounter(campaign.id);
+  const gate = counterGate(def, sheet, Boolean(live && (live.kind ?? "fight") === "fight"));
+  if (gate) {
+    return { error: `${gate} Nothing was spent.`, refused: "rules" };
   }
   // A pool a single use may only dip into (Balm of the Summer Court: half the
   // druid level of dice; Healing Light: the Charisma modifier).
@@ -416,6 +504,18 @@ export function computeUseResource(
       effect: def.guidance,
     },
   };
+
+  // One with Shadows: dim light or darkness, then invisible until the warlock
+  // moves or acts (src/lib/dm/one-with-shadows.ts).
+  if (def.id === "one_with_shadows") {
+    const bright = shadowLightProblem(campaign.id, sheet);
+    if (bright) {
+      return bright;
+    }
+    Object.assign(outcome.patch, shadowInvisibility(sheet));
+    outcome.result.invisible = `${sheet.name} is invisible until they move or take an action or a reaction.`;
+    return outcome;
+  }
 
   const derived = computeSheetDerived(sheet);
   // Multiclass: an effect's level-scaled dice read the owning class's level
@@ -554,27 +654,21 @@ export function computeUseResource(
       return outcome;
     }
     case "enemy_save": {
-      // The spend hands back the real numbers under aoe_damage's own
-      // names; that call rolls each creature's save from its stat block and
-      // lays the condition on a failure. A feature is no spell, so
-      // cast_at_enemy (which needs a caster and takes their spell DC) is not it.
-      const dc =
-        derived.spellSaveDc ??
-        8 +
-          derived.proficiencyBonus +
-          Math.max(...Object.values(derived.abilityMods));
-      outcome.result.resolveWith = "aoe_damage";
-      outcome.result.casterCharacterId = sheet.id;
-      outcome.result.saveAbility = def.effect.save;
-      outcome.result.dc = dc;
-      if (def.effect.condition) {
-        outcome.result.condition = def.effect.condition;
-      }
-      if (def.effect.dice) {
-        outcome.result.damage = def.effect.dice(fxLevel, derived.abilityMods);
-      }
-      outcome.result.note = "Resolve it with aoe_damage, these fields and the creatures it catches (enemyIds, characterIds).";
-      return outcome;
+      // Rolled here, on the creatures the call names: it handed the numbers
+      // back for an aoe_damage call, which a person's table never made.
+      const effect = def.effect;
+      const saved = rollCounterSave(campaign, sheet, def, {
+        save: effect.save,
+        dc: counterSaveDc(effect.dcAbility, derived, Math.max(...Object.values(derived.abilityMods))),
+        dice: effect.dice ? effect.dice(fxLevel, derived.abilityMods) : null,
+        condition: effect.condition,
+      }, variant, aim);
+      return "error" in saved ? saved : { ...outcome, result: { ...outcome.result, ...saved.result } };
+    }
+    case "hit_damage": {
+      // Fury of the Small: rolled here onto the creature hit, after the hit.
+      const hit = resolveCounterHit(campaign, sheet, { name: def.displayName, dice: def.effect.dice(fxLevel, derived.abilityMods), larger: def.effect.larger, holderSize: sheetSize(sheet) }, aim ?? {});
+      return "error" in hit ? hit : { ...outcome, result: { ...outcome.result, ...hit.result } };
     }
     case "teleport": {
       creditFeatureTeleport(sheet.id, def.displayName, def.effect.feet);
@@ -609,7 +703,9 @@ export function computeUseResource(
       return outcome;
     }
     case "inspire": {
-      if (target.id === sheet.id) {
+      // "one creature other than yourself" (SRD 5.1, Bardic Inspiration);
+      // Cosmic Omen answers "a roll near you", the druid's own among them.
+      if (target.id === sheet.id && def.effect.othersOnly) {
         return {
           error: `${def.displayName} goes to another creature, never to the bard themselves. Pass targetCharacterId.`,
           retry: true,
@@ -617,8 +713,12 @@ export function computeUseResource(
       }
       const die = def.effect.die(fxLevel);
       const condition = inspirationCondition(die);
-      if (target.conditions.some((entry) => entry.toLowerCase() === condition)) {
-        return { error: `${target.name} already holds an unspent inspiration die.`, refused: "rules" };
+      // SRD 5.1 bard, Bardic Inspiration: "A creature can have only one
+      // Bardic Inspiration die at a time", whatever its size: a d6 from one
+      // bard bars a d8 from another.
+      const held = target.conditions.find((entry) => isConditionNamed(entry, "bardic inspiration"));
+      if (held) {
+        return { error: `${target.name} already holds an unspent inspiration die (${held}), and a creature can have only one at a time.`, refused: "rules" };
       }
       outcome.patchTarget = {
         characterId: target.id,
@@ -636,22 +736,16 @@ export function computeUseResource(
       return outcome;
     }
     case "aoe": {
+      // Half on a success, rolled here on the creatures the area catches.
       const spend = aoeSpendFor(def, sheet, fxLevel, derived)!;
-      outcome.result.resolveWith = "aoe_damage";
-      outcome.result.casterCharacterId = sheet.id;
-      outcome.result.damage = spend.dice;
-      outcome.result.saveAbility = spend.saveAbility;
-      outcome.result.dc = spend.dc;
-      if (spend.damageType) {
-        outcome.result.type = spend.damageType;
-      }
-      if (spend.area) {
-        outcome.result.area = spend.area;
-      }
-      return outcome;
+      const saved = rollCounterSave(campaign, sheet, def, { save: spend.saveAbility, dc: spend.dc, dice: spend.dice, type: spend.damageType, half: def.effect.half ?? true }, variant, aim);
+      return "error" in saved ? saved : { ...outcome, result: { ...outcome.result, ...(spend.area ? { area: spend.area } : {}), ...saved.result } };
     }
     case "wild_shape": {
-      return wildShapeUse(sheet, outcome, def.displayName, form, elemental);
+      // The Hand's card names the beast as its pick (variant); the console
+      // and the AI GM in form.
+      const asked = form?.name?.trim() ? form : variant?.trim() ? { ...form, name: variant.trim() } : form;
+      return wildShapeUse(sheet, outcome, def.displayName, asked, elemental);
     }
     case "recover_slots": {
       // Spent through take_rest, which reads the counter and returns the

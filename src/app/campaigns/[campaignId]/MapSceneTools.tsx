@@ -260,7 +260,7 @@ export function AmbienceControls({
   const t = useT();
   return (
     <div className="space-y-1.5">
-      <p className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("scene.soundsLike")}</p>
+      <p className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("scene.soundsLike")}</p>
       <Select
         value={value.bed}
         label={t("scene.ambience.bed")}
@@ -323,7 +323,7 @@ export function OverlayControls({
 
   return (
     <div className="space-y-1.5">
-      <p className="flex items-center gap-1.5 font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">
+      <p className="flex items-center gap-1.5 font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">
         <ImageIcon className="size-3.5" /> {t("scene.overlay.title")}
       </p>
       <div className="flex flex-wrap items-center gap-1.5">

@@ -16,7 +16,7 @@ import { hasOpenHandTechnique, hurlProblem, OPEN_HAND_NOT_FLURRY } from "@/lib/d
 import { inspirationProblem, strokeOfLuckProblem } from "@/lib/dm/attack-features";
 import { weaponAttackProfile, type AttackProfile } from "@/lib/dm/attack-logic";
 import { dmgWithType } from "@/lib/battlemap/hand";
-import { handsRuling } from "@/lib/dm/attack-rules";
+import { handsRuling, longRangeTilesOf } from "@/lib/dm/attack-rules";
 import { hasFastHands, kiLeft } from "@/lib/dm/bonus-routes";
 import { checkAttackOptions, martialArtsApplies, type AnyBonusAttack } from "@/lib/dm/pc-attack-options";
 import { heldInspiration } from "@/lib/dm/roll-riders";
@@ -33,7 +33,6 @@ import {
   costGate,
   gated,
   handsRulingReason,
-  signed,
   standingGate,
   type Gate,
   type HandAttackOption,
@@ -42,11 +41,26 @@ import {
 } from "@/lib/battlemap/hand-core";
 import { textKey } from "@/lib/language/text-logic";
 import { subclassNamed } from "@/lib/srd/subclass-name";
+import { attackDamageLine, attackReach, attackRollLine } from "@/lib/battlemap/hand-attack-lines";
+import { RAPID_STRIKE_NEEDS_ADVANTAGE } from "@/lib/battlemap/hand-odds";
+import { magicItemRiders } from "@/lib/srd/magic-items";
 
 const holds = (sheet: CharacterSheet, name: string) =>
   sheet.features.some((feature) => [feature.name, feature.name.replace(/\s*\(.*$/, "")].some((held) => textKey(held) === name));
 
 type OptionArgs = { stunningStrike?: boolean; reckless?: boolean; nonlethal?: boolean; bonusAttack?: AnyBonusAttack };
+
+// The bonus strike's range line in the reader's words, from the same reading
+// attackReach makes (hand-attack-lines.ts), as attackCards prints it (hand.ts):
+// melee feet, a thrown weapon's reach then its span.
+function strikeRange(profile: AttackProfile, t: T): string {
+  const reachFt = profile.reachTiles * 5;
+  if (!profile.ranged && !profile.thrown) return t("table.hand.range.feet", { feet: reachFt });
+  const normalFt = profile.rangeTiles * 5;
+  const longFt = longRangeTilesOf(profile) * 5;
+  const span = longFt > normalFt ? t("table.hand.range.beastRanged", { range: normalFt, long: longFt }) : t("table.hand.range.feet", { feet: normalFt });
+  return profile.ranged ? span : t("table.hand.range.weaponThrownFt", { reach: reachFt, span });
+}
 
 // Open Hand Technique's three riders, as the aim bar offers them. The
 // labels and notes are display words keyed here; the option ids are what
@@ -127,16 +141,18 @@ export function attackOptionsFor(
     });
   }
   // Rapid Strike (Samurai 15): this swing's advantage traded for one more
-  // attack of the action, once a turn. The engine judges the advantage when
-  // it rolls, and refuses in its own words when there is none.
+  // attack of the action, once a turn. pc_attack refuses it on a swing with
+  // no advantage ("this attack has none to forgo"), so it is shut as dealt
+  // and opened by the aim's own advantage (hand-odds.ts aimedCard): it was
+  // open on every plain swing.
   const rapid = hasRapidStrike(sheet);
   if (rapid && !swing.bonusStrike) {
     options.push({
       id: "rapidStrike",
       label: "Rapid Strike",
       note: t("table.hand.option.rapidNote", { feature: rapid }),
-      // Off the fighter's turn the whole card is refused by canAct already.
-      disabled: null,
+      disabled: t("table.hand.option.rapidNeedsAdvantage"),
+      needsAdvantage: true,
     });
   }
   // Open Hand Technique rides an unarmed strike paid for by Flurry of Blows:
@@ -223,24 +239,34 @@ export function bonusStrikeCards(
       derived,
       profs,
       { displayName: weapon, srd, unarmed: srd === null },
-      { riders, martialArts: martialArtsApplies(sheet) },
+      { riders, martialArts: martialArtsApplies(sheet), worn: magicItemRiders(sheet.equipment, sheet).weaponRiders },
     );
     const refused = optionRefusal(sheet, turn, profile, derived, { bonusAttack });
+    // Rage, the riders and the roll as pc_attack makes them, as the Attack
+    // action's cards read them (hand-attack-lines.ts): a raging Frenzy card
+    // left the Rage bonus out.
+    const line = attackDamageLine({ sheet, turn, profile, riders, kind: "weapon" });
+    const rolled = attackRollLine(sheet, profile.toHit);
+    const notes = [...line.notes, ...rolled.notes];
     const card: HandCard = {
       id: `attack:${textKey(weapon)}:${bonusAttack.replace(/\s+/g, "-")}${key ? `:${key}` : ""}`,
       type: "attack",
       name,
       cost: "bonus",
-      range: profile.ranged && srd?.rangeFt ? t("table.hand.range.feet", { feet: srd.rangeFt }) : t("table.hand.range.feet", { feet: profile.reachTiles * 5 }),
-      dice: dmgWithType(profile.damageExpression, profile.damageType, t),
-      roll: t("table.hand.attack.toHit", { bonus: signed(profile.toHit) }),
+      ...attackReach(profile),
+      range: strikeRange(profile, t),
+      dice: dmgWithType(line.damage, profile.damageType, t),
+      roll: t("table.hand.attack.toHit", { bonus: `${(rolled.toHit ?? 0) >= 0 ? "+" : ""}${rolled.toHit ?? 0}${rolled.toHitDice ?? ""}` }),
       rules,
+      ...(notes.length ? { description: [rules, ...notes].join(" ") } : {}),
       resource: "",
       condition: "",
       icon: srd ? { kind: "item", key: srd.name, family: "item-weapon" } : { kind: "action", key: "unarmed-strike" },
       target: "enemy",
-      toHit: profile.toHit,
-      damage: profile.damageExpression,
+      toHit: rolled.toHit,
+      ...(rolled.toHitDice ? { toHitDice: rolled.toHitDice } : {}),
+      ...(rolled.rollAdvantage ? { rollAdvantage: rolled.rollAdvantage } : {}),
+      damage: line.damage,
       damageType: profile.damageType,
       heals: false,
       save: null,
@@ -282,7 +308,7 @@ export function bonusStrikeCards(
     );
   }
   // A subclass's bonus weapon attack (Battle Magic, War Magic, Sudden Strike,
-  // Curving Shot...): pc_attack bonusAttack "feature", judged by the authored
+  // Curving Shot...): pc_attack's feature by its name, judged by the authored
   // layer's own check (src/lib/srd/authored-effects.ts).
   const offers = activeAuthored(sheet, "bonus_attack");
   if (offers.length) {

@@ -1,5 +1,7 @@
 "use client";
 
+import { ui } from "@/lib/ui";
+import { PdfImportButton } from "@/app/workshop/pdf-import/PdfImportButton";
 import { BookOpenText, Download, Hourglass, Lock, Map as MapIcon, MessageCircleQuestion, Network, PenLine, Shapes, Sparkles, Upload, Wand2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -292,6 +294,11 @@ export function WorldForgePanel({
             {checking ? null : <Download className="size-3.5" />} {t("workshop.worldForge.exportButton")}
           </KitButton>
         </span>
+        {/* The book's people, places, factions, lore, ties and story, laid
+            into this world; its review card opens below the row. */}
+        <div className="w-full">
+          <PdfImportButton campaignId={campaignId} className={ui.btnSmall} label="Add an adventure PDF to this world" onImported={refresh} />
+        </div>
       </div>
       )}
       {exportError ? <PanelError>{exportError}</PanelError> : null}

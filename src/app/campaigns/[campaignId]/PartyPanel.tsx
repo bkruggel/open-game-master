@@ -1,6 +1,6 @@
 "use client";
 
-import { attractionWords } from "@/lib/attraction";
+import { attractionWords, openToMore } from "@/lib/attraction";
 import { TravelFormation } from "@/app/campaigns/[campaignId]/TravelFormation";
 import { PartyStory } from "@/app/campaigns/[campaignId]/PartyStory";
 import type { PartyState } from "@/lib/dm/party-logic";
@@ -30,6 +30,7 @@ import { CompanionBuilderDialog } from "@/app/campaigns/[campaignId]/CompanionBu
 import { CompanionCommand } from "@/app/campaigns/[campaignId]/CompanionCommand";
 import { CompanionPaintButton } from "@/app/campaigns/[campaignId]/CompanionPaintButton";
 import { CompanionKeepButton } from "@/app/campaigns/[campaignId]/CompanionKeepButton";
+import { CompanionBondLine, useRomanceBonds } from "@/app/campaigns/[campaignId]/CompanionBondLine";
 import { hostOffers, offersImages, useCapabilities } from "@/lib/use-capabilities";
 import { offSide, SideBadge } from "@/app/campaigns/[campaignId]/SideBadge";
 import { DiceSourcesButton } from "@/app/campaigns/[campaignId]/DiceSourcesDialog";
@@ -40,10 +41,12 @@ import type { Note } from "@/lib/db/notes";
 import type { Genre, LastingCompanionBlock } from "@/lib/schemas/game-settings";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { computeSheetDerived, formatModifier } from "@/lib/srd";
+import { resourceName } from "@/lib/srd/class-resources";
 import { usePackArt } from "@/lib/worlds/use-pack-art";
 import { textKey } from "@/lib/language/text-logic";
 import { heroFell, livingHero, switchesHeroes } from "@/lib/characters/fallen-logic";
 import { speciesAndClassWords } from "@/lib/characters/class-words";
+import { REAL_DICE_SCOPE } from "@/lib/dice/held-rolls";
 
 // The portrait cropper (and its cropping library) loads when a portrait is
 // being cropped, not with the table.
@@ -58,8 +61,8 @@ function inspired(sheet: CharacterSheet): boolean {
 }
 
 // Mid-game physical-dice opt-in/out; the same per-member preference the
-// Lobby toggle writes. Turning it ON means the DM pauses on your rolls and
-// asks for the numbers from your real dice.
+// Lobby toggle writes. Turning it ON means the DM pauses on the rolls
+// REAL_DICE_SCOPE names and asks for the numbers from your real dice.
 function RealDiceToggle({
   campaignId,
   member,
@@ -90,8 +93,8 @@ function RealDiceToggle({
       label={t("table.party.realDice")}
       title={
         member.useRealDice
-          ? t("table.party.realDiceOnTitle")
-          : t("table.party.realDiceOffTitle")
+          ? t("table.party.realDicePauseOnTitle", { scope: REAL_DICE_SCOPE })
+          : t("table.party.realDicePauseOffTitle", { scope: REAL_DICE_SCOPE })
       }
       className="w-full text-xs"
     >
@@ -346,7 +349,8 @@ export function PartyPanel({
   sheets: CharacterSheet[];
   meUserId: string;
   // Lasting companions whose sheet just went (issue 503), and the key the
-  // Gone list reads itself again on (PartyGone.tsx).
+  // Gone list reads itself again on (PartyGone.tsx), as a companion's
+  // romance line does (issue 640): both move with relationships_updated.
   departing?: readonly DepartingSheet[];
   goneRefreshKey?: number;
   // A person runs this table and it plays romance (issue 501): the DM's
@@ -422,6 +426,8 @@ export function PartyPanel({
   const capabilities = useCapabilities();
   const canPaint = offersImages(capabilities) && hostOffers(capabilities, "companionPortrait");
   const canKeep = hostOffers(capabilities, "keepCompanion");
+  // Where each companion's romances stand, for its card (issue 640).
+  const bonds = useRomanceBonds(campaignId, goneRefreshKey, sheets.some((sheet) => sheet.isCompanion));
   const [editingSheetId, setEditingSheetId] = useState("");
   const [viewingSheetId, setViewingSheetId] = useState("");
   const [croppingSheetId, setCroppingSheetId] = useState("");
@@ -664,6 +670,7 @@ export function PartyPanel({
             </div>
 
             {romanceNotes ? <RomanceNote sheet={sheet} /> : null}
+            {sheet.isCompanion ? <CompanionBondLine name={sheet.name} bonds={bonds} /> : null}
 
             {shape ? (
               <div
@@ -733,7 +740,7 @@ export function PartyPanel({
                 <span className="flex min-w-0 items-center gap-1 truncate">
                   <PawPrint className="size-3 shrink-0 text-stone-500" />
                   {pet.name}
-                  {textKey(pet.name) !== textKey(pet.form) ? ` (${pet.form})` : ""}
+                  {textKey(pet.name) !== textKey(pet.form) ? ` (${pet.form}${pet.creatureType ? `, ${pet.creatureType}` : ""})` : pet.creatureType ? ` (${pet.creatureType})` : ""}
                 </span>
                 <span className={cn("font-mono", pet.hp <= 0 && "text-red-400")}>
                   {pet.hp}/{pet.maxHp}
@@ -798,7 +805,11 @@ export function PartyPanel({
               </div>
             ) : null}
 
-            <div className="party-card-stats mt-2 grid grid-cols-3 gap-1.5 text-center">
+            {/* One line of figures, not three boxes: a party of five was
+                fifteen bordered wells down the panel, each with a glyph too
+                small to read. The label is small caps, the figure is the
+                thing read. */}
+            <div className="party-card-stats mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-0.5">
               {(
                 [
                   ["AC", String(shape ? shape.beastAc : sheet.ac)],
@@ -808,25 +819,15 @@ export function PartyPanel({
               ).map(([statLabel, statValue]) => (
                 <span
                   key={statLabel}
-                  className={cn(
-                    "rounded-md border border-stone-700/50 bg-stone-950/60 py-1 shadow-[0_1px_2px_rgba(4,2,12,0.5)_inset]",
-                    shape && statLabel === "AC" && "border-lime-800/60 text-lime-300",
-                  )}
+                  className={cn("inline-flex items-baseline gap-1.5", shape && statLabel === "AC" && "text-lime-300")}
                   title={
                     shape && statLabel === "AC"
                       ? t("table.party.beastAcTitle", { name: sheet.name, ac: sheet.ac })
                       : undefined
                   }
                 >
-                  <span className="eyebrow block text-[8px] text-stone-500">
-                    <GameIcon
-                      icon={{ kind: "glyph", key: statLabel === "AC" ? "rest-ac" : statLabel === "PP" ? "sense-passive-perception" : "rest-initiative" }}
-                      size="size-3.5"
-                      className="mr-0.5 inline-block -translate-y-px align-middle"
-                    />
-                    {t(`table.party.stat.${statLabel}`)}
-                  </span>
-                  <span className="font-mono text-xs text-stone-200">{statValue}</span>
+                  <span className="eyebrow text-[9px] text-stone-500">{t(`table.party.stat.${statLabel}`)}</span>
+                  <span className={cn("font-mono text-[13px]", shape && statLabel === "AC" ? "text-lime-300" : "text-stone-100")}>{statValue}</span>
                 </span>
               ))}
             </div>
@@ -836,10 +837,10 @@ export function PartyPanel({
                 {Object.entries(sheet.resources).map(([id, state]) => (
                   <span
                     key={id}
-                    className="rounded-full border border-stone-700/50 bg-stone-950/60 px-2 py-0.5 text-[10px] capitalize text-stone-300"
+                    className="rounded-full border border-stone-700/50 bg-stone-950/60 px-2 py-0.5 text-[10px] text-stone-300"
                     title={t("table.party.resourceTip")}
                   >
-                    {id.replaceAll("_", " ")} {state.max - state.used}/{state.max}
+                    {resourceName(id)} {state.max - state.used}/{state.max}
                   </span>
                 ))}
               </div>
@@ -1074,12 +1075,15 @@ function RomanceNote({ sheet }: { sheet: CharacterSheet }) {
   const drawn = attractionWords(sheet.attraction);
   // A hero who fell is courted by nobody (issue 657), so the chip goes.
   const open = livingHero(sheet) && Boolean(sheet.openToAdvances);
-  if (!drawn && !open) {
+  // Romance is exclusive unless they are open to more (issue 642).
+  const more = openToMore(sheet.attraction);
+  if (!drawn && !open && !more) {
     return null;
   }
   return (
     <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-stone-400" data-romance-note={sheet.id}>
       {drawn ? <span>{t("table.party.drawnTo", { who: drawn })}</span> : null}
+      {more ? <span data-open-relationship-note>{t("table.party.openToMore")}</span> : null}
       {open ? (
         <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-1.5 text-rose-200">{t("table.party.openToAdvances")}</span>
       ) : null}

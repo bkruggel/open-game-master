@@ -18,6 +18,7 @@ const { armorOfRow } = await import("../src/lib/srd/armor.ts");
 const { attunementRefusal } = await import("../src/lib/dm/usage-rules.ts");
 const { attunementProblem } = await import("../src/lib/srd/magic-items.ts");
 const { itemCheckRiders } = await import("../src/lib/srd/item-check-riders.ts");
+const { describeEffect, normalizeEffects } = await import("../src/lib/homebrew/gear.ts");
 
 const world = await openWorld();
 const kit = await gearKit(world);
@@ -75,6 +76,30 @@ await test("A workshop sword's bonus and its fire dice ride every hit while it i
   assert.equal(lit.result.damage, 5 + 3 + 2 + 3 + 4);
 });
 
+await test("A workshop pair of wraps adds its bonus to unarmed strikes while it is attuned, and not before.", async () => {
+  await brew("Tested Wraps", {
+    itemKind: "magic_item",
+    requiresAttunement: true,
+    effects: [{ kind: "weapon_rider", weapons: ["unarmed strike"], attack: 3, damage: 3 }],
+  });
+  carry([{ name: "Tested Wraps", qty: 1, equipped: true }]);
+  const plain = await kit.swing(keeper.id, { weapon: "unarmed strike" }, 10);
+  assert.equal(plain.ok, true, plain.error);
+  assert.equal(plain.result.rolled, 10 + 3 + PB, "the unattuned wraps added their bonus");
+  assert.equal(plain.result.damage, 1 + 3);
+  world.patch(keeper.id, { equipment: sheet().equipment.map((item) => ({ ...item, attuned: true })) });
+  const wrapped = await kit.swing(keeper.id, { weapon: "unarmed strike" }, 10);
+  assert.equal(wrapped.ok, true, wrapped.error);
+  assert.equal(wrapped.result.rolled, 10 + 3 + PB + 3, "the wraps did not add to the attack roll");
+  assert.equal(wrapped.result.damage, 1 + 3 + 3, "the wraps did not add to the damage");
+});
+
+await test("Saving a weapon's bonus to hit alone keeps it, and the summary says it.", () => {
+  const [effect] = normalizeEffects([{ kind: "weapon_rider", weapons: ["Unarmed Strike"], attack: 9 }]);
+  assert.deepEqual(effect, { kind: "weapon_rider", weapons: ["unarmed strike"], attack: 3 });
+  assert.match(describeEffect(effect), /\+3 to hit/);
+});
+
 await test("Workshop armour's +1 and its mithral-like riders reach the armour class and the Stealth check.", async () => {
   await brew("Wyrmscale Plate", {
     itemKind: "magic_item",
@@ -107,6 +132,64 @@ await test("A workshop wand holds its charges on the sheet, spends them on its s
   assert.equal(wand.charges, 1);
   const over = await kit.onTurnOf(keeper.id, () => world.invoke("use_item", { characterId: keeper.id, item: "Ember Wand", spell: "Burning Hands", charges: 2 }));
   assert.equal(over.ok, false, "the wand spent charges it did not have");
+});
+
+await test("A workshop item spell given a Save DC of 0 keeps no DC of its own, so its save is never DC 0 or 1.", async () => {
+  // The form's empty DC once read 0; the schema's clamp kept a 0 as DC 1.
+  const entry = await brew("Hollow Wand", {
+    itemKind: "magic_item",
+    charges: { max: 3, regain: "all" },
+    spells: [{ spell: "Burning Hands", charges: 1, level: 1, dc: 0 }],
+  });
+  assert.equal("dc" in entry.data.spells[0], false, `the wand stored DC ${entry.data.spells[0].dc}`);
+  carry([{ name: "Hollow Wand", qty: 1, equipped: true }]);
+  kit.freshTurn();
+  const cast = await kit.onTurnOf(keeper.id, () => world.invoke("use_item", { characterId: keeper.id, item: "Hollow Wand", spell: "Burning Hands" }));
+  assert.equal(cast.ok, true, cast.error);
+  assert.equal(cast.result.saveDc, undefined, `the wand's Burning Hands was saved against at DC ${cast.result.saveDc}`);
+});
+
+// ---- the workshop's item form ----
+
+const { createElement } = await import("react");
+const { renderToStaticMarkup } = await import("react-dom/server");
+const { MoreEffectFields } = await import("../src/app/workshop/homebrew/ItemEffectFields.tsx");
+const { ItemFields } = await import("../src/app/workshop/homebrew/ItemFields.tsx");
+const { ItemSpellsBlock } = await import("../src/app/workshop/homebrew/ItemMagicFields.tsx");
+const { itemSpellsOf } = await import("../src/lib/srd/item-spells.ts");
+
+// A stepper the form shows with its caption beside it and the same words as
+// its name for a screen reader.
+const captioned = (html, label) => html.includes(`>${label}</span>`) && html.includes(`aria-label="${label}"`);
+
+await test("Every stepper in a standing effect's row says what it sets, in words on screen and for a screen reader.", () => {
+  // AGENTS.md, settings and controls, point 7: a visible label in plain words.
+  const effect = (value) => renderToStaticMarkup(createElement(MoreEffectFields, { effect: value, update() {} }));
+  const raised = effect({ kind: "increase_ability", ability: "con", amount: 2, max: 20 });
+  assert.ok(captioned(raised, "Raised by"), "the raised score's amount has no caption");
+  assert.ok(captioned(raised, "To at most"), "the raised score's ceiling has no caption");
+  assert.ok(captioned(effect({ kind: "speed", mode: "fly", feet: 30 }), "Feet"), "the speed's feet have no caption");
+  const rider = effect({ kind: "weapon_rider", weapons: ["longbow"], damage: 2 });
+  assert.ok(captioned(rider, "Extra damage"), "the weapon's extra damage has no caption");
+  assert.ok(captioned(rider, "Bonus to hit"), "the weapon's bonus to hit has no caption");
+  assert.ok(rider.includes("Unarmed strike"), "the unarmed strike cannot be picked");
+  const form = renderToStaticMarkup(
+    createElement(ItemFields, {
+      data: { itemKind: "magic_item", effects: [{ kind: "spell_attack_bonus", amount: 1 }, { kind: "set_ability", ability: "str", score: 19 }] },
+      onChange() {},
+    }),
+  );
+  assert.ok(captioned(form, "Amount"), "the spell attack bonus has no caption");
+  assert.ok(captioned(form, "Score"), "the set score has no caption");
+});
+
+await test("A copied Staff of Healing's spells keep no Save DC, and the form shows each one empty, not 0.", () => {
+  const spells = itemSpellsOf("Staff of Healing");
+  assert.deepEqual(spells.map((row) => row.spell), ["Cure Wounds", "Lesser Restoration", "Mass Cure Wounds"]);
+  assert.ok(spells.every((row) => !("dc" in row)), "the staff's spells carry a DC of their own");
+  const html = renderToStaticMarkup(createElement(ItemSpellsBlock, { data: { spells }, set() {} }));
+  const dcs = [...html.matchAll(/<input[^>]*aria-label="Save DC"[^>]*>/g)].map(([input]) => /value="([^"]*)"/.exec(input)?.[1]);
+  assert.deepEqual(dcs, ["", "", ""], `the Save DC fields read ${JSON.stringify(dcs)}`);
 });
 
 await test("A workshop trinket that needs no attunement takes none of the three places; one that needs it takes one.", async () => {

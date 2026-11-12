@@ -1,4 +1,7 @@
 import type { CampaignDraft, WizardGates } from "@/app/create-campaign/draft";
+// Pure still: the translate is only the English fallback for a caller that
+// passes no translator (the suites).
+import { translate } from "@/lib/messages-logic";
 
 // The table sheet's pure half: which table switches the creator shows, in which
 // group, which of them the "features on" total counts, and what a press
@@ -214,7 +217,18 @@ function knobOf(key: SheetRowKey, draft: CampaignDraft): 0 | 0.5 | 1 {
 
 // The groups as the step draws them. A group with nothing to show is left
 // out, which is how the narrator block disappears when a person narrates.
-export function tableSheet(t: Translate, draft: CampaignDraft, gates: WizardGates): SheetGroup[] {
+export function tableSheet(
+  tOrDraft: Translate | CampaignDraft,
+  draftArg?: CampaignDraft,
+  gatesArg?: WizardGates,
+): SheetGroup[] {
+  // Both call shapes: the step passes the translator first (t-first, the
+  // agoLabel pattern), the suites pass the draft alone — the reading falls
+  // back to the dictionary's English.
+  const withT = typeof tOrDraft === "function";
+  const t = (withT ? tOrDraft : (key: string, vars?: Record<string, string | number>) => translate("en", key, vars)) as Translate;
+  const draft = (withT ? draftArg : tOrDraft) as CampaignDraft;
+  const gates = (withT ? gatesArg : draftArg) as WizardGates;
   return GROUPS.map((groupId) => ({
     id: groupId,
     label: t(GROUP_KEYS[groupId]),

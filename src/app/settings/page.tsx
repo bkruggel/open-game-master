@@ -2,7 +2,7 @@
 
 import { Check, Link2, Loader2, Trash2, Undo2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 import { PIXEL_ICONS, UserAvatar, ui } from "@/lib/ui";
 import { localeTag } from "@/lib/messages-logic";
@@ -20,6 +20,35 @@ import { BlockedPlayersSection } from "@/app/settings/BlockedPlayersSection";
 import { ConnectedAgentsSection } from "@/app/settings/ConnectedAgentsSection";
 import { ChangePasswordForm } from "@/app/ChangePasswordForm";
 import { currentPathname, currentQuery, replaceAddress } from "@/lib/navigation";
+import { shellHost, type ShellHost } from "@/lib/shell-host";
+
+// window.odmShell is set once before any page script runs and never changes.
+const subscribeNever = () => () => {};
+
+// Where a signed-out page sends the player. In a browser, the front door's
+// login form. Inside the desktop or Android app the app owns sign-in, and
+// the server's form there signs in for the page alone (the app keeps
+// nothing it does, and a Discord account has no password to type), so the
+// way back is the app's home, where the world asks for a sign-in the app
+// keeps. The account menu draws no Log out in the app for the same reason.
+function SignedOutDoor({ shell, children }: { shell: ShellHost | null; children: string }) {
+  if (shell) {
+    return (
+      <button
+        type="button"
+        onClick={() => shell.showServers()}
+        className="inline-flex min-h-10 items-center rounded-md text-amber-200 outline-none hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-amber-300/70"
+      >
+        App home
+      </button>
+    );
+  }
+  return (
+    <Link href="/" className="text-amber-200 hover:text-amber-400">
+      {children}
+    </Link>
+  );
+}
 
 type Me = {
   id: string;
@@ -47,6 +76,7 @@ export default function SettingsPage() {
   const locale = useLocale();
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
+  const shell = useSyncExternalStore<ShellHost | null>(subscribeNever, shellHost, () => null);
   const [cropping, setCropping] = useState(false);
   const [saving, setSaving] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
@@ -184,9 +214,7 @@ export default function SettingsPage() {
         {scheduled.purged
           ? t("settings.deletion.purged")
           : t("settings.deletion.scheduledNotice", { date: dueDate(scheduled.dueAt, locale) })}
-        <Link href="/" className="text-amber-200 hover:text-amber-400">
-          {t("settings.deletion.back")}
-        </Link>
+        <SignedOutDoor shell={shell}>{t("settings.deletion.back")}</SignedOutDoor>
       </PageNotice>
     );
   }
@@ -194,10 +222,9 @@ export default function SettingsPage() {
   if (!me) {
     return (
       <PageNotice width="narrow">
-        <Link href="/" className="text-amber-200 hover:text-amber-400">
-          {t("settings.deletion.logInFirst")}
-        </Link>{" "}
-        {t("settings.deletion.logInToManage")}
+        {shell ? t("settings.deletion.sessionEnded") : null}
+        <SignedOutDoor shell={shell}>{t("settings.deletion.logInFirst")}</SignedOutDoor>
+        {shell ? "." : ` ${t("settings.deletion.logInToManage")}`}
       </PageNotice>
     );
   }

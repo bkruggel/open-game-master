@@ -2,7 +2,7 @@
 // resources, conditions and rests. Names match the tool names the AI DM is
 // offered exactly, because both callers reach the same engine
 // (src/lib/dm/invoke.ts).
-import type { CatalogEntry, CatalogField } from "@/lib/dm/catalog-types";
+import { MEAL_FIELD, type CatalogEntry, type CatalogField } from "@/lib/dm/catalog-types";
 import { ALIGNMENT_CODES } from "@/lib/dm/companion-values-logic";
 import { ITEM_TAGS } from "@/lib/schemas/item-tags";
 import { UPDATE_SHEET_FIELDS } from "@/lib/dm/update-sheet-args";
@@ -196,13 +196,13 @@ export const PARTY_ADJUDICATIONS: CatalogEntry[] = [
     summary: "Adds or removes coin; a negative number spends it.",
     fields: [
       { name: "characterId", label: "Character", kind: "character", required: true },
-      { name: "delta", label: "Change in gold", kind: "number", required: true, min: -100000, max: 100000 },
+      { name: "delta", label: "Change in gold", kind: "number", min: -100000, max: 100000 },
       {
         name: "coins",
         label: "Or in coins",
         kind: "text",
-        placeholder: "340 sp",
-        help: "Overrides the amount above; the sign of the change still says gain or spend.",
+        placeholder: "-5 sp",
+        help: "Overrides the amount above. Start with - to spend or + to gain.",
       },
       {
         name: "additional",
@@ -295,6 +295,7 @@ export const PARTY_ADJUDICATIONS: CatalogEntry[] = [
       { ...ITEM_SRD_NAME_FIELD, help: `An enemy's drop only. ${ITEM_SRD_NAME_FIELD.help}` },
       { ...ITEM_TAGS_FIELD, help: `An enemy's drop only. ${ITEM_TAGS_FIELD.help}` },
       { name: "toCharacterId", label: "Hand to", kind: "character" },
+      { name: "helped", label: "With help", kind: "boolean", help: "Taking off armor with someone's help takes half the time." },
       REASON,
     ],
   },
@@ -308,7 +309,7 @@ export const PARTY_ADJUDICATIONS: CatalogEntry[] = [
       { name: "item", label: "Item", kind: "text", required: true },
       { name: "targetCharacterId", label: "Used on", kind: "character" },
       { name: "charges", label: "Charges spent", kind: "number", min: 1, max: 50, help: "A wand or a staff: the item stays and the count drops. It refills at dawn." },
-      { name: "spell", label: "Spell cast from it", kind: "text", help: "A wand or staff's spell: the charges set its level, and the spell's own form then spends no slot." },
+      { name: "spell", label: "Spell cast from it", kind: "text", help: "The spell the item casts (a wand's fireball, a hat's disguise self): the item sets its level, and the spell's own form then spends no slot." },
       REASON,
     ],
   },
@@ -354,6 +355,7 @@ export const PARTY_ADJUDICATIONS: CatalogEntry[] = [
       { name: "variant", label: "Option", kind: "text", help: "For a feature with choices." },
       { name: "targetCharacterId", label: "Target", kind: "character" },
       { name: "targetEnemyId", label: "Enemy aimed at", kind: "enemy", help: "Intimidating Presence and the subclass features aimed at a creature: the server rolls its save." },
+      { name: "targetEnemyIds", label: "Enemies chosen", kind: "enemies", help: "The creatures of the user's choice an area feature takes (Order's Demand, Champion Challenge, Conquering Presence, Dreadful Aspect). Left empty, every foe in reach." },
       { name: "form", label: "Beast form", kind: "text", help: "Wild Shape: the beast's name. The server reads its stat block." },
       { name: "formHp", label: "Form's hit points", kind: "number", min: 1, max: 300 },
       { name: "formAc", label: "Form's armor class", kind: "number", min: 1, max: 30 },
@@ -503,6 +505,9 @@ export const PARTY_ADJUDICATIONS: CatalogEntry[] = [
       { name: "concentration", label: "Concentration", kind: "boolean" },
       { name: "ritual", label: "Cast as a ritual", kind: "boolean" },
       { name: "units", label: "Creatures, corpses or Hit Dice", kind: "number", min: 1, max: 100, help: "For a material priced per one (Astral Projection, Create Undead, Imprisonment)." },
+      { name: "storeIn", label: "Store in", kind: "text", help: "A Ring of Spell Storing's name, to cast the spell into it instead of casting it now." },
+      { name: "storeInCharacterId", label: "Ring carried by", kind: "character", help: "When someone other than the caster carries the ring." },
+      { name: "storedBy", label: "Stored by someone else", kind: "text", help: "An NPC's name, or who filled a ring the party found. The character above then carries the ring, and spends nothing." },
       ...AREA_PLACEMENT_FIELDS,
     ],
   },
@@ -579,6 +584,7 @@ export const PARTY_ADJUDICATIONS: CatalogEntry[] = [
         kind: "hitDice",
         help: "Short rest, for a character with no player at the table. A connected player spends their own on their sheet.",
       },
+      MEAL_FIELD,
       REASON,
     ],
   },
@@ -607,6 +613,9 @@ export const PARTY_ADJUDICATIONS: CatalogEntry[] = [
       ] },
       { name: "personality", label: "Personality", kind: "text", required: true },
       { name: "spells", label: "Spells they know", kind: "list", placeholder: "Cure Wounds, Bless", help: "For a caster, comma separated; the server keeps what their level allows." },
+      // An older host drops both unread (SERVER_FEATURES companionTraining).
+      { name: "background", label: "Background", kind: "text", placeholder: "Soldier", help: "Chosen to suit their stats when left empty.", host: { feature: "companionTraining" } },
+      { name: "skills", label: "Skills", kind: "list", placeholder: "Stealth, Insight", help: "Comma separated; the server keeps the ones their class offers and picks the rest.", host: { feature: "companionTraining" } },
       {
         name: "alignment",
         label: "Alignment",

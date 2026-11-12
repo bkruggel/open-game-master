@@ -80,7 +80,10 @@ function TrapBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }) 
         <TextField label={t("workshop.homebrew.hazard.disarmedBy")} value={String(disarm.how ?? "")} onChange={(how) => put({ disarm: { dc: num(disarm.dc, 15), how } })} placeholder="thieves' tools" maxLength={200} />
       </MechGroup>
       <MechGroup title={t("workshop.homebrew.hazard.whatItDoes")} summary={[save.dc ? `DC ${num(save.dc)} ${String(save.ability ?? "").toUpperCase()}` : "", damage.dice ? `${String(damage.dice)} ${String(damage.type ?? "")}` : "", block.condition ? String(block.condition) : ""].filter(Boolean).join(", ") || t("workshop.homebrew.hazard.nothingYet")} open>
-        <NumberField label={t("workshop.homebrew.hazard.attackBonus")} value={block.attackBonus === undefined ? "" : num(block.attackBonus)} min={-5} max={20} onChange={(value) => put({ attackBonus: optional(value) })} hint={t("workshop.homebrew.hazard.attackBonusHint")} />
+        <NumberField label={t("workshop.homebrew.hazard.attackBonus")} value={block.attackBonus === undefined ? "" : num(block.attackBonus)} min={-5} max={20} onChange={(value) => put({ attackBonus: optional(value), ...(value === "" ? { volley: undefined } : {}) })} hint={t("workshop.homebrew.hazard.attackBonusHint")} />
+        {block.attackBonus !== undefined ? (
+          <NumberField label={t("workshop.homebrew.hazard.missiles")} value={num(block.volley, 0) || ""} min={1} max={20} onChange={(value) => put({ volley: optional(value) })} hint={t("workshop.homebrew.hazard.missilesHint")} />
+        ) : null}
         <NumberField label={t("workshop.homebrew.hazard.fall")} value={num(block.fallFeet, 0) || ""} min={0} max={500} step={5} onChange={(value) => put({ fallFeet: optional(value) || undefined })} />
         <DamageParts title={t("workshop.homebrew.hazard.damageNoSave")} parts={Array.isArray(block.hit) ? (block.hit as Mech[]) : []} onChange={(hit) => put({ hit: hit.length ? hit : undefined })} />
         <SelectField label={t("workshop.bestiary.attack.save")} value={String(save.ability ?? "")} options={[{ value: "", label: t("workshop.homebrew.hazard.none") }, ...ABILITIES]} onChange={(ability) => put({ save: ability ? { ability, dc: num(save.dc, 13), halfOnSave: save.halfOnSave !== false } : undefined })} />

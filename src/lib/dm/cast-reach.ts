@@ -1,6 +1,9 @@
 // Whether a spell reaches its target on a mapped fight: its range, and a
 // clear line to the target (a creature behind total cover cannot be
 // targeted, SRD 5.1 Cover and Spellcasting, "A Clear Path to the Target").
+// A swallowed creature's total cover holds with or without a board: nothing
+// outside its swallower reaches it, and it reaches nothing outside
+// (swallow.ts).
 //
 // Reads the live board through attack-spatial.ts. With no map, or a token
 // off it, there is nothing to measure and the answer is "it reaches"
@@ -9,12 +12,15 @@
 // as its area when the range line prints one, and never through a wall.
 
 import { spellRangeFactor } from "@/lib/srd/feat-combat";
+import { holdsFeature } from "@/lib/srd/feature-names";
+import { textKey } from "@/lib/language/text-logic";
 import type { Campaign } from "@/lib/db/campaigns";
 import { spellDamageFor, spellFactsFor } from "@/lib/content";
 import type { AttackProfile } from "@/lib/dm/attack-logic";
 import { tilesBetween, wallBetween } from "@/lib/dm/attack-spatial";
 import { spellWard } from "@/lib/dm/zone-rules";
 import { spellAuthorsFor } from "@/lib/dm/spell-authors";
+import { swallowCoverBetween } from "@/lib/dm/swallow";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import type { SpellFacts } from "@/lib/srd/spell-facts";
 import type { ToolError } from "@/lib/dm/tool-errors";
@@ -44,6 +50,13 @@ export function spellReachProblem(input: {
   targetName: string;
   facts: SpellFacts | null;
 }): ToolError | null {
+  // Asked of every spell that names its target, heal and cast_buff among
+  // them: a Cure Wounds by touch from outside reached a hero inside a purple
+  // worm, and a cleric inside healed an ally outside with Healing Word.
+  const inside = input.casterId === input.targetId ? null : swallowCoverBetween(input.casterId, input.targetId);
+  if (inside) {
+    return { error: `${inside} Nothing was spent.`, refused: "rules" };
+  }
   const { facts } = input;
   if (!facts) {
     return null;
@@ -98,8 +111,11 @@ export function spellAttackReach(
   const facts = spellFactsFor(spell, authors);
   // Spell Sniper doubles an attack-roll spell's range (feat-combat.ts).
   const factor = spellRangeFactor(sheet);
-  const rangeTiles =
-    facts?.range.kind === "feet" ? Math.max(1, Math.floor((facts.range.feet * factor) / FEET_PER_TILE)) : profile.rangeTiles * factor;
+  // SRD 5.1, Eldritch Spear (a warlock invocation): "When you cast eldritch
+  // blast, its range is 300 feet."
+  const spear = holdsFeature(sheet, "Invocation: Eldritch Spear") && textKey(facts?.runsAs ?? facts?.name ?? spell) === textKey("Eldritch Blast");
+  const feet = spear ? 300 : facts?.range.kind === "feet" ? facts.range.feet : null;
+  const rangeTiles = feet !== null ? Math.max(1, Math.floor((feet * factor) / FEET_PER_TILE)) : profile.rangeTiles * factor;
   let damageExpression = profile.damageExpression;
   if (facts && slotLevel && slotLevel > facts.level) {
     const base = spellDamageFor({ spell, userIds: authors, casterLevel: sheet.level, slotLevel: facts.level })?.dice;

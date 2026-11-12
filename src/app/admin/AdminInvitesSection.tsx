@@ -153,7 +153,7 @@ export function AdminInvitesSection() {
                   type="button"
                   onClick={() => copy(invite.code)}
                   title={t("admin.invites.copyTitle")}
-                  className={cn(ui.btnSmall, "font-mono text-amber-200")}
+                  className={cn(ui.btnSmall, "font-code text-amber-200")}
                 >
                   {copiedCode === invite.code ? (
                     <Check className="size-3.5 text-emerald-400" />

@@ -80,7 +80,9 @@ const state = {
   assert.ok(!unnamed.includes("data-diamond-name"), "a wizard that does not ask for names prints none");
 
   const builder = read("src/app/characters/builder/CharacterBuilder.tsx");
-  const labelled = [...builder.matchAll(/^\s+label: "([^"]+)",\n\s+title: "([^"]+)",/gm)].map((match) => [match[1], match[2]]);
+  // The steps' names read through the dictionary (builder.shell.step.*), the
+  // i18n pass; the suite reads them in English, the source.
+  const labelled = [...builder.matchAll(/^\s+label: t\("([^"]+)"\),\n\s+title: t\("([^"]+)"\),/gm)].map((match) => [t(match[1]), t(match[2])]);
   // How you want to play first, the name last (backlog F4).
   assert.deepEqual(labelled, [
     ["Class", "Choose how you fight or use magic"],
@@ -89,7 +91,7 @@ const state = {
     ["Hero", "Name your hero and tell their story"],
     ["Finish", "Check your hero and finish"],
   ]);
-  assert.ok(builder.includes('label: casts ? "Spells" : "Gear"') && builder.includes('title: casts ? "Choose spells and gear" : "Choose your gear"'));
+  assert.ok(builder.includes('label: casts ? t("builder.shell.step.spells") : t("builder.shell.step.gear")') && builder.includes('title: casts ? t("builder.shell.step.spellsTitle") : t("builder.shell.step.gearTitle")'));
   assert.ok(/variant="diamonds"\s+stepNames/.test(builder), "the builder prints its step names");
   for (const file of ["src/app/characters/builder/steps/IdentityStep.tsx", "src/app/characters/builder/steps/BackgroundPanel.tsx", "src/app/characters/builder/BackgroundKitSection.tsx"]) {
     assert.ok(!read(file).includes("Calling step"), `${file} still sends the player to the Calling step`);

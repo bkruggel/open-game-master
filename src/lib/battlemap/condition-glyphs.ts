@@ -94,6 +94,12 @@ export const CONDITION_GLYPHS: Record<string, ConditionGlyph> = {
   tremors: { id: "tremors", label: "Tremors", tone: HARM, path: "M2 5l2-2 2 2 2-2 2 2 2-2 2 2M2 11l2-2 2 2 2-2 2 2 2-2 2 2" },
   truth: { id: "truth", label: "Truth serum", tone: NEUTRAL, path: "M3 4h10v6H7l-3 3v-3H3V4zM6 7l1.5 1.5L10 6" },
   recuperated: { id: "recuperated", label: "Recuperated", tone: BLESS, path: "M8 14s-6-3.5-6-8a3 3 0 0 1 6-1 3 3 0 0 1 6 1c0 4.5-6 8-6 8zM8 6v4M6 8h4" },
+  // What the SRD's adventuring gear leaves (src/lib/dm/gear-weapon-hit.ts,
+  // src/lib/dm/consumables.ts).
+  burning: { id: "burning", label: "Burning", tone: HARM, path: "M8 2c2 3 4 4.5 4 8a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-7z" },
+  "covered in oil": { id: "oiled", label: "Covered in oil", tone: HARM, path: "M8 2c2 3 4 5 4 8a4 4 0 0 1-8 0c0-3 2-5 4-8zM6 10a2 2 0 0 0 2 2" },
+  "caltrops wound": { id: "caltrops", label: "Caltrops wound", tone: HARM, path: "M8 2v12M2 8h12M4 4l8 8M12 4l-8 8" },
+  antitoxin: { id: "antitoxin", label: "Antitoxin", tone: WARD, path: "M6 2h4M7 2v4l-3 7a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l-3-7V2M5 10h6" },
   eyebright: { id: "eyebright", label: "Eyebright ointment", tone: WARD, path: "M2 8c2-3 4-4 6-4s4 1 6 4c-2 3-4 4-6 4s-4-1-6-4zM6 8l1.5 1.5L10.5 6.5" },
   // The last spell rows (src/lib/srd/condition-effects-last.ts, -tail.ts):
   // the planes, the mind, the ways of moving a spell grants. Several words
@@ -128,6 +134,22 @@ export const CONDITION_GLYPHS: Record<string, ConditionGlyph> = {
   "indigo ray": { id: "indigoray", label: "Indigo ray", tone: HARM, path: "M2 13L13 2M9 2h4v4M3 10l3 3" },
   "violet ray": { id: "violetray", label: "Violet ray", tone: HARM, path: "M2 13L13 2M9 2h4v4M2 2l12 12" },
   "flesh to stone": { id: "fleshtostone", label: "Flesh to stone", tone: HARM, path: "M3 13l2-8 3-3 3 3 2 8H3zM6 9h4M6 11h4" },
+  // A spell of a minute or more being cast across turns, and the moment it is
+  // done (src/lib/dm/long-casting-logic.ts): an hourglass, then a spark.
+  casting: { id: "casting", label: "Casting", tone: NEUTRAL, path: "M5 2h6M5 14h6M5.5 2c0 3 5 3.5 5 6s-5 3-5 6M10.5 2c0 3-5 3.5-5 6s5 3 5 6" },
+  "casting complete": { id: "castingdone", label: "Casting complete", tone: BLESS, path: "M8 2l1.5 4.5L14 8l-4.5 1.5L8 14l-1.5-4.5L2 8l4.5-1.5z" },
+  // Zealous Presence (Path of the Zealot 10, src/lib/srd/condition-effects-tail.ts):
+  // the allies who heard the battle cry, a cry in rays.
+  // The subclass and item boons of src/lib/srd/condition-effects-tail.ts.
+  "bolstering magic": { id: "bolstering", label: "Bolstering magic", tone: BLESS, path: "M8 2l1.5 4.5L14 8l-4.5 1.5L8 14l-1.5-4.5L2 8l4.5-1.5zM8 6v4M6 8h4" },
+  "unbreakable majesty": { id: "majesty", label: "Unbreakable majesty", tone: WARD, path: "M3 11l1-6 2.5 3L8 4l1.5 4L12 5l1 6H3zM3 13h10" },
+  "universal speech": { id: "universalspeech", label: "Universal speech", tone: NEUTRAL, path: "M2 4h9v6H6l-3 3v-3H2zM7 7h1M5 7h1M9 7h1M13 6v5h-1v2l-2-2" },
+  "eyes of night": { id: "eyesofnight", label: "Eyes of night", tone: BLESS, path: "M2 8c2-3 4-4 6-4s4 1 6 4c-2 3-4 4-6 4s-4-1-6-4zM8 6a2 2 0 1 0 0 4M12 1a2 2 0 1 0 2 2" },
+  "ghost walk": { id: "ghostwalk", label: "Ghost walk", tone: WARD, path: "M4 13c0-6 1-10 4-10s4 4 4 10l-2-1-2 1-2-1-2 1zM6.5 7h.5M9 7h.5M1 9h2M13 9h2" },
+  "the third eye": { id: "thirdeye", label: "The third eye", tone: BLESS, path: "M3 8c1.5-2 3-3 5-3s3.5 1 5 3c-1.5 2-3 3-5 3s-3.5-1-5-3zM8 7a1 1 0 1 0 0 2M8 1v2" },
+  elixir: { id: "elixir", label: "Elixir", tone: BLESS, path: "M6 2h4M7 2v3a4 4 0 1 0 2 0V2M5 10h6" },
+  "in the genie's vessel": { id: "genievessel", label: "In the genie's vessel", tone: WARD, path: "M4 14h8M5 14c-1-3 0-6 3-7 3 1 4 4 3 7M7 7V4h2v3M6 4h4" },
+  "zealous presence": { id: "zealous", label: "Zealous presence", tone: BLESS, path: "M4 6v4h2l4 3V3L6 6H4zM12 5l2-1M12 8h2M12 11l2 1" },
 };
 
 const DEFAULT_GLYPH: ConditionGlyph = {
@@ -143,6 +165,13 @@ export function glyphFor(condition: string): ConditionGlyph {
   const key = condition.trim().toLowerCase();
   if (CONDITION_GLYPHS[key]) {
     return CONDITION_GLYPHS[key];
+  }
+  // A bracket note says which form or how much ("eyes of night (300 ft
+  // darkvision)", "the third eye (ethereal sight)"): the name before it is
+  // the condition, and its first word alone may be a common one ("the").
+  const named = key.replace(/\s*\([^)]*\)\s*$/, "");
+  if (CONDITION_GLYPHS[named]) {
+    return CONDITION_GLYPHS[named];
   }
   const head = key.split(/[\s:(]/)[0] ?? "";
   if (CONDITION_GLYPHS[head]) {
@@ -161,6 +190,10 @@ const GLYPH_ICON: Record<string, string> = {
   lethargic: "slowed",
   halted: "restrained",
   retching: "poisoned",
+  burning: "raging",
+  oiled: "marked",
+  antitoxin: "shielded",
+  caltrops: "slowed",
   wandering: "charmed",
   dazed: "stunned",
   commanded: "charmed",
@@ -228,6 +261,20 @@ const GLYPH_ICON: Record<string, string> = {
   indigoray: "restrained",
   violetray: "blinded",
   fleshtostone: "petrified",
+  // A casting held across turns is held by its concentration; once done it
+  // is a spell about to take effect.
+  casting: "concentrating",
+  castingdone: "blessed",
+  // The battle cry's divine energy is a blessing on those who hear it.
+  zealous: "blessed",
+  bolstering: "blessed",
+  majesty: "shielded",
+  universalspeech: "charmed",
+  eyesofnight: "blessed",
+  ghostwalk: "invisible",
+  thirdeye: "blessed",
+  elixir: "blessed",
+  genievessel: "hidden",
 };
 
 // The painted icon a glyph shows: its own painting, or the one it borrows.

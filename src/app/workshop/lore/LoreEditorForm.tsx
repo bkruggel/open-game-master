@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Eye, EyeOff, FileText, Loader2, Trash2, Users, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
 import { GameIcon } from "@/components/ui/GameIcon";
@@ -18,6 +18,7 @@ import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
 import { textKey } from "@/lib/language/text-logic";
 import { useT } from "@/lib/locale";
+import { readBookText } from "@/lib/pdf-import/book-text";
 
 // The binder's author form (docs/vtt-parity-implementation-plan.md
 // sections 5.1 to 5.6): who reads it, how it is dressed, the picture and
@@ -44,6 +45,7 @@ export function LoreEditorForm({
   members,
   targets,
   rows,
+  saved,
 }: {
   draft: LoreDraft;
   onChange: (next: LoreDraft) => void;
@@ -53,6 +55,9 @@ export function LoreEditorForm({
   members?: Array<{ userId: string; username: string }>;
   targets: LoreLinkTarget[];
   rows: boolean;
+  // The entry being edited, when it is saved already: its rules PDF from
+  // before the page read PDFs is read again here (attachment-text route).
+  saved?: { campaignId: string; entryId: string; attachmentPath: string };
 }) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [preview, setPreview] = useState<"write" | "preview">("write");
@@ -61,6 +66,32 @@ export function LoreEditorForm({
   const [pdfError, setPdfError] = useState("");
   const pdfRef = useRef<HTMLInputElement>(null);
   const t = useT();
+  const [rereading, setRereading] = useState(false);
+  // A rules PDF read only by the server's old reader (glyph codes for most
+  // published books) is read once more by pdf.js the first time its entry
+  // is opened, so the GM's rules search finds its words.
+  useEffect(() => {
+    if (!saved?.attachmentPath) return;
+    let stopped = false;
+    const base = `/api/campaigns/${saved.campaignId}/lore/${saved.entryId}/attachment-text`;
+    void (async () => {
+      try {
+        const state = (await (await fetch(base)).json().catch(() => ({}))) as { read?: boolean; feedsRules?: boolean };
+        if (stopped || state.read !== false || !state.feedsRules) return;
+        setRereading(true);
+        const pdf = await (await fetch(saved.attachmentPath)).blob();
+        const text = await readBookText(pdf);
+        if (!stopped && text.trim()) await fetch(base, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+      } catch {
+        // The old reading stays; the PDF itself is unchanged.
+      } finally {
+        if (!stopped) setRereading(false);
+      }
+    })();
+    return () => {
+      stopped = true;
+    };
+  }, [saved?.campaignId, saved?.entryId, saved?.attachmentPath]);
   // The cap, said beside the text with what would be lost (issue #302);
   // the routes refuse the same way. The readability note is a heuristic
   // the author may dismiss.
@@ -106,6 +137,10 @@ export function LoreEditorForm({
     setPdfBusy(true);
     setPdfError("");
     try {
+      // The words as pdf.js reads them, for the rules search: the server's
+      // own reader cannot read most published books' fonts. A PDF the page
+      // cannot read still uploads; the server reads what it can.
+      const text = await readBookText(file).catch(() => "");
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
@@ -115,7 +150,7 @@ export function LoreEditorForm({
       const response = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dataUrl, name: file.name, type: "application/pdf" }),
+        body: JSON.stringify({ dataUrl, name: file.name, type: "application/pdf", ...(text ? { text } : {}) }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -324,7 +359,9 @@ export function LoreEditorForm({
             </button>
           </>
         ) : null}
-        <span className="text-[11px] text-stone-500">{t("workshop.loreEditor.tagRules")}</span>
+        <span className="text-[11px] text-stone-500">
+          {pdfBusy ? t("workshop.loreEditor.pdfReading") : rereading ? t("workshop.loreEditor.pdfRereading") : <>{t("workshop.loreEditor.tagRules")}</>}
+        </span>
         {pdfError ? <span className="motion-shake inline-block text-[11px] text-red-400">{pdfError}</span> : null}
       </div>
       <SectionHead title={t("workshop.loreEditor.tags")} glyph="tab-facts" className="mb-0 pt-1" />

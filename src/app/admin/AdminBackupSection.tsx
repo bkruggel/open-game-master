@@ -170,7 +170,7 @@ export function AdminBackupSection() {
     <div className="space-y-3">
       <p className="text-xs leading-5 text-stone-500">
         {t("admin.backup.intro")}
-        {dir ? <span className="font-mono text-stone-600">{dir}</span> : null}
+        {dir ? <span className="font-code text-stone-600">{dir}</span> : null}
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={create} disabled={creating} aria-busy={creating} className={ui.btnSmall}>
@@ -211,7 +211,7 @@ export function AdminBackupSection() {
         <ul className="stagger space-y-2">
           {backups.map((backup) => (
             <li key={backup.name} className="plate-row flex-wrap gap-2">
-              <span className="truncate font-mono text-xs text-stone-300" title={backup.name}>
+              <span className="truncate font-code text-xs text-stone-300" title={backup.name}>
                 {backup.name}
               </span>
               <span className="text-xs tabular-nums text-stone-500">{formatSize(backup.sizeBytes)}</span>
@@ -276,7 +276,7 @@ export function AdminBackupSection() {
                 </button>
               </span>
               {backup.sha256 ? (
-                <span className="w-full truncate font-mono text-[10px] text-stone-600" title={backup.sha256}>
+                <span className="w-full truncate font-code text-[10px] text-stone-600" title={backup.sha256}>
                   sha256 {backup.sha256.slice(0, 16)}…
                 </span>
               ) : null}

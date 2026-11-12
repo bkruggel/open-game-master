@@ -26,9 +26,9 @@ import {
   ToggleChips,
 } from "@/app/workshop/homebrew/fields";
 import { DAMAGE_TYPES } from "@/app/workshop/homebrew/types";
+import { EffectStepper, MORE_EFFECT_LABELS, MoreEffectFields, startingEffect } from "@/app/workshop/homebrew/ItemEffectFields";
 import { cn } from "@/lib/cn";
 import { ui } from "@/lib/ui";
-import { NumberStepper } from "@/components/ui/NumberStepper";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { Select } from "@/components/ui/Select";
 import { FieldLabel, addChip, rowIcon } from "@/app/workshop/kit";
@@ -273,6 +273,7 @@ const EFFECT_LABELS: Record<(typeof EFFECT_KINDS)[number], string> = {
   save_bonus: "workshop.homebrew.item.effectSaveBonus",
   set_ability: "workshop.homebrew.item.effectSetAbility",
   resistance: "workshop.homebrew.item.effectResistance",
+  ...MORE_EFFECT_LABELS,
 };
 
 function EffectsBlock({
@@ -296,20 +297,11 @@ function EffectsBlock({
             value={effect.kind}
             label={t("workshop.homebrew.item.effectKind")}
             options={EFFECT_KINDS.map((kind) => ({ value: kind, label: t(EFFECT_LABELS[kind]) }))}
-            onChange={(kind) => {
-              update(
-                index,
-                kind === "set_ability"
-                  ? { kind, ability: "str", score: 19 }
-                  : kind === "resistance"
-                    ? { kind, types: ["fire"] }
-                    : { kind, amount: 1 },
-              );
-            }}
+            onChange={(kind) => update(index, startingEffect(kind))}
           />
           </span>
-          {"amount" in effect ? (
-            <NumberStepper
+          {"amount" in effect && typeof effect.amount === "number" && effect.kind !== "increase_ability" ? (
+            <EffectStepper
               label={t("workshop.homebrew.item.amount")}
               value={effect.amount}
               min={-GEAR_LIMITS.bonusMax}
@@ -331,7 +323,7 @@ function EffectsBlock({
                   onChange={(ability) => update(index, { ...effect, ability })}
                 />
               </span>
-              <NumberStepper label={t("workshop.homebrew.item.score")} value={effect.score} min={3} max={30} onChange={(score) => update(index, { ...effect, score })} />
+              <EffectStepper label={t("workshop.homebrew.item.score")} value={effect.score} min={3} max={30} onChange={(score) => update(index, { ...effect, score })} />
             </>
           ) : null}
           {effect.kind === "resistance" ? (
@@ -341,6 +333,7 @@ function EffectsBlock({
               onChange={(types) => update(index, { ...effect, types })}
             />
           ) : null}
+          <MoreEffectFields effect={effect} update={(next) => update(index, next)} />
           <span className="text-[11px] text-stone-500">{describeEffect(effect)}</span>
           <button
             type="button"

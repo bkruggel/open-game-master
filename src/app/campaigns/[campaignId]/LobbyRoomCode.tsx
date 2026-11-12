@@ -122,7 +122,7 @@ export function LobbyRoomCode({
               <QrCode className="size-4" /> {t("action.share")}
             </button>
           </div>
-          <p className="break-all text-center font-mono text-xs text-stone-500 min-[420px]:text-left">
+          <p className="break-all text-center font-code text-xs text-stone-500 min-[420px]:text-left">
             {shareLinks.joinUrl}
           </p>
         </div>

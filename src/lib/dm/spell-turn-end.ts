@@ -7,6 +7,9 @@
 //     spell for it.
 //   Flesh to Stone: the restrained creature saves at the end of each of its
 //     turns; three failures petrify it, three successes free it.
+//   Contagion: the poisoned creature saves at the end of each of its turns;
+//     three successes end the spell, three failures end the poison and leave
+//     the disease the caster chooses.
 //
 // Each leaves a mark named for the spell with `untilTurnEndOf` the target
 // (src/lib/dm/spell-riders.ts turnEndMark, src/lib/dm/spell-attack-riders.ts);
@@ -32,6 +35,7 @@ import { hurtEnemy } from "@/lib/dm/spell-aura";
 import { rollCard, sheetAttacker } from "@/lib/dm/roll-card";
 import { rollAgainst } from "@/lib/roll-labels";
 import { textKey } from "@/lib/language/text-logic";
+import { withActor, withTurnOf } from "@/lib/dm/acting-party";
 
 type TurnEndHook = (campaign: Campaign, enemy: EncounterEnemy, meta: ConditionMeta) => string | null;
 
@@ -152,11 +156,18 @@ const HOOKS: Record<string, TurnEndHook> = {
   "phantasmal killer": saveAtTurnEnd,
   weird: saveAtTurnEnd,
   "flesh to stone": saveAtTurnEnd,
+  contagion: saveAtTurnEnd,
   // Prismatic Spray's indigo ray (src/lib/dm/prismatic.ts).
   "indigo ray": saveAtTurnEnd,
 };
 
 // What the end of a spell's mark does, or null for a mark that only ends.
+// The mark's caster is whose damage it is (acting-party.ts).
 export function spellTurnEndHook(condition: string): TurnEndHook | null {
-  return HOOKS[condition.trim().toLowerCase()] ?? null;
+  const hook = HOOKS[condition.trim().toLowerCase()];
+  if (!hook) {
+    return null;
+  }
+  return (campaign, enemy, meta) =>
+    withTurnOf(enemy.id, () => withActor(meta.source ? { kind: getSheetById(meta.source) ? "sheet" : "enemy", ref: meta.source } : null, () => hook(campaign, enemy, meta)));
 }

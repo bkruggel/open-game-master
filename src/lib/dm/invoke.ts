@@ -31,12 +31,16 @@ import { MUTATION_CAP_PER_TURN, MUTATION_CAP_REFUSAL, MUTATION_TOOL_NAMES } from
 // "goblin x4" is the same shorthand a prepared encounter is saved in, so the
 // live form and the saved roster share one parser.
 import { parseFightRoster } from "@/lib/dm/encounter-template-logic";
+import { storedRace } from "@/lib/npc-race";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { toolError, type ToolResult } from "@/lib/dm/tool-errors";
 import { routeCall } from "@/lib/dm/tool-merge";
 import { settleCompanionLeaving } from "@/lib/dm/departure-turn";
 import { runInTurnScope } from "@/lib/dm/job-control";
+import { postPersonsRecord, startPersonsRecord } from "@/lib/dm/persons-record";
 import { mergedCall, renamedArgs } from "@/lib/dm/tool-merge-logic";
+import { PERSON_CALL_ID_PREFIX, keptAnswer } from "@/lib/dm/turn-trace-logic";
+import { isPlaytest } from "@/lib/workshop/kind";
 
 export type Actor =
   | { kind: "ai"; turnId: string }
@@ -187,9 +191,10 @@ export function normalizeArgs(
       continue;
     }
     if (key === "enemies") {
-      // The fight's own reading: a challenge rating, a name and an earlier
-      // fight's enemyId ride with the monster (encounter-template-logic.ts).
-      out.enemies = parseFightRoster(value);
+      // The fight's own reading: a challenge rating, a name, a race and a
+      // gender and an earlier fight's enemyId ride with the monster
+      // (encounter-template-logic.ts); only a race the server reads is one.
+      out.enemies = parseFightRoster(value, (words) => Boolean(storedRace(words)));
       continue;
     }
     if (key === "targets" && entry.name === "apply_damage") {
@@ -214,6 +219,15 @@ export function normalizeArgs(
   // reads the catalog's required fields off these same args, and the
   // handler's schema drops the keys it does not know. The model sends the
   // array alone, so the first change it names stands in for the field.
+  // The building is two questions on the form and one argument to the handler.
+  if (entry.name === "start_encounter" && out.buildingEnemySide !== undefined) {
+    out.building = {
+      enemySide: out.buildingEnemySide,
+      ...(out.buildingOpenings === undefined ? {} : { openings: Number(out.buildingOpenings) }),
+    };
+  }
+  delete out.buildingEnemySide;
+  delete out.buildingOpenings;
   if (entry.name === "set_effect") {
     if (!out.modifiers && typeof out.field === "string") {
       out.modifiers = [
@@ -309,6 +323,9 @@ export async function invokeEngine(
     return { ok: false, ...MUTATION_CAP_REFUSAL };
   }
 
+  // A person's call leaves its rolls and what it changed in the chronicle,
+  // as an AI turn's narration does (src/lib/dm/persons-record.ts, issue 713).
+  const record = actor.kind === "human" ? startPersonsRecord(campaign, turn) : null;
   const sheets: CharacterSheet[] = listSheets(campaign.id);
   const sheetsById = new Map(sheets.map((sheet) => [sheet.id, sheet]));
 
@@ -352,6 +369,7 @@ export async function invokeEngine(
     return { result };
   });
   if ("thrown" in ran) {
+    if (record) postPersonsRecord(campaign, turn, record);
     return { ok: false, error: ran.thrown };
   }
   const result = ran.result;
@@ -393,8 +411,20 @@ export async function invokeEngine(
       (pending) => pending.turnId === turn.id,
     );
     turn.status = parked ? "awaiting_rolls" : "done";
+    // At a test fight its author reads every call in the turn trace (issue
+    // 685): a person's call is kept on their turn in the conversation's own
+    // shape, as an agent program's is (agent-turn.ts recordAgentCall). Only
+    // there: a live table's person turns keep no conversation.
+    if (isPlaytest(campaign)) {
+      const id = `${PERSON_CALL_ID_PREFIX}${turn.conversation.length}`;
+      turn.conversation.push(
+        { role: "assistant", content: "", tool_calls: [{ id, type: "function", function: { name: engine.name, arguments: JSON.stringify(engine.args) } }] },
+        { role: "tool", tool_call_id: id, content: keptAnswer(result) },
+      );
+    }
   }
   saveDmTurn(turn);
+  if (record) postPersonsRecord(campaign, turn, record);
 
   if (typeof result.error === "string") {
     const refusal = toolError(result);
@@ -428,6 +458,9 @@ export function resumeHumanTurn(turnId: string): boolean {
 // to belong to, closed the way invokeEngine closes one.
 export function onPersonsTurn<T>(campaign: Campaign, run: (turn: DmTurn) => T): T {
   const turn = humanTurnFor(campaign.id);
+  // Its rolls reach the chronicle too (issue 713); the enemies the server
+  // plays here say each blow in their own note.
+  const record = startPersonsRecord(campaign, turn);
   const holder = turnHolder(campaign.id);
   // Its sheet changes are the turn's, as an invokeEngine call's are (#622).
   const out = runInTurnScope(turn.id, () => {
@@ -439,6 +472,7 @@ export function onPersonsTurn<T>(campaign: Campaign, run: (turn: DmTurn) => T): 
   const parked = listOpenPendingRolls(campaign.id).some((pending) => pending.turnId === turn.id);
   turn.status = parked ? "awaiting_rolls" : "done";
   saveDmTurn(turn);
+  postPersonsRecord(campaign, turn, record, { changes: false });
   return out;
 }
 

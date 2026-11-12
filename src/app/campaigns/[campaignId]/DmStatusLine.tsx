@@ -12,7 +12,8 @@ import type { CampaignState } from "@/app/campaigns/[campaignId]/useCampaignStre
 const STATUS_KEYS: Record<Exclude<CampaignState["dmStatus"], "idle">, string> = {
   thinking: "dm.status.thinking",
   rolling: "dm.status.rolling",
-  awaiting_rolls: "dm.status.awaitingRolls",
+  // Real dice, a held roll, or a player deciding on their thrown d20.
+  awaiting_rolls: "dm.status.awaitingRoll",
   narrating: "dm.status.narrating",
   writing_chapter: "dm.status.writingChapter",
   plotting_arc: "dm.status.plottingArc",

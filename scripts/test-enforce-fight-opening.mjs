@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 import { openWorld } from "./lib/enforce-world.mjs";
 import { suite } from "./lib/enforce-harness.mjs";
 import { combatKit, TRAINED } from "./lib/enforce-combat.mjs";
-import { aiEngine, call, fakeModel, reply } from "./lib/enforce-narrator.mjs";
+import { aiEngine, call, fakeModel, reply, settleQueue } from "./lib/enforce-narrator.mjs";
 import { caster } from "./lib/enforce-spell-kit.mjs";
 
 const { test, finish } = suite("test-enforce-fight-opening");
@@ -89,7 +89,13 @@ await test("An attack written in prose before any fight exists is held back: the
     reply({ text: "The Resonance Weaver unfolds from the dark, humming, ten feet from Alden." }),
   ]);
   model.claims([[EIGHT]]);
+  // Alden wins the initiative. A Weaver that won it would act at once, and
+  // its turn, woken on the queue, raced this one for the scripted replies and
+  // struck Alden: the suite failed now and then on a busy machine.
+  world.dice(1, 20);
   const dm = await model.turn(world, "I step into the chamber.", alden.id, alden.userId);
+  world.clearDice();
+  await settleQueue(world.campaignId);
   assert.ok(userLines(model.requests[1]).includes(unrolledDamagePrompt("8 damage.")), "the model was not sent back to the tools");
   assert.ok(dm, "the turn wrote no narration");
   assert.ok(!dm.content.includes("8 damage"), `the unrolled blow reached the table: ${dm.content}`);
@@ -178,7 +184,12 @@ await test("A fight begun mid-turn with the player up keeps the turn's tool list
 // first message the narrator has not read: it is sent ahead as the turn
 // ends (src/lib/dm/turn-warmup.ts), and the next turn starts with exactly it.
 await test("After a turn that starts a fight, the next turn's first message and tools are sent ahead, once, and the next turn starts with exactly them.", async () => {
+  // The last test's goblin can drop Alden, and his death save queues a GM
+  // turn of its own; on a loaded runner its model call landed after this
+  // test began counting, as a fourth request no warm-up sent.
+  await settleQueue(world.campaignId);
   await kit.endFight();
+  await settleQueue(world.campaignId);
   process.env.DM_TURN_WARMUP = "1";
   try {
     world.dice(1, 20);

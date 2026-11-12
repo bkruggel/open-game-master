@@ -199,9 +199,14 @@ await test("the step names keep their own row above the step heading", () => {
 });
 
 await test("the edit page's level-up note points to the summary", () => {
+  // The note reads through the dictionary (characters.edit.levelOpens), the
+  // i18n pass; the sentences it pins live in the English dictionary now.
   const page = read("src/app/characters/[characterId]/edit/page.tsx");
-  assert.match(page, /on its summary/);
-  assert.match(page, /with a Fix that goes to it/);
+  assert.match(page, /t\("characters\.edit\.levelOpens", \{ level: nextLevel, name: character\.name \}\)/);
+  assert.match(page, /t\("characters\.edit\.levelOnly"/);
+  const en = read("src/lib/messages/en.ts");
+  assert.match(en, /on its summary/);
+  assert.match(en, /with a Fix that goes to it/);
 });
 
 console.log(`test-builder-summary: ${passed} passed`);

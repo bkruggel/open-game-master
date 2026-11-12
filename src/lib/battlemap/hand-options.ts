@@ -11,9 +11,14 @@ import { translate } from "@/lib/messages-logic";
 type T = (key: string, vars?: Record<string, string | number>) => string;
 const enT: T = (key, vars) => translate("en", key, vars);
 import { channelOptions, psionicOptions, type HeldOption } from "@/lib/dm/option-costs";
+import { isAfterRollChannelOption } from "@/lib/dm/after-roll-logic";
+import { VOW_OF_ENMITY } from "@/lib/srd/vow-of-enmity";
+import { authoredSpendFor, heldReaction } from "@/lib/srd/authored-effects";
 import { maneuverDieFor } from "@/lib/dm/maneuver-rules";
 import { iconPath, isPainted, type IconRef } from "@/lib/icons";
 import {
+  CHOSEN_CREATURES,
+  type HandShares,
   costGate,
   gated,
   primaryClass,
@@ -24,7 +29,10 @@ import {
   type HandTurn,
 } from "@/lib/battlemap/hand-core";
 import { textKey } from "@/lib/language/text-logic";
-import { isNamed } from "@/lib/srd/feature-names";
+import { isConditionNamed, isNamed } from "@/lib/srd/feature-names";
+import { DESTRUCTIVE_WRATH, holdsDestructiveWrath } from "@/lib/dm/destructive-wrath-logic";
+import { WEAPON_HIT } from "@/lib/dm/action-budget";
+import { inFightOf } from "@/lib/battlemap/hand-counters";
 
 const COST: Record<HeldOption["cost"], HandCost> = {
   action: "action",
@@ -38,7 +46,7 @@ function card(
   sheet: CharacterSheet,
   turn: HandTurn,
   pool: { id: string; label: string },
-  option: { name: string; cost: HandCost; rules: string; target?: HandTarget; dice?: string; ritual?: boolean; icon?: IconRef },
+  option: { name: string; cost: HandCost; rules: string; target?: HandTarget; dice?: string; ritual?: boolean; icon?: IconRef; shares?: HandShares; reach?: string; sight?: HandCard["sight"]; gates?: Array<{ reason: string; spent: boolean } | null> },
   t: T = enT,
 ): HandCard {
   const state = sheet.resources[pool.id];
@@ -49,7 +57,7 @@ function card(
     type: option.target === "ally" ? "ward" : "feature",
     name: option.name,
     cost,
-    range: option.target === "ally" || option.target === "enemy" ? "" : t("table.hand.range.self"),
+    range: option.reach ?? (option.target === "ally" || option.target === "enemy" ? "" : t("table.hand.range.self")),
     dice: option.dice ?? "",
     roll: t("table.hand.roll.none"),
     rules: option.rules,
@@ -62,6 +70,8 @@ function card(
       family: `class-${primaryClass(sheet)}`,
     },
     target: option.target ?? "none",
+    ...(option.shares ? { shares: option.shares } : {}),
+    ...(option.sight ? { sight: option.sight } : {}),
     toHit: null,
     damage: null,
     damageType: "",
@@ -83,11 +93,48 @@ function card(
     option.ritual && turn.table ? { reason: t("table.hand.option.ritualGate", { name: option.name }), spent: false } : null,
     left > 0 ? null : { reason: t("table.hand.option.spentGate", { pool: pool.label }), spent: true },
     costGate(cost, turn, sheet, option.name, t),
+    ...(option.gates ?? []),
   );
 }
 
 // What an option costs its holder's turn, keyed; the option names and the
 // pool labels are the resources' own words and stay as they are.
+
+// Turn Undead and its oath forms work on the creatures of a fight within 30
+// feet (SRD 5.1: "Each undead that can see or hear you within 30 feet"); the
+// engine refuses them out of a fight and with nobody in reach, so the card
+// says the reach and shuts with no fight on.
+const TURNING = [textKey("Turn Undead"), textKey("Turn the Unholy"), textKey("Turn the Faithless"), textKey("Abjure the Extraplanar")];
+const REACH_30 = [...TURNING, textKey("Preserve Life")];
+// The options held to a creature the holder can see: the engine asks
+// unseenBecause for each (feature-spends.ts Vow of Enmity, command-undead.ts
+// Control Undead, channel-fear.ts sees "them"). Their cards carry the sight
+// flag, so the aim bar leaves an unseen creature's chip out (hand-play.ts
+// aimUnseen), and shut while the holder is blinded.
+const SIGHT_OPTIONS = [VOW_OF_ENMITY, textKey("Abjure Enemy"), textKey("Control Undead"), textKey("Conquering Presence")];
+// Held to a creature that can see the holder (channel-fear.ts sees "user":
+// Dreadful Aspect's "if it can see you"); a blinded holder still plays it.
+const SEEN_BY_OPTIONS = [textKey("Dreadful Aspect")];
+
+function optionSight(name: string): HandCard["sight"] {
+  const key = textKey(name);
+  return SIGHT_OPTIONS.includes(key) ? true : SEEN_BY_OPTIONS.includes(key) ? "seesHolder" : undefined;
+}
+
+function optionGates(sheet: CharacterSheet, turn: HandTurn, name: string, t: T = enT) {
+  const key = textKey(name);
+  return [
+    TURNING.includes(key) && inFightOf(turn) === false ? { reason: t("table.hand.option.noFightGate", { name }), spent: false } : null,
+    optionSight(name) === true && sheet.conditions.some((entry) => isConditionNamed(entry, "blinded")) ? { reason: t("table.hand.option.blindedGate", { name, who: sheet.name }), spent: false } : null,
+  ];
+}
+
+// The options aimed at one creature, which the engine asks for by id.
+const AIMED_OPTIONS = [VOW_OF_ENMITY, textKey("Arcane Abjuration"), textKey("Abjure Enemy"), textKey("Control Undead")];
+// The options that take the creatures of the player's choice (channel-fear.ts
+// chosen): aimed at one, the others added.
+const CHOSEN_OPTIONS = [textKey("Conquering Presence"), textKey("Dreadful Aspect")];
+
 const RULES: Record<HeldOption["cost"], string> = {
   action: "table.hand.option.cost.action",
   bonus: "table.hand.option.cost.bonus",
@@ -100,12 +147,31 @@ export function optionCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT): 
   const cards: HandCard[] = [];
   if (sheet.resources.channel_divinity) {
     for (const option of channelOptions(sheet)) {
+      // Offered when its trigger comes (hand-react.ts), as a reaction card.
+      if (heldReaction(sheet, option.name)) continue;
+      // Guided Strike, War God's Blessing and Touch of Death are chosen after
+      // the d20, on the card the roll waits on (after-roll-logic.ts): played
+      // here, they had nothing to ride.
+      if (isAfterRollChannelOption(option.name)) continue;
+      // Already held for the next lightning or thunder damage (destructive-wrath.ts).
+      const wrath = isNamed(option.name, DESTRUCTIVE_WRATH);
+      if (wrath && holdsDestructiveWrath(sheet)) continue;
+      // A row of the authored table is dealt as its own card, which carries the
+      // row's target and cost (hand-subclass.ts).
+      if (authoredSpendFor(sheet, option.name)) continue;
       cards.push(
         card(sheet, turn, { id: "channel_divinity", label: "Channel Divinity" }, {
           name: option.name,
           cost: COST[option.cost],
-          rules: t("table.hand.option.channelRules", { rules: t(RULES[option.cost]) }),
+          // Played here it is held for a roll the server makes at once (a
+          // save spell, an area); a hit offers it on its own card.
+          rules: wrath ? t("table.hand.option.channelWrath") : t("table.hand.option.channelRules", { rules: t(RULES[option.cost]) }),
           ritual: option.cost === "ritual",
+          ...(AIMED_OPTIONS.includes(textKey(option.name)) ? { target: "enemy" as const } : {}),
+          ...(CHOSEN_OPTIONS.includes(textKey(option.name)) ? { target: "enemy" as const, shares: CHOSEN_CREATURES } : {}),
+          ...(REACH_30.includes(textKey(option.name)) ? { reach: t("table.hand.range.feet", { feet: 30 }) } : {}),
+          sight: optionSight(option.name),
+          gates: optionGates(sheet, turn, option.name, t),
         }, t),
       );
     }
@@ -114,11 +180,22 @@ export function optionCards(sheet: CharacterSheet, turn: HandTurn, t: T = enT): 
     for (const option of psionicOptions(sheet)) {
       // Protective Field answers a hit: the reaction prompt offers it.
       if (option.cost === "reaction") continue;
+      // A use the authored layer resolves on a creature (Psionic Strike's
+      // force on the creature hit) is aimed at it and waits for the hit, as
+      // its spend does (authored-spends.ts afterWeaponHit).
+      const authored = authoredSpendFor(sheet, option.name)?.spend;
+      const aimed = authored?.does.kind === "die_damage" || authored?.does.kind === "save_effect";
+      const rides = Boolean(authored?.afterWeaponHit);
       cards.push(
         card(sheet, turn, { id: "sub_psionic_energy", label: "Psionic Energy" }, {
           name: option.name,
           cost: COST[option.cost],
           rules: t("table.hand.option.psionicRules", { rules: t(RULES[option.cost]) }),
+          ...(aimed ? { target: "enemy" as const } : {}),
+          gates: [
+            rides && turn.myTurn && !(turn.marks ?? []).some((mark) => mark.startsWith(WEAPON_HIT)) ? { reason: t("table.hand.feature.ridesHit", { name: option.name }), spent: false } : null,
+            (rides || aimed) && inFightOf(turn) === false ? { reason: t("table.hand.option.fightGate", { name: option.name }), spent: false } : null,
+          ],
         }, t),
       );
     }

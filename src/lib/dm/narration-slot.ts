@@ -50,6 +50,24 @@ export function narrationShown(campaignId: string, turnId: string): void {
   }
 }
 
+// A person's adjudication holds the slot while it runs (issue 713): the
+// table notes it causes (a death, a companion walking out) claim it as they
+// would an AI turn's, so the record of its rolls lands above them. Never
+// over a turn of the AI's that is still running or waiting on dice, whose
+// narration keeps its own claim (another person's call that threw left
+// nothing to keep). True when the slot is this turn's.
+export function holdNarrationSlot(campaignId: string, turnId: string): boolean {
+  const slot = slots().get(campaignId);
+  if (slot && slot.turnId !== turnId) {
+    const held = getDmTurn(slot.turnId);
+    if (held && held.actor !== "human_dm" && (held.status === "running" || held.status === "awaiting_rolls")) {
+      return false;
+    }
+  }
+  narrationShown(campaignId, turnId);
+  return true;
+}
+
 // Called before a person's message takes its seq. Returns the seq the
 // narration now holds (and tells the table, so the draft bubble moves above
 // the message about to land), or null when no narration is showing. A turn
@@ -73,6 +91,18 @@ export function claimNarrationSeq(campaignId: string, by: "person" | "line" = "p
     publishEphemeral(campaignId, "dm_draft_seq", { seq: slot.seq });
   }
   return slot.seq;
+}
+
+// The seq the running turn's narration already holds, claiming none: a
+// place the turn moves the party to starts there, so its narration counts
+// as the place's (src/lib/db/campaigns.ts markSceneStart).
+export function heldNarrationSeq(campaignId: string): number | null {
+  const slot = slots().get(campaignId);
+  if (!slot || slot.seq === null) {
+    return null;
+  }
+  const status = getDmTurn(slot.turnId)?.status;
+  return status === "running" || status === "awaiting_rolls" ? slot.seq : null;
 }
 
 // The seq for a server note posted to the table. While a turn's narration

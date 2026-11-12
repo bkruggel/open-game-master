@@ -89,7 +89,7 @@ export function MapDetailsPanel({ words, knownTags, children }: { words: MapWord
       <PanelHead>{t("workshop.maps.details")}</PanelHead>
       {children}
       <div className="space-y-1">
-        <span className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("workshop.loreEditor.tags")}</span>
+        <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.loreEditor.tags")}</span>
         <input
           value={words.tagText}
           aria-label={t("workshop.loreEditor.tags")}
@@ -105,7 +105,7 @@ export function MapDetailsPanel({ words, knownTags, children }: { words: MapWord
         />
       </div>
       <div className="space-y-1">
-        <span className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("table.tab.notes")}</span>
+        <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("table.tab.notes")}</span>
         <DictateField label={t("workshop.maps.notesLabel")} onTranscript={(text) => words.setNotes(appendDictation(words.words.notes, text, 4000))}>
           <textarea
             value={words.words.notes}

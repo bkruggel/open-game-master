@@ -1,0 +1,59 @@
+// The SRD 5.1 Adventuring Gear spread on the ground as an area: a bag of
+// caltrops, a bag of ball bearings and a flask of oil poured out. They run
+// as the spell areas do (src/lib/battlemap/zones-spells.ts zoneRowFor reads
+// these after the spells), laid by use_item (src/lib/dm/gear-zones.ts) and resolved by the
+// zone triggers when a creature enters; but nothing in them is magic, and
+// their save DCs are the book's own. Pure data.
+
+import type { ZoneRow } from "@/lib/battlemap/zones-spells";
+
+// Caltrops: "Taking this damage reduces the creature's walking speed by 10
+// feet until the creature regains at least 1 hit point." Any hit point
+// regained ends it, on an enemy or a character (src/lib/dm/condition-logic.ts
+// endedByRegain).
+export const CALTROPS_WOUND = "caltrops wound";
+
+export const GEAR_ZONE_ROWS: Record<string, ZoneRow> = {
+  // "As an action, you can spread a bag of caltrops to cover a square area
+  // that is 5 feet on a side. Any creature that enters the area must succeed
+  // on a DC 15 Dexterity saving throw or stop moving this turn and take 1
+  // piercing damage." (issue #570, EQP-13)
+  caltrops: {
+    shape: "cube", feet: 5, level: 0, concentration: false, rounds: null, mundane: true, tone: "blade",
+    trigger: { on: ["enter"], save: "dex", dice: "1", type: "piercing", damageOnFail: true, condition: CALTROPS_WOUND, stopsOnFail: true, carefulSkips: true },
+    summary: "caltrops: entering is a DC 15 DEX save or stop moving, 1 piercing and 10 feet less walking speed until healed; moving carefully at half speed skips the save",
+  },
+  // "As an action, you can spill these tiny metal balls from their pouch to
+  // cover a level, square area that is 10 feet on a side. A creature moving
+  // across the covered area must succeed on a DC 10 Dexterity saving throw
+  // or fall prone."
+  "ball bearings": {
+    shape: "cube", feet: 10, level: 0, concentration: false, rounds: null, mundane: true, tone: "stone",
+    trigger: { on: ["enter"], save: "dex", condition: "prone", carefulSkips: true },
+    summary: "ball bearings: entering is a DC 10 DEX save or fall prone; moving carefully at half speed skips the save",
+  },
+  // Oil: "You can also pour a flask of oil on the ground to cover a
+  // 5-foot-square area, provided that the surface is level. If lit, the oil
+  // burns for 2 rounds and deals 5 fire damage to any creature that enters
+  // the area or ends its turn in the area. A creature can take this damage
+  // only once per turn." Poured, it does nothing until fire reaches it
+  // (src/lib/dm/gear-zones.ts lightOil); then it is the burning pool below.
+  oil: {
+    shape: "cube", feet: 5, level: 0, concentration: false, rounds: null, mundane: true, tone: "stone",
+    summary: "a pool of oil: fire striking a creature in it, or a torch or tinderbox put to it (take_action use_object within 5 feet), lights it to burn for 2 rounds",
+  },
+  "burning oil": {
+    shape: "cube", feet: 5, level: 0, concentration: false, rounds: 2, mundane: true, tone: "fire",
+    trigger: { on: ["enter", "end"], dice: "5", type: "fire", oncePerTurn: true },
+    summary: "burning oil: entering or ending a turn here, 5 fire, once a turn",
+  },
+};
+
+// The bag each area is spread from, by its catalog row
+// (src/lib/srd/adventuring-gear.ts), and the save DC the book gives it.
+export const GEAR_ZONES: Array<{ gear: string; zone: string; dc: number }> = [
+  { gear: "Caltrops (bag of 20)", zone: "Caltrops", dc: 15 },
+  { gear: "Ball Bearings (bag of 1000)", zone: "Ball Bearings", dc: 10 },
+  // Poured, not spread; no save until it burns, and then none at all.
+  { gear: "Oil (flask)", zone: "Oil", dc: 0 },
+];

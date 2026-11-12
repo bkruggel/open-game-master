@@ -10,7 +10,7 @@ import { cn } from "@/lib/cn";
 import { GENRE_PRESETS } from "@/lib/genres";
 import type { WorldPackSummary } from "@/lib/worlds/types";
 import { WorldPackGallery } from "@/components/WorldPackGallery";
-import { VoicePicker } from "@/components/VoicePicker";
+import { NarratorLanguageNote, VoicePicker } from "@/components/VoicePicker";
 import { NarrationNote } from "@/app/campaigns/[campaignId]/NarrationNote";
 import { CharacterVoices } from "@/app/campaigns/[campaignId]/CharacterVoices";
 import { VoicePreviewButton } from "@/components/VoicePreviewButton";
@@ -176,7 +176,7 @@ export function CharacterGroup({ settings, patch, serverRerollLabel }: Base & { 
     <>
       <div className="flex flex-wrap items-center gap-2">
         <span className="pk-rowlabel">{t("creator.field.dice")}</span>
-        <Tooltip content={t("table.settings.dice.tip")}>
+        <Tooltip content={t("table.settings.dice.tipRolls")}>
           <span className="inline-flex min-w-0 max-w-full">
             <Select<DicePolicy>
               size="sm"
@@ -272,11 +272,12 @@ export function NarrationGroup({
         </SettingToggle>
         {narrating ? (
           <>
-            <VoicePicker size="sm" label={t("table.settings.narration.voice")} value={settings.ttsVoice} onChange={(ttsVoice) => patch({ ttsVoice })} />
+            <VoicePicker size="sm" label={t("table.settings.narration.voice")} value={settings.ttsVoice} onChange={(ttsVoice) => patch({ ttsVoice })} language={settings.tableLanguage} />
             <VoicePreviewButton voice={settings.ttsVoice} />
           </>
         ) : null}
       </div>
+      {narrating ? <NarratorLanguageNote language={settings.tableLanguage} /> : null}
       {narrating ? <CharacterVoices campaignId={campaignId} settings={settings} steersStory patch={patch} /> : null}
       {narrating || narrationOff ? <NarrationNote /> : null}
       <p className="text-stone-500">{t("table.settings.narration.note")}</p>
@@ -355,6 +356,7 @@ export function SafetyGroup({ settings, patch }: Base) {
       onSafety={(safety) => patch({ safety })}
       onGm={(gm) => patch({ gm })}
       onVoice={(ttsVoice) => patch({ ttsVoice })}
+      tableLanguage={settings.tableLanguage}
     />
   );
 }
@@ -406,7 +408,7 @@ export function AiGroup({ settings, patch }: Base) {
       {aiNarrates ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="pk-rowlabel">{t("table.settings.row.prose")}</span>
-          <Tooltip content={t("table.settings.guard.tip")}>
+          <Tooltip content={t("table.settings.guard.tipUndone")}>
             <SettingToggle on={settings.narrationGuard} onToggle={() => patch({ narrationGuard: !settings.narrationGuard })}>
               {settings.narrationGuard ? t("table.settings.guard.on") : t("table.settings.guard.off")}
             </SettingToggle>
@@ -525,7 +527,7 @@ export function BondsGroup({ settings, patch, lastingCompanions = false }: Base 
         </SettingToggle>
       </Tooltip>
       {settings.relationships !== "off" ? (
-        <Tooltip content={t("table.settings.romance.tip")}>
+        <Tooltip content={t("table.settings.romance.tipOpen")}>
           <SettingToggle on={settings.romance !== "off"} onToggle={() => patch({ romance: settings.romance === "off" ? "on" : "off" })}>
             {settings.romance !== "off" ? t("table.settings.romance.on") : t("table.settings.romance.off")}
           </SettingToggle>

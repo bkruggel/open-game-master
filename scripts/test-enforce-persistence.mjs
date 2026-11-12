@@ -32,7 +32,8 @@ const { getSceneTracker, setSceneTracker } = await import("../src/lib/db/scene-t
 const { checkTracker, recordCheck } = await import("../src/lib/dm/scene-tracker-logic.ts");
 const { performRollback } = await import("../src/lib/dm/rollback.ts");
 const { listRecentAudit } = await import("../src/lib/db/sheet-audit.ts");
-const { endOwnTurn } = await import("../src/lib/dm/encounter-tools.ts");
+const { endOwnTurn, handOnEnemyTurns } = await import("../src/lib/dm/encounter-tools.ts");
+const { onPersonsTurn } = await import("../src/lib/dm/invoke.ts");
 
 // What a restart does to the database: the handle goes, the file stays.
 function restart() {
@@ -136,11 +137,17 @@ await test("a fight survives a restart mid round: order, turn, budget, reactions
   assert.deepEqual(world.enemies().map(sansStamp), enemies);
   assert.deepEqual(world.sheets().map(sansStamp), heroes);
   // And the fight goes on from where it stood.
-  // The pointer rests on players: past the goblins, the round turns over.
+  // The pointer rests on players: past the goblins, the round turns over
+  // once they have had their turns (issue 713).
   assert.equal(endOwnTurn(world.campaignId, second.userId), true);
   const next = world.encounter();
   assert.equal(next.order[next.turnIndex].characterId, first.id);
-  assert.equal(next.round, fight.round + 1);
+  assert.equal(next.round, fight.round);
+  assert.deepEqual(next.legendary.due, [goblin.id], "the goblin that is not surprised is due first");
+  restart();
+  const campaign = world.campaign();
+  onPersonsTurn(campaign, (turn) => handOnEnemyTurns(campaign, turn, false));
+  assert.equal(world.encounter().round, fight.round + 1, "the wrap waiting on them survives a restart");
 });
 
 await test("the turn's spent action is still spent after a restart", async () => {
@@ -312,6 +319,32 @@ await test("a rewind restores quest and structured-scene progress, and its safet
   const safetyPayload = JSON.parse(safety.snapshot_json);
   assert.ok(safetyPayload.tables.quests.some((row) => row.id === laterQuest.id));
   assert.equal(safetyPayload.campaign.scene_tracker_json, JSON.stringify(advanced.tracker));
+});
+
+await test("a rewind restores where the party's place starts in the transcript, and a snapshot from before it was kept reads the whole story", async () => {
+  const { world, freeze, rewind } = await chapter();
+  world.say("dm", "The party reaches the gate.");
+  campaigns.markSceneStart(world.campaignId, null);
+  const gate = campaigns.sceneSinceSeq(world.campaignId);
+  assert.ok(gate > 0);
+  freeze();
+  world.say("dm", "The party walks on to the market.");
+  campaigns.markSceneStart(world.campaignId, null);
+  assert.ok(campaigns.sceneSinceSeq(world.campaignId) > gate);
+  await rewind();
+  assert.equal(campaigns.sceneSinceSeq(world.campaignId), gate);
+
+  // The snapshot as an older server wrote it.
+  const db = getDatabase();
+  const row = db.prepare("SELECT id, snapshot_json FROM chapter_snapshots WHERE campaign_id = ? AND kind = 'boundary'").get(world.campaignId);
+  const old = JSON.parse(row.snapshot_json);
+  delete old.campaign.scene_since_seq;
+  db.prepare("UPDATE chapter_snapshots SET snapshot_json = ? WHERE id = ?").run(JSON.stringify(old), row.id);
+  world.say("dm", "The party walks on to the docks.");
+  campaigns.markSceneStart(world.campaignId, null);
+  await rewind();
+  assert.equal(campaigns.sceneSinceSeq(world.campaignId), 0);
+  assert.throws(() => campaigns.sceneSinceSeq("no-such-campaign"), /Campaign not found/);
 });
 
 await test("a rewind takes the shops, factions, calendar, attributes, pins and beats of the discarded timeline with it", async () => {

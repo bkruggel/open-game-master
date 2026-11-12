@@ -43,7 +43,7 @@ export function ContentNotices({ pack, packInstalled }: { pack: WorldPack | null
           {isAdmin ? (
             <>
               {t("builder.setup.packMissingHead")}
-              <span className="font-mono"> node scripts/import-open5e.mjs</span>{" "}
+              <span className="font-code"> node scripts/import-open5e.mjs</span>{" "}
               {t("builder.setup.packMissingTail")}
             </>
           ) : (

@@ -129,6 +129,9 @@ export type SpellMech = {
   resolution: "attack" | "save" | "auto" | "heal" | "buff" | "summon" | "utility";
   save?: SaveAbilityId;
   halfOnSave?: boolean;
+  // "The target gains no benefit from cover for this saving throw" (Sacred
+  // Flame): cover adds nothing to the save.
+  ignoresCover?: boolean;
   damageType?: string;
   // Two damage types in one blast (Meteor Swarm: 20d6 fire and 20d6
   // bludgeoning; Flame Strike: fire and radiant; Ice Storm: bludgeoning and
@@ -206,6 +209,9 @@ export type SpellMech = {
   // Flaming Sphere), or nothing of the caster's (Moonbeam, Cloudkill: it
   // happens on the creature's turn).
   repeat?: "action" | "bonus" | "free";
+  // What that later effect deals by itself, whatever slot the spell was cast
+  // from, with no attack roll (Witch Bolt's beam): src/lib/dm/witch-bolt.ts.
+  repeatDice?: string;
   // The creature types the spell can take hold of (Hold Person: humanoid).
   // Absent means any.
   targetTypes?: string[];

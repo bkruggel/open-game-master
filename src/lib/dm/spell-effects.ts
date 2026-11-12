@@ -17,6 +17,7 @@
 import { getDatabase, parseJson } from "@/lib/db/core";
 import { getEnemy, patchEnemyConditions } from "@/lib/db/encounters";
 import { addConditionInstance, instancesOf, isIncapacitated, removeConditionInstances, removeConditions, type ConditionMeta, type ConditionMetaMap } from "@/lib/dm/condition-logic";
+import { immuneToCondition } from "@/lib/dm/damage-logic";
 import { settleEnemyIncapacitation } from "@/lib/dm/enemy-incapacitation";
 import { findSpellByName, spellMechanicsFor } from "@/lib/content";
 import { bakedSpellDuration } from "@/lib/content/baked-spells";
@@ -116,8 +117,8 @@ export function laySpellConditionsOnEnemy(enemyId: string, names: string[], meta
   if (!enemy || enemy.status !== "alive") {
     return [];
   }
-  const immune = (enemy.stats.conditionImmune ?? "").toLowerCase();
-  const landing = names.filter((name) => !immune.includes(name));
+  // Its own immunities, and a petrified creature's to poison.
+  const landing = names.filter((name) => !immuneToCondition(enemy, name));
   if (!landing.length) {
     return [];
   }
@@ -215,13 +216,16 @@ export function spellEffectsOnEnemyDamage(enemyId: string): string[] {
 // creature: every instance that ends on damage goes, with the conditions its
 // spell laid beside it (Hypnotic Pattern's charm and incapacitation); every
 // spell that grants a save on damage saves once (`save` rolls it) and goes on
-// a success. Other sources of the same condition keep holding.
+// a success. Other sources of the same condition keep holding. Only a spell
+// ties conditions together: a source with no spell says who or what laid a
+// condition, not that its conditions are one effect, and a drow poison's
+// sleeper wakes still poisoned (SRD 5.1, Poisons).
 export function settleOnDamage(
   conditions: string[],
   meta: ConditionMetaMap,
   save: (entry: ConditionMeta, name: string) => boolean,
 ): { conditions: string[]; meta: ConditionMetaMap; changed: boolean; endedByDamage: string[] } {
-  const tagOf = (entry: ConditionMeta) => (entry.spell || entry.source ? `${textKey(entry.spell ?? "")}|${entry.source ?? ""}` : null);
+  const tagOf = (entry: ConditionMeta) => (entry.spell ? `${textKey(entry.spell)}|${entry.source ?? ""}` : null);
   const ending = new Set<string>();
   const byDamage = new Set<string>();
   for (const name of conditions) {

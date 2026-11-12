@@ -92,7 +92,10 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "
   assert.ok(socket.includes("disabled={!pool}"), "an empty socket is not natively disabled");
   assert.ok(socket.includes("aria-disabled={(slot === null && held === null) || undefined}"), "an empty socket is aria-disabled");
   assert.ok(socket.includes("aria-describedby={pool ? poolNoteId : undefined}"), "the socket points at the tray's note");
-  assert.ok(socket.includes("Pick up a throw from the tray first"), "an empty socket says what to do first");
+  // The empty socket's words are the dictionary's (builder.dice.socketEmpty),
+  // the i18n pass; the sentence it pins lives in the English dictionary now.
+  assert.ok(socket.includes('t("builder.dice.socketEmpty", { label })'), "an empty socket says what to do first");
+  assert.ok(fs.readFileSync(new URL("../src/lib/messages/en.ts", import.meta.url), "utf8").includes("Pick up a throw from the tray first"), "the socket's sentence is pinned in the dictionary");
   const reroll = editor.slice(editor.indexOf("onClick={throwPool}"), editor.indexOf("Reroll", editor.indexOf("onClick={throwPool}")));
   assert.ok(reroll.includes("disabled={anyRolling || asking}"), "a shut reroll is not natively disabled");
   assert.ok(reroll.includes("aria-disabled={!rerollOpen || undefined}"), "a shut reroll is aria-disabled");

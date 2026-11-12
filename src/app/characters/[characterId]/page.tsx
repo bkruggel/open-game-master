@@ -23,6 +23,7 @@ import { currentQuery, navigateTo, workshopReturnPath } from "@/lib/navigation";
 import { UseInCampaignDialog } from "./UseInCampaignDialog";
 import { slugOf } from "@/lib/language/text-logic";
 import { registerWorkshopClasses, workshopClassName } from "@/lib/classes/workshop-registry";
+import { registerBrowserSpecies } from "@/lib/srd/race-id";
 import { classWordsAfterLevel } from "@/lib/characters/class-words";
 import type { WorkshopClass } from "@/lib/homebrew/class-data";
 
@@ -218,6 +219,8 @@ export default function CharacterDetailPage({
         if (data?.character) {
           // The workshop classes it holds, before anything reads its class.
           registerWorkshopClasses((data.workshopClasses ?? []) as WorkshopClass[]);
+          // And its species' rules: a workshop species' spells (issue #833).
+          registerBrowserSpecies(data.species);
           setCharacter(data.character);
           setEvents(data.events ?? []);
         }
@@ -439,7 +442,11 @@ export default function CharacterDetailPage({
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-amber-500/15 pt-3">
-          <button type="button" onClick={() => setSeating(true)} className={cn(ui.btnPrimary, "min-w-0 flex-1 sm:flex-none")}>
+          {/* A phone's row is too narrow for three lettered buttons side by
+              side: they shrank until their words were cut ("E IN A CAM").
+              There the first takes a row with the menu, and the other two
+              share the next without their glyphs. */}
+          <button type="button" onClick={() => setSeating(true)} className={cn(ui.btnPrimary, "order-1 min-w-0 flex-1 basis-[calc(100%-3rem)] sm:order-none sm:flex-none sm:basis-auto")}>
             <GameIcon icon={{ kind: "glyph", key: "tab-campaigns" }} size="size-6" />{" "}
             {character.role === "companion" ? t("characters.bringAlly") : t("characters.useInCampaign")}
           </button>
@@ -451,20 +458,22 @@ export default function CharacterDetailPage({
           {character.level < 20 && (character.sheet?.classes ?? []).length <= 1 ? (
             <Link
               href={`/characters/${characterId}/edit?levelUp=1`}
-              className={cn(ui.btnSecondary, "min-w-0 flex-1 sm:flex-none")}
+              className={cn(ui.btnSecondary, "order-3 min-w-0 flex-1 basis-[calc(50%-0.25rem)] sm:order-none sm:flex-none sm:basis-auto")}
             >
-              <GameIcon icon={{ kind: "glyph", key: "rest-level-up" }} size="size-6" /> {t("characters.levelUpTo", { level: character.level + 1 })}
+              <GameIcon icon={{ kind: "glyph", key: "rest-level-up" }} size="size-6" className="hidden sm:inline-flex" /> {t("characters.levelUpTo", { level: character.level + 1 })}
             </Link>
           ) : null}
-          <Link href={`/characters/${characterId}/edit`} className={cn(ui.btnSecondary, "min-w-0 flex-1 sm:flex-none")}>
-            <GameIcon icon={{ kind: "glyph", key: "ui-edit" }} size="size-6" /> {t("characters.action.editBuild")}
+          <Link href={`/characters/${characterId}/edit`} className={cn(ui.btnSecondary, "order-3 min-w-0 flex-1 basis-[calc(50%-0.25rem)] sm:order-none sm:flex-none sm:basis-auto")}>
+            <GameIcon icon={{ kind: "glyph", key: "ui-edit" }} size="size-6" className="hidden sm:inline-flex" /> {t("characters.action.editBuild")}
           </Link>
-          <KebabMenu
-            items={actions}
-            label={t("characters.moreActionsAria", { name: character.name })}
-            heading={character.name}
-            busy={working}
-          />
+          <span className="order-2 inline-flex sm:order-none">
+            <KebabMenu
+              items={actions}
+              label={t("characters.moreActionsAria", { name: character.name })}
+              heading={character.name}
+              busy={working}
+            />
+          </span>
           {working || portraitPending ? (
             <span role="status" className="live-in text-xs text-stone-400">
               {pdfBusy

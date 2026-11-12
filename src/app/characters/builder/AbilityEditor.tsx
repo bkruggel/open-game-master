@@ -387,7 +387,7 @@ export default function AbilityEditor({
         {method === "roll" ? (
           <>
             <span className="inline-flex items-center gap-2">
-              <span className="eyebrow text-[0.875rem] tracking-[0.18em] text-amber-500/80">{t("builder.dice.dropLowest")}</span>
+              <span className="eyebrow text-[0.875rem] tracking-[0.14em] text-amber-500/80">{t("builder.dice.dropLowest")}</span>
               {pool ? (
                 <span className="font-mono text-[0.875rem] text-stone-500" aria-live="polite">
                   {t("builder.dice.placed", { placed: placedCount })}

@@ -367,7 +367,7 @@ export function AdminAddonCard({
                         {requirement.ok ? t("admin.addons.card.found") : t("admin.addons.card.missing")} {requirement.program}
                         {requirement.version ? ` ${requirement.version}` : ""}
                       </span>
-                      {requirement.found ? <span className="font-mono text-stone-500"> {requirement.found}</span> : null}
+                      {requirement.found ? <span className="font-code text-stone-500"> {requirement.found}</span> : null}
                       {requirement.problem ? <span className="block text-stone-400">{requirement.problem} {requirement.hint}</span> : null}
                       {!requirement.ok && requirement.url ? (
                         <a href={requirement.url} target="_blank" rel="noreferrer" className="text-amber-200 underline-offset-2 hover:underline">
@@ -380,7 +380,7 @@ export function AdminAddonCard({
               ) : (
                 <p className="text-[11px] text-stone-500">{t("admin.addons.card.needsNothing")}</p>
               )}
-              <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-stone-800 bg-stone-950/80 p-2 font-mono text-[10px] leading-4 text-stone-400">
+              <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-stone-800 bg-stone-950/80 p-2 font-code text-[10px] leading-4 text-stone-400">
                 {details.log.length ? details.log.join("\n") : t("admin.addons.card.noLog")}
               </pre>
             </div>

@@ -10,6 +10,10 @@
 // comes before anything is written, and a dry run asks the questions
 // without writing, for a tool that has refusals of its own still to ask.
 //
+// A spell of a minute or more (or a ritual) in a fight is begun here and
+// held across the caster's turns, and completed here when its rounds have
+// run out, the slot spent only then (src/lib/dm/long-casting-logic.ts).
+//
 // A concentration spell already running whose effect comes again on a later
 // turn (Call Lightning's bolt, Heat Metal, Moonbeam) is not a new casting:
 // it costs what the spell says of the turn and no slot, at the slot level
@@ -27,26 +31,32 @@ import { endInvisibilityOnCast } from "@/lib/dm/attack-marks";
 import { endSanctuaryOnHarm } from "@/lib/dm/spell-defenses";
 import type { Campaign } from "@/lib/db/campaigns";
 import { getActiveEncounter, type Encounter } from "@/lib/db/encounters";
-import { patchSheet } from "@/lib/db/sheets";
+import { getSheetById, patchSheet } from "@/lib/db/sheets";
+import { insertSheetAudit } from "@/lib/db/sheet-audit";
+import { allocateSeq } from "@/lib/db/campaigns";
+import { publishPersisted } from "@/lib/events";
 import { advanceClock } from "@/lib/db/clock";
 import type { CharacterSheet, FullPatchSheetInput } from "@/lib/schemas/sheet";
 import { materialPatch } from "@/lib/dm/cast-material";
 import { freeCastCounter, signatureCounter, spendSignature } from "@/lib/dm/caster-features";
+import { arcanumCounter } from "@/lib/dm/counter-cast-arcanum";
+import { spendGrantUse } from "@/lib/srd/granted-casts";
 import { spellFactsFor, spellMechanicsFor, spellSchoolFor } from "@/lib/content";
 import { castShares } from "@/lib/srd/spell-mechanics";
 import { describeCastingTime, type SpellFacts } from "@/lib/srd/spell-facts";
 import { conditionTurnShape } from "@/lib/srd/condition-effects";
 import { canAct } from "@/lib/dm/can-act";
-import { incapacitatedBy } from "@/lib/dm/condition-logic";
+import { heldTurnRefusal } from "@/lib/dm/held-turn";
+import { incapacitatedBy, type ConditionMetaMap } from "@/lib/dm/condition-logic";
 import { attacksAllowedFor, budgetFor, markReactionUsed, storeBudget } from "@/lib/dm/turn-budget";
 import { spellAuthorsFor } from "@/lib/dm/spell-authors";
 import { droppedLine, setConcentration } from "@/lib/dm/concentration";
 import { repeatSpell } from "@/lib/dm/cast-repeat";
+import { beginWithSlotTool, castingRoundsOf, castingTimeWords, completedCastingOf, failLine } from "@/lib/dm/long-casting-logic";
+import { beginHeldCasting, clearCompletedCasting, registerCastingCompletion } from "@/lib/dm/long-casting";
 import {
   casterStateProblem,
-  componentProblem,
-  focusProblem,
-  longCastingProblem,
+  castComponents,
   materialPlan,
   openCastOf,
   ritualProblem,
@@ -56,8 +66,11 @@ import {
   turnCharge,
   withOpenCast,
   bonusCastOf,
+  grantedCastOf,
+  grantCastsFree,
   MANTLE_OF_MAJESTY,
   type BonusCast,
+  type OpenCast,
   type SlotPlan,
 } from "@/lib/dm/cast-rules";
 import type { TurnBudget } from "@/lib/dm/action-budget";
@@ -70,8 +83,14 @@ import { antimagicProblem, silenceProblem } from "@/lib/dm/zone-rules";
 import { placeSpellZone, placementReachProblem } from "@/lib/dm/zone-cast";
 import { spellSaveDcFor } from "@/lib/srd";
 import { castTempHp } from "@/lib/dm/authored-spells";
-import { authoredSlotRefund } from "@/lib/srd/authored-effects-more";
-import { takeItemCast } from "@/lib/srd/item-cast-credit";
+import { authoredSlotRefund, opensSurgeChance } from "@/lib/srd/authored-effects-more";
+import { SURGE_CHANCE } from "@/lib/srd/authored-effects-data4";
+// The credits live in the database on the server (src/lib/db/item-cast-credits.ts).
+import "@/lib/db/item-cast-credits";
+import { takeItemCast, type ItemCast } from "@/lib/srd/item-cast-credit";
+import type { SpellMech } from "@/lib/srd/spell-mechanics";
+import { storerHolding } from "@/lib/srd/spell-storing";
+import { casterNumbers, equipmentWithoutRunning, putInRing, storeRefusal } from "@/lib/dm/ring-store";
 import { castFromItem } from "@/lib/dm/item-casts";
 import { summonSlotProblem } from "@/lib/srd/summon-spells";
 import { spellSupportLine } from "@/lib/srd/spell-support";
@@ -107,7 +126,12 @@ export type CastInput = {
   // Where a spell with an area is laid on the board (src/lib/dm/zone-cast.ts).
   at?: { x: number; y: number };
   toward?: { x: number; y: number };
+  // Cast into a Ring of Spell Storing (src/lib/dm/spell-storing.ts): paid for
+  // as any casting, with no effect now. Set by the store, not by the model.
+  storing?: CastStoring;
 };
+
+export type CastStoring = { ring: string; holderId: string };
 
 export type CastHooks = {
   // Writes the audit row for the spend (mutations.ts keeps the audit helper).
@@ -119,6 +143,54 @@ export type CastResult = ToolResult;
 
 function inRunningFight(encounter: Encounter | null): encounter is Encounter {
   return Boolean(encounter && encounter.status === "active" && (encounter.kind ?? "fight") === "fight");
+}
+
+// A later ray, dart or target of a casting already made this turn: it spends
+// nothing more.
+function continueOpenCast(encounter: Encounter, budget: TurnBudget, open: OpenCast, name: string, input: CastInput): CastResult {
+  if (input.dryRun) {
+    return { ok: true, dryRun: true, spell: name, slotLevel: open.slotLevel, continuing: true };
+  }
+  const uses = Math.max(1, Math.min(open.left, Math.floor(input.uses ?? 1)));
+  storeBudget(encounter, withOpenCast(budget, { ...open, left: open.left - uses }));
+  return {
+    ok: true,
+    spell: name,
+    slotLevel: open.slotLevel,
+    uses,
+    sharesLeft: open.left - uses,
+    continuing: `${name}: more of the same casting (${open.left - uses} left); nothing more is spent.`,
+    ...(open.item ? { fromItem: open.item } : {}),
+  };
+}
+
+// The rays, darts or targets a casting from an item holds beyond this call
+// (Scorching Ray from a Ring of Spell Storing at 2nd: three rays), kept open on
+// the turn as a slot's casting keeps them. The item is named on it, so its later
+// calls are taken before the holder's own list or Spellcasting feature is asked:
+// a fighter has neither, and a wizard's own copy would spend a slot.
+function openItemShares(encounter: Encounter, sheet: CharacterSheet, name: string, mech: SpellMech | null, facts: SpellFacts | null, cast: ItemCast, input: CastInput, via: CastVia): Record<string, unknown> {
+  if (via === "aoe" || via === "reaction") {
+    return {};
+  }
+  const shares = castShares(mech, { spellLevel: facts?.level ?? cast.level, slotLevel: cast.level, casterLevel: sheet.level });
+  if (shares < 2) {
+    return {};
+  }
+  const uses = Math.max(1, Math.min(shares, Math.floor(input.uses ?? 1)));
+  const left = via === "slot" ? shares : shares - uses;
+  // Off their own turn (a readied release) there is no turn to keep it on.
+  const budget = budgetFor(encounter, sheet.id, attacksAllowedFor(sheet), conditionTurnShape(sheet.conditions));
+  if (!budget) {
+    return {};
+  }
+  storeBudget(encounter, withOpenCast(budget, { spell: name, slotLevel: cast.level, left, item: cast.item }));
+  const list = mech?.attacks ? "pc_attack's attacks" : mech?.resolution === "heal" ? "heal's targets" : "cast_at_enemy's targets";
+  return {
+    uses,
+    sharesLeft: left,
+    shares: `${name} holds ${shares} ${mech?.attacks ? "attack rolls" : mech?.darts ? "darts" : "targets"} from this one casting; ${left} left this turn at no further cost, each its own entry in ${list}.`,
+  };
 }
 
 function slotLine(plan: SlotPlan): string {
@@ -248,16 +320,18 @@ function planTurn(
 // the fresh pre-cast state.
 export function castSpell(
   campaign: Campaign,
-  turnId: string,
+  // Null when the server completes a held casting as a turn starts, outside
+  // any DM turn (long-casting.ts).
+  turnId: string | null,
   sheet: CharacterSheet,
-  input: CastInput,
+  asked: CastInput,
   hooks: CastHooks,
 ): CastResult {
-  const spell = input.spell.trim();
+  const spell = asked.spell.trim();
   // Divine Smite is a paladin's feature under the 2014 rules, not a spell: a
   // slot spent naming it is the nameless slot the feature burns.
   if (!spell || (revisedOnlySpell(spell) === "Divine Smite" && holdsFeature(sheet, "Divine Smite"))) {
-    return namelessSlot(sheet, input, hooks);
+    return namelessSlot(sheet, asked, hooks);
   }
   // A spell only the 2024 rules print, still on a sheet from before they
   // were taken out, is not cast here (src/lib/content/edition.ts).
@@ -265,19 +339,30 @@ export function castSpell(
   if (revised) {
     return { error: `${revised} Nothing was spent.`, refused: "rules" };
   }
-  const via = input.via ?? "slot";
+  const via = asked.via ?? "slot";
   const authors = spellAuthorsFor(campaign);
   const facts = spellFactsFor(spell, authors);
   const name = facts?.name ?? spell;
+  // A casting of a minute or more held across the caster's turns whose
+  // rounds have run out (long-casting-logic.ts): this call completes it, from
+  // the slot it was begun with and as the ritual it was begun as.
+  const completing = completedCastingOf(sheet, name);
+  const input: CastInput = completing
+    ? { ...asked, ...(completing.slotLevel ? { level: completing.slotLevel } : {}), ...(completing.ritual ? { ritual: true } : {}), ...(completing.storing ? { storing: completing.storing } : {}) }
+    : asked;
   // The published spell a table's workshop copy runs as: what every engine
   // that keys a spell by name reads (src/lib/content/index.ts
   // spellEngineName). The copy's own name is what is spent and held.
   const engine = facts?.runsAs ?? name;
   const encounter = getActiveEncounter(campaign.id);
   const inFight = inRunningFight(encounter);
-  const reactionTime = facts?.castingTime === "reaction" || via === "reaction";
-  // A summoning spell's creatures come through cast_buff (summon-cast.ts).
-  const summoning = via === "slot" && !input.dryRun ? summonSlotProblem(engine) : null;
+  // SRD 5.1, Longer Casting Times: in a fight a spell of a minute or more,
+  // or one cast as a ritual, is begun now and held across the caster's turns.
+  const holdRounds = inFight && !completing ? castingRoundsOf(facts, Boolean(input.ritual)) : null;
+  const reactionTime = !input.storing && (facts?.castingTime === "reaction" || via === "reaction");
+  // A summoning spell's creatures come through cast_buff (summon-cast.ts),
+  // once its casting is done when that takes a minute in a fight.
+  const summoning = via === "slot" && !input.dryRun && !input.storing && holdRounds === null ? summonSlotProblem(engine) : null;
   if (summoning) {
     return summoning;
   }
@@ -286,7 +371,7 @@ export function castSpell(
   // by any other tool it would spend its slot on nothing.
   // A spell they cannot cast is told so here, as use_reaction would (a cast
   // an item pays for aside), not sent there to hear it.
-  if (facts?.castingTime === "reaction" && via !== "reaction") {
+  if (facts?.castingTime === "reaction" && via !== "reaction" && !input.storing) {
     const unheld = takeItemCast(sheet.id, name, { dryRun: true }) ? null : spellHeldProblem(sheet, spell, facts, { extras: subclassExtrasForTable(campaign.id, sheet.userId) });
     return unheld ?? { error: `${name} is cast as a reaction: use_reaction with feature "${name}" when its trigger happens; the server checks the trigger and applies it. Nothing was spent.`, retry: true };
   }
@@ -315,6 +400,8 @@ export function castSpell(
   if (
     mech?.repeat &&
     via !== "slot" &&
+    // Witch Bolt's beam strikes through cast_at_enemy: an attack is a new casting.
+    !(via === "attack" && mech.repeatDice) &&
     sheet.concentratingOn &&
     textKey(sheet.concentratingOn) === textKey(name)
   ) {
@@ -330,9 +417,43 @@ export function castSpell(
 
   // A spell use_item just cast from a scroll or a wand: no slot, no
   // components, the action already paid (src/lib/dm/item-casts.ts).
-  const fromItem = takeItemCast(sheet.id, name, { dryRun: Boolean(input.dryRun) });
+  // Its area is laid as any cast's is (below), so a square out of reach is said
+  // before the credit is taken.
+  const lays = !input.storing && (via === "slot" || via === "buff");
+  if (lays && input.at && takeItemCast(sheet.id, name, { dryRun: true })) {
+    const placed = placementReachProblem(campaign, { casterId: sheet.id, casterName: sheet.name, spell: name, runsAs: facts?.runsAs, facts, at: input.at });
+    if (placed) {
+      return placed;
+    }
+  }
+  const fromItem = input.storing ? null : takeItemCast(sheet.id, name, { dryRun: Boolean(input.dryRun) });
   if (fromItem) {
-    return castFromItem(campaign, turnId, sheet, facts, name, fromItem, input);
+    let itemCast = castFromItem(campaign, turnId, sheet, facts, name, fromItem, input);
+    if (!input.dryRun) {
+      const live = inFight ? getActiveEncounter(campaign.id) : null;
+      if (live) {
+        itemCast = { ...itemCast, ...openItemShares(live, sheet, name, mech, facts, fromItem, input, via) };
+      }
+      if (completing) {
+        clearCompletedCasting(campaign, sheet.id);
+      } else if (fromItem.storedIn && typeof facts?.castingTime === "number") {
+        // A stored spell takes the time it takes (spell-storing.ts); in a
+        // fight it was held across turns, so it is `completing` there.
+        advanceClock(campaign.id, facts.castingTime, "minutes");
+      }
+      const area = lays ? placeSpellZone(campaign, { spell: name, runsAs: facts?.runsAs, caster: { kind: "pc", id: sheet.id, name: sheet.name }, slotLevel: fromItem.level, dc: spellSaveDcFor(sheet, name), at: input.at, toward: input.toward, named: Boolean(input.at) }) : null;
+      if (area) {
+        return { ...itemCast, area };
+      }
+    }
+    return itemCast;
+  }
+  if (!input.storing && inFight && via !== "slot" && via !== "reaction") {
+    const budget = budgetFor(encounter, sheet.id, attacksAllowedFor(sheet), conditionTurnShape(sheet.conditions));
+    const open = budget ? openCastOf(budget, name) : null;
+    if (budget && open?.item) {
+      return continueOpenCast(encounter, budget, open, name, input);
+    }
   }
 
   // ---- refusals, in the order a person would give them ----
@@ -346,38 +467,64 @@ export function castSpell(
       return refused;
     }
   } else {
-    const able = canAct({ sheet, encounter, kind: "cast" });
+    // A held casting was paid for turn by turn, and the server completes it
+    // as the caster's turn starts, before the pointer is saved: only the
+    // caster's own state is asked, not whose turn the stored row says it is.
+    const able = canAct({ sheet, encounter: completing ? null : encounter, kind: "cast" });
     if (!able.ok) {
       return toolError(able);
     }
+    // A turn held while an enemy before it is still to act (held-turn.ts).
+    const heldOff = completing ? null : heldTurnRefusal(encounter, sheet);
+    if (heldOff) {
+      return heldOff;
+    }
   }
+  const extras = subclassExtrasForTable(campaign.id, sheet.userId);
   const held = spellHeldProblem(sheet, spell, facts, {
     ritual: input.ritual,
-    extras: subclassExtrasForTable(campaign.id, sheet.userId),
+    extras,
   });
   if (held) {
-    return held;
+    // Their own list does not hold it, but a ring they carry might.
+    const ring = storerHolding(sheet.equipment, name);
+    return ring ? { ...held, error: `${held.error} ${ring.name} holds it: use_item with spell casts it from there, then cast it with this tool.`, retry: true } : held;
   }
+  // A spell an invocation or the race casts, which no class list holds
+  // (src/lib/srd/granted-casts.ts): its own slot rule, level and counter.
+  const grant = input.ritual ? null : grantedCastOf(sheet, spell, facts, extras);
+  // A free grant casts without a slot while a use is left; one the
+  // character's own slots can cast too (issue #833) is paid with a slot once
+  // its uses are spent, or when a higher level is named.
+  const grantFree = grantCastsFree(sheet, grant, facts, input.level);
+  const grantNoSlot = grant?.slot === "free" && (grantFree || !grant.slotsToo);
+  // The components as this caster makes them: none of the material for an
+  // invocation that says so, an Archdruid's druid spells without the voice,
+  // the gestures or a free material (cast-rules.ts componentsAsCast).
+  // The Hand's spell cards ask castComponents too (hand-spells.ts).
+  const components = castComponents(sheet, facts, grant, extras);
+  const castFacts = components.facts;
   const state = casterStateProblem(sheet);
   if (state) {
     return state;
   }
-  const voice = componentProblem(sheet, facts) ?? focusProblem(sheet, facts) ?? silenceProblem(campaign.id, sheet.id, sheet.name, facts) ?? antimagicProblem(campaign.id, sheet.id, sheet.name);
+  const voice = components.problem ?? silenceProblem(campaign.id, sheet.id, sheet.name, castFacts) ?? antimagicProblem(campaign.id, sheet.id, sheet.name);
   if (voice) {
     return voice;
   }
-  if (input.ritual) {
-    const ritual = ritualProblem(sheet, spell, facts, inFight);
+  if (input.ritual && !completing) {
+    const ritual = ritualProblem(sheet, spell, facts);
     if (ritual) {
       return ritual;
     }
-  } else {
-    const long = longCastingProblem(facts, inFight);
-    if (long) {
-      return long;
-    }
   }
-  const material = materialPlan(sheet, facts, { inFight, units: input.units, slotLevel: input.level ?? facts?.level ?? null });
+  // Every other tool resolves a spell's effect at once; a casting held across
+  // turns is begun where the server can hold it, and that tool resolves it
+  // when it is complete.
+  if (holdRounds !== null && via !== "slot") {
+    return { error: beginWithSlotTool(sheet.name, name, castingTimeWords(facts, Boolean(input.ritual))), retry: true };
+  }
+  const material = materialPlan(sheet, castFacts, { inFight, units: input.units, slotLevel: input.level ?? facts?.level ?? null });
   if ("error" in material) {
     return material;
   }
@@ -393,19 +540,7 @@ export function castSpell(
       : null;
   const open = liveBudget ? openCastOf(liveBudget, name) : null;
   if (open && liveBudget) {
-    if (input.dryRun) {
-      return { ok: true, dryRun: true, spell: name, slotLevel: open.slotLevel, continuing: true };
-    }
-    const uses = Math.max(1, Math.min(open.left, Math.floor(input.uses ?? 1)));
-    storeBudget(encounter as Encounter, withOpenCast(liveBudget, { ...open, left: open.left - uses }));
-    return {
-      ok: true,
-      spell: name,
-      slotLevel: open.slotLevel,
-      uses,
-      sharesLeft: open.left - uses,
-      continuing: `${name}: more of the same casting (${open.left - uses} left); nothing more is spent.`,
-    };
+    return continueOpenCast(encounter as Encounter, liveBudget, open, name, input);
   }
 
   // The casting Slow held back last turn, completed now for this turn's
@@ -418,10 +553,18 @@ export function castSpell(
   // spends its once-a-day counter instead of a slot while one is left
   // (src/lib/srd/feat-spells.ts); with the counter spent, a slot pays.
   const freeCast = input.ritual || signature ? null : freeCastCounter(sheet, spell, facts, input.level);
+  // A warlock's Mystic Arcanum pays for its own spell (counter-cast-arcanum.ts).
+  const arcanum = input.ritual || signature || freeCast || slowHeld ? null : arcanumCounter(sheet, facts, input.level);
   // Mantle of Majesty's Command costs no slot while the mantle holds.
   const mantled =
     !input.ritual && !signature && !freeCast && /^command$/i.test(engine.trim()) &&
     sheet.conditions.some((entry) => isConditionNamed(entry, MANTLE_OF_MAJESTY));
+  // The race's grant pays only when nothing before it in the plan below
+  // did: a Topaz fighter with Fey Touched casting misty step spends the
+  // feat's free cast or the ancestry's use, never both (issue #833).
+  const grantPaid = Boolean(grant) && grantNoSlot && !input.ritual && !slowHeld && !signature && !freeCast;
+  // A reaction spell cast into a ring answers no trigger: it takes the action.
+  const turnFacts = input.storing && facts?.castingTime === "reaction" ? { ...facts, castingTime: "action" as const } : facts;
   const slot: SlotPlan | ToolError = input.ritual
     ? { kind: "none", note: `${name} cast as a ritual: no slot spent.` }
     : slowHeld
@@ -430,18 +573,28 @@ export function castSpell(
       ? { kind: "none", note: `${name} is a Signature Spell: cast at 3rd level with no slot, once until a short rest.` }
       : freeCast
         ? { kind: "none", note: `${name} is cast without a slot (a feat's free cast): once until a long rest.` }
+        : arcanum
+          ? { kind: "none", note: `${name} is cast as a Mystic Arcanum, with no spell slot: once until a long rest.` }
+        : grant && grantPaid
+          ? { kind: "none", note: `${name} is cast through ${grant.source} with no spell slot${grant.counter ? `: ${(grant.uses ?? 1) === 1 ? "once" : `${grant.uses} times`}, and again after a ${grant.rest ?? "long"} rest` : ", at will"}${grant.castAt ? `, as a level ${grant.castAt} spell` : ""}.` }
         : mantled
           ? { kind: "none", note: `${name} is cast through Mantle of Majesty: no slot spent.` }
-        : // A slot the player marked spent by hand for this cast pays for it.
-          paidByManualTick(sheet, slotPlan(sheet, spell, facts, input.level), input.level ?? facts?.level, facts?.level, Boolean(input.dryRun));
+        : // A slot the player marked spent by hand for this cast pays for it;
+          // a casting begun now leaves the mark for its completion.
+          paidByManualTick(sheet, slotPlan(sheet, spell, facts, input.level), input.level ?? facts?.level, facts?.level, Boolean(input.dryRun) || holdRounds !== null);
   if ("error" in slot) {
     // A cast the turn cannot pay for is refused for that first: which slot
-    // to spend is moot when the action is gone.
-    const barred = planTurn(sheet, encounter, facts, spell, input.level ?? facts?.level ?? null, via);
+    // to spend is moot when the action is gone. A completing casting paid
+    // for its turns already.
+    const barred = completing ? null : planTurn(sheet, encounter, turnFacts, spell, input.level ?? facts?.level ?? null, via);
     return barred && "error" in barred ? barred : slot;
   }
-  const slotLevel = slowHeld ? slowHeld.slotLevel : slot.kind === "none" ? null : slot.level;
-  const turn = input.ritual ? ({ kind: "free" } as const) : planTurn(sheet, encounter, facts, spell, slotLevel, via);
+  // Infernal Legacy's hellish rebuke is cast as a 2nd-level spell, with no slot.
+  const slotLevel = slowHeld ? slowHeld.slotLevel : slot.kind === "none" ? (grantPaid ? grant?.castAt ?? null : null) : slot.level;
+  // A ritual out of a fight costs no turn; in one it is begun with the
+  // action like any casting held across turns, and a completing casting
+  // costs no action at all.
+  const turn = completing ? ({ kind: "free" } as const) : planTurn(sheet, encounter, turnFacts, spell, slotLevel, via);
   if ("error" in turn) {
     return turn;
   }
@@ -454,14 +607,27 @@ export function castSpell(
       return placed;
     }
   }
+  const storeLevel = slotLevel ?? facts?.level ?? input.level ?? 0;
+  if (input.storing) {
+    const noRoom = storeRefusal(input.storing.holderId, input.storing.ring, name, storeLevel);
+    if (noRoom) {
+      return noRoom;
+    }
+  }
   if (input.dryRun) {
     return { ok: true, dryRun: true, spell: name, slotLevel };
+  }
+  // The casting begins with this turn's action and nothing else is spent
+  // (long-casting.ts holds it from here).
+  if (holdRounds !== null && encounter) {
+    const spent = turn.kind === "budget" ? { budget: turn.budget, ...(turn.note ? { note: turn.note } : {}) } : null;
+    return beginHeldCasting(campaign, turnId, sheet, encounter, spent, { name, facts, slotLevel, ritual: Boolean(input.ritual), rounds: holdRounds, ...(input.storing ? { storing: input.storing } : {}) });
   }
 
   // ---- the spend: nothing below refuses ----
   const result: CastResult = { ok: true, spell: name, slotLevel, slot: slotLine(slot) };
   // What the server leaves to the DM of this spell (src/lib/srd/spell-support.ts).
-  const manual = spellSupportLine(name);
+  const manual = input.storing ? null : spellSupportLine(name);
   if (manual) {
     result.manual = manual;
   }
@@ -476,6 +642,21 @@ export function castSpell(
   if (freeCast) {
     patch.resources = spendSignature(sheet.resources, freeCast);
   }
+  if (arcanum) {
+    patch.resources = spendSignature(patch.resources ?? sheet.resources, arcanum);
+  }
+  // The grant's use (Thief of Five Fates' with its slot, Infernal Legacy's
+  // without one). A cast a slot paid for, its free uses spent, spends none.
+  if (grant?.counter && ((grant.slot === "slot" && slot.kind !== "none") || (grantPaid && grantFree))) {
+    patch.resources = spendGrantUse(patch.resources ?? sheet.resources, grant);
+  }
+  // Said only of a grant that paid, or of a slot that paid in its place.
+  if (grant && (grantPaid || slot.kind !== "none")) {
+    result.granted =
+      grant.slot === "free" && !grantPaid
+        ? `${name} is cast with a spell slot; ${grant.source} gives it without one${grant.counter ? `, ${(grant.uses ?? 1) === 1 ? "once" : `${grant.uses} times`} a ${grant.rest ?? "long"} rest` : ""}.`
+        : `${name} is cast through ${grant.source}.${grant.note ? ` ${grant.note}` : ""}`;
+  }
   // Expert Divination (School of Divination 6): a divination spell of 2nd
   // level or higher cast with a slot gives back one spent slot of a lower
   // level, 5th at most.
@@ -487,6 +668,20 @@ export function castSpell(
     patch.spellcasting = { ...patch.spellcasting, slots: { ...slots, [String(refund.level)]: { ...row, used: row.used - 1 } } };
     result.slotRefund = `${refund.feature}: a spent level ${refund.level} slot comes back.`;
   }
+  // Wild Magic Surge: after a sorcerer spell of 1st level or higher the GM may
+  // have the sorcerer roll on the surge table, and a spent Tides of Chaos then
+  // comes back. The mark lasts the round; the GM's use_resource spends it.
+  if (!input.storing && opensSurgeChance(sheet.resources, facts)) {
+    const held = (patch.conditions ?? sheet.conditions).filter((entry) => !isConditionNamed(entry, SURGE_CHANCE));
+    patch.conditions = [...held, SURGE_CHANCE];
+    patch.conditionMeta = { ...((patch.conditionMeta ?? sheet.conditionMeta) as ConditionMetaMap), [SURGE_CHANCE]: { rounds: 1 } };
+    result.wildMagicSurge = `Tides of Chaos is spent: the GM may have ${sheet.name} roll on the wild magic table now, and if so use_resource "Wild Magic Surge" gives the use back.`;
+  }
+  // Cast from their own slots now: an item's numbers for it are over.
+  const freed = input.storing ? null : equipmentWithoutRunning(patch.equipment ?? sheet.equipment, name);
+  if (freed) {
+    patch.equipment = freed;
+  }
   if (Object.keys(patch).length) {
     patchSheet(sheet.id, patch);
     hooks.record(
@@ -496,10 +691,15 @@ export function castSpell(
         ...(input.ritual ? { ritual: true } : {}),
         ...(signature ? { signature, level: 3 } : {}),
         ...(freeCast ? { freeCast } : {}),
+        ...(grant ? { granted: grant.source } : {}),
       },
       patch,
     );
     hooks.publish();
+  }
+  if (completing) {
+    clearCompletedCasting(campaign, sheet.id);
+    result.completed = `${name}'s casting is complete and it takes effect now; it costs no action.`;
   }
 
   if (turn.kind === "budget" && encounter) {
@@ -523,7 +723,8 @@ export function castSpell(
     result.sharesLeft = left;
     result.uses = uses;
     if (shares > 1) {
-      result.shares = `${name} holds ${shares} ${mech?.attacks ? "attack rolls" : mech?.darts ? "darts" : "targets"} from this one casting; ${left} left for more calls this turn, spending nothing more.`;
+      const list = mech?.attacks ? "pc_attack's attacks" : mech?.resolution === "heal" ? "heal's targets" : "cast_at_enemy's targets";
+      result.shares = `${name} holds ${shares} ${mech?.attacks ? "attack rolls" : mech?.darts ? "darts" : "targets"} from this one casting; ${left} left this turn at no further cost, each its own entry in ${list}.`;
     }
     storeBudget(encounter, budget);
     result.cost = turn.cost === "bonus action" ? "their bonus action" : "their action";
@@ -572,25 +773,29 @@ export function castSpell(
     }
   }
 
-  if (input.ritual) {
+  // A completing casting's time went by in the fight's rounds, not on the clock.
+  if (input.ritual && !completing) {
     // Ten minutes longer than the spell's own casting time.
     const minutes = 10 + (typeof facts?.castingTime === "number" ? facts.castingTime : 0);
     advanceClock(campaign.id, minutes, "minutes");
     result.note = `${name} cast as a ritual: ${minutes} minutes of casting, no slot spent. The clock moved on.`;
-  } else if (typeof facts?.castingTime === "number") {
+  } else if (typeof facts?.castingTime === "number" && !completing) {
     advanceClock(campaign.id, facts.castingTime, "minutes");
     result.castingTime = `${describeCastingTime(facts.castingTime)} of casting; the clock moved on.`;
   }
 
-  const concentrates = input.concentration === true || facts?.concentration === true;
+  const concentrates = !input.storing && (input.concentration === true || facts?.concentration === true);
   if (concentrates) {
     // The first spell ends, and with it every effect it held in place: an
     // earlier casting of this same spell too.
-    const { displaced } = setConcentration(campaign, turnId, sheet.id, name, slotLevel);
+    const { displaced, failedCasting } = setConcentration(campaign, turnId, sheet.id, name, slotLevel);
     result.concentration = true;
     if (displaced) {
-      result.droppedConcentration = droppedLine(displaced, name);
+      result.droppedConcentration = failedCasting ? failLine(sheet.name, failedCasting, `${name} took the concentration`) : droppedLine(displaced, name);
     }
+  }
+  if (input.storing) {
+    putInRing(campaign, turnId, input.storing.holderId, input.storing.ring, { spell: name, level: storeLevel, ...casterNumbers(sheet, name), by: sheet.name });
   }
   // Contact Other Plane's toll on its caster (spell-self.ts).
   Object.assign(result, casterCost(campaign, sheet, engine, name));
@@ -609,6 +814,39 @@ export function castSpell(
     endSanctuaryOnHarm(campaign.id, sheet.id);
   }
   // Its area on the board; aoe_damage and cast_at_enemy lay theirs after the saves.
-  const zone = via === "slot" || via === "buff" ? placeSpellZone(campaign, { spell: name, runsAs: facts?.runsAs, caster: { kind: "pc", id: sheet.id, name: sheet.name }, slotLevel, dc: spellSaveDcFor(sheet, name), at: input.at, toward: input.toward, named: Boolean(input.at) }) : null;
+  const zone = !input.storing && (via === "slot" || via === "buff") ? placeSpellZone(campaign, { spell: name, runsAs: facts?.runsAs, caster: { kind: "pc", id: sheet.id, name: sheet.name }, slotLevel, dc: spellSaveDcFor(sheet, name), at: input.at, toward: input.toward, named: Boolean(input.at) }) : null;
   return zone ? { ...result, area: zone } : result;
 }
+
+// A casting the server held completes through this door as its rounds run
+// out (long-casting.ts finishCasting), written to the audit trail and the
+// sheet's stream as every cast is. Registered, not imported there: the
+// clock reaches long-casting.ts, and this module reaches the clock.
+registerCastingCompletion((campaign, sheetId, spell) => {
+  const sheet = getSheetById(sheetId);
+  if (!sheet) {
+    return { error: "The caster is no longer at the table.", refused: "rules" };
+  }
+  return castSpell(campaign, null, sheet, { spell, via: "slot" }, {
+    record: (delta, patch) => {
+      const entry = insertSheetAudit({
+        campaignId: campaign.id,
+        characterId: sheet.id,
+        turnId: null,
+        kind: "use_spell_slot",
+        delta,
+        reason: `the casting of ${spell} is complete`,
+        seq: allocateSeq(campaign.id),
+        before: sheet,
+        patch,
+      });
+      publishPersisted(campaign.id, "sheet_audit", { entry, characterName: sheet.name });
+    },
+    publish: () => {
+      const updated = patchSheet(sheet.id, {});
+      if (updated) {
+        publishPersisted(campaign.id, "sheet_updated", { sheet: updated });
+      }
+    },
+  });
+});

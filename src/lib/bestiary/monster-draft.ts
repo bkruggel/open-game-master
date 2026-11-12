@@ -196,6 +196,16 @@ export function checkMonsterDraft(raw: unknown): DraftCheck {
             .filter(Boolean),
         }
       : {}),
+    // A legendary option's whole line, which the trait lines cut short: what
+    // it does is read from it (src/lib/dm/legendary-route-logic.ts).
+    ...(Array.isArray(source.fullLegendary) && source.fullLegendary.length
+      ? {
+          fullLegendary: source.fullLegendary
+            .slice(0, MAX_FULL_TRAITS)
+            .map((line) => text(line, FULL_TRAIT_MAX))
+            .filter(Boolean),
+        }
+      : {}),
     resist: text(source.resist, RESIST_MAX),
     immune: text(source.immune, RESIST_MAX),
     vulnerable: text(source.vulnerable, RESIST_MAX),
@@ -210,7 +220,10 @@ export function checkMonsterDraft(raw: unknown): DraftCheck {
     cr,
     // Never taken from the client: XP is a function of CR and a row where
     // they disagree would quietly break every encounter budget it appears in.
-    xp: xpForCr(cr),
+    // The one other value is a challenge 0 block's 0, for a creature "with
+    // no effective attacks" (SRD 5.1, Challenge: the frog, the sea horse),
+    // which statblock.ts parseMonster reads and a copy keeps.
+    xp: cr === 0 && source.xp === 0 ? 0 : xpForCr(cr),
     attacksPerTurn: clamp(source.attacksPerTurn, 1, MAX_SWINGS, 1),
     size,
     type,

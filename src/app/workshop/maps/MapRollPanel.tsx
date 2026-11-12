@@ -52,7 +52,7 @@ export function MapRollPanel({
   return (
     <div className="space-y-2">
       <div className="block space-y-1">
-        <span className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("workshop.maps.kindOfPlace")}</span>
+        <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.maps.kindOfPlace")}</span>
         <Select<string>
           size="sm"
           value={scene}
@@ -63,7 +63,7 @@ export function MapRollPanel({
         />
       </div>
       <div className="space-y-1">
-        <span className="font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">{t("workshop.maps.orSayOutright")}</span>
+        <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.maps.orSayOutright")}</span>
         <div className="grid grid-cols-2 gap-1">
           {MAP_THEMES.map((option) => (
             <Chip key={option} active={theme === option} onClick={() => setTheme(theme === option ? "" : option)}>

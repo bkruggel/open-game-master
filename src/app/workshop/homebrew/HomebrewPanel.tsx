@@ -1,5 +1,6 @@
 "use client";
 
+import { forgetSpellPools } from "@/components/sheet/spell-pool-cache";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadFailed } from "@/app/campaigns/[campaignId]/PanelKit";
 import { readLoad, useLoadStatus } from "@/lib/load-state";
@@ -33,6 +34,17 @@ import {
 import { textKey } from "@/lib/language/text-logic";
 import { workshopClassId } from "@/lib/homebrew/class-data";
 import { useT } from "@/lib/locale";
+import { HOMEBREW_NAME_MAX } from "@/lib/schemas/homebrew";
+import { currentPathname, currentQuery, replaceAddress } from "@/lib/navigation";
+
+// A consumed ?start= or ?item= leaves the address, so a reload does not open
+// it again. Through src/lib/navigation.ts: inside the apps the address is
+// the app's, and window.location is the app's own page, never touched.
+function dropQuery(name: string): void {
+  const query = currentQuery();
+  query.delete(name);
+  replaceAddress(`${currentPathname()}${query.size ? `?${query}` : ""}`);
+}
 
 // The Homebrew system: the user's items, spells and character options, one
 // kind at a time, with the editor in a sheet. User-scoped like the bestiary,
@@ -132,11 +144,7 @@ export function HomebrewPanel({
       if (!live || !page?.page) return;
       // The parameter goes once the draft is open: dropping it re-renders
       // this panel without it, which ends this effect.
-      const done = () => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("start");
-        window.history.replaceState(null, "", url.toString());
-      };
+      const done = () => dropQuery("start");
       setKind(editorKind);
       setError("");
       if (editorKind === "archetype") {
@@ -173,6 +181,22 @@ export function HomebrewPanel({
       live = false;
     };
   }, [start]);
+
+  // "Give it stats" from the lead's Adjust dialog (src/app/campaigns/
+  // [campaignId]/GiveStats.tsx): ?item=<name> opens a new item of that
+  // name, unsaved. Saved, it gives the table's item of the same name its
+  // stats (hydrateHomebrewGear). The parameter is dropped as ?start= is.
+  const itemName = params.get("item")?.trim() ?? "";
+  const [openedItem, setOpenedItem] = useState("");
+  if (itemName && itemName !== openedItem) {
+    setOpenedItem(itemName);
+    setKind("item");
+    setError("");
+    setEditing({ id: null, draft: { ...blankDraft("item"), name: itemName.slice(0, HOMEBREW_NAME_MAX) } });
+  }
+  useEffect(() => {
+    if (itemName) dropQuery("item");
+  }, [itemName]);
 
   const ofKind = entries.filter((entry) => entry.kind === kind);
   const needle = textKey(query);
@@ -222,9 +246,23 @@ export function HomebrewPanel({
       }
       await load();
       onChanged?.();
+      // A saved spell or class changes what the spell pickers offer: what
+      // they fetched before is asked for again (issue #833).
+      if (draft.kind === "spell" || draft.kind === "class") forgetSpellPools();
       const saved = (payload as { entry?: HomebrewEntryView }).entry;
       setNotice(carriedNotice((payload as { carried?: Carried }).carried, t));
-      setEditing(saved ? { id: saved.id, draft: { kind: saved.kind as EditorKind, name: saved.name, data: saved.data }, savedName: saved.name } : null);
+      // The form stays open and editable while the save and the shelf's
+      // reload are on their way: an edit made meanwhile (a second subclass
+      // choice added right after Keep) is the author's newest word, so it
+      // stays, with the saved entry's id for the next Keep. Only an
+      // untouched form takes the server's normalized copy.
+      setEditing((current) =>
+        saved && current && current.draft !== draft
+          ? { ...current, id: saved.id, savedName: saved.name }
+          : saved
+            ? { id: saved.id, draft: { kind: saved.kind as EditorKind, name: saved.name, data: saved.data }, savedName: saved.name }
+            : null,
+      );
     } catch {
       setError(t("workshop.homebrew.panel.saveUnreachable"));
     } finally {

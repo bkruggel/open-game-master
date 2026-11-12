@@ -5,7 +5,10 @@ import { useState } from "react";
 import { appConfirm } from "@/components/ui/ConfirmDialog";
 import { SessionBanner, bannerButtonClass } from "@/app/campaigns/[campaignId]/SessionBanner";
 import { PanelError } from "@/app/campaigns/[campaignId]/PanelKit";
+import { TurnTraceButton } from "@/app/campaigns/[campaignId]/TurnTraceSheet";
+import { TestDiceScript } from "@/app/campaigns/[campaignId]/TestDiceScript";
 import { navigateTo } from "@/lib/navigation";
+import { SaveSetupButton } from "@/app/campaigns/[campaignId]/SaveSetupButton";
 import { workshopHref } from "@/lib/workshop/links";
 import { useT } from "@/lib/locale";
 
@@ -21,7 +24,8 @@ export function TestFightBanner({
 }: {
   campaignId: string;
   source: { workshopId: string; title: string };
-  // Who runs the enemies: the AI DM, or the author from the DM seat.
+  // Who runs the enemies: the AI DM, with the author steering from the GM
+  // seat (issue 685), or the author from the DM seat.
   runsIt: "ai" | "person";
 }) {
   const t = useT();
@@ -60,15 +64,23 @@ export function TestFightBanner({
           <Link href={back} className={bannerButtonClass()}>
             {t("table.misc.testFight.back")}
           </Link>
+          <SaveSetupButton campaignId={campaignId} />
+          <TurnTraceButton campaignId={campaignId} />
+          <TestDiceScript campaignId={campaignId} />
           <button type="button" disabled={busy} aria-busy={busy} onClick={() => void end()} className={bannerButtonClass(true)}>
             {t("table.misc.testFight.end")}
           </button>
         </>
       }
     >
-      {runsIt === "ai"
-        ? t("table.misc.testFight.ai", { name: source.title })
-        : t("table.misc.testFight.person", { name: source.title })}
+      {/* Left out on a phone while a Hand is dealt (hand.css): the title
+          and the way out stay, and the chronicle and the Hand get the room
+          (issue 713). */}
+      <span className="test-fight-say">
+        {runsIt === "ai"
+          ? t("table.misc.testFight.aiConsole", { name: source.title })
+          : t("table.misc.testFight.person", { name: source.title })}
+      </span>
       {error ? <PanelError className="mt-1 text-[11px]">{error}</PanelError> : null}
     </SessionBanner>
   );

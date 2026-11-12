@@ -7,32 +7,31 @@ import { allocateSeq, type Campaign } from "@/lib/db/campaigns";
 import { getSheetById } from "@/lib/db/sheets";
 import { insertRoll } from "@/lib/db/rolls";
 import type { DmTurn } from "@/lib/db/dm-turns";
-import { rollExpression } from "@/lib/dice";
 import { publishWithSeq } from "@/lib/events";
 import { computeSheetDerived, SRD_SKILLS } from "@/lib/srd";
 import { dcForDifficulty, difficultyOfDc, normalizeDifficulty } from "@/lib/srd/dc";
 import { strictnessShift } from "@/lib/dm/safety-logic";
 import { resolveRollExpression, resolveSheetRef } from "@/lib/dm/rolls";
 import { itemCheckRiders } from "@/lib/srd/item-check-riders";
-import { rollExtrasFor, spendRollCarriers } from "@/lib/dm/forced-save";
+import { heldDieWaits, rollExtrasFor, spendRollCarriers } from "@/lib/dm/forced-save";
+import { rollCharacterD20 } from "@/lib/dm/character-roll";
+import { canAct } from "@/lib/dm/can-act";
 import { rollEffectExtras } from "@/lib/dm/effect-tools";
-import { exhaustionRollState, mergeAdvantage, rollDerivation } from "@/lib/dm/condition-logic";
+import { exhaustionRollState, mergeAdvantage, rollDerivation, type AdvantageState } from "@/lib/dm/condition-logic";
 import { conditionRollRiders } from "@/lib/srd/condition-effects";
 import type { RollArgs } from "@/lib/dm/rolls";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { getActiveBattleMap, sheetDarkvisionTiles } from "@/lib/battlemap/view";
-import { breakDown, normalizeClock } from "@/lib/dm/calendar";
+import { getActiveBattleMap } from "@/lib/battlemap/view";
+import { normalizeClock } from "@/lib/dm/calendar";
 import { getClock } from "@/lib/db/clock";
-import { carriedLight } from "@/lib/dm/light-timers";
-import { cannotNotice, lightSeenBy, offBoardLight, sightPassiveShift } from "@/lib/dm/notice-logic";
-import { getCurrentLocation } from "@/lib/db/locations";
-import { getPreparedMap } from "@/lib/db/prepared-maps";
+import { sightPassiveShift, unawareReason } from "@/lib/dm/notice-logic";
+import { lightForSheet, offBoardAmbient } from "@/lib/dm/place-light";
 import { contestOpponent, marchStealthProblem, rollContest } from "@/lib/dm/roll-gates";
 import { weatherPerceptionRider } from "@/lib/srd/weather";
 import { obscuredFor, silencedImmunity } from "@/lib/dm/zone-rules";
 import { senseCheckFailure } from "@/lib/srd/sense-checks";
 import { sightRotPenalty } from "@/lib/srd/afflictions";
-import type { ToolError, ToolResult } from "@/lib/dm/tool-errors";
+import { badArguments, type ToolError, type ToolResult } from "@/lib/dm/tool-errors";
 import { npcDeceiver, seeThroughActs } from "@/lib/dm/scheme-tools";
 
 // Two exploration-pillar tools that were pure narration before: a group skill
@@ -118,22 +117,22 @@ export const checkTools: ToolDef[] = [
             type: "string",
             enum: ["sight", "hearing"],
             description:
-              "Perception only: whether the thing is seen or heard. Default: 'sight'. Off the battle map the server applies the light of the place (dim light -5, and in darkness a character with no darkvision and no lit torch or lantern sees nothing) and a fast travel pace -5; a sound ignores the light.",
+              "Perception only: whether the thing is seen or heard. Default: 'sight'. Off the battle map the server applies the light and a fast pace; a sound ignores the light.",
           },
           light: {
             type: "string",
             enum: ["bright", "dim", "dark"],
             description:
-              "Off the battle map, the light where the party is, when you know it. A lamplit hall is bright, a moonlit glade dim, an unlit crypt dark. Omit it and the server reads the current location: underground is dark, a building lit, the open air follows the hour.",
+              "Off the battle map, the light where the party is, when you know it. Omit it and the server reads it from the location and the hour.",
           },
           againstEnemyId: {
             type: "string",
             description:
-              "A creature of the running fight hiding (or lying, for insight): exact enemyId from GAME STATE. The server rolls its own Stealth (or Deception) check from its stat block as the DC. Out of a fight, use againstMonster.",
+              "A creature of the running fight hiding (or lying, for insight): exact enemyId from GAME STATE. The server rolls its Stealth (or Deception) as the DC. Out of a fight, use againstMonster.",
           },
           againstMonster: {
             type: "string",
-            description: "Out of a fight, who hides or lies: a bestiary creature, or for insight a tracked NPC's exact name. It holds SRD creatures and NPC stat blocks (a goblin, a bandit, a spy); for insight an AI companion's exact name works too. The server rolls its Stealth or Deception as the DC.",
+            description: "Out of a fight, who hides or lies: a bestiary creature, or for insight a tracked NPC's exact name. For insight an AI companion's exact name works too. The server rolls its Stealth or Deception as the DC.",
           },
           difficulty: {
             type: "string",
@@ -144,7 +143,7 @@ export const checkTools: ToolDef[] = [
           about: {
             type: "string",
             enum: ["traps_and_secret_doors", NONE],
-            description: "Perception or investigation: 'traps_and_secret_doors' for a trap or a secret door, or 'none'. A character tested with Dungeon Delver notices those more easily; the server asks for it when they are tested.",
+            description: "Perception or investigation: 'traps_and_secret_doors' for a trap or a secret door, or 'none'.",
           },
           characterIds: {
             type: "array",
@@ -223,8 +222,8 @@ export function handleGroupCheck(
   let args: z.infer<typeof groupCheckSchema>;
   try {
     args = groupCheckSchema.parse(JSON.parse(rawArguments || "{}"));
-  } catch {
-    return { error: "Invalid arguments: group_check needs a skill or ability and a difficulty.", retry: true };
+  } catch (error) {
+    return badArguments("Invalid arguments: group_check needs a skill or ability and a difficulty.", error, rawArguments);
   }
   if (!args.skill && !args.ability) {
     return { error: "group_check needs a skill (e.g. stealth) or an ability (e.g. str).", retry: true };
@@ -269,15 +268,19 @@ export function handleGroupCheck(
       terrain: args.terrain,
       by: args.by,
     } as unknown as RollArgs;
-    // The dead take no part, and count as a failure for the group.
-    if (sheet.deathSaves?.dead) {
+    // The dead take no part, and count as a failure for the group; so do
+    // those who cannot act, at 0 hit points, asleep or turned to stone (SRD
+    // 5.1: "incapacitated ..., can't move or speak, and is unaware of its
+    // surroundings"; finding doors-14 of the 2026-11-09 gap sweep).
+    if (!canAct({ sheet, encounter: null, kind: "action" }).ok) {
       results.push({ name: sheet.name, total: 0, success: false });
       continue;
     }
+    const waits = heldDieWaits(sheet, dc.dc);
     const resolved = resolveRollExpression(
       rollArgs,
       sheet,
-      rollExtrasFor(campaign, sheet, rollArgs.kind),
+      { ...rollExtrasFor(campaign, sheet, rollArgs.kind), keepHeldDie: waits },
     );
     if ("error" in resolved || "autoFail" in resolved) {
       // An auto-fail (paralysis) or an unresolvable skill counts as a failed
@@ -287,7 +290,17 @@ export function handleGroupCheck(
     }
     // An inspiration die or a held Help is spent by the roll it rides.
     spendRollCarriers(campaign.id, sheet.id, resolved.spendInspiration);
-    const rolled = rollExpression(resolved.expression);
+    // Each player's own d20 (src/lib/dm/character-roll.ts): a seat on
+    // physical dice rolls theirs (issue #896), and the group is settled once
+    // every roll is in.
+    const rolled = rollCharacterD20(campaign, sheet, {
+      kind,
+      expression: resolved.expression,
+      detail: `${sheet.name}: group ${args.skill ?? args.ability} check`,
+      dc: dc.dc,
+      ...(args.reason ? { reason: args.reason } : {}),
+      settleHeldDie: waits,
+    });
     const roll = insertRoll({
       campaignId: campaign.id,
       characterId: sheet.id,
@@ -343,6 +356,7 @@ export function passiveScore(
   campaign: Campaign,
   sheet: CharacterSheet,
   sense: "perception" | "insight" | "investigation",
+  situational: AdvantageState[] = [],
 ) {
   const derived = computeSheetDerived(sheet);
   const base =
@@ -351,17 +365,21 @@ export function passiveScore(
       : sense === "investigation"
         ? derived.passiveInvestigation
         : 10 + (derived.skills[sense] ?? 0);
-  return base + passiveModifier(campaign, sheet, sense);
+  return base + passiveModifier(campaign, sheet, sense, situational);
 }
 
 // A passive check takes -5 when the character would roll the check at
 // disadvantage and +5 at advantage (SRD 5.1, Passive Checks): the same
 // conditions, exhaustion and lasting effects an active check reads, plus
-// what an effect adds to checks outright.
+// what an effect adds to checks outright. `situational` is what the moment
+// adds (dim light, fog, an obscured zone, Dungeon Delver): merged with the
+// rest, so two disadvantages are still -5, not -10 (SRD 5.1, Advantage and
+// Disadvantage: "you don't roll more than one additional d20").
 function passiveModifier(
   campaign: Campaign,
   sheet: CharacterSheet,
   sense: "perception" | "insight" | "investigation",
+  situational: AdvantageState[],
 ): number {
   const ability = sense === "investigation" ? "int" : "wis";
   const effect = rollEffectExtras(campaign.id, sheet.id, "skill_check");
@@ -374,6 +392,7 @@ function passiveModifier(
     ...(effect.effectAdvantage ? ["advantage" as const] : []),
     ...(effect.effectDisadvantage ? ["disadvantage" as const] : []),
     ...(items.advantage ? ["advantage" as const] : []),
+    ...situational,
   ]);
   const swing = state === "advantage" ? 5 : state === "disadvantage" ? -5 : 0;
   // Sight rot's penalty (src/lib/srd/afflictions.ts); its blindness at -5 is
@@ -392,8 +411,8 @@ export function handleCheckNotice(
   let args: z.infer<typeof checkNoticeSchema>;
   try {
     args = checkNoticeSchema.parse(JSON.parse(rawArguments || "{}"));
-  } catch {
-    return { error: "Invalid arguments: check_notice needs a difficulty and optionally a sense.", retry: true };
+  } catch (error) {
+    return badArguments("Invalid arguments: check_notice needs a difficulty and optionally a sense.", error, rawArguments);
   }
   const sense = args.sense ?? "perception";
   const targets = resolveTargets(args.characterIds, sheets, sheetsById);
@@ -430,6 +449,9 @@ export function handleCheckNotice(
       skill: sense,
       hiding: true,
       contestSkill: sense === "insight" ? "deception" : "stealth",
+      // One roll answers every character tested: a liar's charm over the
+      // one it lies to gives its Deception advantage (SRD 5.1, Charmed).
+      roller: targets.length === 1 ? targets[0] : null,
     });
   }
   const dc = contest
@@ -439,8 +461,8 @@ export function handleCheckNotice(
     return dc;
   }
 
-  // Rain and fog: minus five to passive Perception by sight when the party
-  // is under the sky (no board, or an outdoor one).
+  // Rain and fog: disadvantage on Perception by sight when the party is
+  // under the sky (no board, or an outdoor one).
   const board = getActiveBattleMap(campaign.id);
   const underSky = !board || board.outdoors;
   const clock = getClock(campaign.id);
@@ -448,33 +470,25 @@ export function handleCheckNotice(
     sense === "perception" && underSky
       ? weatherPerceptionRider(normalizeClock(campaign.clock).weather)
       : { disadvantage: false, passiveMod: 0, note: null };
-  // Off the board the light is the place's: the one the DM names, else the
-  // current location's (an unlit cave is dark at noon, a lit inn is not
-  // dark at midnight), else the sky's by the hour; a lit torch or lantern
-  // and darkvision on top. A board keeps its own light.
-  const place = board ? null : getCurrentLocation(campaign.id);
-  const ambient = !board
-    ? offBoardLight({
-        hour: breakDown(clock.calendar, clock.instant).hour,
-        named: args.light ?? null,
-        place: place
-          ? {
-              name: place.name,
-              description: place.layoutDescription,
-              outdoors: place.preparedMapId ? getPreparedMap(campaign.id, place.preparedMapId)?.outdoors ?? null : null,
-            }
-          : null,
-      })
-    : null;
+  // Off the board the light is the place's, a lit torch or lantern and
+  // darkvision on top (src/lib/dm/place-light.ts, which a rolled check
+  // reads too). A board keeps its own light.
+  const ambient = offBoardAmbient(campaign.id, args.light ?? null);
   const noticedBy: string[] = [];
   const noticers: CharacterSheet[] = [];
   const missedBy: string[] = [];
   const shifts: string[] = [];
+  // Those who miss before any passive score is compared: each has a line in
+  // `applied` saying why, and the note does not blame their score.
+  let countedOut = 0;
   for (const sheet of targets) {
     const fresh = getSheetById(sheet.id) ?? sheet;
     // The dead and the unconscious notice nothing.
-    if (cannotNotice(fresh)) {
+    const unaware = unawareReason(fresh);
+    if (unaware) {
+      shifts.push(`${sheet.name}: ${unaware}`);
       missedBy.push(sheet.name);
+      countedOut += 1;
       continue;
     }
     // Blinded or deafened: nothing is noticed by the lost sense (srd/sense-checks.ts).
@@ -482,6 +496,7 @@ export function handleCheckNotice(
     if (senseless) {
       shifts.push(`${sheet.name}: ${senseless}`);
       missedBy.push(sheet.name);
+      countedOut += 1;
       continue;
     }
     const sight =
@@ -489,35 +504,41 @@ export function handleCheckNotice(
         ? sightPassiveShift({
             pace: clock.travelPace,
             byEar: args.by === "hearing",
-            ...(ambient
-              ? { light: lightSeenBy(ambient, carriedLight(fresh).radius > 0, sheetDarkvisionTiles(fresh) > 0) }
-              : {}),
+            ...(ambient ? { light: lightForSheet(ambient, fresh) } : {}),
           })
-        : { shift: 0, blind: false, notes: [] };
+        : { shift: 0, blind: false, disadvantage: false, notes: [] };
     if (sight.notes.length) {
       shifts.push(`${sheet.name}: ${sight.notes.join(", ")}`);
     }
     if (sight.blind) {
       missedBy.push(sheet.name);
+      countedOut += 1;
       continue;
     }
     // Inside Silence a creature is deafened: nothing is heard there (zone-rules.ts).
     if (sense === "perception" && args.by === "hearing" && silencedImmunity(campaign.id, fresh.id)) {
       shifts.push(`${sheet.name}: deafened inside Silence`);
       missedBy.push(sheet.name);
+      countedOut += 1;
       continue;
     }
-    // Standing in an obscured spell area: 5 off a passive Perception by sight (zone-rules.ts).
+    // Standing in an obscured spell area: disadvantage on Perception by sight (zone-rules.ts).
     const veiled = sense === "perception" && args.by !== "hearing" ? obscuredFor(campaign.id, fresh.id) : null;
     if (veiled) {
       shifts.push(`${sheet.name}: ${veiled}`);
     }
-    // Dungeon Delver: advantage (+5 passive) to notice a trap or a secret door.
-    const delver = sense !== "insight" && dungeonDelverNotices(fresh, named(args.about)) ? 5 : 0;
+    // Dungeon Delver: advantage to notice a trap or a secret door.
+    const delver = sense !== "insight" && dungeonDelverNotices(fresh, named(args.about));
     if (delver) {
       shifts.push(`${sheet.name}: Dungeon Delver, +5`);
     }
-    const passive = passiveScore(campaign, fresh, sense) + weather.passiveMod + sight.shift - (veiled ? 5 : 0) + delver;
+    const situational: AdvantageState[] = [
+      ...(weather.disadvantage ? ["disadvantage" as const] : []),
+      ...(sight.disadvantage ? ["disadvantage" as const] : []),
+      ...(veiled ? ["disadvantage" as const] : []),
+      ...(delver ? ["advantage" as const] : []),
+    ];
+    const passive = passiveScore(campaign, fresh, sense, situational) + sight.shift;
     if (passive >= dc.dc) {
       noticedBy.push(sheet.name);
       noticers.push(fresh);
@@ -526,6 +547,14 @@ export function handleCheckNotice(
     }
   }
   const anyNoticed = noticedBy.length > 0;
+  // Why no one noticed, without blaming a passive score that was never
+  // compared: a dead or blinded character's passive is not under the DC.
+  const whyMissed =
+    countedOut === 0
+      ? `every passive ${sense} is under DC ${dc.dc}`
+      : countedOut === targets.length
+        ? "none of them can notice it (applied says why)"
+        : `applied says why some cannot notice it, and every other passive ${sense} is under DC ${dc.dc}`;
   // Whoever beat an NPC's act sees through it, and only their player is told.
   const seenThrough = deceiver && noticers.length ? seeThroughActs(campaign, turn, deceiver.name, noticers) : [];
   return {
@@ -544,6 +573,6 @@ export function handleCheckNotice(
       ? `${seenThrough.join(" ")} Tell no one else: play the act on as before, and let those players decide what to do with it.`
       : anyNoticed
       ? `${noticedBy.join(", ")} notice${noticedBy.length === 1 ? "s" : ""} it (passive ${sense} vs DC ${dc.dc}); ${missedBy.length ? `${missedBy.join(", ")} do not` : "everyone catches it"}. Reveal it only to those who noticed.`
-      : `No one notices it: every passive ${sense} is under DC ${dc.dc}. Keep it hidden; do not describe it.`,
+      : `No one notices it: ${whyMissed}. Keep it hidden; do not describe it.`,
   };
 }

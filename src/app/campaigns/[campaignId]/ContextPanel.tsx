@@ -128,7 +128,7 @@ export function ContextPanel({ campaignId }: { campaignId: string }) {
       {trace ? (
         <>
           <div>
-            <div className="mb-1 flex justify-between font-mono text-[11px] text-stone-400">
+            <div className="mb-1 flex justify-between font-code text-[11px] text-stone-400">
               <span>
                 {trace.promptTokens.toLocaleString()} / {trace.limitTokens.toLocaleString()} {t("table.context.tokens")}
               </span>
@@ -177,7 +177,7 @@ export function ContextPanel({ campaignId }: { campaignId: string }) {
               <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                 <span className="whitespace-nowrap font-medium text-amber-200">{t("table.context.calls")}</span>
                 {trace.prefix ? (
-                  <span className="shrink-0 font-mono text-[11px] text-stone-400" title={t("table.context.prefixTip")}>
+                  <span className="shrink-0 font-code text-[11px] text-stone-400" title={t("table.context.prefixTip")}>
                     {t("table.context.prefix", {
                       shared: trace.prefix.sharedTokens.toLocaleString(),
                       prompt: trace.prefix.promptTokens.toLocaleString(),
@@ -188,7 +188,7 @@ export function ContextPanel({ campaignId }: { campaignId: string }) {
               <ul className="mt-1 space-y-0.5">
                 {trace.calls.map((call, index) => (
                   <li key={`${index}-${call.task}`} className={cn("text-[11px]", call.error ? "text-red-300/90" : "text-stone-400")}>
-                    <span className="font-mono text-stone-500">{call.task}</span>{" "}
+                    <span className="font-code text-stone-500">{call.task}</span>{" "}
                     {call.windowTokens
                       ? call.windowAssumed
                         ? t("table.context.call.assumed", {
@@ -233,7 +233,7 @@ export function ContextPanel({ campaignId }: { campaignId: string }) {
             <div className="panel rounded-lg px-2.5 py-1.5 text-xs" data-testid="arc-trace">
               <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                 <span className="whitespace-nowrap font-medium text-amber-200">{t("table.context.arc")}</span>
-                <span className="shrink-0 font-mono text-[11px] text-stone-400">
+                <span className="shrink-0 font-code text-[11px] text-stone-400">
                   {t("table.context.arcBudget", {
                     shown: trace.arc.beats.shown,
                     total: trace.arc.beats.total,
@@ -246,7 +246,7 @@ export function ContextPanel({ campaignId }: { campaignId: string }) {
                 <ul className="mt-1 space-y-0.5">
                   {trace.arc.events.map((pick) => (
                     <li key={pick.id} className={cn("text-[11px]", pick.included ? "text-stone-400" : "text-red-300/90")}>
-                      <span className="font-mono text-stone-500">{pick.id}</span> {pick.name}
+                      <span className="font-code text-stone-500">{pick.id}</span> {pick.name}
                       <span className="text-stone-500">: {pick.included ? pick.reason : t("table.context.heldBack", { reason: pick.reason.replace(/^held back: /, "") })}</span>
                     </li>
                   ))}
@@ -261,7 +261,7 @@ export function ContextPanel({ campaignId }: { campaignId: string }) {
             <div className="panel rounded-lg px-2.5 py-1.5 text-xs" data-testid="lore-trace">
               <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                 <span className="whitespace-nowrap font-medium text-amber-200">{t("creator.lore.heading2")}</span>
-                <span className="shrink-0 font-mono text-[11px] text-stone-400">
+                <span className="shrink-0 font-code text-[11px] text-stone-400">
                   {t("table.context.loreBudget", {
                     kept: trace.lore.picks.filter((pick) => pick.included).length,
                     total: trace.lore.picks.filter((pick) => !pick.weak).length,
@@ -305,7 +305,7 @@ export function ContextPanel({ campaignId }: { campaignId: string }) {
                     {t(KIND_KEY[block.kind])}
                     <span className="ml-1 font-normal text-stone-500">{block.id}</span>
                   </span>
-                  <span className="shrink-0 font-mono text-[11px] text-stone-400">
+                  <span className="shrink-0 font-code text-[11px] text-stone-400">
                     {block.tokens.toLocaleString()}
                   </span>
                 </div>

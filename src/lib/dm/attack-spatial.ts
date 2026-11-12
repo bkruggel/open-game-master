@@ -10,14 +10,16 @@ import { getBattleMapForEncounter, getTokenByRef, listTokens } from "@/lib/db/ba
 import { getEncounter, getEnemy, type Encounter, type EncounterEnemy } from "@/lib/db/encounters";
 import { otherSide, type CombatSide } from "@/lib/dm/combat-sides-logic";
 import { sideOf } from "@/lib/dm/combatant";
-import { getSheetById } from "@/lib/db/sheets";
-import { coverBetween, hasLineOfSight } from "@/lib/battlemap/los";
-import { footprintTiles } from "@/lib/battlemap/footprint";
-import { nearestSquares, spotOf, tilesApart, tokenFootprint } from "@/lib/dm/board-reach";
+import { getSheetById, listSheets } from "@/lib/db/sheets";
+import { holdsFeature, isConditionNamed } from "@/lib/srd/feature-names";
+import { coverBetweenSpaces, hasLineOfSightBetween } from "@/lib/battlemap/los";
+import { blockedLines, type XY } from "@/lib/battlemap/sight-lines";
+import { footprintTiles, type Footprint } from "@/lib/battlemap/footprint";
+import { spaceOf, spotOf, tilesApart, tokenFootprint } from "@/lib/dm/board-reach";
 import { isIncapacitated } from "@/lib/dm/condition-logic";
 
 import { hostileWithinFiveFeet, isFlanking } from "@/lib/dm/attack-rules";
-import { zoneCoverBetween } from "@/lib/dm/zone-rules";
+import { zoneCoverBetween, zoneCoverFromPoint } from "@/lib/dm/zone-rules";
 
 const lowered = (conditions: string[]) => conditions.map((entry) => entry.toLowerCase());
 const blind = (conditions: string[]) => lowered(conditions).includes("blinded");
@@ -59,8 +61,7 @@ export function wallBetween(encounterId: string, refA: string, refB: string): bo
   if (!map || !a || !b) {
     return false;
   }
-  const line = nearestSquares(a, b);
-  return !hasLineOfSight(map.terrain, map.width, line.from.x, line.from.y, line.to.x, line.to.y);
+  return !hasLineOfSightBetween(map.terrain, map.width, spaceOf(a), spaceOf(b));
 }
 
 
@@ -169,55 +170,92 @@ export function coverFor(encounterId: string, attackerRef: string, targetRef: st
   if (!map || !attacker || !target) {
     return 0;
   }
-  const line = nearestSquares(attacker, target);
-  const terrain = coverBetween(
-    map.terrain,
-    map.width,
-    map.height,
-    line.from.x,
-    line.from.y,
-    line.to.x,
-    line.to.y,
-  );
+  const terrain = coverBetweenSpaces(map.terrain, map.width, map.height, spaceOf(attacker), spaceOf(target));
 
   // Blade Barrier gives three-quarters cover to what stands behind it (zone-rules.ts).
   const blades = zoneCoverBetween(encounterId, attackerRef, targetRef);
-  return terrain === 5 || blades === 5 ? 5 : creatureCover(encounterId, attackerRef, targetRef) ? 2 : terrain;
+  return terrain === 5 || blades === 5 ? 5 : creatureCover(encounterId, attackerRef, targetRef) || twilightShroudCover(map, targetRef) ? 2 : terrain;
 }
 
-// Every square strictly between two on a straight line (Bresenham), the
-// squares a creature would have to stand on to be in the way.
-export function squaresBetween(
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-): Array<{ x: number; y: number }> {
-  const out: Array<{ x: number; y: number }> = [];
-  let x = from.x;
-  let y = from.y;
-  const dx = Math.abs(to.x - from.x);
-  const dy = -Math.abs(to.y - from.y);
-  const sx = from.x < to.x ? 1 : -1;
-  const sy = from.y < to.y ? 1 : -1;
-  let error = dx + dy;
-  for (;;) {
-    if (x === to.x && y === to.y) {
-      break;
-    }
-    const doubled = 2 * error;
-    if (doubled >= dy) {
-      error += dy;
-      x += sx;
-    }
-    if (doubled <= dx) {
-      error += dx;
-      y += sy;
-    }
-    if (x === to.x && y === to.y) {
-      break;
-    }
-    out.push({ x, y });
+// Twilight Shroud (Twilight Domain 17): the cleric and their allies have half
+// cover while in the sphere of their Twilight Sanctuary, 30 feet around the
+// cleric. The sanctuary ends with the cleric incapacitated (authored-turns.ts
+// ends it at the next turn's end), so it shelters nobody from then. Before this
+// the GM had to remember the +2 with set_effect.
+function twilightShroudCover(map: { id: string; campaignId: string }, targetRef: string): boolean {
+  const target = getSheetById(targetRef);
+  const token = target ? getTokenByRef(map.id, target.id) : null;
+  if (!target || !token || target.campaignId !== map.campaignId) {
+    return false;
   }
-  return out;
+  return listSheets(map.campaignId).some((stale) => {
+    const cleric = getSheetById(stale.id) ?? stale;
+    if (!holdsFeature(cleric, "twilight shroud") || !cleric.conditions.some((entry) => isConditionNamed(entry, "twilight sanctuary"))) {
+      return false;
+    }
+    if (cleric.currentHp <= 0 || cleric.deathSaves?.dead || isIncapacitated(cleric.conditions)) {
+      return false;
+    }
+    const at = getTokenByRef(map.id, cleric.id);
+    return Boolean(at) && tilesApart(at!, token) <= 6;
+  });
+}
+
+// The cover a creature has against an effect that starts at a square (a
+// Fireball's point, a trap's dart wall), as a save reads it (SRD 5.1, Cover:
+// "against an attack or effect that originates on the opposite side of the
+// cover"): the terrain between them, Blade Barrier, and a creature standing
+// on the line, "whether that creature is an enemy or a friend", as half
+// cover. Before, a point read the terrain alone. 0 with no board or token.
+export function coverFromPoint(encounterId: string, at: { x: number; y: number }, targetRef: string): 0 | 2 | 5 {
+  const map = getBattleMapForEncounter(encounterId);
+  const target = map ? getTokenByRef(map.id, targetRef) : null;
+  if (!map || !target) {
+    return 0;
+  }
+  const to = spaceOf(target);
+  const terrain = coverBetweenSpaces(map.terrain, map.width, map.height, [at], to);
+  const blades = zoneCoverFromPoint(encounterId, at, targetRef);
+  return terrain === 5 || blades === 5 ? 5 : creatureOnLine(map.id, [at], to, [targetRef]) || twilightShroudCover(map, targetRef) ? 2 : terrain;
+}
+
+// Whether a creature's squares stop any line from a space to the target, from
+// the attacker's best corner. Half cover at most, however many lines it stops:
+// the SRD names a creature among the obstacles of half cover (SRD 5.1, Cover).
+function screens(from: XY[], to: XY[], creature: XY, footprint: Footprint): boolean {
+  const squares = footprintTiles(creature, footprint);
+  return blockedLines(from, to, (x, y) => squares.some((square) => square.x === x && square.y === y)) > 0;
+}
+
+// The first creature (a character, an enemy, an NPC) standing in the lines,
+// leaving out the ones named; its name, or null.
+function creatureOnLine(mapId: string, from: XY[], to: XY[], leaving: string[]): string | null {
+  const blocker = listTokens(mapId).find(
+    (token) =>
+      !leaving.includes(token.refId) &&
+      (token.kind === "pc" || token.kind === "enemy" || token.kind === "npc") &&
+      screens(from, to, token, tokenFootprint(token)),
+  );
+  return blocker ? blocker.name : null;
+}
+
+// Whether one creature stands in the line between an attacker and its target,
+// giving the target cover against it (Misdirection: "a creature within 5 feet
+// that is giving you cover"). Toe to toe nobody does. With no board, or no
+// token for the attacker or the target, there is nothing to measure and the
+// fiction decides.
+export function coversAgainst(encounterId: string, attackerRef: string, targetRef: string, coverRef: string): boolean {
+  const map = getBattleMapForEncounter(encounterId);
+  const attacker = map ? getTokenByRef(map.id, attackerRef) : null;
+  const target = map ? getTokenByRef(map.id, targetRef) : null;
+  if (!map || !attacker || !target) {
+    return true;
+  }
+  const cover = getTokenByRef(map.id, coverRef);
+  if (!cover || tilesApart(attacker, target) <= 1) {
+    return false;
+  }
+  return screens(spaceOf(attacker), spaceOf(target), cover, tokenFootprint(cover));
 }
 
 // The creature standing in the line between an attacker and its target,
@@ -234,17 +272,7 @@ export function creatureCover(encounterId: string, attackerRef: string, targetRe
   if (!map || !attacker || !target || tilesApart(attacker, target) <= 1) {
     return null;
   }
-  const ends = nearestSquares(attacker, target);
-  const line = squaresBetween(ends.from, ends.to);
-  const blocker = listTokens(map.id).find(
-    (token) =>
-      (from ? true : token.refId !== attackerRef) &&
-      token.refId !== targetRef &&
-      (token.kind === "pc" || token.kind === "enemy" || token.kind === "npc") &&
-      footprintTiles(token, tokenFootprint(token)).some((tile) =>
-        line.some((square) => square.x === tile.x && square.y === tile.y),
-      ),
-  );
-
-  return blocker ? blocker.name : null;
+  // From a square the attacker is not standing on, its own token may be in
+  // the way like any other creature's.
+  return creatureOnLine(map.id, spaceOf(attacker), spaceOf(target), from ? [targetRef] : [attackerRef, targetRef]);
 }

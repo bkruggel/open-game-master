@@ -9,6 +9,7 @@ import { VoicePicker } from "@/components/VoicePicker";
 import { VoicePreviewButton } from "@/components/VoicePreviewButton";
 import { cn } from "@/lib/cn";
 import type { GameSettings } from "@/lib/schemas/game-settings";
+import type { TableLanguage } from "@/lib/schemas/game-settings-options";
 import { ui } from "@/lib/ui";
 import { useT } from "@/lib/locale";
 import { PanelError, SettingToggle } from "./PanelKit";
@@ -31,7 +32,7 @@ const GROUPS: Array<{ kinds: Kind[]; titleKey: string; glyph: string }> = [
 
 const KIND_NOTE_KEY: Record<Kind, string> = { pc: "", companion: "voice.voices.companionNote", npc: "", monster: "voice.voices.monsterNote" };
 
-function VoiceRow({ entry, onVoice }: { entry: Entry; onVoice: (voice: Voice | null, settle: boolean) => void }) {
+function VoiceRow({ entry, language, onVoice }: { entry: Entry; language: TableLanguage; onVoice: (voice: Voice | null, settle: boolean) => void }) {
   const t = useT();
   const group = GROUPS.find((candidate) => candidate.kinds.includes(entry.kind))!;
   const kindNote = KIND_NOTE_KEY[entry.kind];
@@ -54,6 +55,7 @@ function VoiceRow({ entry, onVoice }: { entry: Entry; onVoice: (voice: Voice | n
           value={entry.voice?.voiceId ?? ""}
           onChange={(voiceId) => onVoice(voiceId ? { voiceId, speed: entry.voice?.speed ?? 1 } : null, true)}
           noneLabel={t("voice.voices.narrator")}
+          language={language}
           className="w-full"
         />
       </span>
@@ -180,7 +182,7 @@ export function CharacterVoices({
         {error ? <PanelError className="mb-1">{error}</PanelError> : null}
         <ul>
           {mine.map((entry) => (
-            <VoiceRow key={entry.key} entry={entry} onVoice={(voice, settle) => setVoice(entry, voice, settle)} />
+            <VoiceRow language={settings.tableLanguage} key={entry.key} entry={entry} onVoice={(voice, settle) => setVoice(entry, voice, settle)} />
           ))}
         </ul>
         <p className="text-[11px] leading-4 text-stone-500">
@@ -266,7 +268,7 @@ export function CharacterVoices({
                     <p className="eyebrow text-[10px] text-amber-300/80">{t(group.titleKey)}</p>
                     <ul className="stagger divide-y divide-stone-800/60">
                       {entries.map((entry) => (
-                        <VoiceRow key={entry.key} entry={entry} onVoice={(voice, settle) => setVoice(entry, voice, settle)} />
+                        <VoiceRow language={settings.tableLanguage} key={entry.key} entry={entry} onVoice={(voice, settle) => setVoice(entry, voice, settle)} />
                       ))}
                     </ul>
                   </section>

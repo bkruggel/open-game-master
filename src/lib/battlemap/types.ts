@@ -66,9 +66,13 @@ export type BattleToken = {
   // tile-cost units. It refills as each of its turns starts and at every
   // round wrap (src/lib/db/battle-maps.ts).
   movedThisRound: number;
-  // Carried light (torch/lantern): bright radius in tiles, 0 = none. The
-  // dim radius is always double the bright radius.
+  // Carried light (torch/lantern): bright radius in tiles, 0 = none.
   lightRadius: number;
+  // Where its dim light ends, in tiles from the bearer (carriedDimRadius).
+  // A lamp's reaches three times its bright light, not twice (issue #570,
+  // EQP-03); 0 or absent is a light stored before sources had their own,
+  // which keeps the old reading of twice the bright radius.
+  lightDimRadius?: number;
   // When that light gutters out, as a clock instant, and how long it had
   // when lit (docs/vtt-parity-implementation-plan.md 7.3). 0 = it does not
   // burn down.
@@ -84,6 +88,17 @@ export type BattleToken = {
   stamp?: string;
   movement: TokenMovement;
 };
+
+// How far a token's carried light reaches as dim light, in tiles. Most
+// sources print dim light for as far again as the bright (a torch 20 and 20
+// more), so a light stored with no dim radius of its own reads that way and
+// an old campaign's board does not change.
+export function carriedDimRadius(token: Pick<BattleToken, "lightRadius" | "lightDimRadius">): number {
+  if (token.lightRadius <= 0) {
+    return 0;
+  }
+  return token.lightDimRadius && token.lightDimRadius > 0 ? Math.max(token.lightDimRadius, token.lightRadius) : token.lightRadius * 2;
+}
 
 export function tileIndex(width: number, x: number, y: number): number {
   return y * width + x;
@@ -135,7 +150,21 @@ export type MoveTraits =
       // What a spell area makes of a step (src/lib/battlemap/zones.ts
       // zoneStepCost): the step's cost from square `from` (-1 unknown) onto `to`.
       zoneStep?: (from: number, to: number, cost: number) => number;
+      // Crawling while prone: every square moved costs one more on top of
+      // what it costs on foot, so rough ground crawled costs 3 (SRD 5.1,
+      // Being Prone).
+      crawl?: boolean;
     };
+
+// The same traits for a prone creature crawling (SRD 5.1, Being Prone).
+export function crawlingTraits(traits: MoveTraits): MoveTraits {
+  return typeof traits === "object" ? { ...traits, crawl: true } : { swims: traits, crawl: true };
+}
+
+// What crawling adds to each square of a walk: one, or nothing on foot.
+export function crawlExtra(traits: MoveTraits): number {
+  return typeof traits === "object" && traits.crawl ? 1 : 0;
+}
 
 export function moveCost(ch: string, traits: MoveTraits = false): number {
   const swims = typeof traits === "boolean" ? traits : Boolean(traits.swims);
@@ -199,7 +228,18 @@ export function flyingSpeedOf(input: {
   features?: Array<{ name: string }>;
   wildShaped?: boolean;
   walkingFeet?: number;
+  // The flying speed a worn item gives (SRD 5.1, Winged Boots: "a flying
+  // speed equal to your walking speed"), from src/lib/srd/magic-items.ts
+  // itemSpeeds; the better of it and the creature's own.
+  worn?: number;
+  // Wearing body armor: Dragon Wings cannot come through it (SRD 5.1).
+  armored?: boolean;
 }): number | null {
+  const own = ownFlyingSpeed(input);
+  return input.worn ? Math.max(own ?? 0, input.worn) : own;
+}
+
+function ownFlyingSpeed(input: Parameters<typeof flyingSpeedOf>[0]): number | null {
   const printed = /\bfly\s+(\d+)/i.exec(input.speedText ?? "");
   if (printed) {
     return Number(printed[1]);
@@ -212,12 +252,34 @@ export function flyingSpeedOf(input: {
   if (mist.includes("gaseous form") || mist.includes("wind walk")) {
     return mist.includes("wind walk") ? 300 : 10;
   }
+  // Wings a feature brings out and puts away fly only while out, as the
+  // condition of their name says (issue #833): a Draconic sorcerer's Dragon
+  // Wings (a bonus action, at the current speed, never through armor:
+  // src/lib/dm/draconic-spends.ts), a Divine Soul's Otherworldly Wings (30
+  // feet), an Ascendant Dragon monk's Wings Unfurled. Read as wings, each
+  // flew for good from the level it came.
+  for (const [condition, feet] of MANIFESTED_WINGS) {
+    if (mist.includes(condition) && !(condition === "dragon wings" && input.armored)) {
+      return feet ?? input.walkingFeet ?? 30;
+    }
+  }
   const named = (input.features ?? []).map((feature) => /flying speed(?: of)? (\d+)/i.exec(feature.name)).find(Boolean);
   if (named) {
     return Number(named[1]);
   }
-  if ((input.features ?? []).some((feature) => /\bwings?\b|flying speed/i.test(feature.name)) || input.wildShaped) {
+  const winged = (input.features ?? []).some(
+    (feature) => /\bwings?\b|flying speed/i.test(feature.name) && !MANIFESTED_WINGS.has(feature.name.trim().toLowerCase()),
+  );
+  if (winged || input.wildShaped) {
     return input.walkingFeet ?? 30;
   }
   return null;
 }
+
+// The features whose wings come out only while their condition is held, and
+// the flying speed they give (null: the walking speed).
+const MANIFESTED_WINGS = new Map<string, number | null>([
+  ["dragon wings", null],
+  ["otherworldly wings", 30],
+  ["wings unfurled", null],
+]);

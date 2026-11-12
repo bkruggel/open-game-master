@@ -11,9 +11,12 @@ import { listEffects } from "@/lib/db/active-effects";
 import { applyField, resolveField } from "@/lib/dm/effects-logic";
 import { getActiveBoard, getActiveEncounter, getEnemy, listEnemies, type Encounter, type EncounterEnemy } from "@/lib/db/encounters";
 import { listDroppedItems } from "@/lib/db/dropped-items";
-import { tokenFootprint } from "@/lib/dm/board-reach";
+import { spaceOf, tilesApart, tokenFootprint } from "@/lib/dm/board-reach";
+import { unseenByConditions } from "@/lib/dm/authored-saves";
 import { speedFor } from "@/lib/srd";
+import { wearsBodyArmor } from "@/lib/srd/authored-effects";
 import { getMounts } from "@/lib/db/mounts";
+import { mountActionTaken } from "@/lib/srd/mounts";
 import { effectiveMaxHp, effectiveSpeed, exhaustionSpeed } from "@/lib/dm/condition-logic";
 import { budgetApplies, dashCount } from "@/lib/dm/action-budget";
 import { listSheets } from "@/lib/db/sheets";
@@ -30,6 +33,7 @@ import {
 } from "@/lib/db/battle-maps";
 import {
   darkvisionTilesFromText,
+  hasLineOfSightBetween,
   perceivesToken,
   visibleTiles,
   type Viewer,
@@ -38,7 +42,8 @@ import { cachedLitTiles } from "@/lib/battlemap/lit-cache";
 import { sensesFromText, type Senses } from "@/lib/srd/senses";
 import { reachableTiles, speedToTiles } from "@/lib/battlemap/movement";
 import { pcMoveTraits } from "@/lib/battlemap/passage";
-import { flyingSpeedOf, tileIndex, type BattleToken, type TokenMovement } from "@/lib/battlemap/types";
+import { crawlingTraits, flyingSpeedOf, tileIndex, type BattleToken, type TokenMovement } from "@/lib/battlemap/types";
+import { itemSpeeds } from "@/lib/srd/magic-items";
 import { drawingsFor, labelsFor } from "@/lib/battlemap/scene";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { projectIntents } from "@/lib/dm/intent";
@@ -46,16 +51,19 @@ import { enemyMoveBudget } from "@/lib/dm/enemy-speed";
 import { enemyActedThisRound } from "@/lib/dm/can-act";
 import { namesLookup } from "@/lib/battlemap/condition-notes";
 import { characterHealthWord, characterStageRows, enemyStageRows } from "@/lib/battlemap/view-stage";
-import { targetEdges } from "@/lib/battlemap/view-tactics";
-import { lightsWithZones, sightTerrainFor, withZoneSteps } from "@/lib/dm/zone-rules";
+import { ownSquareFacts, targetEdges, targetSight } from "@/lib/battlemap/view-tactics";
+import { lightSourcesWithZones, lightsWithZones, sightTerrainFor, withZoneSteps } from "@/lib/dm/zone-rules";
 import { viewZones } from "@/lib/dm/zone-view";
 import { standUpTiles } from "@/lib/srd/authored-effects-more";
-import { addSilenceChips, viewerMoves } from "@/lib/battlemap/view-moves";
+import { addSilenceChips, movesProne, viewerMoves } from "@/lib/battlemap/view-moves";
 import { undoableMove, undoOffer } from "@/lib/battlemap/move-undo";
 import type { AuraTone, PlayerMapView } from "@/lib/battlemap/view-types";
 import { ENEMY_TURN_NAME, turnOwner } from "@/lib/dm/turn-owner";
 import { holdsFeature } from "@/lib/srd/feature-names";
 import { translate } from "@/lib/messages-logic";
+import { foeLook, pickedGender, storedSex, type Sex } from "@/lib/actor-sex-logic";
+import { castLookup, npcFace } from "@/lib/db/npc-faces";
+import { enemiesAhead } from "@/lib/dm/held-turn";
 
 export type { PlayerMapView } from "@/lib/battlemap/view-types";
 
@@ -106,7 +114,8 @@ export function sheetSenses(sheet: CharacterSheet): Senses {
 }
 
 // Whether this player's PC may move right now: open floor, or their own
-// slot in the initiative order.
+// slot in the initiative order once their turn has begun (a turn held for
+// the enemies before it waits for them, src/lib/dm/held-turn.ts).
 function canMoveNow(campaignId: string, characterId: string): boolean {
   const floor = getFloor(campaignId);
   if (floor.mode === "open") {
@@ -120,7 +129,7 @@ function canMoveNow(campaignId: string, characterId: string): boolean {
     return false;
   }
   const current = encounter.order[encounter.turnIndex];
-  return current?.kind === "pc" && current.characterId === characterId;
+  return current?.kind === "pc" && current.characterId === characterId && !enemiesAhead(encounter, characterId).length;
 }
 
 // Movement left this turn for a player character, in tiles, and the speed
@@ -138,7 +147,7 @@ export function pcMoveBudget(
   // A mounted rider moves at the mount's speed (SRD 5.1, Mounted Combat).
   const mount = getMounts(campaignId)[sheet.id];
   // Aloft, a character moves at their flying speed (the Fly spell's 60 feet).
-  const flying = token.movement === "fly" ? flyingSpeedOf({ conditions: sheet.conditions, features: sheet.features }) : null;
+  const flying = token.movement === "fly" ? flyingSpeedOf({ conditions: sheet.conditions, features: sheet.features, walkingFeet: sheet.speed, worn: itemSpeeds(sheet.equipment, sheet, sheet.speed).fly, armored: wearsBodyArmor(sheet) }) : null;
   const base = mount
     ? mount.speed
     : flying ?? speedFor(sheet, {
@@ -157,7 +166,13 @@ export function pcMoveBudget(
   const dashes = budgetApplies(encounter.turnBudget, sheet.id, encounter.round)
     ? dashCount(encounter.turnBudget)
     : 0;
-  const fullTiles = Math.max(0, speedToTiles(speed) * (1 + dashes) - token.movedThisRound);
+  // A controlled mount has an action of its own, and "only three action
+  // options: Dash, Disengage, and Dodge" (SRD 5.1, Controlling a Mount):
+  // the ride takes the mount's Dash on top of any the rider takes, unless
+  // the mount spent its action on a Disengage or a Dodge (take_action mount).
+  const mountActed = budgetApplies(encounter.turnBudget, sheet.id, encounter.round) ? mountActionTaken(encounter.turnBudget.oncePerTurn) : null;
+  const mountDash = mount?.controlled && (mountActed === null || mountActed === "dash") ? 1 : 0;
+  const fullTiles = Math.max(0, speedToTiles(speed) * (1 + dashes + mountDash) - token.movedThisRound);
   // Prone: the character stands for half their speed and walks on what is
   // left, or crawls at double cost, whichever reaches farther. `tiles` is
   // what the board lights; `fullTiles` is the movement actually in hand,
@@ -271,8 +286,10 @@ export function buildPlayerMapView(
     obscureBeyond: map.outdoors ? weatherObscurementTiles(clock.weather) : Infinity,
   };
   // Shared across every member's projection of this board; read only
-  // (src/lib/battlemap/lit-cache.ts).
-  const lit = cachedLitTiles({ ...vision, id: map.id }, tokens, map.lights);
+  // (src/lib/battlemap/lit-cache.ts). Daylight's dim light past its sphere
+  // is a light of its own (zone-rules.ts).
+  const sources = lightSourcesWithZones(map);
+  const lit = cachedLitTiles({ ...vision, id: map.id }, tokens, sources);
   let visible = new Set<number>();
   let explored = new Set<number>();
   let viewer: Viewer | null = null;
@@ -292,7 +309,7 @@ export function buildPlayerMapView(
       truesightTiles: senses.truesight,
       devilsSightTiles: senses.devilsSight,
     };
-    visible = visibleTiles(vision, viewer, tokens, map.lights, lit);
+    visible = visibleTiles(vision, viewer, tokens, sources, lit);
     explored = mergeExplored(map.id, sheet.id, visible, tileCount);
   } else if (sheet) {
     explored = getExplored(map.id, sheet.id, tileCount);
@@ -315,6 +332,26 @@ export function buildPlayerMapView(
   // rim of a creature fighting on the side its kind does not.
   const sides = tokenSides(encounter);
   const viewerSide = sheet ? sides({ kind: "pc", refId: sheet.id }) : "party";
+  // Who a figure is, for its flat face and a 3D view's model, read after the
+  // filter below so a figure a viewer may not see carries nothing to them
+  // (src/lib/actor-sex-logic.ts). A foe: its Cast NPC's record, else its
+  // own row's look. A figure the GM placed: the Cast NPC of that name, with
+  // their face, else a stranger with a pick from its own ref (its flat face
+  // stays the one by name, which has no gender to disagree with).
+  const cast = castLookup(campaignId);
+  const lookOf = (token: (typeof tokens)[number]): { face?: string; sex?: Sex } => {
+    if (token.kind === "enemy") {
+      const enemy = enemiesById.get(token.refId);
+      const sex = enemy ? storedSex(foeLook(enemy, cast.byId(enemy.npcId)).gender) : undefined;
+      return sex ? { sex } : {};
+    }
+    if (token.kind === "npc") {
+      const npc = cast.byId(token.refId) ?? cast.byName(token.name);
+      const sex = storedSex(npc ? npc.gender : pickedGender(token.refId));
+      return { ...(npc ? { face: npcFace(npc) } : {}), ...(sex ? { sex } : {}) };
+    }
+    return {};
+  };
   const shownTokens = tokens
     .filter((token) => {
       // The DM hid it, so for everyone but the DM it is not on the board at
@@ -330,18 +367,18 @@ export function buildPlayerMapView(
         }
         // Seen, or felt through the ground by tremorsense. The DM sees all.
         // A creature fighting at the viewer's side is drawn as an ally is.
-        return fullVision || sides(token) === viewerSide || (viewer ? perceivesToken(vision, viewer, token, visible) : false);
+        return fullVision || sides(token) === viewerSide || (viewer ? perceivesToken(vision, viewer, token, visible, spaceOf(token)) : false);
       }
       // A character fighting against the viewer's side is fog-gated as an
       // enemy is: the party does not see through a turncoat's eyes.
       if (token.kind === "pc" && sides(token) !== viewerSide) {
-        return fullVision || (viewer ? perceivesToken(vision, viewer, token, visible) : false);
+        return fullVision || (viewer ? perceivesToken(vision, viewer, token, visible, spaceOf(token)) : false);
       }
       // Allies are always drawn: the party coordinates aloud at the table.
       // The DM's own NPCs and props are things standing in the room, so they
       // follow the same rule the enemies do and appear when they are seen.
       if (token.kind === "npc" || token.kind === "prop") {
-        return fullVision || (viewer ? perceivesToken(vision, viewer, token, visible) : false);
+        return fullVision || (viewer ? perceivesToken(vision, viewer, token, visible, spaceOf(token)) : false);
       }
       return true;
     })
@@ -358,6 +395,7 @@ export function buildPlayerMapView(
       hidden: token.hidden,
       light: lightRemaining(token, clockInstant),
       stamp: token.stamp ?? "",
+      ...lookOf(token),
       ...offSide(token, sides(token)),
     }));
 
@@ -382,27 +420,23 @@ export function buildPlayerMapView(
     budgetLeft = budget.tiles;
     if (budgetLeft > 0) {
       const occupied = occupiedTiles(map, tokens, myToken, footprintLookup(enemiesById));
-      const costs = [
-        ...reachableTiles(
-          map.terrain,
-          map.width,
-          map.height,
-          occupied,
-          myToken,
-          budgetLeft,
-          1,
-          myToken.movement === "fly",
-          // The same passage the move route allows (src/lib/battlemap/passage.ts).
-          withZoneSteps(pcMoveTraits({ width: map.width, tokens, mover: myToken, sheet, footprintOf: footprintLookup(enemiesById), enemySize: (refId) => enemiesById.get(refId)?.stats.size, sideOf: tokenSides(encounter) }), map, "pc"),
-        ).entries(),
-      ];
+      // The same passage the move route allows (src/lib/battlemap/passage.ts).
+      const traits = withZoneSteps(pcMoveTraits({ width: map.width, tokens, mover: myToken, sheet, footprintOf: footprintLookup(enemiesById), enemySize: (refId) => enemiesById.get(refId)?.stats.size, sideOf: tokenSides(encounter) }), map, "pc");
+      const reach = (limit: number, moveTraits: typeof traits) =>
+        [...reachableTiles(map.terrain, map.width, map.height, occupied, myToken, limit, 1, myToken.movement === "fly", moveTraits).entries()];
+      const costs = reach(budgetLeft, traits);
+      // A prone character's crawl, every square one extra, priced on the
+      // movement in hand as the move route prices it (SRD 5.1, Being Prone).
+      const scene = encounter.kind === "scene";
+      const crawlCosts = movesProne(sheet, scene) ? reach(budget.fullTiles, crawlingTraits(traits)) : undefined;
       // What the move route will charge for each square, and what the move
       // may carry this turn (src/lib/battlemap/view-moves.ts).
       ({ reachable, reachableCost, moves } = viewerMoves({
         costs,
+        crawlCosts,
         sheet,
         token: myToken,
-        scene: encounter.kind === "scene",
+        scene,
         budget,
         enemies: [...enemiesById.values()],
       }));
@@ -588,6 +622,7 @@ export function buildPlayerMapView(
     edges:
       sheet && myToken && encounter.kind === "fight"
         ? targetEdges({
+            campaignId,
             encounterId: encounter.id,
             characterId: sheet.id,
             characterConditions: sheet.conditions,
@@ -595,6 +630,33 @@ export function buildPlayerMapView(
             flankingRule: getCampaignById(campaignId)?.gameSettings.variantRules.flanking === true,
           })
         : {},
+    ...(sheet && myToken ? { self: ownSquareFacts(campaignId, encounter, sheet) } : {}),
+    ...(sheet && myToken && encounter.kind === "fight"
+      ? { sight: targetSight({ campaignId, encounterId: encounter.id, characterId: sheet.id, enemyIds: tokens.filter((token) => token.kind === "enemy" && (!token.hidden || fullVision)).map((token) => token.refId) }) }
+      : {}),
+    ...(sheet && myToken && encounter.kind === "fight"
+      ? (() => {
+          // Measured on the stored tokens, footprints and all, as withinFeet
+          // measures them; only those this viewer is shown.
+          const shown = new Set(shownTokens.map((token) => token.id));
+          const others = tokens.filter((token) => token.id !== myToken.id && shown.has(token.id));
+          // Sight as the engine reads it for a reaction (authored-saves.ts
+          // reactionUnseen): the line of sight, and the conditions (a blinded
+          // character, an invisible creature), which hiding does not join.
+          const sight = sightTerrainFor(map);
+          const blocked = (token: (typeof others)[number]) => {
+            const other = enemiesById.get(token.refId) ?? sheetsById.get(token.refId);
+            return Boolean(other && unseenByConditions(encounter.id, sheet, other, { hidden: false }));
+          };
+          return {
+            feet: Object.fromEntries(others.map((token) => [token.refId, tilesApart(myToken, token) * 5])),
+            unseen: others
+              .filter((token) => token.x >= 0 && token.y >= 0 && token.x < map.width && token.y < map.height)
+              .filter((token) => blocked(token) || !hasLineOfSightBetween(sight, map.width, spaceOf(myToken), spaceOf(token)))
+              .map((token) => token.refId),
+          };
+        })()
+      : {}),
     ...(fullVision
       ? {
           doors: map.doors,

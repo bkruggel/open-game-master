@@ -18,13 +18,18 @@ import {
 } from "@/lib/dm/safety-logic";
 import type { Personality } from "@/lib/dm/personalities";
 import { personalityKey } from "@/lib/dm/personality-labels";
+import type { TableLanguage } from "@/lib/schemas/game-settings-options";
+import { personalityVoiceFits } from "@/lib/tts-voices";
 
 // Safety, strictness and tone (docs/vtt-parity-implementation-plan.md
 // section 9), shared by the creation wizard's Feel step and the lobby's
 // settings. Lines and veils are typed as lists; the boundary, strictness
 // and tone are chips; a personality preset fills strictness, tone and the
-// narrator's voice at once. The words are the dictionaries' (creator.*),
-// except the tone chips, which are the GM brief's own vocabulary.
+// narrator's voice at once. A line or veil naming romance keeps the engine's
+// own romance offers away (dm/advance-logic.ts namesRomance), and the panel
+// points a table that wants no romance at all to its switch, under Bonds and
+// romance. The words are the dictionaries' (creator.*), except the tone
+// chips, which are the GM brief's own vocabulary.
 
 const chip = "rounded-md border px-2 py-0.5 text-[11px]";
 const on = "border-amber-700 bg-amber-950/40 text-amber-100";
@@ -67,7 +72,7 @@ function personalitiesInfo(t: (key: string, vars?: Record<string, string | numbe
     const blurbKey = personalityKey("blurb", preset.name);
     return `**${nameKey ? t(nameKey) : preset.name}**: ${blurbKey ? t(blurbKey) : preset.blurb}`;
   });
-  return `${lines.join("\n\n")}\n\n${t("creator.personality.infoTail", { tail: setsVoice ? t("creator.safety.voiceTail") : "" })}`;
+  return `${lines.join("\n\n")}\n\n${t("creator.personality.infoTail", { tail: setsVoice ? t("creator.safety.voiceInfoTail") : "" })}`;
 }
 
 export function SafetyToneFields({
@@ -77,6 +82,7 @@ export function SafetyToneFields({
   onSafety,
   onGm,
   onVoice,
+  tableLanguage,
   showPresets = true,
 }: {
   safety: SafetySettings;
@@ -85,6 +91,7 @@ export function SafetyToneFields({
   onSafety: (next: SafetySettings) => void;
   onGm: (next: GmSettings) => void;
   onVoice?: (voice: string) => void;
+  tableLanguage: TableLanguage;
   showPresets?: boolean;
 }) {
   const t = useT();
@@ -106,9 +113,11 @@ export function SafetyToneFields({
       cancelled = true;
     };
   }, [showPresets]);
-  const chosenPreset = presets.find(
-    (preset) => preset.gm.strictness === gm.strictness && preset.gm.tone.join() === gm.tone.join() && (!ttsVoice || preset.ttsVoice === ttsVoice),
-  );
+  // A preset's voice counts only where it can narrate this table.
+  const voiced = (preset: Personality) => personalityVoiceFits(tableLanguage, preset.ttsVoice);
+  const isChosen = (preset: Personality) =>
+    preset.gm.strictness === gm.strictness && preset.gm.tone.join() === gm.tone.join() && (!ttsVoice || !voiced(preset) || preset.ttsVoice === ttsVoice);
+  const chosenPreset = presets.find(isChosen);
   const toggleTone = (tone: Tone) => {
     const has = gm.tone.includes(tone);
     if (!has && gm.tone.length >= TONE_MAX) {
@@ -134,6 +143,8 @@ export function SafetyToneFields({
           <ListField label={t("creator.safety.linesLabel")} hint={t("creator.safety.linesHint")} value={safety.lines} onChange={(lines) => onSafety({ ...safety, lines })} />
           <ListField label={t("creator.safety.veilsLabel")} hint={t("creator.safety.veilsHint")} value={safety.veils} onChange={(veils) => onSafety({ ...safety, veils })} />
         </div>
+        {/* An all-ages table never has romance, whatever the switch says. */}
+        {safety.boundaries !== "family" ? <p className="mt-1 text-[11px] text-stone-500">{t("creator.safety.romanceNote")}</p> : null}
       </div>
       <div>
         <p className="mb-1 text-xs uppercase tracking-wide text-stone-500">{t("creator.safety.strictnessLabel")}</p>
@@ -157,11 +168,11 @@ export function SafetyToneFields({
         <div>
           <p className="mb-1 flex items-center gap-1 text-xs uppercase tracking-wide text-stone-500">
             {t("creator.safety.orPick")}
-            <InfoButton label={t("creator.safety.personalities")} text={personalitiesInfo(t, presets, Boolean(onVoice))} />
+            <InfoButton label={t("creator.safety.personalities")} text={personalitiesInfo(t, presets, Boolean(onVoice) && presets.some(voiced))} />
           </p>
           <div className="stagger-pop flex flex-wrap items-center gap-1.5">
             {presets.map((preset) => {
-              const active = preset.gm.strictness === gm.strictness && preset.gm.tone.join() === gm.tone.join() && (!ttsVoice || preset.ttsVoice === ttsVoice);
+              const active = isChosen(preset);
               const nameKey = personalityKey("name", preset.name);
               const blurbKey = personalityKey("blurb", preset.name);
               const name = nameKey ? t(nameKey) : preset.name;
@@ -174,7 +185,9 @@ export function SafetyToneFields({
                   aria-pressed={active}
                   onClick={() => {
                     onGm({ strictness: preset.gm.strictness, tone: [...preset.gm.tone] });
-                    onVoice?.(preset.ttsVoice);
+                    if (voiced(preset)) {
+                      onVoice?.(preset.ttsVoice);
+                    }
                   }}
                   className={cn(chip, active ? on : off)}
                 >

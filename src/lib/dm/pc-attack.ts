@@ -14,24 +14,31 @@ import { applyDmMutation } from "@/lib/dm/mutations";
 import { strikeDamage } from "@/lib/dm/pc-attack-damage";
 import { FRENZIED } from "@/lib/dm/frenzy";
 import { ADVANTAGE_SOURCES, BONUS_ATTACKS, RECKLESS } from "@/lib/dm/pc-attack-options";
-import { parkPcAttack } from "@/lib/dm/pc-attack-parked";
+import { parkPcAttack, throwForChoice } from "@/lib/dm/pc-attack-parked";
+import { markAffinityCast } from "@/lib/dm/affinity-cast";
 import { planPcAttack, type AttackPlan } from "@/lib/dm/pc-attack-plan";
 import { rollPcAttack, strikeToHit } from "@/lib/dm/pc-attack-resolve";
 import { castAttackSpell } from "@/lib/dm/pc-attack-spell";
 import { resolveSheetRef, unknownSheetRef } from "@/lib/dm/rolls";
-import { markReactionUsed, noteSwing, storeBudget } from "@/lib/dm/turn-budget";
+import { markReactionUsed, storeBudget } from "@/lib/dm/turn-budget";
 import { spendReadied } from "@/lib/dm/object-actions";
 import { spendGiantKiller } from "@/lib/dm/reaction-attacks";
 import { withAmmoCount } from "@/lib/srd/ammunition";
+import { lineNamed } from "@/lib/srd/item-row";
+import { returnsToHand, throwToGround } from "@/lib/dm/gear-ground";
 import { OPEN_HAND_CHOICES } from "@/lib/dm/attack-choice-rules";
 import { spendInspirationCounter } from "@/lib/dm/roll-riders";
 import { spendLuckCounter } from "@/lib/srd/class-resources";
-import { moteBurst, moteOf } from "@/lib/dm/authored-mote";
+import { moteOf } from "@/lib/dm/authored-mote";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { invalidArguments, type ToolError, type ToolResult } from "@/lib/dm/tool-errors";
+import { badArguments, invalidArguments, type ToolError, type ToolResult } from "@/lib/dm/tool-errors";
 import { attacksLeft } from "@/lib/dm/action-budget";
 import { approachForAttack, withApproach } from "@/lib/dm/pc-attack-approach";
+import { walkHeld } from "@/lib/dm/player-word";
 import { commitConjuredStrike } from "@/lib/dm/conjured-strike";
+import { swallowCover } from "@/lib/dm/swallow";
+import { resolveEnemyRef } from "@/lib/dm/enemy-damage";
+import { fittedText } from "@/lib/dm/fitted-text";
 
 // Re-exported for the callers that learned it here.
 export { resolvePendingPcAttack } from "@/lib/dm/pc-attack-parked";
@@ -63,176 +70,167 @@ export const pcAttackTool: ToolDef = {
   function: {
     name: "pc_attack",
     description:
-      "Resolve a character's attack on a foe. The server derives their attack bonus and damage from their sheet, rolls to-hit against the target's real AC, applies damage on a hit, and reports the outcome for you to narrate. Call it for EVERY weapon attack and attack-roll spell a player makes; never adjudicate a player's attack yourself. Off their own turn a character attacks only with a readied attack or spell, or Giant Killer's reaction against a Large or larger creature within 5 feet that just attacked them; the server checks which and spends the reaction.",
+      "Resolve every attack a character's player declared, in one call: one entry in attacks per attack, in the order declared. That is the Attack action's swings with Extra Attack, the attacks of Action Surge's action, each Flurry of Blows strike, each Eldritch Blast beam or Scorching Ray ray, each creature of a Whirlwind Attack. The server rolls each from their sheet against the target's real AC, applies damage on a hit and reports every outcome to narrate; an entry it refuses costs nothing and leaves the rest resolved. Call it for EVERY weapon attack and attack-roll spell a player makes; never adjudicate one yourself. Off their own turn a character attacks only with a readied attack or spell, or Giant Killer's reaction (a Large or larger creature within 5 feet that just attacked them); the server checks which and spends the reaction.",
     parameters: {
       type: "object",
       additionalProperties: false,
       properties: {
         characterId: { type: "string", description: "Exact characterId from GAME STATE." },
-        targetEnemyId: { type: "string", description: "Exact enemyId from GAME STATE." },
-        weapon: {
-          type: "string",
-          description:
-            "The weapon from their equipment, or 'unarmed strike' for a punch or kick in any language. Omit to use their best carried weapon. A weapon a subclass feature makes is named here too: a raging Path of the Beast barbarian's 'bite', 'claws' or 'tail', a Soulknife's 'psychic blade' (offHand for the second blade), a Sun Soul monk's 'radiant sun bolt'.",
-        },
-        approach: {
-          type: "boolean",
-          description:
-            "True when the player said their character moves to the target first and it is out of melee reach. Closing in, charging and rushing it all count. The server walks them to the nearest open square beside it out of their movement, drawing any opportunity attacks, then attacks. Too far to reach this turn, they close in as far as they can and nothing is attacked.",
+        attacks: {
+          type: "array",
+          minItems: 1,
+          description: "The attacks, one entry each, in the order the player declared them.",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              targetEnemyId: { type: "string", description: "Exact enemyId from GAME STATE." },
+              weapon: {
+                type: "string",
+                description:
+                  "The weapon from their equipment, or 'unarmed strike' for a punch or kick in any language. Omit for their best carried weapon. Also a subclass feature's weapon: a raging Path of the Beast's 'bite', 'claws' or 'tail', a Soulknife's 'psychic blade' (feature 'Two-Weapon Fighting' for the second), a Sun Soul monk's 'radiant sun bolt'.",
+              },
+              approach: {
+                type: "boolean",
+                description:
+                  "True when the player said their character moves to the target first and it is out of melee reach. Closing in or charging counts; holding still or staying put never does. The server walks them beside it out of their movement, drawing opportunity attacks, then attacks; too far to reach this turn, they close in as far as they can and nothing is attacked.",
+              },
+              spell: {
+                type: "string",
+                description:
+                  "Attack-roll spell (Fire Bolt) instead of a weapon; the server rolls a known spell's dice.",
+              },
+              damage: {
+                type: "string",
+                description: "A homebrew spell attack only: its damage dice ('1d10', '4d6').",
+              },
+              damageType: { type: "string", description: "Spell attacks only: the damage type." },
+              advantage: {
+                type: "string",
+                enum: ["none", "advantage", "disadvantage"],
+                description:
+                  "Situational advantage or disadvantage from the fiction that the server cannot see. It counts only with advantageSource 'other' and advantageReason. The server already applies conditions, cover, light, range, Help, flanking, spells and every feature: never claim those.",
+              },
+              advantageSource: {
+                type: "string",
+                enum: [...ADVANTAGE_SOURCES],
+                description:
+                  "Where the advantage or disadvantage comes from; only 'other' counts.",
+              },
+              advantageReason: {
+                type: "string",
+                description: "The circumstance behind advantage, in a few words (\"the ogre is tangled in the curtain\").",
+              },
+              feature: {
+                type: "string",
+                description:
+                  "The feature this attack is made with, by name; omit for a swing of the Attack action. Extra Attack's swings name none. 'Action Surge': an attack of the action it grants, spent on its first. 'Flurry of Blows': its two unarmed strikes, one entry each, the ki spent on the first. 'Martial Arts': the monk's bonus unarmed strike. 'Two-Weapon Fighting': the light off-hand weapon's bonus attack. 'Frenzy': a raging Berserker's bonus attack. 'Horde Breaker': once a turn, another creature within 5 feet of the first. 'Whirlwind Attack' or 'Volley': a Hunter's action, one entry per creature. Any other feat or feature granting a bonus weapon attack by its name (War Magic, Polearm Master, Crossbow Expert, Charger after a Dash). The server checks the feature and the turn and spends what it costs.",
+              },
+              stunningStrike: {
+                type: "boolean",
+                description:
+                  "Monk 5+: Stunning Strike on this melee weapon hit. The server spends 1 ki on a hit and rolls the target's CON save.",
+              },
+              luck: {
+                type: "boolean",
+                description:
+                  "Lucky: spend a luck point for an extra d20 on this roll, the best kept. The server checks the feat and spends the point.",
+              },
+              stunShot: {
+                type: "boolean",
+                description:
+                  "Stunning Sniper feat: stun on a ranged critical hit instead of doubling the damage. The player's choice before the roll; the server checks the feat.",
+              },
+              charged: {
+                type: "boolean",
+                description:
+                  "Charger: true when they moved 10+ feet straight at the target first, for +5 damage. It goes with feature 'Charger' after a Dash.",
+              },
+              powerAttack: {
+                type: "boolean",
+                description:
+                  "The accuracy-for-damage trade: -5 to hit for +10 damage (Great Weapon Master, Sharpshooter). Great Weapon Master takes a heavy melee weapon, Sharpshooter a ranged one; Level Up's Powerful Attacker and Deadeye too. The player's choice before the roll; the server checks the feat and the weapon.",
+              },
+              reckless: {
+                type: "boolean",
+                description:
+                  "Barbarian 2+: Reckless Attack, declared on the first attack of their turn. The server applies the advantage both ways.",
+              },
+              nonlethal: {
+                type: "boolean",
+                description:
+                  "A melee attack meant to knock out: a creature it drops to 0 HP falls unconscious, not dying. It is out of the fight.",
+              },
+              useInspiration: {
+                type: "boolean",
+                description: "True when the player spends their character's Inspiration on this attack roll for advantage. Refused when they hold none.",
+              },
+              strokeOfLuck: {
+                type: "boolean",
+                description:
+                  "Rogue 20: Stroke of Luck. A miss becomes a hit; the server spends the use only on a miss.",
+              },
+              openHand: {
+                type: "string",
+                enum: ["prone", "push", "no reactions"],
+                description:
+                  "Way of the Open Hand monk: Open Hand Technique on this Flurry of Blows strike. On a hit the server rolls the target's save or takes its reactions.",
+              },
+              hurlThroughHell: {
+                type: "boolean",
+                description:
+                  "Fiend warlock 14: Hurl Through Hell on this hit; the server spends the use and resolves it.",
+              },
+              rapidStrike: {
+                type: "boolean",
+                description:
+                  "Samurai 15: Rapid Strike, once a turn. The fighter forgoes this attack's advantage for one more attack of the Attack action; refused when the attack has no advantage.",
+              },
+              improvised: {
+                type: "boolean",
+                description:
+                  "True when weapon names an object that is no weapon on their sheet (a chair, a bottle). It strikes as an improvised weapon.",
+              },
+              twoHanded: {
+                type: "boolean",
+                description:
+                  "A versatile weapon swung in both hands (bigger damage die); not for an off-hand attack.",
+              },
+              smite: {
+                type: "integer",
+                minimum: 1,
+                maximum: 9,
+                description:
+                  "Paladin Divine Smite: the spell slot level to burn on a hit. The server spends the slot and adds the radiant dice.",
+              },
+              level: {
+                type: "integer",
+                minimum: 1,
+                maximum: 9,
+                description:
+                  "An attack-roll spell's slot level (Guiding Bolt, Scorching Ray); omit for the spell's own level. The server spends the slot. Each Eldritch Blast beam or Scorching Ray ray is its own entry in attacks, all from one casting.",
+              },
+              maneuver: {
+                type: "string",
+                description:
+                  "A Battle Master maneuver riding this weapon attack, by name ('Trip Attack', 'Precision Attack'). Also 'Menacing Attack'. The server spends a Superiority Die and applies the die and the rider's save. Feinting Attack and Quick Toss take the bonus action; Grappling Strike keeps the die for the grapple after it. Parry, Riposte, Brace, Rally and Commander's Strike are not named here.",
+              },
+            },
+            required: ["targetEnemyId"],
+          },
         },
         endTurn: {
           type: "boolean",
           description:
-            "True when the player ends their turn after this attack: the server ends it; never call end_turn too. A player says \"...then I end my turn\". It ends once the attack resolves, as end_turn does, and the result names who acts next. Send it only on the last attack they declared.",
-        },
-        spell: {
-          type: "string",
-          description:
-            "Attack-roll spell (Fire Bolt) instead of a weapon; the server rolls a known spell's dice.",
-        },
-        damage: {
-          type: "string",
-          description: "A homebrew spell attack only: its damage dice ('1d10', '4d6').",
-        },
-        damageType: { type: "string", description: "Spell attacks only: the damage type." },
-        advantage: {
-          type: "string",
-          enum: ["none", "advantage", "disadvantage"],
-          description:
-            "Situational advantage or disadvantage from the fiction that the server cannot see. It counts only with advantageSource 'other' and advantageReason. The server already applies conditions (prone, invisible, hidden, restrained...), cover, light and darkness, range, Help, flanking, spells, Reckless Attack and every feature: never claim those.",
-        },
-        advantageSource: {
-          type: "string",
-          enum: [...ADVANTAGE_SOURCES],
-          description:
-            "Where the advantage or disadvantage comes from; only 'other' counts.",
-        },
-        advantageReason: {
-          type: "string",
-          description: "The circumstance behind advantage, in a few words (\"the ogre is tangled in the curtain\").",
-        },
-        bonusAttack: {
-          type: "string",
-          enum: ["martial arts", "frenzy", "feature"],
-          description:
-            "A feature's bonus attack: 'martial arts' (weapon 'unarmed strike'), 'frenzy' or 'feature'. The server spends the bonus action. Martial arts is a monk's unarmed strike after taking the Attack action with an unarmed strike or monk weapon; frenzy is a raging Berserker's melee weapon attack; feature is a subclass's bonus weapon attack (Battle Magic or War Magic after casting with the action, Sudden Strike or Curving Shot after attacking, Telekinetic Master while concentrating on telekinesis) or a feat's (Great Weapon Master after a melee crit or kill, Polearm Master's butt-end strike after an Attack action with a polearm (1d4 bludgeoning), Crossbow Expert's hand crossbow shot after an Attack action with a one-handed weapon, Charger's melee attack after a Dash). The server checks the feature and the turn.",
-        },
-        stunningStrike: {
-          type: "boolean",
-          description:
-            "Monk 5+: Stunning Strike on this melee weapon hit. The server spends 1 ki on a hit and rolls the target's CON save against the ki DC; a failed save stuns it.",
-        },
-        luck: {
-          type: "boolean",
-          description:
-            "Lucky: spend a luck point for an extra d20 on this attack roll, the best kept. The server checks the feat and spends the point; ignored without one left.",
-        },
-        stunShot: {
-          type: "boolean",
-          description:
-            "Stunning Sniper (Tome of Heroes feat): stun on a ranged critical hit instead of doubling the damage. The target is stunned until the start of the shooter's next turn. The player's choice before the roll; the server checks the feat.",
-        },
-        charged: {
-          type: "boolean",
-          description:
-            "Charger's attack: true when they moved 10+ feet straight at the target first, for +5 damage. It goes with the bonus-action attack after a Dash (bonusAttack 'feature').",
-        },
-        powerAttack: {
-          type: "boolean",
-          description:
-            "The accuracy-for-damage trade: -5 to hit for +10 damage (Great Weapon Master, Sharpshooter). Great Weapon Master: a heavy melee weapon; Sharpshooter: a ranged weapon. Level Up's Powerful Attacker rolls a heavy weapon attack at disadvantage for +10; Deadeye drops the proficiency bonus from a ranged attack roll for twice it on the damage. The player's choice before the roll; the server checks the feat and the weapon.",
-        },
-        reckless: {
-          type: "boolean",
-          description:
-            "Barbarian 2+: Reckless Attack, declared on the first attack of their turn. Advantage on melee Strength weapon attacks this turn; attacks against them have advantage until their next turn. The server tracks both.",
-        },
-        nonlethal: {
-          type: "boolean",
-          description:
-            "A melee attack meant to knock out: a creature it drops to 0 HP falls unconscious, not dying. That creature is out of the fight.",
-        },
-        hordeBreaker: {
-          type: "boolean",
-          description:
-            "Horde Breaker: once a turn, an extra weapon attack on another creature within 5 feet of the first. It is a Hunter ranger's feature, and the extra attack uses none of their action's attacks.",
-        },
-        useInspiration: {
-          type: "boolean",
-          description: "True when the player spends their character's Inspiration on this attack roll for advantage. Refused when they hold none.",
-        },
-        strokeOfLuck: {
-          type: "boolean",
-          description:
-            "Rogue 20: Stroke of Luck. If this attack misses, the server turns it into a hit and spends the use (once a short rest); a hit spends nothing.",
-        },
-        openHand: {
-          type: "string",
-          enum: ["prone", "push", "no reactions"],
-          description:
-            "Way of the Open Hand monk: Open Hand Technique on this Flurry of Blows strike. On a hit the server rolls the target's DEX save (prone) or STR save (pushed 15 feet) against the ki DC, or takes its reactions until the end of the monk's next turn.",
-        },
-        hurlThroughHell: {
-          type: "boolean",
-          description:
-            "Fiend warlock 14: Hurl Through Hell on this hit. The server spends the use (once a long rest); the creature is gone until the end of the warlock's next turn and then takes 10d10 psychic unless it is a fiend.",
-        },
-        rapidStrike: {
-          type: "boolean",
-          description:
-            "Samurai 15: Rapid Strike. This attack has advantage and the fighter forgoes it for one more attack of the Attack action, once a turn; the server refuses it when the attack has no advantage.",
-        },
-        whirlwind: {
-          type: "boolean",
-          description:
-            "Whirlwind Attack: call pc_attack once per creature within 5 feet, each with whirlwind true. It is a Hunter ranger's feature: each call is one melee weapon attack, and the first spends the whole action.",
-        },
-        volley: {
-          type: "boolean",
-          description:
-            "Volley: call pc_attack once per creature within 10 feet of the first target, each with volley true. It is a Hunter ranger's feature: each call is one ranged weapon attack, and the first spends the whole action.",
-        },
-        improvised: {
-          type: "boolean",
-          description:
-            "True when weapon names an object that is no weapon on their sheet (a chair, a bottle). It strikes as an improvised weapon.",
-        },
-        twoHanded: {
-          type: "boolean",
-          description:
-            "They swing a versatile weapon in both hands (bigger damage die). Ignore for other weapons. Not for an off-hand attack.",
-        },
-        offHand: {
-          type: "boolean",
-          description:
-            "This is the bonus-action second attack of two-weapon fighting with a light weapon.",
-        },
-        smite: {
-          type: "integer",
-          minimum: 1,
-          maximum: 9,
-          description:
-            "Paladin Divine Smite: the spell slot level to burn on a hit. The server spends the slot and adds the radiant dice.",
-        },
-        level: {
-          type: "integer",
-          minimum: 1,
-          maximum: 9,
-          description:
-            "Attack-roll spells of 1st level or higher (Guiding Bolt, Scorching Ray): the slot level cast from. Omit for the spell's own level; the server spends the slot. Eldritch Blast's beams and Scorching Ray's rays are one pc_attack call each, all from one casting.",
-        },
-        maneuver: {
-          type: "string",
-          description:
-            "A Battle Master maneuver riding this weapon attack, by name ('Trip Attack', 'Precision Attack'). Also 'Menacing Attack'. The server spends a Superiority Die, adds it to the damage (Precision: to the attack roll), and rolls the target's save against the maneuver's rider. Feinting Attack (a creature within 5 feet, advantage) and Quick Toss (a thrown weapon) take the bonus action; Grappling Strike saves the die for the grapple that may follow as a bonus action; Maneuvering Attack lets an ally move with its reaction. Parry, Riposte, Brace, Rally and Commander's Strike are not named here.",
+            "True when the player ends their turn after these attacks. The server ends it once they resolve; never call end_turn too. A player says \"...then I end my turn\". The result names who acts next.",
         },
       },
-      required: ["characterId", "targetEnemyId"],
+      required: ["characterId", "attacks"],
     },
   },
 };
 
-const pcAttackArgsSchema = z.object({
+export const pcAttackArgsSchema = z.object({
   characterId: z.string(),
   targetEnemyId: z.string(),
   weapon: z.string().max(80).optional(),
@@ -250,7 +248,7 @@ const pcAttackArgsSchema = z.object({
   smite: z.coerce.number().int().min(1).max(9).optional(),
   maneuver: z.string().max(60).optional(),
   advantageSource: z.enum(ADVANTAGE_SOURCES).optional(),
-  advantageReason: z.string().max(200).optional(),
+  advantageReason: fittedText(200).optional(),
   bonusAttack: z.preprocess(
     (value) => (typeof value === "string" ? value.trim().toLowerCase() : value),
     z.enum(BONUS_ATTACKS).optional(),
@@ -277,6 +275,10 @@ const pcAttackArgsSchema = z.object({
   rapidStrike: z.coerce.boolean().optional(),
   whirlwind: z.coerce.boolean().optional(),
   volley: z.coerce.boolean().optional(),
+  // A part declared as a Flurry of Blows strike (pc-attack-parts.ts): it
+  // takes a strike the ki paid for even while the Attack action has a swing
+  // left, so the player's one swing and then a flurry is that.
+  flurryStrike: z.coerce.boolean().optional(),
   // Attack-roll spells: the slot level cast from.
   level: z.coerce.number().int().min(1).max(9).optional(),
 });
@@ -286,6 +288,10 @@ export type PcAttackArgs = z.infer<typeof pcAttackArgsSchema>;
 // Sentinel the turn loop checks: a parked pc_attack pushes no tool result
 // now; the resumed turn answers it with the adjudicated roll.
 export const PC_ATTACK_PARKED = "_parked";
+// Parked by the server's own throw for the player's after-the-roll choice
+// (pc-attack-parked.ts throwForChoice), with the parked roll's id: the attacks
+// declared after it wait behind it (pc-attack-parts.ts).
+export const PC_ATTACK_WAITS = "_waitsOnChoice";
 
 export function handlePcAttack(
   campaign: Campaign,
@@ -296,8 +302,12 @@ export function handlePcAttack(
   realDiceUserIds: Set<string>,
   toolCallId: string | null,
   // The engine's own attacks (Confusion's random target): `anySide` lets the
-  // target be an ally (pc-attack-gate.ts).
-  engine: { anySide?: boolean } = {},
+  // target be an ally (pc-attack-gate.ts). `reactionAttack`: a reaction feature's
+  // attack, paid for by its caller, which touches neither the turn nor a readied action.
+  // `mayWait`: the pc_attack tool's own attacks, whose d20 may wait on the
+  // player's choice (pc-attack-parked.ts throwForChoice); an attack the engine
+  // makes inside another call never waits.
+  engine: { anySide?: boolean; reactionAttack?: boolean; mayWait?: boolean } = {},
 ): ToolResult {
   const encounter = getActiveEncounter(campaign.id);
   if (!encounter) {
@@ -306,18 +316,24 @@ export function handlePcAttack(
   let raw: unknown;
   try {
     raw = JSON.parse(rawArguments || "{}");
-  } catch {
-    return { error: "Invalid arguments: pc_attack needs characterId and targetEnemyId.", retry: true };
+  } catch (error) {
+    return badArguments("Invalid arguments: pc_attack needs characterId and targetEnemyId.", error, rawArguments);
   }
   const parsed = pcAttackArgsSchema.safeParse(raw);
   if (!parsed.success) {
-    return invalidArguments("Invalid arguments: pc_attack needs characterId and targetEnemyId.", parsed.error);
+    return invalidArguments("Invalid arguments: pc_attack needs characterId and targetEnemyId.", parsed.error, raw);
   }
   const args: PcAttackArgs = parsed.data;
   const staleSheet = resolveSheetRef(args.characterId, sheets, sheetsById);
   const sheet = staleSheet ? (getSheetById(staleSheet.id) ?? staleSheet) : null;
   if (!sheet) {
     return unknownSheetRef("characterId", args.characterId, sheets);
+  }
+  // Swallowed: from inside, only the creature that swallowed them
+  // (src/lib/dm/swallow.ts).
+  const inside = swallowCover({ kind: "sheet", id: sheet.id }, { kind: "enemy", id: resolveEnemyRef(encounter.id, args.targetEnemyId)?.id ?? args.targetEnemyId });
+  if (inside) {
+    return { error: `${inside} Nothing was spent.`, refused: "rules" };
   }
 
   // The move to the target the player declared, when the swing needs it
@@ -327,11 +343,18 @@ export function handlePcAttack(
   // attacks spent, a feature they lack) refuses it where they stand. The
   // attack is then planned from where it is made.
   if (args.approach) {
-    const dry = planPcAttack({ campaign, turn, encounter, sheet, args, sheets, sheetsById, anySide: engine.anySide });
+    const dry = planPcAttack({ campaign, turn, encounter, sheet, args, sheets, sheetsById, anySide: engine.anySide, reactionAttack: engine.reactionAttack });
     if ("refused" in dry) {
-      const beside = planPcAttack({ campaign, turn, encounter, sheet, args, sheets, sheetsById, skipReach: true, anySide: engine.anySide });
+      const beside = planPcAttack({ campaign, turn, encounter, sheet, args, sheets, sheetsById, skipReach: true, anySide: engine.anySide, reactionAttack: engine.reactionAttack });
       if ("refused" in beside) {
         return beside.refused;
+      }
+      // Their player said they stay where they are: the swing from here was
+      // refused for reach, and no walk is made to fix that (the walk drew
+      // opportunity attacks for a fight its player never moved in).
+      const held = walkHeld(campaign.id, turn, sheet, " Nothing was moved or attacked.");
+      if (held) {
+        return { ...held, error: `${dry.refused.error} ${held.error}` };
       }
       const approach = approachForAttack(campaign, encounter, sheet, args, dry.refused);
       if (!approach) {
@@ -356,7 +379,7 @@ function attackFrom(
   sheetsById: Map<string, CharacterSheet>,
   realDiceUserIds: Set<string>,
   toolCallId: string | null,
-  engine: { anySide?: boolean } = {},
+  engine: { anySide?: boolean; reactionAttack?: boolean; mayWait?: boolean } = {},
 ): ToolResult {
   // The walk may have changed the fight: read it again.
   const encounter = getActiveEncounter(campaign.id);
@@ -366,7 +389,7 @@ function attackFrom(
   // ---- refusals: everything that can stop this attack, before any spend ----
   // Asked in one place, in order, by planPcAttack (src/lib/dm/pc-attack-plan.ts).
 
-  const plan = planPcAttack({ campaign, turn, encounter, sheet: getSheetById(sheet.id) ?? sheet, args, sheets, sheetsById, anySide: engine.anySide });
+  const plan = planPcAttack({ campaign, turn, encounter, sheet: getSheetById(sheet.id) ?? sheet, args, sheets, sheetsById, anySide: engine.anySide, reactionAttack: engine.reactionAttack });
   if ("refused" in plan) {
     return plan.refused;
   }
@@ -399,22 +422,46 @@ function attackFrom(
   // Physical dice: park the to-hit roll for the player; the submit route
   // adjudicates it and, on a hit, parks the damage roll too.
   if (realDiceUserIds.has(sheet.userId)) {
-    parkPcAttack(plan, strike, toolCallId);
+    parkPcAttack(plan, strike, toolCallId, mote);
     return { [PC_ATTACK_PARKED]: true };
   }
-  const rolled = rollPcAttack(plan, strike);
-  noteSwing(campaign.id, sheet.id, rolled);
-  const burst = moteBurst(campaign, turn, mote, plan.enemy);
-  return burst ? { ...rolled, mote: burst } : rolled;
+  // The server's dice, for a player who may still change a miss once they see
+  // it: the roll waits thrown, or resolves with that throw. Only on the
+  // attacker's own turn (a turn budget): a readied strike or Giant Killer is
+  // made on another's turn, and a roll waiting past it would never land.
+  const choice = engine.mayWait && !engine.reactionAttack && plan.budget ? throwForChoice(plan, strike, toolCallId, mote) : null;
+  if (choice && "parked" in choice) {
+    return { [PC_ATTACK_PARKED]: true, [PC_ATTACK_WAITS]: choice.parked.id };
+  }
+  return rollPcAttack(plan, strike, mote, choice?.thrown ?? null);
 }
 
 // What the attack costs, paid now that nothing can refuse it: the turn
 // budget, the cast or the reaction, the round from the quiver, Precision
 // Attack's die, and the conditions this roll uses up. Returns the refusal of
 // a spell Counterspell stopped (spent, and nothing else follows), or null.
+// A weapon thrown is not spent but no longer held: a net, a dagger or a
+// javelin thrown at range, a carried weapon thrown as an improvised one, a
+// torch hurled; unless its own text brings it back (a Dwarven Thrower). A
+// flask shatters instead (spent above), and a swing within reach keeps the
+// weapon in hand.
+function throwsAway(plan: AttackPlan): boolean {
+  return (
+    plan.special === "net" ||
+    (plan.kind === "weapon" && plan.atRange && plan.profile.thrown && !plan.profile.gearWeapon?.spent && !returnsToHand(plan.profile.weapon))
+  );
+}
+
 function spendPcAttack(plan: AttackPlan): ToolError | null {
   const { campaign, turn, encounter, sheet, sheets, sheetsById, budget, ammo, context } = plan;
+  const thrownAway = throwsAway(plan);
   if (budget) {
+    // The weapon thrown still counts as the one that was in the first hand
+    // when two-weapon fighting asks for a second (attack-rules.ts
+    // offHandProblem): a dagger thrown, then the off-hand dagger.
+    if (thrownAway) {
+      budget.thrownAway = (budget.thrownAway ?? 0) + 1;
+    }
     storeBudget(encounter, budget);
   }
   // Spiritual Weapon's weapon flies to the square it strikes from (issue
@@ -440,13 +487,24 @@ function spendPcAttack(plan: AttackPlan): ToolError | null {
     if (countered) {
       return countered;
     }
+    // A spell attack of a Draconic sorcerer's dragon's type, cast now that
+    // nothing refused it, opens Elemental Affinity's resistance
+    // (src/lib/dm/affinity-cast.ts). Not in the plan: a plan is a dry run
+    // (an approach asks it first) and may still be refused after it.
+    if (plan.kind === "spell") {
+      markAffinityCast(campaign, sheet, plan.profile.damageType);
+      // A two-type spell's second type rides as a typed rider.
+      for (const rider of plan.profile.gearTyped ?? []) {
+        markAffinityCast(campaign, sheet, rider.type);
+      }
+    }
   } else if (!budget) {
     markReactionUsed(encounter, sheet.id);
     // The readied action (or the Giant Killer answer) this attack is spends
     // with it.
     if (plan.extras.giantKiller) {
-      spendGiantKiller(campaign.id, sheet.id);
-    } else {
+      spendGiantKiller(campaign.id, sheet.id, plan.enemy.id);
+    } else if (!plan.extras.reactionAttack) {
       spendReadied(campaign, sheet.id);
     }
     // An attack made off their own turn shows on no turn budget, so a rage
@@ -458,8 +516,13 @@ function spendPcAttack(plan: AttackPlan): ToolError | null {
         conditionMeta: { ...meta, [ragingAs]: { ...meta[ragingAs], stoked: true } },
       });
     }
+    if (plan.extras.turnRiders) {
+      storeBudget(encounter, plan.extras.turnRiders);
+    }
     context.notes.push(
-      `made off their own turn: ${sheet.name}'s reaction is spent until their next turn starts`,
+      plan.extras.reactionAttack
+        ? `made as a reaction: ${sheet.name}'s reaction is spent until their next turn starts`
+        : `made off their own turn: ${sheet.name}'s reaction is spent until their next turn starts`,
     );
   }
   // The weapon drawn for this attack is in hand from now on (issue #424).
@@ -486,6 +549,24 @@ function spendPcAttack(plan: AttackPlan): ToolError | null {
     tally[after] = emptied && carried[ammo.index] ? { spent, line: carried[ammo.index] } : spent;
     encounter.ammoSpent = tally;
     saveEncounter(encounter);
+  }
+  // A flask shatters on impact or on the floor: one is spent whatever the
+  // roll (src/lib/srd/gear-weapons.ts). An object picked up is no line.
+  if (plan.profile.gearWeapon?.spent) {
+    const now = getSheetById(sheet.id) ?? sheet;
+    const index = lineNamed(now.equipment, plan.profile.weapon);
+    if (index >= 0) {
+      patchSheet(sheet.id, { equipment: withAmmoCount(now.equipment, index, (now.equipment[index].qty ?? 1) - 1) });
+      context.notes.push(`one ${plan.profile.weapon} spent`);
+    }
+  }
+  // A weapon thrown leaves the hand whatever the roll and lies at the
+  // creature it was thrown at (gear-ground.ts).
+  if (thrownAway) {
+    const thrown = throwToGround(campaign, turn, sheet, plan.profile.weapon, plan.enemy.id);
+    if (thrown) {
+      context.notes.push(thrown);
+    }
   }
   if (plan.maneuver?.precision) {
     // Validated above, so this spend lands; were it to fail the roll simply

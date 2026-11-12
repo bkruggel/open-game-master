@@ -12,7 +12,7 @@ register("./lib/register-alias.mjs", import.meta.url);
 const { deriveHand, splitHand, lowestSlot, attacksAllowed, FRESH_TURN, HAND_FAN_CAP } = await import(
   "../src/lib/battlemap/hand.ts"
 );
-const { previewRows, composeSentence, intentBody, afterCommit, targetFromComposedText, typicalAcForCr, handReady } =
+const { previewRows, composeSentence, intentBody, afterCommit, targetFromComposedText, typicalAcForCr, handReady, aimUnseen, seenChips } =
   await import("../src/lib/battlemap/hand-play.ts");
 const { attackOdds, asPercent } = await import("../src/lib/srd/odds.ts");
 const { populateResources, resourceDef } = await import("../src/lib/srd/class-resources.ts");
@@ -29,6 +29,25 @@ test("HTML and native action confirmation share target, area and trigger gates",
   assert.equal(handReady({...attack,area:{pick:"point"}},null,{area:{at:{x:2,y:3}}}),true);
   assert.equal(handReady({...attack,asks:"trigger"},{id:"goblin"},{trigger:"   "}),false);
   assert.equal(handReady({...attack,asks:"trigger"},{id:"goblin"},{trigger:"when it moves"}),true);
+});
+test("a card that takes a creature its holder can see leaves an unseen foe's chip out, as use_resource refuses it", () => {
+  // The board's sight verdict is the engine's own (view-tactics.ts TargetSight.unseen
+  // from authored-saves.ts unseenBecause): Nature's Wrath at an invisible goblin was
+  // offered, and use_resource refused it.
+  const seen = { id: "g1", name: "Goblin 1", kind: "enemy", sight: { light: [], attacker: [], target: [], targetSees: true } };
+  const unseen = { id: "g2", name: "Goblin 2", kind: "enemy", sight: { light: [], attacker: [], target: ["invisible"], targetSees: true, unseen: "Goblin 2 is invisible" } };
+  const blind = { id: "g3", name: "Goblin 3", kind: "enemy", sight: { light: [], attacker: [], target: [], targetSees: false, unseenBy: "Goblin 3 is blinded" } };
+  const wrath = { target: "enemy", sight: true };
+  assert.equal(aimUnseen(wrath, unseen), "Goblin 2 is invisible");
+  assert.equal(handReady(wrath, unseen), false, "the card went with an unseen foe");
+  assert.equal(handReady(wrath, seen), true);
+  assert.deepEqual(seenChips(wrath, [seen, unseen, blind]).map((chip) => chip.id), ["g1", "g3"]);
+  // "If it can see you" (Dreadful Aspect) turns it round.
+  const aspect = { target: "enemy", sight: "seesHolder" };
+  assert.deepEqual(seenChips(aspect, [seen, unseen, blind]).map((chip) => chip.id), ["g1", "g2"]);
+  // A card with no sight flag, and a board from an older host, offer every chip.
+  assert.equal(seenChips({ target: "enemy" }, [seen, unseen]).length, 2);
+  assert.equal(handReady(wrath, { id: "g4", name: "Goblin 4", kind: "enemy" }), true);
 });
 function test(name, fn) {
   fn();
@@ -128,7 +147,8 @@ test("a magic weapon adds its bonus, a finesse weapon takes the better modifier"
 test("a bow reads its range and its quiver; an empty quiver only refuses when the table tracks ammunition", () => {
   const stocked = deriveHand(sheet({ equipment: [item("Longbow"), item("Arrows", 20)] }));
   const bow = byId(stocked, "attack:longbow");
-  assert.equal(bow.range, "150 ft");
+  // Both ranges (SRD 5.1, Range): pc_attack shoots a longbow to 600 feet, at disadvantage past 150.
+  assert.equal(bow.range, "150/600 ft");
   assert.match(bow.resource, /20$/);
   assert.equal(bow.melee, false);
   const dry = deriveHand(sheet({ equipment: [item("Longbow")] }));
@@ -624,6 +644,121 @@ test("hover text retains the full feature guidance", () => {
   const fighter = sheet({ features, resources: populateResources(features, 4, {}) });
   const card = byId(deriveHand(fighter, FRESH_TURN), "feature:second_wind");
   assert.equal(card.description, resourceDef("second_wind").guidance);
+});
+
+// ---- the attacks a condition grants ----
+
+// A cleric who cast Spiritual Weapon from the Hand spent the slot and the
+// bonus action and held no card for the strike the casting includes, nor
+// one to move the weapon and strike on a later turn (SRD 5.1).
+const cleric = (overrides = {}) =>
+  caster({
+    name: "Vyrrath", class: "cleric",
+    abilities: { str: 10, dex: 10, con: 14, int: 10, wis: 16, cha: 10 },
+    spellcasting: { ability: "wis", slots: { 1: { max: 4, used: 0 }, 2: { max: 3, used: 1 } }, prepared: ["Spiritual Weapon"], known: [] },
+    conditions: ["spiritual weapon"],
+    conditionMeta: { "spiritual weapon": { rounds: 10, spell: "Spiritual Weapon", slotLevel: 2 } },
+    ...overrides,
+  });
+
+test("Spiritual Weapon's strike comes with its casting as a card, then costs a bonus action on later turns", () => {
+  // The casting spent the bonus action and left its mark (cast-rules.ts).
+  const cast = { ...FRESH_TURN, bonusUsed: true, marks: ["spell:bonus-action"] };
+  const strike = byId(deriveHand(cleric(), cast), "attack:granted:spiritual-weapon");
+  assert.ok(strike, "the strike is dealt once the weapon is up");
+  assert.equal(strike.disabled, null, "the casting's own strike needs no second bonus action");
+  assert.equal(strike.cost, "free");
+  assert.equal(strike.target, "enemy");
+  assert.deepEqual(strike.intent, { card: "attack", weapon: "Spiritual Weapon" });
+  // pc_attack's numbers: Wisdom +3 on the 1d8, proficiency +2 with it to hit.
+  assert.equal(strike.dice, "1d8+3 force");
+  assert.equal(strike.toHit, 5);
+  // Made once: a second strike that turn is a bonus action, and that is spent.
+  const after = afterCommit(cast, strike);
+  assert.ok(after.marks.includes("granted:spiritual weapon"));
+  assert.equal(after.attacksMade, 0, "the strike is no swing of the Attack action");
+  const again = byId(deriveHand(cleric(), after), "attack:granted:spiritual-weapon");
+  assert.equal(again.cost, "bonus");
+  assert.ok(again.disabled, "no second strike on the casting turn");
+  // A later turn: the weapon moves and strikes for the bonus action.
+  const later = cleric({ conditionMeta: { "spiritual weapon": { rounds: 9, spell: "Spiritual Weapon", slotLevel: 2 } } });
+  const next = byId(deriveHand(later, FRESH_TURN), "attack:granted:spiritual-weapon");
+  assert.equal(next.cost, "bonus");
+  assert.equal(next.disabled, null);
+  assert.match(next.rules, /Moves up to 20 ft/);
+  assert.equal(afterCommit(FRESH_TURN, next).bonusUsed, true);
+  assert.ok(byId(deriveHand(later, { ...FRESH_TURN, bonusUsed: true }), "attack:granted:spiritual-weapon").disabled);
+  // Cast from a 4th level slot, the weapon rolls 2d8.
+  const upcast = cleric({ conditionMeta: { "spiritual weapon": { rounds: 9, spell: "Spiritual Weapon", slotLevel: 4 } } });
+  assert.equal(byId(deriveHand(upcast, FRESH_TURN), "attack:granted:spiritual-weapon").dice, "2d8+3 force");
+  // No weapon, no card.
+  assert.equal(byId(deriveHand(cleric({ conditions: [], conditionMeta: {} }), FRESH_TURN), "attack:granted:spiritual-weapon"), undefined);
+});
+
+// Arcane Sword is cast with an action, and "when the sword appears, you make
+// a melee spell attack" (SRD 5.1): the card said that strike spent "no second
+// bonus action", of a casting that spent none.
+test("Arcane Sword's first strike comes with its casting action, the bonus action left for a later strike; Flame Blade's is the action at the slot's dice", () => {
+  const wizard = caster({
+    name: "Quill", class: "wizard",
+    abilities: { str: 10, dex: 10, con: 14, int: 18, wis: 10, cha: 10 },
+    spellcasting: { ability: "int", slots: { 7: { max: 1, used: 1 } }, prepared: ["Arcane Sword"], known: [] },
+    conditions: ["arcane sword"],
+    conditionMeta: { "arcane sword": { rounds: 10, spell: "Arcane Sword", slotLevel: 7 } },
+  });
+  const cast = { ...FRESH_TURN, actionUsed: true, marks: ["spell:levelled"] };
+  const strike = byId(deriveHand(wizard, cast), "attack:granted:arcane-sword");
+  assert.equal(strike.cost, "free");
+  assert.equal(strike.disabled, null);
+  assert.equal(strike.dice, "3d10 force", "no ability modifier on the sword's damage");
+  assert.match(strike.rules, /Comes with the casting\./);
+  assert.doesNotMatch(strike.rules, /bonus action/, "the casting was an action");
+  const after = afterCommit(cast, strike);
+  assert.equal(after.bonusUsed, false);
+  const again = byId(deriveHand(wizard, after), "attack:granted:arcane-sword");
+  assert.equal(again.cost, "bonus");
+  assert.equal(again.disabled, null, "the bonus action is still there to move the sword and strike");
+
+  const druid = caster({
+    name: "Fern", class: "druid",
+    abilities: { str: 10, dex: 10, con: 14, int: 10, wis: 16, cha: 10 },
+    spellcasting: { ability: "wis", slots: { 4: { max: 1, used: 1 } }, prepared: ["Flame Blade"], known: [] },
+    conditions: ["flame blade"],
+    conditionMeta: { "flame blade": { rounds: 100, spell: "Flame Blade", slotLevel: 4 } },
+  });
+  const blade = byId(deriveHand(druid, { ...FRESH_TURN, bonusUsed: true, marks: ["spell:bonus-action"] }), "attack:granted:flame-blade");
+  assert.equal(blade.cost, "action");
+  assert.equal(blade.dice, "4d6 fire", "1d6 more for the two slot levels above 2nd, and no modifier");
+});
+
+// Flame Blade: "you can use your action to make a melee spell attack with the
+// fiery blade" (SRD 5.1). That is the action, not the Attack action, so a
+// fighter's Extra Attack gives it no second strike, and no weapon swing
+// follows it.
+test("A fighter-druid's Flame Blade strike takes the whole action: Extra Attack adds no second strike and no weapon swing after it", () => {
+  const bladesman = caster({
+    name: "Thorn", class: "fighter", level: 8,
+    classes: [{ id: "fighter", level: 5, subclass: "" }, { id: "druid", level: 3, subclass: "" }],
+    features: [{ name: "Extra Attack", source: "class" }],
+    abilities: { str: 16, dex: 10, con: 14, int: 10, wis: 16, cha: 10 },
+    spellcasting: { ability: "wis", slots: { 1: { max: 4, used: 0 }, 2: { max: 2, used: 1 } }, prepared: ["Flame Blade"], known: [] },
+    conditions: ["flame blade"],
+    conditionMeta: { "flame blade": { rounds: 99, spell: "Flame Blade", slotLevel: 2 } },
+  });
+  const allowed = attacksAllowed(bladesman);
+  assert.equal(allowed, 2, "the fighter's Extra Attack");
+  const blade = byId(deriveHand(bladesman, FRESH_TURN), "attack:granted:flame-blade");
+  assert.equal(blade.cost, "action");
+  assert.equal(blade.disabled, null);
+  assert.match(blade.rules, /Takes your action/);
+  const after = afterCommit(FRESH_TURN, blade, allowed);
+  assert.equal(after.actionUsed, true);
+  assert.equal(after.attacksMade, 0, "no swing of the Attack action");
+  const again = byId(deriveHand(bladesman, after), "attack:granted:flame-blade");
+  assert.ok(again.disabled, "Extra Attack gave the blade a second strike");
+  // Once the Attack action is under way, the action is gone for the blade.
+  const swung = { ...FRESH_TURN, actionUsed: true, attacksMade: 1 };
+  assert.ok(byId(deriveHand(bladesman, swung), "attack:granted:flame-blade").disabled, "a blade strike rode the Attack action's second swing");
 });
 
 console.log(`test-hand: ${passed} passed`);

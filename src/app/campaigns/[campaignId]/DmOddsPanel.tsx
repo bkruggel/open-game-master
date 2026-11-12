@@ -15,7 +15,7 @@ import { useT } from "@/lib/locale";
 // The only two table rules that change what a crit is worth. Named here so
 // the same shape threads down from the panel without dragging the whole
 // GameSettings type through three components.
-export type CritRules = { powerfulCritical: boolean; criticalDamageMods: boolean };
+export type CritRules = { powerfulCritical: boolean; criticalDamageMods: boolean; supplies?: boolean };
 
 type Roll = "none" | "advantage" | "disadvantage";
 // The rolls' words by value; the keys live with the odds group.

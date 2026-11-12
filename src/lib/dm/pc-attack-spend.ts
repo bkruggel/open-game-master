@@ -5,10 +5,11 @@
 // the attack's profile and options are known. The budget is a copy; nothing
 // is stored until pc-attack.ts stores it.
 
-import { MELEE_ATTACKED } from "@/lib/dm/feature-bonus-attacks";
+import { MELEE_ATTACKED, SECOND_BONUS_ATTACK } from "@/lib/dm/feature-bonus-attacks";
 import { holdsFeat } from "@/lib/srd/feat-effects";
 import { evadesOpportunityAttacksAfterMelee, isPolearm, MOBILE_ATTACKED, ONE_HANDED_ATTACKED, POLEARM_READY } from "@/lib/srd/feat-combat";
-import { attacksLeft, spendAction, spendAttack, type TurnBudget } from "@/lib/dm/action-budget";
+import { ACTION_SURGED, attacksLeft, spendAction, spendAttack, type SpendResult, type TurnBudget } from "@/lib/dm/action-budget";
+import { usesLeft } from "@/lib/dm/bonus-routes";
 import type { AttackProfile } from "@/lib/dm/attack-logic";
 import { OPEN_HAND_NOT_FLURRY } from "@/lib/dm/attack-choice-rules";
 import { loadingProblem, withLoadingFired } from "@/lib/dm/attack-rules";
@@ -26,6 +27,15 @@ import { hunterMultiattack } from "@/lib/dm/srd-attacks";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { toolError, type ToolError } from "@/lib/dm/tool-errors";
 import { textKey } from "@/lib/language/text-logic";
+import { SPECIAL_WEAPONS } from "@/lib/srd/weapons";
+
+// SRD 5.1 Weapons, Special Weapons (Net): "When you use an action, bonus
+// action, or reaction to attack with a net, you can make only one attack
+// regardless of the number of attacks you can normally make." A net thrown
+// in the Attack action is its only attack, and it cannot follow another
+// (issue #570, EQP-12: Extra Attack swung a longsword after the net). A new
+// action (Action Surge) brings attacks of its own.
+const isNet = (profile: AttackProfile) => profile.base === SPECIAL_WEAPONS.net;
 
 export function spendAttackEconomy(input: {
   sheet: CharacterSheet;
@@ -37,6 +47,9 @@ export function spendAttackEconomy(input: {
   budget: TurnBudget | null;
   options: AttackOptions;
   grantedBonusAction: BuiltAttack["grantedBonusAction"];
+  // A granted attack that is the whole action (Flame Blade): no swing of the
+  // Attack action, so Extra Attack gives it no second.
+  grantedWholeAction?: boolean;
   // A swing that is itself the bonus action (Quick Toss), by its name.
   bonusSwing?: string;
   // A granted attack that comes with its activation (pc-attack-profile.ts),
@@ -81,13 +94,16 @@ export function spendAttackEconomy(input: {
   }
   if (budget) {
     const usesAttackAction =
-      !grantedBonusAction && !bonusSwing && !args.offHand && !options.bonusAttack && !options.hordeBreaker && kind !== "spell" && !multiattack;
+      !grantedBonusAction && !input.grantedWholeAction && !bonusSwing && !args.offHand && !options.bonusAttack && !options.hordeBreaker && kind !== "spell" && !multiattack;
     if (usesAttackAction) {
       const loading = loadingProblem({ who: sheet.name, profile, budget, feats: sheet.feats, campaignId: sheet.campaignId });
       // A new action (Action Surge, Haste) reloads; only a swing that would
       // ride the action already fired from is refused.
       if (loading && attacksLeft(budget) > 0 && budget.attacksMade > 0) {
         return { refused: loading };
+      }
+      if (isNet(profile) && attacksLeft(budget) > 0 && budget.attacksMade > 0) {
+        return { refused: { error: `A net is the only attack of the action it is thrown in, and ${sheet.name} has already attacked in this one. They attack with another weapon, or throw the net in a new action.`, refused: "rules" } };
       }
     }
     const flurryBefore = budget.flurryStrikes ?? 0;
@@ -98,18 +114,22 @@ export function spendAttackEconomy(input: {
       ? {
           ok: true as const,
           budget: { ...budget, oncePerTurn: [...budget.oncePerTurn, `granted:${riding.toLowerCase()}`] },
-          note: `${riding}: the attack that comes with its activation, no second bonus action`,
+          note: `${riding}: the attack that comes with its activation${input.grantedActivation === "action" ? "" : ", no second bonus action"}`,
         }
       : grantedBonusAction
       ? spendAction(budget, "bonus", `the ${profile.weapon} attack`, sheet.name)
+      : input.grantedWholeAction
+      ? spendAction(budget, "action", `the ${profile.weapon} attack`, sheet.name)
       : bonusSwing
       ? spendAction(budget, "bonus", bonusSwing, sheet.name)
       : options.bonusAttack
-        ? spendAction(
-            budget,
-            "bonus",
-            options.bonusAttack === "martial arts" ? "the Martial Arts strike" : options.bonusAttack === "feature" ? "the feature's bonus attack" : "the frenzy's attack",
-            sheet.name,
+        ? pairedBonusAttack(budget, options.featureBonus?.pair ? options.featureBonus.feature : null, (open) =>
+            spendAction(
+              open,
+              "bonus",
+              options.bonusAttack === "martial arts" ? "the Martial Arts strike" : options.bonusAttack === "feature" ? "the feature's bonus attack" : "the frenzy's attack",
+              sheet.name,
+            ),
           )
         : options.hordeBreaker
         ? { ok: true as const, budget: claimHordeBreaker(budget), note: "Horde Breaker: an extra attack, once a turn" }
@@ -118,9 +138,9 @@ export function spendAttackEconomy(input: {
         : kind === "spell"
           ? // The cast guard charges the casting time in pc-attack.ts.
             { ok: true as const, budget }
-          : spendAttack(budget, sheet.name, { unarmed: profile.weapon === "Unarmed strike" });
+          : spendAttack(budget, sheet.name, { unarmed: profile.weapon === "Unarmed strike", flurry: args.flurryStrike === true });
     if (!spend.ok) {
-      return { refused: toolError(spend) };
+      return { refused: usesAttackAction ? withSurgeOpen(toolError(spend), sheet, budget) : toolError(spend) };
     }
     flurryStrike = (spend.budget.flurryStrikes ?? 0) < flurryBefore;
     budget = spend.budget;
@@ -131,6 +151,10 @@ export function spendAttackEconomy(input: {
     }
     if (usesAttackAction) {
       budget = withLoadingFired(budget, profile);
+      if (isNet(profile)) {
+        budget = { ...budget, attacksMade: Math.max(budget.attacksMade, budget.attacksAllowed) };
+        notes.push("a net is the action's only attack: the rest of the Attack action is spent");
+      }
       if (!profile.ranged && (profile.properties ?? []).includes("light")) {
         budget = { ...budget, lightMeleeAttack: true };
       }
@@ -179,3 +203,25 @@ export function spendAttackEconomy(input: {
 }
 
 const holdsPistolAndBlade = (sheet: CharacterSheet) => sheet.features.some((feature) => textKey(feature.name) === "pistol and blade");
+
+// The Attack action's swings are gone, and an Action Surge still waits, or
+// Flurry of Blows strikes already paid for: the refusal says so, or the turn
+// ends with them unspent (it did, live).
+function withSurgeOpen(refusal: ToolError, sheet: CharacterSheet, budget: TurnBudget): ToolError {
+  if ((budget.flurryStrikes ?? 0) > 0) {
+    return { ...refusal, error: `${refusal.error} ${sheet.name} still has ${budget.flurryStrikes} Flurry of Blows strike${budget.flurryStrikes === 1 ? "" : "s"} paid for: unarmed strikes with feature "Flurry of Blows".` };
+  }
+  const open = budget.attacksMade >= budget.attacksAllowed && !budget.oncePerTurn.includes(ACTION_SURGED) && (usesLeft(sheet, "action_surge") ?? 0) > 0;
+  return open ? { ...refusal, error: `${refusal.error} ${sheet.name} has Action Surge unused: an attack with feature "Action Surge" spends it and opens another Attack action.` } : refusal;
+}
+
+// A bonus action that buys two attacks (Swift Quiver): the first spends it
+// and leaves the second owed on the turn; the second spends that mark.
+function pairedBonusAttack(budget: TurnBudget, pair: string | null, spend: (budget: TurnBudget) => SpendResult): SpendResult {
+  const mark = pair ? `${SECOND_BONUS_ATTACK}${textKey(pair)}` : null;
+  if (mark && budget.oncePerTurn.includes(mark)) {
+    return { ok: true, budget: { ...budget, oncePerTurn: budget.oncePerTurn.filter((key) => key !== mark) }, note: `${pair}: the second attack of its bonus action` };
+  }
+  const spent = spend(budget);
+  return spent.ok && mark ? { ...spent, budget: { ...spent.budget, oncePerTurn: [...spent.budget.oncePerTurn, mark] } } : spent;
+}

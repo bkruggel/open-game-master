@@ -16,6 +16,10 @@ import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
 import { useT } from "@/lib/locale";
+import { HandSummonPick, PillChoice } from "@/app/campaigns/[campaignId]/HandSummonPick";
+import { mixRecord, stepMix, summonMix, summonPick } from "@/lib/battlemap/hand-summon";
+import type { SummonCatalogue } from "@/lib/srd/summon-spells";
+import { petFormOptions, petFormTyped, type PetFormCatalogue } from "@/lib/dm/pet-form-logic";
 
 // The translator's shape, for the label helpers below: `t` comes in first
 // (src/lib/story-window.ts).
@@ -29,7 +33,8 @@ type T = (key: string, vars?: Record<string, string | number>) => string;
 
 export type ShareRow = { enemyId?: string; characterId?: string; share: string };
 export type DiceRow = { characterId: string; dice: number };
-export type Value = string | number | boolean | string[] | ShareRow[] | DiceRow[];
+export type MixRow = { variant: string; count: number };
+export type Value = string | number | boolean | string[] | ShareRow[] | DiceRow[] | MixRow[];
 export type Enemy = NonNullable<PublicEncounter["enemies"]>[number];
 
 // The Select's own marker for "type it instead"; never sent.
@@ -39,7 +44,7 @@ export function initialValue(field: CatalogField): Value {
   if (field.kind === "boolean") {
     return field.default === true;
   }
-  if (field.kind === "characters" || field.kind === "enemies" || field.kind === "shares" || field.kind === "hitDice") {
+  if (field.kind === "characters" || field.kind === "enemies" || field.kind === "shares" || field.kind === "hitDice" || field.kind === "summonMix") {
     return [];
   }
   return "";
@@ -267,7 +272,7 @@ function ChipPicks({
             onClick={() => onChange(on ? picked.filter((id) => id !== choice.id) : [...picked, choice.id])}
             className={cn(
               ui.btnSmall,
-              "min-h-9 px-2.5 py-1 text-xs",
+              "min-h-10 px-2.5 py-1 text-xs sm:min-h-9",
               on && "border-amber-500/70 bg-amber-400/10 text-amber-100 shadow-glow-gold",
             )}
           >
@@ -286,15 +291,64 @@ export function FieldInput({
   onChange,
   sheets,
   enemies,
+  summon,
+  pets,
 }: {
   field: CatalogField;
   value: Value;
   onChange: (value: Value) => void;
   sheets: CharacterSheet[];
   enemies: Enemy[];
+  // The engine's catalogue for the spell the form names, and the slot it is
+  // cast from, for the summon fields (DmActionForm.tsx).
+  summon?: { catalogue: SummonCatalogue | null; slotLevel: number };
+  // Summon a pet's creatures, and the kind of pet the form holds.
+  pets?: { catalogue: PetFormCatalogue | null; kind: string };
 }) {
   const t = useT();
   switch (field.kind) {
+    case "petForm":
+      // The creatures the engine takes for this kind of pet; only a story pet
+      // may be one the lists do not hold, typed behind "Not in the list".
+      return (
+        <PickOrType
+          key={pets?.kind ?? ""}
+          field={{ ...field, other: petFormTyped(pets?.kind ?? "") ? { label: t("dm.action.petFormOther"), placeholder: t("dm.action.petFormOtherPlaceholder") } : undefined }}
+          value={String(value ?? "")}
+          onChange={onChange}
+          options={petFormOptions(pets?.kind ?? "", pets?.catalogue ?? null)}
+          placeholder={pets?.kind ? t("dm.action.petFormPick") : t("dm.action.petFormPickKindFirst")}
+        />
+      );
+    case "summonKind": {
+      const kinds = summon?.catalogue?.kinds ?? [];
+      return (
+        <PillChoice
+          label={field.label}
+          values={kinds}
+          chosen={kinds.includes(String(value)) ? String(value) : (kinds[0] ?? null)}
+          show={(kind) => kind.replace(/^./, (c) => c.toUpperCase())}
+          onPick={(kind) => onChange(kind)}
+        />
+      );
+    }
+    case "summonMix": {
+      const pick = summon?.catalogue ? summonPick(summon.catalogue, summon.slotLevel) : null;
+      if (!pick?.summon.mix) return null;
+      // Named for the spell, as the Hand's card is: the steppers' group reads
+      // "Each target's form for Animate Dead" to a screen reader, not the
+      // field's own label twice over.
+      const card = { name: summon?.catalogue?.spell ?? field.label, summon: pick.summon, choice: pick.choice };
+      const rows = Array.isArray(value) ? (value as MixRow[]) : [];
+      const picked = mixRecord(rows);
+      return (
+        <HandSummonPick
+          card={card}
+          choices={{ mix: picked }}
+          onStep={(form, delta) => onChange(summonMix(card, stepMix(card, picked, form, delta)))}
+        />
+      );
+    }
     case "character": {
       // The empty row stays in the list, as it did in the browser's own
       // select, so a picked target can be unpicked.
@@ -408,6 +462,7 @@ export function FieldInput({
           <textarea
             value={String(value ?? "")}
             rows={3}
+            maxLength={field.maxLength}
             placeholder={field.placeholder}
             aria-label={field.label}
             onChange={(event) => onChange(event.target.value)}
@@ -420,6 +475,7 @@ export function FieldInput({
         <input
           type="text"
           value={String(value ?? "")}
+          maxLength={field.maxLength}
           placeholder={field.placeholder}
           aria-label={field.label}
           onChange={(event) => onChange(event.target.value)}

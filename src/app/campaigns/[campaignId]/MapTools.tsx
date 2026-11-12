@@ -91,7 +91,7 @@ export function BrushPalette({
       </ul>
       {radius !== undefined && onRadius ? (
         <div className="space-y-1">
-          <div className="flex items-center justify-between font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">
+          <div className="flex items-center justify-between font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">
             {t("maptools.nib")}
             <span className="font-mono normal-case tracking-normal text-amber-200">
               {t("maptools.tiles", { n: radius * 2 + 1 })}
@@ -274,7 +274,7 @@ export function BackdropControls({
 
   return (
     <div className="space-y-2">
-      <p className="flex items-center gap-1.5 font-display text-[9px] uppercase tracking-[0.18em] text-stone-500">
+      <p className="flex items-center gap-1.5 font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">
         <ImageIcon className="size-3.5" /> {t("maptools.picture")}
       </p>
       <div className="flex flex-wrap items-center gap-1.5">

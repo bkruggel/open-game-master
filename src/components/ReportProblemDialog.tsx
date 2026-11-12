@@ -121,7 +121,8 @@ export function ReportProblemDialog({
       {saved ? (
         <div className="reveal space-y-4" data-report-saved>
           <p className="text-sm leading-6 text-stone-300">
-            {t("report.savedLine", { name: saved.name, where: saved.where || t("report.where.device") })}
+            {t("report.savedLine.pre")} <span className="font-code text-amber-200">{saved.name}</span>{" "}
+            {t("report.savedLine.rest", { where: saved.where || t("report.where.device") })}
           </p>
           <div className="flex flex-wrap justify-end gap-2">
             <a href={formUrl} target="_blank" rel="noopener noreferrer" className={ui.btnSmall} data-report-form-link>

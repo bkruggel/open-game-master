@@ -21,17 +21,20 @@ import { fakeModel, reply, settleQueue } from "./lib/enforce-narrator.mjs";
 
 const { test, finish } = suite("test-off-turn-hand");
 
-const { setDmMode } = await import("../src/lib/db/campaigns.ts");
+const { joinByInviteCode, setAssistantDm, setCampaignStatus, setDmMode } = await import("../src/lib/db/campaigns.ts");
 const { createCompanionUser } = await import("../src/lib/db/users.ts");
 const { createSheet, markSheetAsCompanion, setCompanionCommander } = await import("../src/lib/db/sheets.ts");
 const { activePublicEncounter } = await import("../src/lib/db/encounter-view.ts");
 const { gmCompanionTurn } = await import("../src/lib/dm/companion-command.ts");
 const { gmTurnCompanion, offTurnReactors } = await import("../src/lib/player-characters.ts");
 const { offTurnReactionCards, reactionAim, reactionCards } = await import("../src/lib/battlemap/hand-react.ts");
-const { turnFromEncounter } = await import("../src/lib/battlemap/hand-table.ts");
+const { turnCharacterId, turnFromEncounter } = await import("../src/lib/battlemap/hand-table.ts");
 const { translate } = await import("../src/lib/messages-logic.ts");
 const t = (key, vars) => translate("en", key, vars);
-const { characterAwaitingPlayer, declaredThisTurn } = await import("../src/lib/dm/player-word.ts");
+const { initiativeCharacter } = await import("../src/lib/player-characters.ts");
+const { subscribe } = await import("../src/lib/events.ts");
+const { refreshesEncounter } = await import("../src/app/campaigns/[campaignId]/useCampaignStream.ts");
+const { characterAwaitingPlayer, declaredThisTurn, wordsThisTurn } = await import("../src/lib/dm/player-word.ts");
 const { turnOverFor } = await import("../src/lib/dm/claims.ts");
 
 const read = (file) => fs.readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
@@ -113,6 +116,30 @@ await test("A hit hero who is not the one acting is offered their reaction, name
   assert.equal(characterAwaitingPlayer(world.campaignId)?.id, hild.id);
 });
 
+// The other half of the bench's report (issue 685): the hero whose turn it
+// is answers a hit on themselves (an opportunity attack as they walked, or a
+// hit in the enemies' pass while the pointer already rests on them). A
+// reaction is no word on their own turn: counted as one, the AI was let play
+// that turn for them and the narration's hand-off ended it unplayed.
+await test("A reaction card from the hero whose turn it is leaves that turn waiting on them", async () => {
+  const { world, hild } = await twoHeroes();
+  world.patch(hild.id, { features: [{ name: "Uncanny Dodge", source: "class" }] });
+  assert.equal(current(world).characterId, hild.id, "Hild is on turn");
+  const goblin = world.enemies()[0];
+  await world.hitBy(hild.id, { enemyId: goblin.id, name: goblin.displayName, total: 18, vsAc: 14, raw: 6, attack: "Scimitar" });
+  const dodge = handReactions(world, world.sheet(hild.id), "all_active").own.find((card) => card.name === "Uncanny Dodge");
+  assert.ok(dodge, "Hild's own Uncanny Dodge is offered");
+  const posted = await route(world, "actions", { kind: "do", content: "Hild twists away from the blow.", characterId: hild.id, intent: dodge.intent }, world.owner);
+  assert.equal(posted.status, 202, JSON.stringify(posted.body));
+  assert.equal(declaredThisTurn(world.campaignId, hild.id), false, "the reaction is no word on Hild's turn");
+  assert.equal(wordsThisTurn(world.campaignId, hild.id), "", "nor words a turn's end could be read from");
+  assert.equal(characterAwaitingPlayer(world.campaignId)?.id, hild.id, "the AI still waits on Hild");
+  assert.equal(turnOverFor(world.campaignId, { resolvedCharacterIds: [] }), null, "a narration cannot hand Hild's turn on");
+  // Her next line is her turn's word, as before.
+  world.say("player", "Hild swings her mace at the goblin.", world.sheet(hild.id));
+  assert.equal(declaredThisTurn(world.campaignId, hild.id), true);
+});
+
 // A complete card is the engine's before the narrator's (issue 570, turn.ts
 // directCards), a reaction among them: the card sent as the hit hero is
 // resolved as that hero on the acting one's turn, and leaves that turn alone.
@@ -184,6 +211,27 @@ await test("At a table a person runs, a companion nobody commands is theirs on i
   assert.equal(ended.status, 200, JSON.stringify(ended.body));
   assert.notEqual(current(world).characterId, pip.id, "Pip's turn ended");
   assert.equal(gmCompanionTurn(world.campaign(), world.owner.id), null, "the turn after Pip's is no companion's");
+});
+
+// A co-GM holds every in-game power the GM does (viewer.ts isDmSeat), and
+// gmCompanionTurn hands them the companion's turn too; their cards waited in
+// the queue as a player's would, for the GM to play again from the console.
+await test("A co-GM who plays the companion's turn has its card resolved at once, as the GM's is", async () => {
+  const { world, pip } = await personsTable();
+  const co = world.addUser("co-gm");
+  // Seated the way the world seats a player mid-fight (enforce-world addHero).
+  const status = world.campaign().status;
+  setCampaignStatus(world.campaignId, "lobby");
+  assert.ok(joinByInviteCode(co.id, world.campaign().inviteCode).campaign, "the co-GM joins");
+  setCampaignStatus(world.campaignId, status);
+  assert.ok(setAssistantDm(world.campaignId, co.id), "the co-GM takes their seat");
+  await route(world, "encounter/end-turn", {}, world.owner);
+  assert.equal(current(world).characterId, pip.id);
+  assert.equal(gmCompanionTurn(world.campaign(), co.id)?.id, pip.id, "the companion's turn is the co-GM's to play too");
+  const dodged = await route(world, "actions", { kind: "do", content: "Pip takes the Dodge action.", characterId: pip.id, intent: { card: "basic", action: "dodge" } }, co);
+  assert.equal(dodged.status, 200, JSON.stringify(dodged.body));
+  assert.equal(dodged.body.resolved, true, "resolved, not queued for the GM");
+  assert.equal(world.encounter().turnBudget.actionUsed, true);
 });
 
 await test("The Hand's view of a companion's turn and the server's agree", async () => {
@@ -278,6 +326,63 @@ await test("The GM's box and cards are open on the companion's turn they play, a
   const gate = (playsTurn) => composerGate(t, { floor, sheets: [], meUserId: "gm", kind: "do", myName: "Pip", leadPrivate: false, openingNarrationPlaying: false, playsTurn });
   assert.equal(gate(true).inputBlocked, false);
   assert.equal(gate(false).inputBlocked, true);
+});
+
+// The play-test of 0.31.3 (2026-10-31): at a test fight its author ran from
+// the GM seat, an enemy's hit on one of the author's heroes showed no
+// reaction under the monsters' hand until a reload. An enemy's attack
+// publishes its rolls and no encounter_updated, and the GM seat pulled the
+// encounter only on encounter_updated, so the hit's record never reached it.
+await test("In the GM seat, a hit hero's reaction arrives with the enemy's roll, whichever hero is up next", async () => {
+  const world = await openWorld({ gameSettings: { multiCharacter: "all_active" }, campaign: { maxPlayers: 8 } });
+  const kit = await combatKit(world);
+  const vesper = world.addHero({ name: "Vesper", class: "rogue", level: 5, user: world.owner, maxHp: 38 });
+  const vyrrath = world.addHero({ name: "Vyrrath", class: "cleric", level: 5, user: world.owner });
+  world.patch(vesper.id, { features: [{ name: "Uncanny Dodge", source: "class" }] });
+  setDmMode(world.campaignId, "human", world.owner.id);
+  await kit.fight(2, { heroFaces: { [vesper.id]: 20, [vyrrath.id]: 1 }, enemyFace: 10 });
+  const ended = await world.invoke("end_turn", { characterId: vesper.id });
+  assert.equal(ended.ok, true, ended.error);
+  // The goblin already stands next to Vesper, as the play-test put Thug 2,
+  // so its swing draws no opportunity attack: that strike's damage would
+  // publish an encounter_updated of its own.
+  const [goblin] = world.enemies();
+  kit.place(vesper.id, 5, 5);
+  kit.place(goblin.id, 6, 5);
+  const types = [];
+  const stop = subscribe(world.campaignId, (chunk) => {
+    const type = /event: (\S+)/.exec(chunk)?.[1];
+    if (type) types.push(type);
+  });
+  world.dice(19, 19, 6, 6);
+  const swing = await world.invoke("enemy_attack", { enemyId: goblin.id, targetCharacterId: vesper.id });
+  stop();
+  assert.equal(swing.ok, true, swing.error);
+  assert.ok(types.includes("roll_result"), `the attack published ${types.join(", ")}`);
+  assert.ok(
+    types.some((type) => refreshesEncounter(type, true)),
+    `the GM seat pulls no encounter after ${types.join(", ")}: the reaction shows only after a reload`,
+  );
+  assert.equal(refreshesEncounter("roll_result", false), true, "a player's seat still pulls it");
+
+  // What the GM seat then reads: Vyrrath is up next, so the Hand follows
+  // her, and Vesper's Uncanny Dodge is offered as Vesper's card.
+  const encounter = activePublicEncounter(world.campaignId, { enemyNumbers: true });
+  assert.equal(encounter.enemyTurns, true);
+  const sheets = world.sheets();
+  const following = initiativeCharacter(sheets, world.owner.id, turnCharacterId(encounter));
+  assert.equal(following?.id, vyrrath.id, "Vyrrath is up next");
+  const others = offTurnReactionCards(
+    offTurnReactors(sheets, world.owner.id, following.id, "all_active").map((sheet) => ({
+      sheet,
+      turn: turnFromEncounter(encounter, sheet, { myTurn: false }),
+    })),
+    encounter.lastHits ?? [],
+    sheets,
+  );
+  const dodge = others.find((card) => card.name === "Uncanny Dodge");
+  assert.deepEqual(dodge?.actor, { id: vesper.id, name: "Vesper" });
+  assert.equal(dodge.disabled, null, dodge.disabled ?? "");
 });
 
 finish();

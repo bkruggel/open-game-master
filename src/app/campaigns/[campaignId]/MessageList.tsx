@@ -140,8 +140,8 @@ export function MessageList({
   onBrowseShop?: (shopId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const nearBottomRef = useRef(true);
+  const lastTopRef = useRef(0);
   const scrollPendingRef = useRef(false);
   // The flavor line follows the interface's language, pool and all.
   const locale = useLocale();
@@ -293,7 +293,8 @@ export function MessageList({
   // scrolling up to reread must not be yanked back. During narration
   // streaming the draft bubble calls this per token, so scrolling is
   // instant and coalesced through rAF instead of stacking smooth-scroll
-  // animations (a real jank source in Firefox).
+  // animations (a real jank source in Firefox). It moves this pane alone:
+  // scrollIntoView also moves every scroller up to the window (issue 760).
   const follow = useCallback((behavior: ScrollBehavior) => {
     if (!nearBottomRef.current || scrollPendingRef.current) {
       return;
@@ -301,7 +302,10 @@ export function MessageList({
     scrollPendingRef.current = true;
     requestAnimationFrame(() => {
       scrollPendingRef.current = false;
-      bottomRef.current?.scrollIntoView({ behavior });
+      const el = containerRef.current;
+      if (!el || !nearBottomRef.current) return;
+      el.scrollTo({ top: el.scrollHeight, behavior });
+      lastTopRef.current = el.scrollTop;
     });
   }, []);
   // Keyed on the newest message and its length as well as the count: the
@@ -313,6 +317,17 @@ export function MessageList({
   useEffect(() => {
     follow("smooth");
   }, [messages.length, newestKey, dmStatus, follow]);
+  // The pane changed size (a phone's keyboard, the Hand dealt under it, the
+  // Table tab shown again): a reader at the end stays there.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (nearBottomRef.current) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // The streaming passage sits at the bottom, unless a player answered it
   // mid-stream: then it already holds a seq before that reply (issue 68) and
@@ -324,10 +339,25 @@ export function MessageList({
     <DmDraftBubble key="dm-draft" dmStatus={dmStatus} statusPhrase={statusPhrase} follow={follow} />
   );
 
+  // Only the reader scrolling up leaves the end. A pane that shrinks also
+  // opens a gap below, and reading that as the reader leaving stranded every
+  // new line under the fold: on a phone in a fight a sent line seemed to
+  // vanish (issue 713; the scroll beside the board learned it in issue 212).
+  // Scrolling up leaves at any distance: tokens came faster than a scroll could
+  // clear the 120px band, so the reader was pulled back to the input (issue
+  // 760). follow() records where it put the pane, so a move up from there is
+  // the reader's, and a pane that grew and clamped the scroll is still at the
+  // end.
   function handleScroll() {
     const el = containerRef.current;
     if (el) {
-      nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+      const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (el.scrollTop < lastTopRef.current - 1 && gap > 1) {
+        nearBottomRef.current = false;
+      } else if (gap < 120) {
+        nearBottomRef.current = true;
+      }
+      lastTopRef.current = el.scrollTop;
     }
   }
 
@@ -383,7 +413,9 @@ export function MessageList({
       ])}
       {draftAt === -1 ? draftBubble : null}
 
-      <div ref={bottomRef} />
+      {/* The list's foot: its gap keeps the last line off the box, and
+          hand.css counts back from it. */}
+      <div />
       </div>
     </div>
   );

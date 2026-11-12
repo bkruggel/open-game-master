@@ -24,6 +24,8 @@ import type { Locale } from "@/lib/messages-logic";
 import { guidanceFor } from "@/lib/srd/feature-effects";
 import { subclassFeatureDescription } from "@/lib/srd/features";
 import { findOptionByFeatureName } from "@/lib/srd/options";
+import { subclassChoicePickDescription } from "@/lib/srd/subclass-choice-picks";
+import { choiceDamageTypeOf } from "@/lib/srd/chosen-element";
 
 export type GlossaryTerm = {
   id: string;
@@ -102,6 +104,19 @@ export function describeFeature(classId: string, subclass: string, name: string,
   const option = findOptionByFeatureName(name);
   if (option) {
     return option.req ? `${option.d} (Requires ${option.req}.)` : option.d;
+  }
+  // A workshop subclass's pick ("Bloodline (Storm)") from the subclasses the
+  // page registered (issue #833).
+  const pick = subclassChoicePickDescription(name);
+  if (pick) {
+    return pick;
+  }
+  // Written beside such a pick: the element its option deals in. The
+  // element's sentence stays the engine's English: it quotes the subclass's
+  // own rules text (rulebook prose, not a table word).
+  const element = choiceDamageTypeOf(name);
+  if (element) {
+    return `The element of the ${element.label} chosen: ${element.type}. Elemental Affinity, where the subclass has it, adds to spells of this damage type and resists it.`;
   }
   const resource = matchResource(name);
   const found =

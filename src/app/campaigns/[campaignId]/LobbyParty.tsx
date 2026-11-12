@@ -185,7 +185,7 @@ export function LobbyParty({
                       </SeatBadge>
                     ) : null}
                     {member.useRealDice ? (
-                      <SeatBadge tip={t("table.lobby.realDiceTip")}>
+                      <SeatBadge tip={t("table.lobby.realDiceTipWaits")}>
                         {t("table.lobby.realDiceBadge")}
                       </SeatBadge>
                     ) : null}

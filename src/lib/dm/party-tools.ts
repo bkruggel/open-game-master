@@ -13,11 +13,12 @@ import { translate } from "@/lib/messages-logic";
 // The tool refusals read the model's protocol: pinned English.
 const enT = (key: string, vars?: Record<string, string | number>) => translate("en", key, vars);
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import type { ToolResult } from "@/lib/dm/tool-errors";
+import { badArguments, type ToolResult } from "@/lib/dm/tool-errors";
 import { notCarried } from "@/lib/dm/item-logic";
 import { isTableGearName } from "@/lib/db/homebrew";
 import { textKey } from "@/lib/language/text-logic";
 import { tableNoteSeq } from "@/lib/dm/narration-slot";
+import { fittedText } from "@/lib/dm/fitted-text";
 
 // Moving things between a character and the party.
 //
@@ -35,7 +36,7 @@ const stashSchema = z.object({
   qty: z.coerce.number().int().min(1).max(999).optional(),
   coins: z.string().max(60).optional(),
   gold: z.coerce.number().int().min(0).max(1000000).optional(),
-  reason: z.string().max(200).optional(),
+  reason: fittedText(200).optional(),
 });
 
 type ToolDef = {
@@ -113,8 +114,8 @@ export function handlePartyStash(
   let args: z.infer<typeof stashSchema>;
   try {
     args = stashSchema.parse(JSON.parse(rawArguments || "{}"));
-  } catch {
-    return { error: "Invalid arguments: party_stash needs a `do` of stow, take, deposit or withdraw.", retry: true };
+  } catch (error) {
+    return badArguments("Invalid arguments: party_stash needs a `do` of stow, take, deposit or withdraw.", error, rawArguments);
   }
 
   const sheet = resolve(args.characterId, sheets, sheetsById);

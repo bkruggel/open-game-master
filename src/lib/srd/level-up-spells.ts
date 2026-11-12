@@ -20,13 +20,18 @@ import {
   spellCapOf,
   spellbookAllowance,
   spellbookOf,
+  spellOnCasterList,
+  widerListOf,
   type CasterView,
 } from "@/lib/srd/spell-prep";
+import { spellRulesClassFor } from "@/lib/classes";
+import { classLabelOf, spellListLabel } from "@/lib/classes/class-spell-list";
 import type { AbilityScores } from "@/lib/schemas/sheet";
 import type { SpellFacts } from "@/lib/srd/legality/types";
 import { thirdCasterOutside, thirdCasterSchoolProblem } from "@/lib/srd/third-caster";
 import { textKey } from "@/lib/language/text-logic";
 import { revisedOnlySpellProblem } from "@/lib/content/edition";
+import { classSpellGrants, offListProblems } from "@/lib/srd/class-spell-grants";
 
 // A name no list carries: a 2024-only spell says so, anything else is unknown.
 function unknownSpell(name: string, list: string): string {
@@ -65,6 +70,9 @@ export type SpellLevelUp = {
   abilities: AbilityScores;
   // Cantrips the race gave, known on top of the class's own.
   freeCantrips: number;
+  // The sheet's features after the level, for the picks a feature widens
+  // (a pact boon taken with this level, src/lib/srd/class-spell-grants.ts).
+  features?: Array<{ name: string }>;
   spellOf: (name: string) => SpellFacts | null;
   picks: SpellPicks | null;
 };
@@ -81,7 +89,10 @@ function arcanumTop(classList: string, level: number): number {
 
 export function levelUpSpells(input: SpellLevelUp): SpellLevelUpResult {
   const { before, picks } = input;
-  const label = `${before.classId.replace(/[_-]+/g, " ")} of level ${input.level}`;
+  const label = `${classLabelOf(before.classId)} of level ${input.level}`;
+  // A workshop class's list is named by its id (spellPoolKeyFor); a player
+  // reads the list it borrows or the class's own name.
+  const listName = spellListLabel(input.list);
   const after: CasterView = {
     ...before,
     level: input.level,
@@ -91,10 +102,14 @@ export function levelUpSpells(input: SpellLevelUp): SpellLevelUpResult {
     cantrips: [...before.cantrips],
     pending: [...before.pending],
     spellbook: [...before.spellbook],
+    ...(input.features ? { features: input.features } : {}),
   };
   const granted = grantedSpellsOf(after);
   const isGranted = (name: string) => has(granted, name);
-  const top = Math.max(maxSpellLevelOf(after), arcanumTop(input.list, input.level));
+  // The Mystic Arcanum is the warlock's tables', read for whatever counts
+  // as one: the warlock, a workshop class on its list, or a pact caster with
+  // a list of its own (issue #833).
+  const top = Math.max(maxSpellLevelOf(after), arcanumTop(spellRulesClassFor(before.classId), input.level));
 
   // ---- what the player asked for, as lists ----
   let removed: string[] = [];
@@ -106,7 +121,7 @@ export function levelUpSpells(input: SpellLevelUp): SpellLevelUpResult {
       }
       const spell = input.spellOf(name);
       if (!spell) {
-        return { error: unknownSpell(name, input.list) };
+        return { error: unknownSpell(name, listName) };
       }
       if (spell.level === 0) {
         after.cantrips.push(spell.name);
@@ -182,28 +197,42 @@ export function levelUpSpells(input: SpellLevelUp): SpellLevelUpResult {
     [...after.known, ...after.prepared, ...after.pending, ...after.spellbook],
     beforeSpells,
   ).filter((name) => !isGranted(name));
+  // A pick off the class's list is one Magical Secrets or the Book of
+  // Shadows lets in, as far as their number reaches (class-spell-grants.ts).
+  // A patron's expanded spells and a Divine Soul's cleric list widen it.
+  // One answer with the server's check and the builder's pool
+  // (spell-prep.ts spellOnCasterList), a workshop class's own list included.
+  const onList = (spell: SpellFacts) => spellOnCasterList(after, spell);
+  const grants = classSpellGrants(after);
+  const strays: Array<{ name: string; cantrip: boolean }> = [];
   for (const name of newCantrips) {
     const spell = input.spellOf(name);
     if (!spell) {
-      return { error: unknownSpell(name, input.list) };
+      return { error: unknownSpell(name, listName) };
     }
     if (spell.level !== 0) {
       return { error: `${spell.name} is a level ${spell.level} spell, not a cantrip; it cannot sit on the cantrip list.` };
     }
-    if (!spell.classes.map(textKey).includes(textKey(input.list))) {
-      return { error: `${spell.name} is not a ${input.list} cantrip, so a ${label} cannot learn it.` };
+    if (!onList(spell)) {
+      if (!grants.anyList) {
+        return { error: `${spell.name} is not a ${listName} cantrip, so a ${label} cannot learn it.` };
+      }
+      strays.push({ name: spell.name, cantrip: true });
     }
   }
   for (const name of newSpells) {
     const spell = input.spellOf(name);
     if (!spell) {
-      return { error: unknownSpell(name, input.list) };
+      return { error: unknownSpell(name, listName) };
     }
     if (spell.level === 0) {
       return { error: `${spell.name} is a cantrip; it belongs on the cantrip list, not among the spells.` };
     }
-    if (!spell.classes.map(textKey).includes(textKey(input.list))) {
-      return { error: `${spell.name} is not on the ${input.list} spell list, so a ${label} cannot learn or prepare it.` };
+    if (!onList(spell)) {
+      if (!grants.anyListSpells) {
+        return { error: `${spell.name} is not on the ${listName} spell list, so a ${label} cannot learn or prepare it.` };
+      }
+      strays.push({ name: spell.name, cantrip: false });
     }
     if (spell.level > top) {
       return {
@@ -215,10 +244,38 @@ export function levelUpSpells(input: SpellLevelUp): SpellLevelUpResult {
     }
   }
 
+  if (strays.length) {
+    // What the caster already held off the list, and still holds: spells an
+    // earlier Magical Secrets brought (a race's cantrips may be off it too,
+    // and are left out by their count).
+    const keptNow = new Set([...after.cantrips, ...after.known, ...after.prepared, ...after.pending, ...after.spellbook].map(textKey));
+    const offBefore = (names: string[]) =>
+      dedupeNames(names).filter((name) => {
+        const spell = keptNow.has(textKey(name)) && !isGranted(name) ? input.spellOf(name) : null;
+        return Boolean(spell && !onList(spell));
+      }).length;
+    const keptCantrips = grants.anyList ? Math.max(0, offBefore(before.cantrips) - input.freeCantrips) : 0;
+    const kept = keptCantrips + (grants.anyListSpells ? offBefore(beforeSpells) : 0);
+    const [refusal] = offListProblems({
+      grants,
+      allowedBefore: classSpellGrants({ ...before, features: after.features }).anyList,
+      kept,
+      strays,
+      list: listName,
+      label,
+    });
+    if (refusal) {
+      return { error: refusal };
+    }
+  }
+
   // ---- a third caster's two schools (src/lib/srd/third-caster.ts) ----
   if (newSpells.length) {
     const schoolOf = (name: string) => ({ name, school: input.spellOf(name)?.school ?? null });
-    const levelled = (list: string[]) => dedupeNames(list).filter((name) => !isGranted(name)).map(schoolOf);
+    // A workshop subclass's own additions to the list are its author's
+    // picks, outside the two schools' count (issue #833).
+    const added = new Set(widerListOf(after).spells.map(textKey));
+    const levelled = (list: string[]) => dedupeNames(list).filter((name) => !isGranted(name) && !added.has(textKey(name))).map(schoolOf);
     const schools = thirdCasterSchoolProblem({
       classId: before.classId,
       subclass: input.subclass,
@@ -237,7 +294,8 @@ export function levelUpSpells(input: SpellLevelUp): SpellLevelUpResult {
   }
 
   // ---- the counts ----
-  const cantripCap = cantripCapOf(after);
+  const tableCantrips = cantripCapOf(after);
+  const cantripCap = tableCantrips === null ? null : tableCantrips + grants.extraCantrips;
   const cantrips = dedupeNames(after.cantrips);
   if (newCantrips.length && cantripCap === null) {
     return { error: `A ${label} knows no cantrips.` };
@@ -247,7 +305,8 @@ export function levelUpSpells(input: SpellLevelUp): SpellLevelUpResult {
       error: `A ${label} knows ${cantripCap} ${cantripCap === 1 ? "cantrip" : "cantrips"}; that list would have ${cantrips.length - input.freeCantrips}.`,
     };
   }
-  const cap = spellCapOf(after, input.abilities);
+  const tableCap = spellCapOf(after, input.abilities);
+  const cap = tableCap ? { ...tableCap, count: tableCap.count + grants.extraSpells } : null;
   if (after.style === "spellbook") {
     const written = added(spellbookOf(after), spellbookOf(before)).filter((name) => !isGranted(name));
     const allowance = input.firstLevel ? spellbookAllowance(input.level) : 2;

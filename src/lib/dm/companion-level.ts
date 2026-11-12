@@ -25,6 +25,7 @@ import { applyAsiChoices, earnedAsiCountFor } from "@/lib/srd/asi";
 import { asiTaken } from "@/lib/srd/asi-ledger";
 import {
   abilityPriority,
+  companionExpertisePicks,
   companionImprovements,
   companionSpellPicks,
 } from "@/lib/srd/companion-build";
@@ -34,11 +35,11 @@ import { ABILITY_NAMES } from "@/lib/srd/legality/types";
 import { buildLevelUp, type LevelUpContext, type LevelUpRequest } from "@/lib/srd/level-up";
 import { levelUpSpells } from "@/lib/srd/level-up-spells";
 import { classListFor } from "@/lib/srd/multiclass";
-import { checklistSpellsOn } from "@/lib/srd/spell-lists";
+import { classSpellPool } from "@/lib/content";
 import { casterViewsOf, spellStyleFor, type CasterView } from "@/lib/srd/spell-prep";
 import type { ToolError } from "@/lib/dm/tool-errors";
 import { textKey } from "@/lib/language/text-logic";
-import { subclassLevelFor, subclassNamesFor, subclassSpellsFor } from "@/lib/srd/features";
+import { expertiseSlotsFor, subclassLevelFor, subclassNamesFor, subclassSpellsFor } from "@/lib/srd/features";
 
 // A companion's sheet is made and levelled by the same rules as a player's:
 // the legality check at the door (src/lib/characters/admit.ts, the "engine"
@@ -83,7 +84,9 @@ export type CompanionSheet =
 export function legalCompanionSheet(draft: CompanionDraft): CompanionSheet {
   const { campaign, level } = draft;
   const notes: string[] = [];
-  const klass = classGrantsFor(draft.sheet.class);
+  // The table's workshop classes are described too (issue #833): a
+  // companion of one came out with no spells at all.
+  const klass = classGrantsFor(draft.sheet.class, tableAuthors(campaign.id));
   if (!klass) {
     // A class no table describes has nothing to be derived from.
     return { ok: true, sheet: draft.sheet, notes };
@@ -98,7 +101,7 @@ export function legalCompanionSheet(draft: CompanionDraft): CompanionSheet {
   const abilities = applyAsiChoices(draft.sheet.abilities, asiChoices);
 
   let spellcasting: Spellcasting = null;
-  const [casting] = castingClassesOf(classes, classGrantsFor, subclassExtrasFor(tableAuthors(campaign.id)));
+  const [casting] = castingClassesOf(classes, (classId) => classGrantsFor(classId, tableAuthors(campaign.id)), subclassExtrasFor(tableAuthors(campaign.id)));
   if (casting) {
     const spellOf = (name: string) => spellFactsFor(name, tableAuthors(campaign.id));
     const before = emptyView(klass.id, casting.ability, level);
@@ -110,7 +113,8 @@ export function legalCompanionSheet(draft: CompanionDraft): CompanionSheet {
       freeCantrips: 0,
       // The subclass's always-prepared spells come free: a choice spent on
       // one would be a choice lost.
-      candidates: withoutGranted(checklistSpellsOn(casting.list), subclassSpellsFor(klass.id, subclass, level, subclassExtrasFor(tableAuthors(campaign.id)))),
+      // The list the save's check reads, homebrew included (issue #833).
+      candidates: withoutGranted(classSpellPool(casting.list, tableAuthors(campaign.id)), subclassSpellsFor(klass.id, subclass, level, subclassExtrasFor(tableAuthors(campaign.id)))),
       wanted: draft.wantedSpells.map((name) => spellOf(name)?.name ?? name),
     });
     const passed = draft.wantedSpells.filter(
@@ -143,15 +147,31 @@ export function legalCompanionSheet(draft: CompanionDraft): CompanionSheet {
     };
   }
 
-  const admitted = admitSheet({
-    door: "engine",
-    level,
-    sheet: { ...draft.sheet, subclass, abilities, asiChoices, spellcasting },
-    userId: campaign.ownerUserId,
-    campaign,
-  });
+  const admit = (sheet: CreateSheetInput) =>
+    admitSheet({ door: "engine", level, sheet, userId: campaign.ownerUserId, campaign });
+  const sent: CreateSheetInput = { ...draft.sheet, subclass, abilities, asiChoices, spellcasting };
+  let admitted = admit(sent);
   if (!admitted.ok) {
     return { ok: false, error: admitted.problems[0] ?? "That companion is not within the rules.", retry: true };
+  }
+  // A rogue's or a bard's expertise, in the best of the skills the rules
+  // gave them (the background's among them), once the sheet holds them all.
+  const held = admitted.sheet.proficiencies.expertise ?? [];
+  const expertise = companionExpertisePicks(
+    admitted.sheet.proficiencies.skills,
+    abilities,
+    held,
+    expertiseSlotsFor(klass.id, level) - held.length,
+  );
+  if (expertise.length) {
+    // The same sheet again with the picks: the admitted one already holds
+    // its improvements, and would be judged as taking them twice.
+    const doubled = admit({ ...sent, proficiencies: { ...sent.proficiencies, expertise: [...held, ...expertise] } });
+    if (doubled.ok) {
+      admitted = doubled;
+    } else {
+      notes.push(`Their expertise could not be placed: ${doubled.problems[0] ?? "the rules refused it"}`);
+    }
   }
   return { ok: true, sheet: admitted.sheet, notes };
 }
@@ -181,7 +201,9 @@ function contextFor(campaign: Campaign, sheet: CharacterSheet): LevelUpContext {
     hpMethod: campaign.gameSettings.hpMethod ?? "average",
     // A companion keeps to the class it was recruited in.
     multiclassAllowed: false,
-    classOf: classGrantsFor,
+    // The table's workshop classes, read for whoever runs the table, as at
+    // a player's level-up (issue #833).
+    classOf: (classId) => classGrantsFor(classId, owner),
     racialCantrips: raceGrantsFor(sheet.race, owner)?.cantripChoice?.count ?? 0,
     spellOf: (name) => spellFactsFor(name, owner),
     featOf: (name) => featFactsFor(name, owner),
@@ -197,7 +219,7 @@ function contextFor(campaign: Campaign, sheet: CharacterSheet): LevelUpContext {
 // at 0 hit points levels once it is back on its feet).
 function levelOnce(campaign: Campaign, sheet: CharacterSheet): CharacterSheet | null {
   const [leading] = classListFor(sheet);
-  const klass = classGrantsFor(leading.id);
+  const klass = classGrantsFor(leading.id, tableAuthors(campaign.id));
   if (!klass) {
     // No table for the class: the level, and what any level brings (hit
     // dice, the fixed hit points of the die the sheet holds).
@@ -222,7 +244,7 @@ function levelOnce(campaign: Campaign, sheet: CharacterSheet): CharacterSheet | 
   // The table's workshop subclasses: one that casts as an Eldritch Knight,
   // or hands out always-prepared spells, does so for a companion too.
   const extras = subclassExtrasFor(tableAuthors(campaign.id));
-  const casting = castingClassesOf(after, classGrantsFor, extras, sheet.spellcasting).find(
+  const casting = castingClassesOf(after, (classId) => classGrantsFor(classId, tableAuthors(campaign.id)), extras, sheet.spellcasting).find(
     (entry) => textKey(entry.entry.id) === textKey(leading.id),
   );
   if (casting) {
@@ -238,7 +260,7 @@ function levelOnce(campaign: Campaign, sheet: CharacterSheet): CharacterSheet | 
       firstLevel: !held,
       freeCantrips: 0,
       candidates: withoutGranted(
-        checklistSpellsOn(casting.list),
+        classSpellPool(casting.list, tableAuthors(campaign.id)),
         subclassSpellsFor(leading.id, companionSubclass(leading.id, leading.level + 1, leading.subclass), leading.level + 1, extras),
       ),
     });
@@ -246,11 +268,21 @@ function levelOnce(campaign: Campaign, sheet: CharacterSheet): CharacterSheet | 
 
   // The class's subclass, once it reaches the level that grants one.
   const subclass = companionSubclass(leading.id, leading.level + 1, leading.subclass);
+  // Expertise the class has given by the new level and the companion has not
+  // placed: this level's, and any an older build left empty.
+  const heldExpertise = sheet.proficiencies.expertise ?? [];
+  const expertise = companionExpertisePicks(
+    sheet.proficiencies.skills,
+    abilities,
+    heldExpertise,
+    after.reduce((sum, entry) => sum + expertiseSlotsFor(entry.id, entry.level), 0) - heldExpertise.length,
+  );
   const request: LevelUpRequest = {
     level: sheet.level + 1,
     levelUpClass: leading.id,
     ...(subclass && subclass !== leading.subclass ? { subclass } : {}),
     ...(asiChoices.length ? { asiChoices } : {}),
+    ...(expertise.length ? { expertise } : {}),
   };
   const context = contextFor(campaign, sheet);
   let built = buildLevelUp(
@@ -261,6 +293,10 @@ function levelOnce(campaign: Campaign, sheet: CharacterSheet): CharacterSheet | 
   if ("error" in built && picks.length) {
     // The level is not held up by a spell the tables would not take.
     built = buildLevelUp(sheet, request, context);
+  }
+  if ("error" in built && expertise.length) {
+    // Nor by an expertise pick.
+    built = buildLevelUp(sheet, { ...request, expertise: undefined }, context);
   }
   if ("error" in built) {
     return null;

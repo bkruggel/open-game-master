@@ -70,6 +70,22 @@ export function classGrantsFor(classId: string, authors?: string | string[]): Cl
   return packClassOptions(rows).find((option) => textKey(option.id) === id) ?? null;
 }
 
+// The id of the table's own workshop class a person names by its name
+// ("Spellblade"), or null when no class of these authors, or more than one,
+// has it. A workshop class's id is an opaque key no screen shows a GM, so the
+// console's free-text class field and add_companion take the name too, as
+// learn_spell takes a spell by name (PR #839).
+export function workshopClassIdNamed(name: string, authors: string | string[]): string | null {
+  const wanted = textKey(name);
+  if (!wanted) {
+    return null;
+  }
+  const userIds = Array.isArray(authors) ? authors : [authors];
+  const rows = listClasses({ limit: 200, userIds, includeArchived: false }) as ContentRow[];
+  const named = packClassOptions(rows).filter((option) => option.id.startsWith("homebrew-") && textKey(option.name) === wanted);
+  return named.length === 1 ? named[0].id : null;
+}
+
 // Every row a race id may mean, the likeliest first. A sheet built from the
 // bundled list holds the bundled id ("drow") while the pack offers the same
 // race as "odm-drow", so both readings are offered and the sheet is judged
@@ -116,6 +132,14 @@ export function raceGrantsFor(raceId: string, authors?: Authors): RaceGrants | n
   return raceCandidatesFor(raceId, authors)[0] ?? null;
 }
 
+// Every background a table's characters may come from: the bundled ones and
+// the content pack's, with the table's workshop backgrounds. Archived ones
+// still answer for a character already made from them.
+export function offeredBackgrounds(authors?: Authors, includeArchived = true): BackgroundGrants[] {
+  const rows = listBackgrounds({ limit: 200, userIds: authorIds(authors), includeArchived }) as ContentRow[];
+  return mergedBackgroundOptions(rows);
+}
+
 export function backgroundGrantsFor(
   backgroundId: string,
   authors?: Authors,
@@ -124,8 +148,7 @@ export function backgroundGrantsFor(
   if (!id) {
     return null;
   }
-  const rows = listBackgrounds({ limit: 200, userIds: authorIds(authors), includeArchived: true }) as ContentRow[];
-  const options = mergedBackgroundOptions(rows);
+  const options = offeredBackgrounds(authors);
   return (
     options.find((option) => option.id === id) ??
     options.find((option) => textKey(option.id) === textKey(id)) ??

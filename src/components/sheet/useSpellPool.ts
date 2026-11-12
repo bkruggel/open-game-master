@@ -3,8 +3,9 @@
 import { scopedParams, useContentCampaign } from "@/lib/content-scope";
 import { useEffect, useRef, useState } from "react";
 import spellManifest from "@/lib/srd/manifest/spells.json";
-import { spellLevelOf } from "@/lib/srd/spell-lists";
+import { checklistSpellsOn, spellLevelOf } from "@/lib/srd/spell-lists";
 import { compareNames, textKey } from "@/lib/language/text-logic";
+import { lookupCache, poolCache } from "@/components/sheet/spell-pool-cache";
 
 // Every spell a class can take up to a spell level, for the spell book's
 // "available" tiles: the content pack (homebrew included) when installed,
@@ -23,17 +24,33 @@ export type PoolSpell = {
 };
 
 const PAGE = 200;
-const cache = new Map<string, PoolSpell[]>();
+// Kept for the page's life, and cleared by the workshop when a spell or a
+// class is saved (src/components/sheet/spell-pool-cache.ts).
+const cache = poolCache;
+
+// Every class's list at once, for the picks a feature lets come from any
+// class (Magical Secrets, the Book of Shadows: src/lib/srd/any-list-picks-logic.ts).
+export const ANY_SPELL_LIST = "*";
 
 type ManifestSpell = { n: string; l: number; c?: string };
 
+// A workshop class's id names its own list or the one it borrows: the
+// checklist answers for it as the server does (spell-lists.ts
+// checklistSpellsOn, src/lib/classes/class-spell-list.ts).
 function checklistPool(classSlug: string, maxLevel: number): PoolSpell[] {
   const wanted = classSlug.toLowerCase();
+  if (wanted.startsWith("homebrew-")) {
+    return checklistSpellsOn(wanted)
+      .filter((spell) => spell.level <= maxLevel)
+      .sort((a, b) => a.level - b.level || compareNames(a.name, b.name));
+  }
   return (spellManifest as { spells: ManifestSpell[] }).spells
     .filter(
       (spell) =>
         spell.l <= maxLevel &&
-        (spell.c ?? "").split(",").some((entry) => entry.trim().toLowerCase() === wanted),
+        (spell.c ?? "")
+          .split(",")
+          .some((entry) => Boolean(entry.trim()) && (wanted === ANY_SPELL_LIST || entry.trim().toLowerCase() === wanted)),
     )
     .map((spell) => ({ name: spell.n, level: spell.l }))
     .sort((a, b) => a.level - b.level || compareNames(a.name, b.name));
@@ -56,7 +73,7 @@ function uniqueByName(rows: PoolSpell[]): PoolSpell[] {
 // the page's life, per table (src/lib/content/scope.ts): two tables may
 // each have a homebrew spell of one name. Names the checklist knows never
 // cost a request.
-const lookups = new Map<string, PoolSpell | null>();
+const lookups = lookupCache;
 const scoped = (campaignId: string | null, name: string) => `${campaignId ?? "library"}|${textKey(name)}`;
 
 export function useSpellLookups(names: string[]): Map<string, PoolSpell> {
@@ -175,9 +192,19 @@ export function useSpellPool(
       // server is asked again. A missing pack is remembered as it is.
       let failed = false;
       try {
-        for (let offset = 0; offset < 2000; offset += PAGE) {
+        // Every class's list together runs past one class's 2000.
+        const most = classSlug === ANY_SPELL_LIST ? 10_000 : 2000;
+        for (let offset = 0; offset < most; offset += PAGE) {
           const params = new URLSearchParams(
-            scopedParams({ class: classSlug, level: String(maxLevel), limit: String(PAGE), offset: String(offset) }, campaignId),
+            scopedParams(
+              {
+                ...(classSlug === ANY_SPELL_LIST ? {} : { class: classSlug }),
+                level: String(maxLevel),
+                limit: String(PAGE),
+                offset: String(offset),
+              },
+              campaignId,
+            ),
           );
           const response = await fetch(`/api/content/spells?${params}`);
           if (!response.ok) {

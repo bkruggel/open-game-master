@@ -57,7 +57,7 @@ export function BoardMoveModes({
   ];
   return (
     <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label={t("board.move.groupAria")} data-pill-group="">
-      <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">{t("board.moveMode.title")}</span>
+      <span className="text-[10px] uppercase tracking-[0.14em] text-stone-500">{t("board.moveMode.title")}</span>
       {options.map((option, index) => {
         const on = option.id === mode;
         return (

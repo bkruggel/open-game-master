@@ -1,7 +1,7 @@
 import { normalizeHandLayout, type HandLayout } from "@/lib/battlemap/hand-layout";
 import { getDatabase, nowIso, parseJson } from "@/lib/db/core";
 import { touchCampaign } from "@/lib/db/campaigns";
-import { effectiveMaxHp, maxHpRiders, tempHpClaims, withoutTempHpClaims, type ConditionMetaMap } from "@/lib/dm/condition-logic";
+import { effectiveMaxHp, endedByRegain, maxHpRiders, tempHpClaims, withoutTempHpClaims, type ConditionMetaMap } from "@/lib/dm/condition-logic";
 import { populateFeaturesForClasses } from "@/lib/srd/features";
 import { populateResources } from "@/lib/srd/class-resources";
 import { XP_THRESHOLDS, deriveAc } from "@/lib/srd";
@@ -25,6 +25,8 @@ import {
 } from "@/lib/schemas/sheet";
 import { textKey } from "@/lib/language/text-logic";
 import { noteDominationShift } from "@/lib/db/side-watch";
+import { noteGrounding } from "@/lib/db/flight-watch";
+import { noteIncapacity } from "@/lib/db/incapacity-watch";
 import { repairedPets } from "@/lib/srd/familiar-forms";
 import { rowName } from "@/lib/srd/item-row";
 
@@ -72,6 +74,8 @@ type SheetRow = {
   wild_shape_json: string | null;
   pets_json: string | null;
   summon_json?: string | null;
+  foretold_json?: string | null;
+  watching_encounter_id?: string | null;
   exhaustion: number | null;
   death_saves_json: string | null;
   concentrating_on: string | null;
@@ -172,6 +176,8 @@ function mapSheet(row: SheetRow): CharacterSheet {
     // right takes the table's (src/lib/srd/familiar-forms.ts).
     pets: repairedPets(parseJson<CharacterSheet["pets"]>(row.pets_json, [])),
     summon: parseJson<CharacterSheet["summon"]>(row.summon_json ?? null, null),
+    foretold: parseJson<number[]>(row.foretold_json ?? null, []),
+    watchingEncounterId: row.watching_encounter_id ?? null,
     exhaustion: row.exhaustion ?? 0,
     deathSaves: parseJson<CharacterSheet["deathSaves"]>(row.death_saves_json, null),
     concentratingOn: row.concentrating_on ?? null,
@@ -228,7 +234,7 @@ const SHEET_COLUMNS = `
   abilities_json, max_hp, current_hp, temp_hp, ac, ac_override, speed, hit_dice_json,
   classes_json, hit_dice_pools_json,
   proficiencies_json, equipment_json, gold, copper, feats_json, features_json,
-  spellcasting_json, conditions_json, condition_meta_json, resources_json, wild_shape_json, pets_json, summon_json, exhaustion, death_saves_json, concentrating_on, concentration_rounds,
+  spellcasting_json, conditions_json, condition_meta_json, resources_json, wild_shape_json, pets_json, summon_json, foretold_json, watching_encounter_id, exhaustion, death_saves_json, concentrating_on, concentration_rounds,
   portrait_json, notes, backstory, hopes, is_companion, companion_kind, commanded_by, personality, hand_layout_json, feat_choices_json,
   attraction_json, open_to_advances, open_to_pacts, former_sheet_ids_json, created_at, updated_at
 `;
@@ -316,6 +322,13 @@ export function adoptSheetAsCompanion(
 
 // Marks a sheet as a creature a spell or feature made (src/lib/dm/summon-store.ts),
 // or clears the mark. Kept out of patchSheet like the companion flag above.
+// The fight a wizard watches for Portent (src/lib/dm/foresight.ts): a choice of
+// the moment, so it is no audited change to the character.
+export function setSheetWatching(sheetId: string, encounterId: string | null): CharacterSheet | null {
+  getDatabase().prepare(`UPDATE character_sheets SET watching_encounter_id = ? WHERE id = ?`).run(encounterId, sheetId);
+  return getSheetById(sheetId);
+}
+
 export function setSheetSummon(sheetId: string, summon: CharacterSheet["summon"]): CharacterSheet | null {
   getDatabase()
     .prepare(`UPDATE character_sheets SET summon_json = ? WHERE id = ?`)
@@ -424,6 +437,8 @@ export function createSheet(
     classList.length > 1 ? classList : undefined,
     input.feats,
     campaignId,
+    // The race's spells' counters (issue #833).
+    { race: input.race, variant: input.racialChoices?.variant },
   );
   // Unless the AC is pinned, it comes from the gear they are actually
   // carrying rather than the builder's suggestion. An absent flag means a
@@ -697,11 +712,24 @@ function adjustPoolsSpent(
   return next;
 }
 
-export function patchSheet(sheetId: string, patch: FullPatchSheetInput): CharacterSheet | null {
+export function patchSheet(
+  sheetId: string,
+  input: FullPatchSheetInput,
+  // An undo putting back what a change took (src/lib/sheet-undo.ts): the hit
+  // points it returns were never lost, so nothing ends on their regain.
+  options: { restoring?: boolean } = {},
+): CharacterSheet | null {
   const existing = getSheetById(sheetId);
   if (!existing) {
     return null;
   }
+  // A hit point regained ends a caltrops wound by whatever path the
+  // character healed: a potion, hit dice, a drain, Second Wind (issue #570;
+  // src/lib/dm/condition-logic.ts endedByRegain).
+  const mended = input.currentHp !== undefined && !options.restoring
+    ? endedByRegain(input.conditions ?? existing.conditions, input.conditionMeta ?? existing.conditionMeta, existing.currentHp, input.currentHp)
+    : null;
+  const patch: FullPatchSheetInput = mended ? { ...input, conditions: mended.conditions, conditionMeta: mended.meta } : input;
 
   // Multiclass: the classes array is authoritative when present, and the
   // scalar class/subclass/level fields are mirrors of it. Scalar patches on
@@ -778,6 +806,7 @@ export function patchSheet(sheetId: string, patch: FullPatchSheetInput): Charact
     copper: patch.copper ?? existing.copper,
     conditions: patch.conditions ?? existing.conditions,
     conditionMeta: patch.conditionMeta ?? existing.conditionMeta,
+    foretold: patch.foretold ?? existing.foretold,
     // Resources track features and level: any patch touching them re-sizes
     // the counters (spent uses preserved, clamped). An explicit resources
     // patch (rests, use_resource) wins.
@@ -800,6 +829,7 @@ export function patchSheet(sheetId: string, patch: FullPatchSheetInput): Charact
             classes.length ? classes : undefined,
             patch.feats ?? existing.feats,
             existing.campaignId,
+            { race: patch.race ?? existing.race },
           )
         : existing.resources),
     equipment: patch.equipment ?? existing.equipment,
@@ -854,6 +884,7 @@ export function patchSheet(sheetId: string, patch: FullPatchSheetInput): Charact
         hitDicePools: patch.hitDicePools !== undefined ? patch.hitDicePools : existing.hitDicePools,
         spellcasting: next.spellcasting,
         loneClassBefore: existing.classes.length ? null : existing.class,
+        levelBefore: existing.level,
       },
       { spellcasting: patch.spellcasting !== undefined, xp: patch.xp !== undefined },
       subclassExtrasForTable(existing.campaignId, existing.userId),
@@ -879,6 +910,7 @@ export function patchSheet(sheetId: string, patch: FullPatchSheetInput): Charact
       next.classes.length ? next.classes : undefined,
       next.feats,
       existing.campaignId,
+      { race: next.race },
     );
   }
 
@@ -905,6 +937,11 @@ export function patchSheet(sheetId: string, patch: FullPatchSheetInput): Charact
     // A Dominate starting or ending moves the character's side (side-watch.ts).
     noteDominationShift(existing.campaignId, existing, next);
   }
+  // A flyer knocked prone, or held or exhausted to a speed of 0, falls
+  // (flight-watch.ts).
+  noteGrounding(existing.campaignId, existing, next);
+  // Falling incapacitated is answered by Faithful Summons (incapacity-watch.ts).
+  noteIncapacity(existing.campaignId, sheetId, existing, next);
 
   // Temporary hit points a spell granted for its duration go when it ends
   // (False Life, Heroism): the instance that granted them carries the claim.
@@ -953,7 +990,7 @@ export function patchSheet(sheetId: string, patch: FullPatchSheetInput): Charact
           speed = ?, abilities_json = ?, proficiencies_json = ?,
           current_hp = ?, temp_hp = ?, max_hp = ?, ac = ?, ac_override = ?, xp = ?, level = ?,
           gold = ?, copper = ?, conditions_json = ?, condition_meta_json = ?, resources_json = ?, equipment_json = ?, hit_dice_json = ?,
-          spellcasting_json = ?, wild_shape_json = ?, pets_json = ?, exhaustion = ?, death_saves_json = ?, concentrating_on = ?, concentration_rounds = ?,
+          spellcasting_json = ?, wild_shape_json = ?, pets_json = ?, foretold_json = ?, exhaustion = ?, death_saves_json = ?, concentrating_on = ?, concentration_rounds = ?,
           feats_json = ?, features_json = ?, subclass = ?,
           classes_json = ?, hit_dice_pools_json = ?,
           portrait_json = ?, notes = ?, backstory = ?, hopes = ?, feat_choices_json = ?, updated_at = ?
@@ -988,6 +1025,7 @@ export function patchSheet(sheetId: string, patch: FullPatchSheetInput): Charact
       JSON.stringify(normalizeSpellcasting(next.spellcasting)),
       next.wildShape ? JSON.stringify(next.wildShape) : null,
       next.pets.length ? JSON.stringify(next.pets) : null,
+      next.foretold?.length ? JSON.stringify(next.foretold) : null,
       next.exhaustion,
       next.deathSaves ? JSON.stringify(next.deathSaves) : null,
       next.concentratingOn,

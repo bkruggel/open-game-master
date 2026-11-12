@@ -48,6 +48,8 @@ const COST_KEY: Record<HandCost, string> = {
   reaction: "table.hand.cost.reaction",
   rider: "table.hand.cost.rider",
   free: "table.hand.cost.free",
+  legendary: "table.hand.cost.short.legendary",
+  lair: "table.hand.cost.short.lair",
 };
 
 export function typeLabel(t: Translator, type: HandCardType): string {
@@ -95,7 +97,7 @@ export function HandPlayedCard({ card, t }: { card: HandCard; t: Translator }) {
       </span>
       <span className="hand-played-name">{name}</span>
       {card.dice ? (
-        <span className="hand-dice" data-heals={card.heals ? "true" : undefined}>
+        <span className="hand-dice" data-heals={card.heals ? "true" : undefined} data-two-types={card.secondType ? "true" : undefined}>
           {card.dice}
         </span>
       ) : null}
@@ -203,7 +205,7 @@ function HandCardFaceInner({
         <span className="hand-name">{name}</span>
         <span className="hand-numbers">
           {card.dice ? (
-            <span className="hand-dice" data-heals={card.heals ? "true" : undefined}>
+            <span className="hand-dice" data-heals={card.heals ? "true" : undefined} data-two-types={card.secondType ? "true" : undefined}>
               {card.dice}
             </span>
           ) : null}
@@ -211,7 +213,18 @@ function HandCardFaceInner({
         </span>
         <span className="hand-rules">{card.rules}</span>
         <span className="hand-foot">
-          <span className="hand-resource">{card.resource}</span>
+          {/* A legendary card's cost and what is left, a line each at the
+              card's left edge: in a fan the next card covers the right of
+              this one's foot. */}
+          {card.cost === "legendary" ? (
+            <span className="hand-resource" data-lines="">
+              {card.resource.split(" · ").map((part) => (
+                <span key={part}>{part}</span>
+              ))}
+            </span>
+          ) : (
+            <span className="hand-resource">{card.resource}</span>
+          )}
           <span className="hand-cond">{conditionWord(card.condition, t, locale)}</span>
         </span>
       </span>

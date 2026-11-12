@@ -3,6 +3,7 @@ import {
   isWeaponProficient,
   matchWeapon,
   weaponNamed,
+  UNARMED_STRIKE_KEY,
   type SrdWeapon,
 } from "@/lib/srd/weapons";
 import { lineNamed, magicItemBonus, withoutBonus } from "@/lib/srd/item-row";
@@ -16,12 +17,14 @@ import {
 import type { TypedRider } from "@/lib/dm/damage-parts";
 import type { CreatureOnHit } from "@/lib/srd/creature-attacks";
 import type { GearDice } from "@/lib/srd/magic-gear";
+import type { WornWeaponRider } from "@/lib/srd/magic-items";
 import type { CombatRiders } from "@/lib/srd/feature-effects";
 import { rageDamageBonus } from "@/lib/srd/class-resources";
 import { rageApplies, type WeaponMaterial } from "@/lib/dm/damage-logic";
 import type { EquipmentItem } from "@/lib/schemas/sheet";
 import type { SheetDerived } from "@/lib/srd";
 import { textKey } from "@/lib/language/text-logic";
+import { gearWeaponFor, type GearWeapon } from "@/lib/srd/gear-weapons";
 
 // Pure attack math for the pc_attack engine: which weapon a character swings,
 // what their to-hit and damage bonuses are, and whether a roll beats an AC.
@@ -43,6 +46,14 @@ export type ResolvedWeapon = {
   // (src/lib/dm/gear-attack.ts): its riders, already judged against the
   // item's attunement.
   gear?: WeaponGear | null;
+  // A real weapon used as an improvised one (SRD 5.1 Weapons, Improvised
+  // Weapons): a melee weapon without the thrown property thrown, or a
+  // ranged weapon swung in melee. `srd` is then null and this is the
+  // weapon it is, for its damage type.
+  improvisedFrom?: SrdWeapon;
+  // The object swung as any object: a gear entry's own hit does not apply
+  // (a torch thrown, not swung: its 1 fire is for a melee attack).
+  bareObject?: boolean;
 };
 
 export type AttackProfile = {
@@ -110,6 +121,9 @@ export type AttackProfile = {
   // "one prone creature" its hooves and stomps strike only.
   creatureOnHit?: CreatureOnHit;
   proneTargetsOnly?: boolean;
+  // A flask thrown or a torch swung (src/lib/srd/gear-weapons.ts): the
+  // flask spent, holy water's targets, what the hit leaves.
+  gearWeapon?: GearWeapon;
 };
 
 // The weapon block a homebrew item snapshotted onto its equipment line, if
@@ -218,6 +232,67 @@ export function resolveAttackWeapon(
   return { displayName: "Unarmed strike", srd: null, unarmed: true, carried: true };
 }
 
+// SRD 5.1 Weapons, Improvised Weapons: "If a character uses a ranged weapon
+// to make a melee attack, or throws a melee weapon that does not have the
+// thrown property, it also deals 1d4 damage." A carried weapon sent with
+// improvised true is that use: a ranged weapon (not one made to be thrown,
+// a dart or a net) always, and a melee weapon without the thrown property
+// unless the board shows the target in its reach, where the swing is the
+// weapon's own (issue #570, EQP-11: the improvised flag was read only for a
+// name that is no weapon, so a longsword thrown 15 feet was refused for
+// melee reach). Null when the weapon is used as itself.
+export function improvisedUse(resolved: ResolvedWeapon, apart: number | null): ResolvedWeapon | null {
+  const srd = resolved.srd;
+  if (!srd || resolved.unarmed || resolved.carried === false) {
+    return null;
+  }
+  const properties = srd.properties ?? [];
+  if (properties.includes("thrown")) {
+    return null;
+  }
+  const reach = properties.includes("reach") ? 2 : 1;
+  if (srd.kind === "melee" && apart !== null && apart <= reach) {
+    return null;
+  }
+  return { displayName: resolved.displayName, srd: null, unarmed: false, carried: true, improvisedFrom: srd };
+}
+
+// The profile of a flask thrown or a torch swung, as the gear's own entry
+// reads (src/lib/srd/gear-weapons.ts): an improvised weapon, so no
+// proficiency bonus; a flask is a ranged attack thrown up to 20 feet with no
+// long range, so Dexterity, and the torch a melee one with Strength; the
+// damage is the entry's, with no ability modifier.
+function gearWeaponProfile(
+  derived: Pick<SheetDerived, "abilityMods" | "proficiencyBonus">,
+  resolved: ResolvedWeapon,
+  gear: GearWeapon,
+): AttackProfile {
+  const ability = gear.thrown ? "dex" : "str";
+  const what = gear.dice ? `${gear.dice}${gear.type ? ` ${gear.type}` : ""}` : gear.leaves === "burning" ? "1d4 fire at the start of each of its turns" : "covers the target in oil";
+  return {
+    weapon: resolved.displayName,
+    toHit: derived.abilityMods[ability],
+    damageExpression: gear.dice ?? "0",
+    damageType: gear.type,
+    ranged: gear.thrown,
+    // A torch can still be thrown, as any object (pc-attack-profile.ts
+    // swaps in the bare object's profile past its reach).
+    thrown: !gear.thrown,
+    reachTiles: 1,
+    rangeTiles: 4,
+    longRangeTiles: gear.thrown ? 4 : 12,
+    proficient: false,
+    improvised: true,
+    ability,
+    magicBonus: 0,
+    twoHanded: false,
+    sneakEligible: false,
+    heavy: false,
+    riderNotes: [`${gear.name}: ${gear.thrown ? "thrown up to 20 ft, " : ""}${what}${gear.fiendsAndUndeadOnly ? " against a fiend or undead only" : ""}${gear.spent ? ", spent whatever the roll" : ""}`],
+    gearWeapon: gear,
+  };
+}
+
 // "1d8 slashing" -> { dice: "1d8", type: "slashing" }; flat "1 piercing" and
 // oddities like "0 (restrains)" keep their leading number as the dice part.
 export function splitDamage(damage: string): { dice: string; type: string } {
@@ -272,6 +347,10 @@ export type AttackStance = {
   martialArts?: boolean;
   // Tavern Brawler: the unarmed strike deals 1d4 (src/lib/srd/feat-combat.ts).
   brawler?: boolean;
+  // What worn items add to attacks with some weapons (Bracers of Archery) or
+  // with the unarmed strike (UNARMED_STRIKE_KEY), from
+  // src/lib/srd/magic-items.ts magicItemRiders(...).weaponRiders.
+  worn?: WornWeaponRider[];
 };
 
 // SRD 5.1 monk weapons: shortswords and any simple melee weapon that has
@@ -307,6 +386,24 @@ function offHandModifier(mod: number, stance: AttackStance): number {
   return Math.min(0, mod);
 }
 
+// What the worn riders that reach a swing add to it. A bonus to the attack
+// roll marks the swing as magical, as a +1 weapon's does; damage alone does
+// not (Bracers of Archery's arrows stay nonmagical, SRD 5.1).
+function wornRiderTotals(riders: WornWeaponRider[]): { attack: number; damage: number; notes: string[] } {
+  const totals = { attack: 0, damage: 0, notes: [] as string[] };
+  for (const rider of riders) {
+    if (rider.attack) {
+      totals.attack += rider.attack;
+      totals.notes.push(`${rider.source}: +${rider.attack} to hit`);
+    }
+    if (rider.damage) {
+      totals.damage += rider.damage;
+      totals.notes.push(`${rider.source}: +${rider.damage} damage`);
+    }
+  }
+  return totals;
+}
+
 // Derives the full attack profile from the sheet's numbers and the weapon's
 // SRD properties: finesse picks the better of STR/DEX, ranged weapons use
 // DEX, thrown weapons use STR (or finesse), proficiency adds the bonus only
@@ -323,27 +420,53 @@ export function weaponAttackProfile(
   const notes: string[] = [];
   const martialArtsDie = stance.martialArts === false ? null : (riders?.martialArtsDie ?? null);
   if (!srd) {
+    const gear = resolved.unarmed || resolved.improvisedFrom || resolved.bareObject ? null : gearWeaponFor(resolved.displayName);
+    if (gear) {
+      return gearWeaponProfile(derived, resolved, gear);
+    }
     // Unarmed strike (1 + STR, always proficient) or improvised 1d4 + STR.
     // A monk's Martial Arts turns the unarmed strike into a real weapon:
     // their own die, and DEX when it beats Strength.
     const martial = resolved.unarmed ? martialArtsDie : null;
     const useDex = Boolean(martial) && derived.abilityMods.dex > derived.abilityMods.str;
     const mod = useDex ? derived.abilityMods.dex : derived.abilityMods.str;
-    const dice = martial ? `1${martial}` : resolved.unarmed ? (stance.brawler ? "1d4" : "1") : "1d4";
-    if (martial) {
-      notes.push(`Martial Arts: 1${martial}${useDex ? " with DEX" : ""}`);
-    } else if (resolved.unarmed && stance.brawler) {
-      notes.push("Tavern Brawler: the unarmed strike deals 1d4");
+    // A worn item's bonus to unarmed strikes (Demon Armor's gauntlets, a
+    // homebrew pair of wraps). This branch once answered 0 whatever was worn,
+    // so no item could reach a fist.
+    // "Only at range" keeps a rider off it, as a fist is never at range, and
+    // an improvised object is not an unarmed strike.
+    const fistRiders = resolved.unarmed ? (stance.worn ?? []).filter((rider) => rider.weapons.includes(UNARMED_STRIKE_KEY) && !rider.ranged) : [];
+    const fist = wornRiderTotals(fistRiders);
+    notes.push(...fist.notes);
+    const ownDice = martial ? `1${martial}` : resolved.unarmed ? (stance.brawler ? "1d4" : "1") : "1d4";
+    // An item's die stands in when it beats the strike's own, as the Martial
+    // Arts die does for a weapon's (martialDice).
+    const form = fistRiders.find((rider) => rider.unarmed)?.unarmed ?? null;
+    const dice = !form ? ownDice : ownDice === "1" ? `1${form.die}` : martialDice(ownDice, form.die);
+    if (form && dice === `1${form.die}`) {
+      notes.push(`${fistRiders.find((rider) => rider.unarmed)?.source}: 1${form.die} ${form.damageType}`);
     }
+    if (martial) {
+      notes.push(`Martial Arts: ${dice}${useDex ? " with DEX" : ""}`);
+    } else if (resolved.unarmed && stance.brawler) {
+      notes.push(`Tavern Brawler: the unarmed strike deals ${dice}`);
+    }
+    // A thrown melee weapon keeps its own type (a longsword's edge still
+    // cuts); a bow or a crossbow swung in melee is a club.
+    const from = resolved.improvisedFrom;
+    const damageType = form?.damageType ?? (from?.kind === "melee" ? splitDamage(from.damage).type || "bludgeoning" : "bludgeoning");
     return {
       weapon: resolved.displayName,
-      toHit: mod + (resolved.unarmed ? derived.proficiencyBonus : 0),
-      damageExpression: withModifier(dice, offHandModifier(mod, stance)),
-      damageType: "bludgeoning",
+      toHit: mod + fist.attack + (resolved.unarmed ? derived.proficiencyBonus : 0),
+      damageExpression: withModifier(dice, offHandModifier(mod, stance) + fist.damage),
+      damageType,
       ranged: false,
       thrown: !resolved.unarmed,
       reachTiles: 1,
       rangeTiles: 4,
+      // "An improvised thrown weapon has a normal range of 20 feet and a
+      // long range of 60 feet."
+      ...(resolved.unarmed ? {} : { longRangeTiles: 12 }),
       proficient: resolved.unarmed,
       improvised: !resolved.unarmed,
       ability: useDex ? "dex" : "str",
@@ -353,6 +476,7 @@ export function weaponAttackProfile(
       heavy: false,
       ...(resolved.unarmed ? { unarmed: true } : {}),
       ...(martial ? { martialArts: true } : {}),
+      ...(fist.attack > 0 ? { magicWeapon: true } : {}),
       riderNotes: notes,
     };
   }
@@ -368,7 +492,11 @@ export function weaponAttackProfile(
   // Ranged-kind weapons shoot with DEX; thrown ranged-kind (darts, vials)
   // and melee weapons use STR, with finesse taking the better of the two.
   const mod = finesse ? Math.max(str, dex) : ranged && !thrown ? dex : str;
-  const proficient = isWeaponProficient(weaponProfs, srd);
+  // SRD 5.1, Bracers of Archery: "you have proficiency with the longbow and
+  // shortbow, and you gain a +2 bonus to damage rolls on ranged attacks made
+  // with such weapons".
+  const wornRiders = (stance.worn ?? []).filter((rider) => rider.weapons.includes(textKey(srd.name)) && (!rider.ranged || srd.kind === "ranged"));
+  const proficient = isWeaponProficient(weaponProfs, srd) || wornRiders.some((rider) => rider.proficient);
   const { dice, type } = splitDamage(srd.damage);
   const rangeTiles = srd.rangeFt
     ? Math.max(1, Math.round(srd.rangeFt / 5))
@@ -417,6 +545,10 @@ export function weaponAttackProfile(
       notes.push(`Dueling: +${riders.oneHandedMeleeDamageBonus} damage`);
     }
   }
+  const wornTotals = wornRiderTotals(wornRiders);
+  toHitBonus += wornTotals.attack;
+  damageBonus += wornTotals.damage;
+  notes.push(...wornTotals.notes);
   const abilityToDamage = offHandModifier(mod, stance);
   if (stance.offHand && riders?.twoWeaponKeepsAbility) {
     notes.push("Two-Weapon Fighting: off-hand keeps its modifier");
@@ -449,7 +581,7 @@ export function weaponAttackProfile(
     ...(monkWeapon ? { martialArts: true } : {}),
     riderNotes: notes,
     ...gearParts.fields,
-    ...(magicBonus > 0 ? { magicWeapon: true } : {}),
+    ...(magicBonus > 0 || wornTotals.attack > 0 ? { magicWeapon: true } : {}),
   };
 }
 

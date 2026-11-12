@@ -42,8 +42,11 @@ export const CONDITION_EFFECTS: ConditionEffectRow[] = [
     id: "sacred_weapon",
     match: ["sacred weapon"],
     summary:
-      "Sacred Weapon: the paladin's Charisma modifier is added to their weapon attack rolls, and the weapon sheds bright light, for a minute.",
+      "Sacred Weapon: the paladin's Charisma modifier is added to their weapon attack rolls, the weapon is magical, and it sheds bright light, for a minute.",
     paramAttackBonus: true,
+    // SRD 5.1 paladin, Oath of Devotion, Sacred Weapon: "If the weapon is not
+    // already magical, it becomes magical for the duration."
+    magicalStrikes: true,
   },
   {
     id: "blessed",
@@ -70,6 +73,14 @@ export const CONDITION_EFFECTS: ConditionEffectRow[] = [
     match: ["shielded", "shield spell"],
     summary: "Shield: +5 AC until the start of their next turn.",
     acBonus: 5,
+  },
+  {
+    // A unicorn's legendary action (SRD 5.1), laid by legendary-play.ts until
+    // the end of the unicorn's next turn.
+    id: "shimmering_shield",
+    match: ["shimmering shield"],
+    summary: "Shimmering Shield: +2 AC until the end of the unicorn's next turn.",
+    acBonus: 2,
   },
   {
     id: "mage_armor",
@@ -295,6 +306,15 @@ export const CONDITION_EFFECTS: ConditionEffectRow[] = [
     match: ["absorb elements"],
     summary:
       "Absorb Elements: resistance to the absorbed damage type (named in the condition) until the start of their next turn.",
+    paramResistance: true,
+  },
+  {
+    // SRD 5.1, Elemental Affinity: 1 sorcery point buys an hour's resistance
+    // to the dragon ancestor's damage type, named in the condition
+    // ("elemental affinity (fire)", src/lib/dm/draconic-spends.ts).
+    id: "elemental_affinity",
+    match: ["elemental affinity"],
+    summary: "Elemental Affinity: resistance to their dragon ancestor's damage type, or their chosen element's (named in the condition), for an hour.",
     paramResistance: true,
   },
   {
@@ -538,7 +558,7 @@ export const CONDITION_EFFECTS: ConditionEffectRow[] = [
     id: "swift_quiver",
     match: ["swift quiver"],
     summary:
-      "Swift Quiver: a bonus action makes two attacks with a weapon fed by the quiver (resolve each with pc_attack).",
+      "Swift Quiver: a bonus action makes two attacks with a weapon fed by the quiver (two entries in pc_attack's attacks, each with feature Swift Quiver).",
   },
   {
     id: "holy_weapon",
@@ -1129,11 +1149,15 @@ export function conditionSpeed(conditions: string[], baseSpeed: number): number 
 // Slow's one attack and an action OR a bonus action (SRD 5.1). The turn
 // budget reads it every time it is asked (src/lib/dm/turn-budget.ts), so an
 // effect that lands mid-turn counts on that turn.
-export type TurnShape = { extraActions: number; slowed: boolean };
+// actionHeld: the turn's action is spent before it begins (a spell of a
+// minute or more being cast, src/lib/dm/long-casting-logic.ts).
+export type TurnShape = { extraActions: number; slowed: boolean; actionHeld?: boolean };
 export function conditionTurnShape(conditions: string[]): TurnShape {
+  const rows = activeConditionEffects(conditions);
   return {
     extraActions: conditionExtraActions(conditions),
-    slowed: activeConditionEffects(conditions).some(({ row }) => row.actionOrBonus === true),
+    slowed: rows.some(({ row }) => row.actionOrBonus === true),
+    ...(rows.some(({ row }) => row.holdsAction === true) ? { actionHeld: true } : {}),
   };
 }
 

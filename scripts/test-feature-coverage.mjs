@@ -28,8 +28,18 @@ const { COUNTER_REACTION_IDS } = await import("../src/lib/dm/reaction-kinds.ts")
 const { BONUS_ATTACK_COUNTERS } = await import("../src/lib/dm/feature-bonus-attacks.ts");
 
 let passed = 0;
+const pending = [];
 function test(name, fn) {
-  fn();
+  // An async check is waited for before the count prints: Vitest drops a
+  // rejection that lands after a file's last line, so an unawaited one
+  // passed under npm test while it failed under node.
+  const result = fn();
+  if (result && typeof result.then === "function") {
+    pending.push(result.then(() => {
+      passed += 1;
+    }));
+    return;
+  }
   passed += 1;
 }
 
@@ -88,7 +98,7 @@ const ACKNOWLEDGED = new Set([
 // entry cannot outlive the code that enforces it.
 const ENFORCED_ELSEWHERE = new Map([
   ["Aura of Courage", "src/lib/srd/trait-rules.ts"],
-  ["Wild Shape Improvement", "src/lib/srd/beast-forms.ts"],
+  ["Wild Shape Improvement", "src/lib/srd/wild-shape-caps.ts"],
   ["Aura of Devotion", "src/lib/srd/trait-rules.ts"],
   ["Mindless Rage", "src/lib/srd/trait-rules.ts"],
   ["Purity of Body", "src/lib/srd/trait-rules.ts"],
@@ -529,4 +539,5 @@ test("the acknowledged set does not rot: every entry is a real granted name", ()
   assert.ok(stale.length <= 3, `acknowledged set has stale entries: ${stale.join(", ")}`);
 });
 
+await Promise.all(pending);
 console.log(`test-feature-coverage: ${passed} passed`);

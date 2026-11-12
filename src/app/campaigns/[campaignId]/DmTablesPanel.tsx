@@ -327,7 +327,7 @@ export function DmTablesPanel({
         placeholder={t("tables.bodyPlaceholder")}
         aria-label={t("tables.rowsAria")}
         data-tour="tables-body"
-        className={cn(inputClass, "mt-1.5 resize-y font-mono text-xs")}
+        className={cn(inputClass, "mt-1.5 resize-y font-code text-xs")}
       />
       <div className="mt-1.5">
         <RefPicker

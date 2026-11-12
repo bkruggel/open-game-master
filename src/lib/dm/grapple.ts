@@ -19,7 +19,9 @@
 //     contest (SRD 5.1, Monsters: Grapple Rules for Monsters). A restraint
 //     that lasts "until this grapple ends" ends with it.
 
+import { characterNetEscape, enemyNetEscape, netHolds } from "@/lib/dm/net-hold";
 import { characterTrapEscape, trapHoldOn } from "@/lib/dm/trap-escape";
+import { characterExtinguish, enemyBurning, enemyExtinguish, sheetBurning } from "@/lib/dm/gear-weapon-hit";
 import type { Campaign } from "@/lib/db/campaigns";
 import { getBattleMapForEncounter, getTokenByRef } from "@/lib/db/battle-maps";
 import { tilesApart } from "@/lib/dm/board-reach";
@@ -36,15 +38,16 @@ import { getSheetById, listSheets, patchSheet } from "@/lib/db/sheets";
 import { publishPersisted } from "@/lib/events";
 import { computeSheetDerived } from "@/lib/srd";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
-import { rollEnemyContest } from "@/lib/dm/action-common";
+import { enemyContestTag, rollEnemyContest } from "@/lib/dm/action-common";
 import { canEnemyAct } from "@/lib/dm/can-act";
 import { spendEnemyAction } from "@/lib/dm/enemy-approach";
 import { removeConditions, type ConditionMetaMap } from "@/lib/dm/condition-logic";
-import { rollCharacterCheck } from "@/lib/dm/contest-roll";
+import { contestShift, rollCharacterCheck } from "@/lib/dm/contest-roll";
 import { publishEncounter, resolveEnemyRef, unknownEnemyRef } from "@/lib/dm/enemy-damage";
 import { enemyAttackProfile } from "@/lib/dm/enemy-profile";
 import { characterSpellEscape, characterSpellHold, enemySpellEscape, enemySpellHold } from "@/lib/dm/spell-escape";
 import { toolError, type ToolResult } from "@/lib/dm/tool-errors";
+import { releaseLostPins } from "@/lib/dm/grappler-pin";
 
 const GRAPPLED = "grappled";
 
@@ -96,9 +99,14 @@ export function characterEscape(
     // (a falling net): src/lib/dm/trap-escape.ts.
     return characterSpellHold(campaign, sheet)
       ? characterSpellEscape(campaign, turn, sheet, spend)
-      : trapHoldOn(campaign, sheet)
+      : netHolds(sheet)
+        ? characterNetEscape(campaign, turn, sheet, spend)
+        : trapHoldOn(campaign, sheet)
         ? characterTrapEscape(campaign, turn, sheet, spend)
-        : { error: `${sheet.name} is not grappled; there is nothing to escape.`, refused: "rules" };
+        // Alchemist's fire: the action's DC 10 Dexterity check puts it out.
+        : sheetBurning(sheet)
+          ? characterExtinguish(campaign, turn, sheet, spend)
+          : { error: `${sheet.name} is not grappled; there is nothing to escape.`, refused: "rules" };
   }
   const encounter = getActiveEncounter(campaign.id);
   const enemyHolder = held.source && encounter ? resolveEnemyRef(encounter.id, held.source) : null;
@@ -139,7 +147,17 @@ export function characterEscape(
           })();
   // Against a DC, meeting it escapes; in a contest a tie leaves things as
   // they are: the grapple holds.
-  const escaped = !mine.autoFailed && (theirs === null ? mine.total >= (held.escapeDc ?? 0) : mine.total > theirs);
+  // In a contest with a creature, a Chronal Shift a watch stop armed for
+  // either side (contest-roll.ts).
+  const settled = theirs !== null && enemyHolder && !mine.autoFailed
+    ? contestShift(
+        campaign.id,
+        { tag: { roller: "hero", kind: "check", who: sheet.name }, total: mine.total, again: () => rollCharacterCheck(campaign, sheet, { skill }, `${sheet.name}: ${skill} to escape the grapple, rolled again`).total },
+        { tag: enemyContestTag(enemyHolder), total: theirs, again: () => rollEnemyContest(campaign, turn, enemyHolder, "athletics", `${holderName}: Athletics to hold the grapple, rolled again`) },
+        (a, b) => a > b,
+      )
+    : { mine: mine.total, theirs };
+  const escaped = !mine.autoFailed && (settled.theirs === null ? settled.mine >= (held.escapeDc ?? 0) : settled.mine > settled.theirs);
   if (escaped) {
     const fresh = getSheetById(sheet.id) ?? sheet;
     const cleared = withoutGrapple(fresh.conditions, fresh.conditionMeta as ConditionMetaMap, held);
@@ -178,9 +196,21 @@ export function enemyEscape(
     ? grappleOf(enemy.conditionMeta)
     : null;
   if (!held) {
+    if (!enemySpellHold(campaign, enemy) && enemyBurning(enemy)) {
+      const able = canEnemyAct({ enemy, encounter, kind: "action" });
+      if (!able.ok) {
+        return toolError(able);
+      }
+      spendEnemyAction(encounter, enemy.id);
+      saveEncounter(encounter);
+      return enemyExtinguish(campaign, turn, enemy);
+    }
+    // A net's hold (net-hold.ts): the action and a DC 10 Strength check.
     return enemySpellHold(campaign, enemy)
       ? enemySpellEscape(campaign, turn, enemy)
-      : { error: `${enemy.displayName} is not grappled; there is nothing to escape.`, retry: true };
+      : netHolds(enemy)
+        ? enemyNetEscape(campaign, turn, enemy)
+        : { error: `${enemy.displayName} is not grappled; there is nothing to escape.`, retry: true };
   }
   const allowed = canEnemyAct({ enemy, encounter, kind: "action" });
   if (!allowed.ok) {
@@ -208,6 +238,8 @@ export function enemyEscape(
     // The restraint the same hold brought ends with it.
     const cleared = withoutGrapple(enemy.conditions, enemy.conditionMeta, held);
     patchEnemyConditions(enemy.id, cleared.conditions, cleared.meta);
+    // A Grappler who had it pinned is no longer restrained either.
+    releaseLostPins(campaign);
     publishEncounter(campaign.id);
   }
   return {
@@ -238,6 +270,33 @@ function reachOf(enemy: EncounterEnemy | null, holderId: string): number {
     .filter((profile) => profile.melee)
     .map((profile) => profile.reachTiles);
   return Math.max(1, ...reaches);
+}
+
+// Ends every grapple on a character held by one of these creatures: the
+// creatures of a fight that has ended, or one that has fled it (SRD 5.1,
+// Grappled: it ends "if an effect removes the grappled creature from the
+// reach of the grappler"). A hero grappled by a goblin kept "grappled" after
+// end_encounter and ten minutes on, speed 0 with nobody holding them.
+// Returns the names of those let go.
+export function releaseGrapplesHeldByAny(campaign: Campaign, grapplers: Iterable<string>): string[] {
+  const ids = new Set(grapplers);
+  const released: string[] = [];
+  for (const sheet of listSheets(campaign.id)) {
+    const held = grappleOf(sheet.conditionMeta as ConditionMetaMap);
+    if (!held?.source || !ids.has(held.source)) {
+      continue;
+    }
+    const cleared = withoutGrapple(sheet.conditions, sheet.conditionMeta as ConditionMetaMap, held);
+    const updated = patchSheet(sheet.id, { conditions: cleared.conditions, conditionMeta: cleared.meta });
+    if (updated) {
+      publishPersisted(campaign.id, "sheet_updated", { sheet: updated });
+    }
+    released.push(sheet.name);
+  }
+  if (released.length) {
+    releaseLostPins(campaign);
+  }
+  return released;
 }
 
 // Ends every grapple on the board whose two creatures now stand farther
@@ -287,6 +346,7 @@ export function releaseGrapplesOutOfReach(campaign: Campaign): string[] {
     }
   }
   if (released.length) {
+    releaseLostPins(campaign);
     publishEncounter(campaign.id);
   }
   return released;

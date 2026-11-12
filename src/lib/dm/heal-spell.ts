@@ -12,8 +12,10 @@
 //     century, True Resurrection two hundred years.
 //   - Spare the Dying stabilizes, it does not heal.
 //   - one casting of Mass Healing Word, Mass Cure Wounds or Prayer of
-//     Healing reaches six creatures: the later calls the same turn spend
-//     nothing (cast-guard.ts open casts).
+//     Healing reaches six creatures, one entry each in heal's targets: the
+//     later entries spend nothing (cast-guard.ts open casts in a fight, the
+//     list's OneCasting out of one), and a list longer than one casting
+//     reaches is refused before anything is spent.
 //   - the modifier is the spellcasting ability of the class that carries
 //     the spell; Disciple of Life adds 2 + the slot level; Supreme Healing
 //     and Beacon of Hope make the dice their maximum.
@@ -21,17 +23,22 @@
 // This module does not import mutations.ts: the cast is handed in.
 
 import { allocateSeq, type Campaign } from "@/lib/db/campaigns";
+// The credits live in the database on the server (src/lib/db/item-cast-credits.ts).
+import "@/lib/db/item-cast-credits";
+import { itemCastNumbers, runningItemSpell } from "@/lib/srd/item-cast-credit";
 import { getActiveEncounter } from "@/lib/db/encounters";
 import { getSheetById, patchSheet } from "@/lib/db/sheets";
 import { insertSheetAudit } from "@/lib/db/sheet-audit";
 import { insertRoll } from "@/lib/db/rolls";
 import { rollExpression } from "@/lib/dice";
 import { authoredHealMax } from "@/lib/srd/authored-economy";
-import { authoredSpellDice } from "@/lib/srd/authored-effects-more";
+import { healAdditions, healModifier } from "@/lib/dm/heal-bonus";
 import { publishEphemeral, publishPersisted, publishWithSeq } from "@/lib/events";
 import { openJoinerBonds } from "@/lib/dm/party-bonds";
 import { computeSheetDerived, spellSaveDcFor } from "@/lib/srd";
 import { findSpellByName, spellDamageFor, spellFactsFor, spellMechanicsFor } from "@/lib/content";
+import { castShares } from "@/lib/srd/spell-mechanics";
+import type { OneCasting } from "@/lib/dm/action-parts-logic";
 import { castToNoEffect, spellReachProblem, spellWardOn } from "@/lib/dm/cast-reach";
 import { spellAuthorsFor } from "@/lib/dm/spell-authors";
 import { handleStabilize } from "@/lib/dm/stabilize";
@@ -74,6 +81,8 @@ export function castHealingSpell(
     level?: number;
     amount?: number;
     reason: string;
+    // The casting a heal list's entries share (action-parts-logic.ts).
+    casting?: OneCasting;
   },
   cast: Cast,
 ): HealSpellOutcome | null {
@@ -141,16 +150,45 @@ export function castHealingSpell(
     };
   }
 
-  const paid = cast({
-    characterId: caster.id,
-    spell: input.spell,
-    ...(input.level !== undefined ? { level: input.level } : {}),
-    via: "heal",
-    ...(mech?.healPool ? { uses: input.amount } : {}),
-    reason: input.reason || `${input.spell} on ${target.name}`,
-  });
+  // A heal list's creatures under one casting: what the casting reaches is
+  // asked before it is paid, and out of a fight the later entries ride the
+  // first one's payment.
+  const { casting } = input;
+  const units = mech?.healPool ? (input.amount ?? 0) : 1;
+  if (casting && !casting.paid) {
+    const asked = mech?.healPool ? casting.hitPoints : casting.creatures;
+    const reach = castShares(mech, { spellLevel: facts.level, slotLevel: plannedSlot, casterLevel: caster.level });
+    if (asked > reach) {
+      return {
+        error: `One casting of ${name} reaches ${reach} ${mech?.healPool ? "hit points" : reach === 1 ? "creature" : "creatures"}, and heal's targets ask ${asked}. Nothing was spent. List what one casting reaches; another casting is its own heal call.`,
+        retry: true,
+      };
+    }
+  }
+  if (casting?.paid && casting.left < units) {
+    return { error: `This casting of ${name} has nothing left for ${target.name}. Nothing more was spent.`, refused: "rules" };
+  }
+  const paid = casting?.paid
+    ? { ok: true, slotLevel: casting.paid.slotLevel, uses: units, continuing: `${name}: more of the same casting (${casting.left - units} left); nothing more is spent.` }
+    : cast({
+        characterId: caster.id,
+        spell: input.spell,
+        ...(input.level !== undefined ? { level: input.level } : {}),
+        via: "heal",
+        ...(mech?.healPool ? { uses: input.amount } : {}),
+        reason: input.reason || `${input.spell} on ${target.name}`,
+      });
   if (typeof paid.error === "string") {
     return toolError(paid);
+  }
+  // In a fight the open cast holds the rest of the casting (it answers with
+  // sharesLeft); out of one, the list does.
+  if (casting && !casting.paid && typeof paid.sharesLeft !== "number") {
+    casting.paid = paid;
+    casting.left = mech?.healPool ? casting.hitPoints : casting.creatures;
+  }
+  if (casting?.paid) {
+    casting.left -= units;
   }
   // A ward around the target: the spell is cast, and spent, and heals
   // nothing.
@@ -183,24 +221,26 @@ export function castHealingSpell(
   const derived = computeSheetDerived(caster);
   const dc = spellSaveDcFor(caster, input.spell);
   // Regenerate's 4d8 + 15 carries its own bonus: no modifier rides it.
-  const modifier = dc !== null && !mech?.healNoModifier ? dc - 8 - derived.proficiencyBonus : 0;
-  const riders: string[] = [];
+  // A spell a ring stored keeps its original caster's modifier.
+  // The modifier, Disciple of Life and an authored feature's die (Enhanced
+  // Bond, Alchemical Savant) are heal-bonus.ts's, which the Hand's healing
+  // cards print from too.
+  const modifier = healModifier({
+    dc,
+    proficiencyBonus: derived.proficiencyBonus,
+    noModifier: mech?.healNoModifier,
+    abilityMod: itemCastNumbers(caster.id, input.spell)?.abilityMod ?? runningItemSpell(caster, input.spell)?.abilityMod,
+  });
+  const added = healAdditions(caster, slotLevel, derived.abilityMods);
+  const riders: string[] = [...added.notes];
   // Signed: a WIS 8 cleric's Cure Wounds is 1d8 - 1 (the floor is on the total).
-  let bonus = modifier;
-  if (slotLevel >= 1 && holdsFeature(caster, "disciple of life")) {
-    bonus += 2 + slotLevel;
-    riders.push(`Disciple of Life +${2 + slotLevel}`);
-  }
+  const bonus = modifier + added.flat;
   const maximize =
     (slotLevel >= 1 && holdsFeature(caster, "supreme healing")) ||
     // Circle of Mortality: on a creature at 0 hit points (authored-effects.ts).
     authoredHealMax(caster, target) !== null ||
     target.conditions.some((entry) => entry.toLowerCase() === "beacon of hope");
-  // Enhanced Bond: the wildfire spirit adds 1d8 to a healing spell
-  // (src/lib/srd/authored-effects-more.ts).
-  const bond = authoredSpellDice(caster, { healing: true }, derived.abilityMods);
-  riders.push(...bond.notes);
-  const withBond = [expression, ...bond.dice].join("+");
+  const withBond = [expression, ...added.dice].join("+");
   const full = bonus > 0 ? `${withBond}+${bonus}` : bonus < 0 ? `${withBond}-${-bonus}` : withBond;
   let amount: number;
   if (maximize) {
@@ -300,24 +340,30 @@ function revive(
   if (typeof paid.error === "string") {
     return toolError(paid);
   }
-  const fresh = getSheetById(target.id) ?? target;
+  const before = getSheetById(target.id) ?? target;
+  // "Being raised from the dead reduces a creature's exhaustion level by 1"
+  // (SRD 5.1, Conditions, Exhaustion), so one who died of the sixth level
+  // comes back at the fifth. The maximum below is read at the new level.
+  const exhaustion = Math.max(0, (before.exhaustion ?? 0) - 1);
+  const fresh = { ...before, exhaustion };
   const woke = wakeConditions(fresh);
   const hp = rule.hp === "all" ? effectiveMaxHp(fresh) : 1;
   // Coming back is an ordeal (Raise Dead, Resurrection): -4 to attack rolls
   // and saving throws, one less after each long rest.
   const ordeal = rule.ordeal ? "returned from death (-4)" : null;
   const conditions = ordeal && !woke.conditions.includes(ordeal) ? [...woke.conditions, ordeal] : woke.conditions;
-  const patch = { deathSaves: null, currentHp: hp, conditions, conditionMeta: woke.conditionMeta };
+  const lifted = (before.exhaustion ?? 0) > exhaustion;
+  const patch = { deathSaves: null, currentHp: hp, conditions, conditionMeta: woke.conditionMeta, ...(lifted ? { exhaustion } : {}) };
   const updated = patchSheet(fresh.id, patch);
   const entry = insertSheetAudit({
     campaignId: campaign.id,
     characterId: fresh.id,
     turnId,
     kind: "death_state",
-    delta: { revived: name, currentHp: hp },
+    delta: { revived: name, currentHp: hp, ...(lifted ? { exhaustion } : {}) },
     reason: `${name} cast by ${input.caster.name}`,
     seq: allocateSeq(campaign.id),
-    before: fresh,
+    before,
     patch,
   });
   publishPersisted(campaign.id, "sheet_audit", { entry, characterName: fresh.name });
@@ -338,6 +384,7 @@ function revive(
       ...(paid.slot ? { slot: paid.slot } : {}),
       ...(paid.material ? { material: paid.material } : {}),
       ...(ordeal ? { ordeal: "-4 to attack rolls and saving throws, one less after each long rest" } : {}),
+      ...(lifted ? { exhaustion: `one level lighter for coming back: now ${exhaustion}` } : {}),
       note: `${target.name} returns to life with ${hp} hit point${hp === 1 ? "" : "s"}; narrate it.`,
     },
   };

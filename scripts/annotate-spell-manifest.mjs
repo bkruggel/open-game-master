@@ -37,7 +37,7 @@ const manifestPath = path.join(root, "src/lib/srd/manifest/spells.json");
 process.env.CONTENT_DB_PATH ||= path.join(root, "data/content/open5e.sqlite");
 
 const { getContentDb } = await import("../src/lib/content/db.ts");
-const { castingTimeFrom, componentLettersFrom, materialCostFrom, rangeFrom } = await import(
+const { castingTimeFrom, componentLettersFrom, materialOf, rangeFrom } = await import(
   "../src/lib/srd/spell-facts.ts"
 );
 const { durationRounds, parseSpellMech } = await import("../src/lib/srd/spell-mechanics.ts");
@@ -53,6 +53,11 @@ const CLASS_NAMES = { herald: "paladin" };
 const BASE_LIST_TOO = {
   "dispel magic": ["cleric"],
   "meld into stone": ["druid"],
+};
+// Spells SRD 5.1's Spell Lists page puts on a class the pack's row leaves
+// off: "Druid Spells", 7th Level, prints Plane Shift.
+const SRD_LIST_ADDS = {
+  "plane shift": ["druid"],
 };
 
 const db = getContentDb();
@@ -105,7 +110,8 @@ manifest.spells = manifest.spells.map((spell) => {
   const kept = BASE_LIST_TOO[spell.n.toLowerCase()] ?? [];
   const own = classWords(data.dnd_class).filter((entry) => !granted.has(entry) || kept.includes(entry));
   // The artificer is not an SRD class; the checklist's word on it stands.
-  next.c = cleanClasses([...own, ...listed.filter((entry) => entry === "artificer")]).join(",");
+  const added = SRD_LIST_ADDS[spell.n.toLowerCase()] ?? [];
+  next.c = cleanClasses([...own, ...added, ...listed.filter((entry) => entry === "artificer")]).join(",");
   if (row.ritual === 1) {
     next.r = true;
   }
@@ -118,7 +124,9 @@ manifest.spells = manifest.spells.map((spell) => {
   }
   const letters = componentLettersFrom(data.components);
   next.v = `${letters.verbal ? "V" : ""}${letters.somatic ? "S" : ""}${letters.material ? "M" : ""}`;
-  const cost = materialCostFrom(data.material);
+  // The same reading the engine plays a pack row with (spell-facts.ts
+  // materialOf), misprints set right.
+  const cost = materialOf({ material: data.material });
   if (letters.material && cost.costGp) {
     next.g = cost.costGp;
     if (cost.consumed) {
@@ -126,8 +134,15 @@ manifest.spells = manifest.spells.map((spell) => {
     }
   }
   const range = rangeFrom(data.range);
+  // The pack prints a cone's or radius's range as a bare "Self"; the
+  // checklist's own "Self (15-foot cone)", typed from SRD 5.1, is kept, since
+  // the size is the spell's reach (src/lib/content/spell-overrides.ts).
+  const printed = typeof spell.d === "string" && /^self\s*\(/i.test(spell.d) ? spell.d : null;
   next.d =
-    range.kind === "feet" ? range.feet : range.kind === "self" && range.areaFeet ? `self:${range.areaFeet}` : range.kind;
+    range.kind === "feet" ? range.feet
+    : range.kind === "self" && range.areaFeet ? `self:${range.areaFeet}`
+    : range.kind === "self" && printed ? printed
+    : range.kind;
   return next;
 });
 

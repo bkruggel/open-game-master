@@ -129,6 +129,46 @@ await test("F06: forgetting an item keeps its rules on a sheet that carries it; 
   assert.equal(gear(), undefined, "a ring deleted for good still carries rules");
 });
 
+// ---- loot the model named that no list holds ----
+
+await test("an item the table has no stats for is named to the lead, and a workshop item of its name gives it them", async () => {
+  const unknownGear = await world.route("campaigns/[campaignId]/sheets/[sheetId]/unknown-gear");
+  world.patch(player.sheet.id, {
+    equipment: [
+      { name: "Ring of Whispers", qty: 1 },
+      { name: "ring of whispers", qty: 1 },
+      { name: "Longsword", qty: 1 },
+      { name: "Odd glass orb", qty: 1, identified: false },
+      { name: "Lucky Coin", qty: 1, srdName: "Stone of Good Luck (Luckstone)" },
+    ],
+  });
+  const ask = async (user) => {
+    world.signIn(user);
+    const params = { campaignId: world.campaignId, sheetId: player.sheet.id };
+    return call(unknownGear, "GET", undefined, params, `http://test/api/campaigns/${world.campaignId}/sheets/${player.sheet.id}/unknown-gear`);
+  };
+  const owner = await ask(world.owner);
+  assert.equal(owner.status, 200, JSON.stringify(owner.json));
+  assert.deepEqual(owner.json.names, ["Ring of Whispers"], "only the item no list, catalog row or workshop knows, once");
+  assert.equal(owner.json.canAuthor, true, "the owner runs the table");
+  const outsider = await ask({ id: player.id });
+  assert.ok(outsider.status !== 200 || outsider.json.canAuthor === false, "a player is not offered the workshop");
+  await keep(world.owner, "item", "Ring of Whispers", { desc: "It hums.", itemKind: "magic_item", rarity: "uncommon", requiresAttunement: false, effects: [{ kind: "ac_bonus", amount: 1 }] });
+  assert.deepEqual((await ask(world.owner)).json.names, [], "the workshop item gave it stats");
+  assert.equal(world.sheet(player.sheet.id).equipment[0].gear?.magic?.effects?.[0]?.amount, 1, "the carried ring reads its stats");
+});
+
+// The apps' Adjust dialog can open an older host, which has no such route:
+// the host says it has it, and the dialog asks only a host that does.
+await test("the unknown-gear route is a host feature the Adjust dialog waits for", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { SERVER_FEATURES } = await import("../src/lib/capabilities.ts");
+  assert.equal(SERVER_FEATURES.unknownGear, true, "this server says it has the route");
+  const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+  assert.match(read("src/lib/use-capabilities.ts"), /features\?: \{[^}]*unknownGear\?: boolean/);
+  assert.match(read("src/app/campaigns/[campaignId]/GiveStats.tsx"), /hostOffers\(useCapabilities\(\), "unknownGear"\)/);
+});
+
 // ---- no pack ----
 
 await test("F08: the catalog answers with or without the pack, and says which; with none it serves the bundled book whole.", async () => {
@@ -176,6 +216,29 @@ await test("F07: in one browser, two tables' feats of one name run as their own 
   } finally {
     delete globalThis.window;
   }
+});
+
+// ---- published gear ----
+
+await test("Published gear keeps its name: every SRD weapon and suit of armor is published by its whole name, a bonus and case aside, a part of a name is not, the workshop keeps no item under one, and only an item of its own name reaches a sheet's line.", async () => {
+  const { isPublishedGearName } = await import("../src/lib/db/homebrew.ts");
+  const { SRD_WEAPONS } = await import("../src/lib/srd/weapons.ts");
+  const { SRD_ARMOR } = await import("../src/lib/srd/armor-table.ts");
+  for (const { name } of [...SRD_WEAPONS, ...SRD_ARMOR]) {
+    assert.equal(isPublishedGearName(name), true, `${name} is not read as published gear`);
+    assert.equal(isPublishedGearName(`${name.toUpperCase()} +1`), true, `${name} with a bonus, in capitals, is not read as published gear`);
+  }
+  assert.equal(isPublishedGearName("Long"), false, "a part of a weapon's name passed for the weapon");
+  assert.equal(isPublishedGearName("Zzyx Thornblade of the Marrow Fen"), false, "a name nobody publishes passed for published gear");
+  assert.equal(isPublishedGearName(""), false);
+  const effects = { desc: "A blade of bog iron.", itemKind: "magic_item", rarity: "uncommon", requiresAttunement: false, effects: [{ kind: "ac_bonus", amount: 1 }] };
+  world.signIn(world.owner);
+  const refused = await call(homebrew, "POST", { kind: "item", name: "Dagger", data: effects });
+  assert.equal(refused.status, 400, "the workshop kept an item under the SRD dagger's name");
+  await keep(world.owner, "item", "Bog Iron Cleaver", effects);
+  const line = (name) => hydrateHomebrewGear(world.owner.id, [{ name, qty: 1 }], { campaignId: world.campaignId })[0].gear;
+  assert.equal(line("Dagger"), undefined, "the SRD dagger on a sheet took a workshop item's rules");
+  assert.equal(line("Bog Iron Cleaver")?.magic?.effects?.[0]?.amount, 1, "a workshop item of its own name gave its sheet line nothing");
 });
 
 world.close();

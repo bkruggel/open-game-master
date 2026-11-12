@@ -20,7 +20,7 @@ import { bindUsageScope } from "@/lib/usage/scope";
 import { publishEphemeral } from "@/lib/events";
 import { knownDmStatus, setDmStatus } from "@/lib/dm/status";
 import { latestTurnParkedByAi } from "@/lib/db/dm-turns";
-import { createDmJobControl, detachFromTurn, jobDeadlineMs, jobStage, runInDmJob, viewOf, type DmJobControl } from "@/lib/dm/job-control";
+import { createDmJobControl, detachFromTurn, jobDeadlineMs, jobStage, runInDmJob, turnScopeOpen, turnWorkDone, viewOf, type DmJobControl } from "@/lib/dm/job-control";
 import { describeStage, stalledReason, type DmJobKind, type DmJobView } from "@/lib/dm/job-stage-logic";
 import { haltAbandonedJob } from "@/lib/dm/turn-halt";
 
@@ -35,6 +35,15 @@ declare global {
   var __odmDmRunningDone: Map<string, Promise<void>> | undefined;
   var __odmDmFirst: Map<string, Promise<void>> | undefined;
   var __odmDmWatchdog: { timer: ReturnType<typeof setInterval> | null; checkMs: number; graceMs: number; scale: number } | undefined;
+  var __odmDmDrained: ((campaignId: string) => void) | undefined;
+}
+
+// Told when a campaign's queue runs dry, once the status line is set right:
+// src/lib/dm/loop.ts reads a table that waits for everyone again then, since
+// work that is not a turn never settles it (issue 636). Registered, not
+// imported, because the loop imports this module.
+export function onDmQueueDrained(listener: (campaignId: string) => void): void {
+  globalThis.__odmDmDrained = listener;
 }
 
 function queues() {
@@ -158,6 +167,14 @@ export function dmQueueTotals(): { campaigns: number; jobs: number } {
   return { campaigns: depths().size, jobs };
 }
 
+// Whether a GM turn still has work to come: the queue job playing it, work
+// of it running now, or the rolls it waits on before it goes on. Reverted
+// then, what the turn did after the revert was half kept and offered again.
+export function turnStillPlaying(campaignId: string, turn: { id: string; status: string }): boolean {
+  const control = running().get(campaignId);
+  return Boolean(control && control.turnId === turn.id && !control.settled) || turnScopeOpen(turn.id) || turn.status === "awaiting_rolls";
+}
+
 // The job a campaign is running now, as the table sees it.
 export function runningDmJob(campaignId: string): DmJobView | null {
   const control = running().get(campaignId);
@@ -245,7 +262,8 @@ export function enqueueDmJobFirst(campaignId: string, job: () => Promise<void>, 
   return next;
 }
 
-// One job fewer for the campaign; the last one out sets the status line right.
+// One job fewer for the campaign; the last one out sets the status line right
+// and says the queue is dry. A job the listener queues joins behind this one.
 function leaveQueue(campaignId: string) {
   const left = dmQueueDepth(campaignId) - 1;
   if (left > 0) {
@@ -253,6 +271,11 @@ function leaveQueue(campaignId: string) {
   } else {
     depths().delete(campaignId);
     settleStatus(campaignId);
+    try {
+      globalThis.__odmDmDrained?.(campaignId);
+    } catch (error) {
+      console.error(`[dm] campaign ${campaignId}: could not read the table after the queue ran dry`, error);
+    }
   }
 }
 
@@ -277,6 +300,10 @@ async function runJob(campaignId: string, job: () => Promise<void>, kind: DmJobK
     await Promise.race([runInDmJob(control, job), abandoned]);
   } finally {
     control.settled = true;
+    // The turn the job drove is done: what it changed is read as it left it.
+    if (control.turnId) {
+      detachFromTurn(() => turnWorkDone(control.turnId as string));
+    }
     releases.delete(control);
     if (running().get(campaignId) === control) {
       running().delete(campaignId);

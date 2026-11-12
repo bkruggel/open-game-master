@@ -15,6 +15,9 @@ import { getBattleMapForEncounter, getTokenByRef, insertToken, listTokens, renam
 import { d20Expression } from "@/lib/dice";
 import { resolveMonster } from "@/lib/bestiary";
 import { listNpcs } from "@/lib/db/npcs";
+import { storedRace } from "@/lib/npc-race";
+import { GENDERS, type Gender } from "@/lib/gender";
+import { pickedGender } from "@/lib/actor-sex-logic";
 import { synthesizeStats } from "@/lib/bestiary/synthesize";
 import { encounterCeiling, evaluateEncounter } from "@/lib/srd/encounter-math";
 import { nameArrivals, spliceIntoOrder } from "@/lib/dm/encounter-logic";
@@ -25,10 +28,11 @@ import { publishBattleMapUpdate } from "@/lib/dm/map-tools";
 import type { SettingRef } from "@/lib/worlds/preset";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { dmRoll } from "@/lib/dm/roll-card";
-import type { ToolResult } from "@/lib/dm/tool-errors";
+import { argumentsRefusal, type ToolResult } from "@/lib/dm/tool-errors";
 import { textKey } from "@/lib/language/text-logic";
 import { fieldSheetFoes, sheetFoesByName, type SheetFoe, type SheetFoeEntry } from "@/lib/dm/sheet-foes";
 import { fightingParty, MAX_COMBATANTS } from "@/lib/dm/party-budget";
+import { atTheFight } from "@/lib/dm/fight-away-logic";
 import { arrivalsFor, returningRow, survivorNamed, unknownReturning } from "@/lib/dm/foe-return";
 import { initLegendaryPools } from "@/lib/dm/legendary-tools";
 import { isDefeated } from "@/lib/dm/knockout";
@@ -48,6 +52,12 @@ export const enemyRequestSchema = z.object({
   // as that fight left it (issue #667, src/lib/dm/foe-return.ts). A blank
   // one from a weak caller is the same as none.
   returning: z.preprocess((value) => (typeof value === "string" && value.trim() ? value.trim() : undefined), z.string().max(80).optional()),
+  // Who a nameless humanoid foe is, which picks their face (an elf bandit
+  // draws the elf bandit plate, PR 710). Loose on purpose: a race or gender
+  // the server cannot read leaves the face as it was, never the fight
+  // refused.
+  race: z.string().max(40).optional(),
+  gender: z.string().max(20).optional(),
 });
 export type EnemyRequest = z.infer<typeof enemyRequestSchema>;
 
@@ -65,7 +75,47 @@ export type ResolvedEnemyRequest = {
   // The row of an earlier fight this creature comes back from, as it was
   // left there (src/lib/dm/foe-return.ts).
   returning?: string;
+  // Which entry of the request it came from: a monster and its count are
+  // one group of identical creatures, on one initiative roll.
+  group?: number;
+  // An SRD race id and a gender for the face, "" or absent for unspecified.
+  race?: string;
+  gender?: Gender;
 };
+
+// The look a request told, as stored values. A Cast NPC's own record is
+// read instead (src/lib/db/encounter-view.ts), so it is not copied here.
+function toldLook(request: EnemyRequest): { race?: string; gender?: Gender } {
+  const race = storedRace(request.race);
+  const told = textKey(String(request.gender ?? ""));
+  const gender = GENDERS.find((entry) => textKey(entry) === told);
+  return { ...(race ? { race } : {}), ...(gender ? { gender } : {}) };
+}
+
+// One initiative roll for each group of identical creatures: "The GM makes
+// one roll for an entire group of identical creatures, so each member of
+// the group acts at the same time" (SRD 5.1, Initiative). A group is one
+// entry of the enemies list, a monster with its count. Rolled silently, a
+// record for the DM alone, as an enemy's save is.
+export function groupInitiatives(campaignId: string, rows: ResolvedEnemyRequest[], names: string[]): number[] {
+  const rolled = new Map<number, number>();
+  return rows.map((entry, index) => {
+    const held = entry.group === undefined ? undefined : rolled.get(entry.group);
+    if (held !== undefined) {
+      return held;
+    }
+    const size = entry.group === undefined ? 1 : rows.filter((row) => row.group === entry.group).length;
+    const label = size > 1 ? `${entry.name} (${size}): initiative` : `${names[index]}: initiative`;
+    // One roll for the whole group, so a face forced on any of them is the
+    // group's (src/lib/dice-script-logic.ts).
+    const who = entry.group === undefined ? names[index] : names.filter((_, at) => rows[at].group === entry.group);
+    const total = dmRoll(campaignId, null, "initiative", label, d20Expression(entry.stats.dexMod), { roller: "enemy", kind: "initiative", who }).total;
+    if (entry.group !== undefined) {
+      rolled.set(entry.group, total);
+    }
+    return total;
+  });
+}
 
 // Resolves every requested enemy before anything is created. Returns the
 // flat per-individual list, or the first unresolvable monster reference.
@@ -89,7 +139,7 @@ export function resolveEnemyRequests(
   // A companion who left the party and comes back against it, or one that
   // turned on it, fights as themselves: once, whatever the count.
   const sheetFoes = campaignId ? sheetFoesByName(campaignId) : new Map<string, SheetFoeEntry>();
-  for (const request of requests) {
+  for (const [group, request] of requests.entries()) {
     const count = request.count ?? 1;
     const wanted = textKey(request.monster);
     // A creature from an earlier fight, named by its id there or, alone, by
@@ -143,8 +193,9 @@ export function resolveEnemyRequests(
       }
       continue;
     }
+    const look = toldLook(request);
     for (let index = 0; index < count; index += 1) {
-      resolved.push({ slug: match?.slug ?? "custom", name: displayName, stats });
+      resolved.push({ slug: match?.slug ?? "custom", name: displayName, stats, group, ...look });
     }
   }
   return { resolved };
@@ -153,7 +204,19 @@ export function resolveEnemyRequests(
 // A creature from an earlier fight, fighting as that row had it: its block,
 // its name, who it is.
 function carriedEntry(row: EncounterEnemy): ResolvedEnemyRequest {
-  return { slug: row.slug, name: row.displayName, stats: row.stats, returning: row.id, ...(row.npcId ? { npcId: row.npcId } : {}) };
+  // Its look comes back with it (src/lib/actor-sex-logic.ts): a row from
+  // before the column keeps the pick the board drew it with, from its id. A
+  // Cast NPC's is read from the Cast instead.
+  const gender = row.gender || (row.npcId ? "" : pickedGender(row.id));
+  return {
+    slug: row.slug,
+    name: row.displayName,
+    stats: row.stats,
+    returning: row.id,
+    ...(row.npcId ? { npcId: row.npcId } : {}),
+    ...(row.race ? { race: row.race } : {}),
+    ...(gender ? { gender } : {}),
+  };
 }
 
 type ToolDef = {
@@ -193,6 +256,8 @@ export const addEnemiesTool: ToolDef = {
                   "Only for an invented enemy with no matching monster: its challenge rating.",
               },
               returning: { type: "string", description: "An earlier fight's enemyId." },
+              race: { type: "string", description: "A humanoid's people (elf, dwarf...), for their face." },
+              gender: { type: "string", enum: [...GENDERS] },
             },
             required: ["monster"],
           },
@@ -224,12 +289,9 @@ function parseAddArgs(rawArguments: string): z.infer<typeof addArgsSchema> | nul
   }
   const flat = enemyRequestSchema.extend({ reason: z.string().optional() }).safeParse(raw);
   if (flat.success) {
-    return {
-      enemies: [
-        { monster: flat.data.monster, name: flat.data.name, count: flat.data.count, cr: flat.data.cr, returning: flat.data.returning },
-      ],
-      reason: flat.data.reason,
-    };
+    // Every field an enemy takes (encounter-tools.ts parseStartArgs).
+    const { reason, ...enemy } = flat.data;
+    return { enemies: [enemy], reason };
   }
   return null;
 }
@@ -245,10 +307,8 @@ export function handleAddEnemies(
   }
   const args = parseAddArgs(rawArguments);
   if (!args) {
-    return {
-      error: 'Invalid add_enemies arguments. Send {"enemies":[{"monster":"goblin","count":2}]}.',
-      retry: true,
-    };
+    // With each field zod refused and why (#875).
+    return argumentsRefusal('Invalid add_enemies arguments. Send {"enemies":[{"monster":"goblin","count":2}]}.', addArgsSchema, rawArguments);
   }
   const outcome = resolveEnemyRequests(campaign.gameSettings, args.enemies, spellAuthorsFor(campaign), campaign.id);
   if ("unknownMonster" in outcome) {
@@ -284,7 +344,7 @@ export function handleAddEnemies(
   }
   // Budget check over the whole living opposition, reinforcements included,
   // against the characters fighting it (src/lib/dm/party-budget.ts).
-  const partyLevels = fightingParty(campaign, sheets).map((sheet) => sheet.level);
+  const partyLevels = fightingParty(campaign, atTheFight(encounter, sheets)).map((sheet) => sheet.level);
   const evaluation = evaluateEncounter(partyLevels, [
     ...standing.map((enemy) => enemy.cr),
     ...arrivingStanding.map((entry) => entry.stats.cr),
@@ -332,21 +392,28 @@ export function handleAddEnemies(
   }
   const nameOf = (arrival: (typeof arriving)[number]) =>
     arrival.carry ? carriedNames[carriedHere.indexOf(arrival)] : freshNames[freshHere.indexOf(arrival)];
-  const inserted = arriving.map((arrival) => {
-    const name = nameOf(arrival);
-    return insertEnemy({
+  // Enemy initiative rolls silently at spawn, like start_encounter: once
+  // for each group of identical creatures. One back from an earlier fight
+  // is no member of a group here and rolls alone.
+  const initiatives = groupInitiatives(
+    campaign.id,
+    arriving.map((arrival) => (arrival.carry ? { ...arrival.entry, group: undefined } : arrival.entry)),
+    arriving.map(nameOf),
+  );
+  const inserted = arriving.map((arrival, index) =>
+    insertEnemy({
       encounterId: encounter.id,
       campaignId: campaign.id,
       slug: arrival.entry.slug,
-      displayName: name,
-      // Enemy initiative rolls silently at spawn, like start_encounter.
-      // A record for the DM alone, as an enemy's save is.
-      initiative: dmRoll(campaign.id, null, "initiative", `${name}: initiative`, d20Expression(arrival.entry.stats.dexMod)).total,
+      displayName: nameOf(arrival),
+      initiative: initiatives[index],
       stats: arrival.entry.stats,
       ...(arrival.entry.npcId ? { npcId: arrival.entry.npcId } : {}),
+      race: arrival.entry.race,
+      gender: arrival.entry.gender,
       ...(arrival.carry ? { arrives: arrival.carry.arrives } : {}),
-    });
-  });
+    }),
+  );
   const back = rejoining.flatMap(({ id, carry }) => {
     const row = patchEnemyHp(id, carry.arrives.currentHp, "alive");
     return row ? [row] : [];

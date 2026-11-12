@@ -16,6 +16,7 @@ import {
 } from "@/app/campaigns/[campaignId]/OwedPicksFields";
 import type { SeatPicks } from "@/lib/characters/seat-picks";
 import type { JoinPreview } from "@/lib/characters/join-changes";
+import { joinOwedLeft, joinOwedNote } from "@/lib/srd/owed-choices";
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
 
 // A hero about to take a seat: one from the player's library (their own, or
@@ -297,14 +298,14 @@ export function JoinConfirmDialog({
                     <li key={line}>{line}</li>
                   ))}
                 </ul>
-                <p className="text-xs text-stone-400">
-                  {t("table.join.choicesLeftNote", { name })}
-                </p>
+                <p className="text-xs text-stone-400">{joinOwedNote(name, owedLeft, shown?.owedOnSheet ?? preview?.owedOnSheet)}</p>
               </section>
             ) : shown?.ok && owed && owedLeft.length ? (
-              <p className="text-xs text-amber-100" data-join-owed-left>
-                {t("table.join.leftForLevelUp", { list: owedLeft.join("; ") })}
-              </p>
+              <div className="space-y-1 text-xs text-amber-100" data-join-owed-left>
+                {joinOwedLeft(owedLeft, shown?.owedOnSheet ?? preview?.owedOnSheet).map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
             ) : null}
           </>
         ) : null}

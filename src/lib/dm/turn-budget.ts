@@ -5,6 +5,8 @@
 // (resource-tools grants Action Surge through here) without pulling in the
 // handlers.
 
+import { endShadowInvisibility } from "@/lib/dm/one-with-shadows";
+import { thirstingBladeAttacks } from "@/lib/srd/pact-weapon";
 import { getActiveEncounter, orderEntryId, saveEncounter, type Encounter } from "@/lib/db/encounters";
 import { activePublicEncounter } from "@/lib/db/encounter-view";
 import { publishPersisted } from "@/lib/events";
@@ -14,6 +16,7 @@ import {
   budgetApplies,
   freshBudget,
   grantAction,
+  releaseHeldAction,
   type StruckSwing,
   type TurnBudget,
 } from "@/lib/dm/action-budget";
@@ -24,6 +27,8 @@ import { summonAttacksPerTurn } from "@/lib/dm/summon-rules";
 import { findBeastForm } from "@/lib/srd/beast-forms";
 import { formSees } from "@/lib/srd/form-sees";
 import type { ToolError, ToolResult } from "@/lib/dm/tool-errors";
+import { beginHeldTurnOf, releasesReadiedOffTurn, turnHeldForEnemies } from "@/lib/dm/held-turn";
+import { getSheetById } from "@/lib/db/sheets";
 
 // The combatant the initiative pointer is currently on, or null out of
 // combat and while initiative is still being rolled.
@@ -53,11 +58,26 @@ export function budgetFor(
   if (!encounter || currentCombatantId(encounter) !== ownerId) {
     return null;
   }
-  const { extraActions, slowed } = typeof shape === "number" ? { extraActions: shape, slowed: false } : shape;
+  // A turn held while an enemy before it is still to act has not begun: no
+  // budget, so what the character does then is a reaction (a readied
+  // release, Giant Killer), and their turn's own actions are refused
+  // (held-turn.ts heldTurnRefusal).
+  const owner = getSheetById(ownerId);
+  if (turnHeldForEnemies(encounter, ownerId) || (owner && releasesReadiedOffTurn(encounter, owner))) {
+    return null;
+  }
+  // A character acting on a turn held for the enemies before it: their turn
+  // has begun (src/lib/dm/held-turn.ts), before what they do lays anything
+  // that lasts until the start of their next one (a Dodge).
+  beginHeldTurnOf(encounter, ownerId);
+  const { extraActions, slowed, actionHeld } = typeof shape === "number" ? { extraActions: shape, slowed: false, actionHeld: false } : shape;
   // Slow: one attack a turn, whatever Extra Attack would give.
   const allowed = slowed ? 1 : attacksAllowed;
   if (budgetApplies(encounter.turnBudget, ownerId, encounter.round)) {
-    const held = encounter.turnBudget;
+    // A casting that held this turn's action has ended (its concentration
+    // broke, or was let go): the action was never spent on anything else, so
+    // it is the caster's again. Only a caller that read the conditions knows.
+    const held = typeof shape !== "number" && !actionHeld ? releaseHeldAction(encounter.turnBudget) : encounter.turnBudget;
     // Haste landing mid-turn gives its action on this turn; one already
     // given is not given again, and one spent stays spent. (A budget stored
     // before the count was kept was seeded with it if it carries the field.)
@@ -72,7 +92,7 @@ export function budgetFor(
       ...(slowed ? { slowed: true } : {}),
     };
   }
-  return freshBudget({ ownerId, round: encounter.round, attacksAllowed: allowed, extraActions, slowed });
+  return freshBudget({ ownerId, round: encounter.round, attacksAllowed: allowed, extraActions, slowed, actionHeld });
 }
 
 export function storeBudget(encounter: Encounter, budget: TurnBudget) {
@@ -118,6 +138,8 @@ function publishTurnCount(campaignId: string) {
 export function markReactionUsed(encounter: Encounter, characterId: string) {
   encounter.reactionsUsed = [...encounter.reactionsUsed, characterId];
   saveEncounter(encounter);
+  // A reaction ends One with Shadows' invisibility (one-with-shadows.ts).
+  endShadowInvisibility(encounter.campaignId, characterId, "takes a reaction");
   publishTurnCount(encounter.campaignId);
 }
 
@@ -165,7 +187,10 @@ export function attacksAllowedFor(sheet: CharacterSheet): number {
   // The record carries the form's Multiattack; one written before it did
   // reads the table's form of that name.
   const shaped = sheet.wildShape ? (sheet.wildShape.attacksPerTurn ?? findBeastForm(sheet.wildShape.form)?.attacksPerTurn ?? 1) : null;
-  const own = 1 + combatRiders(formSees(sheet)).extraAttacks;
+  // Thirsting Blade's second pact weapon attack (pact-weapon.ts); Extra
+  // Attack features do not add together.
+  const seen = formSees(sheet);
+  const own = 1 + Math.max(combatRiders(seen).extraAttacks, thirstingBladeAttacks(seen));
   return shaped !== null ? Math.max(shaped, own) : own;
 }
 

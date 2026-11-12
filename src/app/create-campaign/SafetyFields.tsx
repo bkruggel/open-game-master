@@ -20,6 +20,7 @@ export function SafetyFields({ draft, patch, gates }: StepProps) {
         onSafety={(safety) => patch({ safety })}
         onGm={(gm) => patch({ gm })}
         onVoice={(ttsVoice) => patch({ ttsVoice })}
+        tableLanguage={draft.tableLanguage}
       />
       <p className="text-xs text-stone-500">
         {t("creator.safety.personalityNote", {

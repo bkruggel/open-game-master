@@ -79,7 +79,7 @@ export function CompanionCommand({
           aria-label={t("table.companion.radioAria", { name: sheet.name })}
           data-pill-group=""
         >
-          <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">{t("table.companion.inFights")}</span>
+          <span className="text-[10px] uppercase tracking-[0.14em] text-stone-500">{t("table.companion.inFights")}</span>
           {options.map((option, index) => {
             const on = option.id === commander;
             return (

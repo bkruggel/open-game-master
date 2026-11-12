@@ -11,6 +11,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { ui } from "@/lib/ui";
 import { useT } from "@/lib/locale";
 import type { CampaignCover as CampaignCoverRef } from "@/lib/campaign-types";
+import { REAL_DICE_SCOPE } from "@/lib/dice/held-rolls";
 
 // The pieces of the lobby that are pure presentation, kept out of Lobby.tsx so
 // that file stays the seat logic and the layout.
@@ -144,7 +145,7 @@ export function LobbyRealDice({
       <GameIcon icon={{ kind: "glyph", key: "die-d20" }} size="size-9" />
       <div className="min-w-0 flex-1">
         <p className="text-sm text-stone-200">{t("table.lobby.realDiceTitle")}</p>
-        <p className="text-xs text-stone-500">{t("table.lobby.realDiceBody")}</p>
+        <p className="text-xs text-stone-500">{t("table.lobby.realDicePause", { scope: REAL_DICE_SCOPE })}</p>
       </div>
       <span className="flex shrink-0 flex-col items-center gap-1">
         <Switch on={on} onChange={onToggle} label={t("table.lobby.realDiceTitle")} />

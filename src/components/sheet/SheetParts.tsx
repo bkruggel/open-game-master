@@ -261,7 +261,9 @@ export function TrainingLines({
 }) {
   const t = useT();
   const nice = (value: string) =>
-    value.replace(/[-_]/g, " ").replace(/(^|\s|')([a-z])/g, (_, before: string, letter: string) => `${before}${letter.toUpperCase()}`);
+    // A word's first letter, or the letter after a quote that opens one: never
+    // the "s" after a possessive's apostrophe ("Alchemist'S Supplies").
+    value.replace(/[-_]/g, " ").replace(/(^|\s)(['‘]?)([a-z])/g, (_, before: string, quote: string, letter: string) => `${before}${quote}${letter.toUpperCase()}`);
   const rows: Array<[string, string[]]> = [
     [t("sheet.training.languages"), proficiencies.languages],
     [t("sheet.training.tools"), proficiencies.tools],

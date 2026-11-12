@@ -102,9 +102,11 @@ function AdvanceOfferCard({
   const t = useT();
   const suitor = proposal.advance?.suitor || t("table.advance.someone");
   const look = proposal.advance?.look;
-  const face = look?.race
+  // A companion's look carries a class and draws as the character they are;
+  // an NPC's carries a role, and their race and gender pick its plate.
+  const face = look?.class
     ? characterPlaceholder({ race: look.race, class: look.class, gender: look.gender })
-    : npcPlaceholder(look?.role, suitor);
+    : npcPlaceholder(look?.role, suitor, { race: look?.race, gender: look?.gender });
   const characterName = character?.name ?? t("table.advance.aCharacter");
 
   async function answer(action: "approve" | "decline" | "cancel") {

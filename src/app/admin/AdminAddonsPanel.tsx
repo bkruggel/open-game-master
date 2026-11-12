@@ -321,10 +321,10 @@ export function AdminAddonsPanel() {
         </div>
         <p className="mt-1 text-[11px] leading-4 text-stone-500">
           {t("admin.addons.listNote.a")}
-          <span className="font-mono">ADDON_REGISTRY_URL</span>
+          <span className="font-code">ADDON_REGISTRY_URL</span>
           {t("admin.addons.listNote.b")}
-          <span className="font-mono">off</span>.
-          {state.catalog.url ? <span className="block break-all font-mono">Reading: {state.catalog.url}</span> : null}
+          <span className="font-code">off</span>.
+          {state.catalog.url ? <span className="block break-all font-code">Reading: {state.catalog.url}</span> : null}
         </p>
 
         <div className="mt-4 flex items-start justify-between gap-3">

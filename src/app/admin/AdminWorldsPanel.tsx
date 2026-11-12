@@ -360,9 +360,9 @@ export function AdminWorldsPanel() {
         </div>
         <p className="mt-1 text-[11px] leading-4 text-stone-500">
           {t("admin.worlds.registryNote.a")}
-          <span className="font-mono"> WORLD_REGISTRY_URL </span>
+          <span className="font-code"> WORLD_REGISTRY_URL </span>
           {t("admin.worlds.registryNote.b")}
-          <span className="font-mono"> off </span>
+          <span className="font-code"> off </span>
           {t("admin.worlds.registryNote.c")}
         </p>
       </section>

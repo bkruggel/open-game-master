@@ -13,6 +13,9 @@ import { PickPill, StepPanel } from "./shared";
 import { textKey } from "@/lib/language/text-logic";
 import { splitToolGrants } from "@/lib/srd/tool-choices";
 import { useLocale, useT } from "@/lib/locale";
+import { subclassChoiceSummary } from "@/lib/content/subclass-choices";
+import { featChoice } from "@/lib/schemas/sheet";
+import FeatChoicesFields, { knownTraining } from "../FeatChoicesFields";
 
 const optionCard = (selected: boolean) =>
   cn(
@@ -44,9 +47,11 @@ export function ClassChoices({
   const classIds = derived.classList?.length ? derived.classList.map((entry) => entry.id) : klass ? [klass.id] : [];
   // Only picks in a skill the character still has count: dropping a class
   // skill takes its expertise with it, here and in the step's gate.
-  const expertiseChosen = state.expertisePicks.filter((skillId) => expertiseAllowed(skillId, proficientSkills, classIds));
+  // Any skill the character holds, its subclass's and feats' too.
+  const expertiseSkills = derived.expertiseSkills ?? proficientSkills;
+  const expertiseChosen = state.expertisePicks.filter((skillId) => expertiseAllowed(skillId, expertiseSkills, classIds));
   // A rogue may take thieves' tools in place of a skill.
-  const expertiseOptions = classIds.includes("rogue") ? [...proficientSkills, THIEVES_TOOLS] : proficientSkills;
+  const expertiseOptions = classIds.includes("rogue") ? [...expertiseSkills, THIEVES_TOOLS] : expertiseSkills;
   return (
     <>
       {/* Drawn from the skills alone, never from the sheet preview: that waits
@@ -152,7 +157,15 @@ export function ClassChoices({
           help={
             <>
               {slot.remaining > 0 ? (
-                <span className="text-amber-300">{t("builder.calling.stillToChoose", { count: slot.remaining })}</span>
+                <span className="text-amber-300">
+                  {[
+                    Math.floor(slot.remaining) ? t("builder.calling.remainingWhole", { count: Math.floor(slot.remaining) }) : "",
+                    slot.remaining - Math.floor(slot.remaining) >= 0.5 ? t("builder.calling.remainingHalf") : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  .{" "}
+                </span>
               ) : null}
               {t("builder.classChoices.optionsWhy")}
             </>
@@ -188,6 +201,65 @@ export function ClassChoices({
           </div>
         </StepPanel>
       ))}
+
+      {/* A workshop subclass's own choice (issue #833): a bloodline, an
+          element. One option, picked like the lists above; what it gives is
+          said on its card. */}
+      {(derived.subclassChoiceSlots ?? []).map((slot) => (
+        <StepPanel
+          key={`${slot.classId}|${slot.label}`}
+          anchor="options"
+          title={`${slot.label} (pick 1)`}
+          help={
+            <>
+              {slot.chosen ? null : <span className="text-amber-300">1 still to choose. </span>}
+              {slot.subclass} asks for this. Each option gives your character what its card says.
+            </>
+          }
+        >
+          <div className="grid gap-1.5 sm:grid-cols-2" role="group" aria-label={slot.label}>
+            {slot.options.map((option) => {
+              const selected = slot.chosen?.name === option.name;
+              const gives = subclassChoiceSummary(option);
+              return (
+                <div key={option.id} className={cn(optionCard(selected), "flex items-start gap-1")}>
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => actions.pickSubclassChoice(slot.label, option.name)}
+                    className="min-h-[40px] grow text-left"
+                  >
+                    <span className="block text-xs">{option.name}</span>
+                    <span className="block text-sm text-stone-500">
+                      {option.description ? `${option.description} ` : ""}
+                      {gives}
+                    </span>
+                  </button>
+                  <InfoButton label={option.name} meta={slot.subclass} text={[option.description, gives].filter(Boolean).join(" ")} />
+                </div>
+              );
+            })}
+          </div>
+        </StepPanel>
+      ))}
+
+      {/* What the class itself teaches beside its picks: a ranger's Favored
+          Enemy language (src/lib/srd/subclass-training.ts CLASS_TABLE). It
+          may wait, but asked here it is made with the character. */}
+      {derived.subclassTraining
+        .filter((grant) => grant.optional)
+        .map((grant) => (
+          <StepPanel key={grant.name} anchor="options" title={grant.name}>
+            <FeatChoicesFields
+              feat={grant.name}
+              spec={grant.spec}
+              picks={featChoice(state.featChoices, grant.name)}
+              known={knownTraining(derived)}
+              onChange={(picks) => state.setFeatPicks(grant.name, picks)}
+              source="subclass"
+            />
+          </StepPanel>
+        ))}
     </>
   );
 }

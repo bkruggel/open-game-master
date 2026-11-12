@@ -13,7 +13,8 @@ import type { CharacterSheet, DeathSaves, FullPatchSheetInput } from "@/lib/sche
 import { effectiveMaxHp } from "@/lib/dm/condition-logic";
 import { conditionDeathSaveAdvantage } from "@/lib/srd/condition-effect-queries";
 import { resolveRollExpression, type RollArgs } from "@/lib/dm/rolls";
-import { rollExtrasFor, spendRollCarriers } from "@/lib/dm/forced-save";
+import { heldDieWaits, rollExtrasFor, settleHeldDie, spendRollCarriers } from "@/lib/dm/forced-save";
+import { rollCharacterD20 } from "@/lib/dm/character-roll";
 import {
   downConditions,
   stableTimer,
@@ -23,6 +24,7 @@ import {
 import {
   applyDeathSaveRoll,
   freshDeathTrack,
+  stableDeathTrack,
   isDying,
   isMassiveDamage,
   MOST_SAVES_TO_SETTLE,
@@ -107,6 +109,12 @@ function tableNote(campaign: Campaign, content: string, glyph: SystemGlyph) {
   publishWithSeq(campaign.id, seq, "message_added", { message });
 }
 
+// "1 success, 2 failures": each count with its own noun, as the table reads
+// it. "(1 successes, 1 failures)" was every first save's line.
+function tally(track: { successes: number; failures: number }): string {
+  return `${track.successes} success${track.successes === 1 ? "" : "es"}, ${track.failures} failure${track.failures === 1 ? "" : "s"}`;
+}
+
 export function describeTrack(track: DeathSaves): string {
   if (!track) {
     return "";
@@ -117,7 +125,7 @@ export function describeTrack(track: DeathSaves): string {
   if (track.stable) {
     return "stable at 0 HP";
   }
-  return `dying: ${track.successes} successes, ${track.failures} failures`;
+  return `dying: ${tally(track)}`;
 }
 
 // Called from apply_damage after the HP math lands. `preSheet` is the
@@ -130,6 +138,8 @@ export function applyDamageDeathHook(
   preSheet: CharacterSheet,
   math: { currentHp: number; dropped: boolean; overkill: number },
   crit: boolean,
+  // The blow that dropped them was a melee attack meant to knock out.
+  nonlethal = false,
 ): Record<string, unknown> {
   if (math.currentHp > 0) {
     return {};
@@ -172,6 +182,21 @@ export function applyDamageDeathHook(
   }
 
   if (math.dropped) {
+    // "The attacker can make this choice the instant the damage is dealt.
+    // The creature falls unconscious and is stable" (SRD 5.1, Knocking a
+    // Creature Out): no death saves, the stable wait for the hit point, and
+    // no instant death, which the attacker chose not to deal.
+    if (nonlethal) {
+      const wait = rollStableTimer(campaign, fresh);
+      writeDeathState(campaign, turnId, fresh, stableDeathTrack(), "death_state", "knocked out", {
+        conditions: wait.conditions,
+        conditionMeta: wait.conditionMeta,
+      });
+      return {
+        knockedOut: true,
+        note: `${fresh.name} is knocked out: unconscious and stable at 0 HP, making no death saves. They regain 1 hit point in ${wait.hours} hour${wait.hours === 1 ? "" : "s"}, or sooner if healed.`,
+      };
+    }
     if (isMassiveDamage(math.overkill, effectiveMaxHp(fresh))) {
       const track = { ...freshDeathTrack(), failures: 3, dead: true };
       writeDeathState(campaign, turnId, fresh, track, "death_state", "massive damage");
@@ -269,6 +294,20 @@ export function wakeStable(campaign: Campaign, characterId: string): string | nu
   return `${sheet.name} comes round with 1 hit point.`;
 }
 
+// A feature that answers a death save in its place (Searing Vengeance,
+// src/lib/dm/searing-vengeance.ts), registered by its module: this one must
+// not import what that one needs (an enemy's damage imports this file).
+// Kept on globalThis, as the dice script's hook is (src/lib/dice.ts): the
+// registering module can load while this one is still evaluating (an import
+// cycle through an enemy's damage), before a module-level binding exists.
+type DeathSaveStandIn = (campaign: Campaign, sheet: CharacterSheet) => string | null;
+declare global {
+  var __odmDeathSaveStandIn: DeathSaveStandIn | undefined;
+}
+export function registerDeathSaveStandIn(hook: DeathSaveStandIn) {
+  globalThis.__odmDeathSaveStandIn = hook;
+}
+
 // One automatic death save, rolled server-side when the initiative pointer
 // passes a dying PC. Publishes the dice card and a table note so both the
 // players and the model (via history) see the result.
@@ -280,6 +319,11 @@ export function rollDeathSave(campaign: Campaign, characterId: string, turnId: s
   if (!sheet || !track || track.stable || track.dead || sheet.currentHp > 0) {
     return null;
   }
+  const instead = globalThis.__odmDeathSaveStandIn?.(campaign, sheet) ?? null;
+  if (instead) {
+    tableNote(campaign, instead, "cue-heal");
+    return instead;
+  }
   // A death save is a saving throw tied to no ability: it takes what every
   // save takes (exhaustion, Bless and Bane, a paladin's aura, a Ring of
   // Protection, a held inspiration die, a halfling's Lucky) through the one
@@ -290,24 +334,36 @@ export function rollDeathSave(campaign: Campaign, characterId: string, turnId: s
   // (src/lib/srd/feat-combat.ts).
   const feat = deathSaveFeat(sheet, track);
   const claim = hope ?? feat;
+  const waits = heldDieWaits(sheet, 10);
   const resolved = resolveRollExpression(
     {
       kind: "saving_throw",
       ...(claim ? { advantage: "advantage", advantageReason: `${claim}: advantage` } : {}),
     } as RollArgs,
     sheet,
-    { ...rollExtrasFor(campaign, sheet, "saving_throw"), death: true },
+    { ...rollExtrasFor(campaign, sheet, "saving_throw"), death: true, keepHeldDie: waits },
   );
   if ("error" in resolved || "autoFail" in resolved) {
     return null;
   }
   spendRollCarriers(campaign.id, sheet.id, resolved.spendInspiration);
+  // The player's own death save (src/lib/dm/character-roll.ts): on physical
+  // dice they roll it, and one thrown for them waits on what they hold
+  // (Lucky, Bardic Inspiration: WAVE1 R4) before it counts.
+  const outcome = rollCharacterD20(campaign, sheet, {
+    kind: "saving_throw",
+    tag: { roller: "hero", kind: "death_save", who: sheet.name },
+    expression: resolved.expression,
+    detail: "death save",
+    dc: 10,
+    // A held die is added only to a death save it turns into a success.
+    settle: (thrown) => (waits ? settleHeldDie(campaign.id, sheet.id, thrown, 10, true) : thrown),
+  });
   // What the save spent (an inspiration die, a luck point) is gone from the
   // stored sheet. The writes below start from it: from the copy read before
   // the spend, a natural 20 or a third success wrote the spent carrier back
   // with the conditions, and the audit's pre-image still held it (#622).
   const current = getSheetById(characterId) ?? sheet;
-  const outcome = rollExpression(resolved.expression);
   const advantage = /^2d20kh1/.test(resolved.expression) ? "advantage" : /^2d20kl1/.test(resolved.expression) ? "disadvantage" : "none";
   const notes = [...(resolved.conditionNotes ?? []), ...(hope ? [`${hope}: advantage`] : []), ...(feat ? [`${feat}: advantage`] : [])];
   const roll = insertRoll({
@@ -356,7 +412,7 @@ export function rollDeathSave(campaign: Campaign, characterId: string, turnId: s
   }
   const line = `${sheet.name} death save: rolled ${outcome.total}, ${
     applied.outcome === "success" ? "success" : "failure"
-  } (${applied.track.successes} successes, ${applied.track.failures} failures).`;
+  } (${tally(applied.track)}).`;
   tableNote(campaign, line, "die-d20");
   return line;
 }

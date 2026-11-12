@@ -13,7 +13,7 @@ type T = (key: string, vars?: Record<string, string | number>) => string;
 const enT: T = (key, vars) => translate("en", key, vars);
 import { optionCards } from "@/lib/battlemap/hand-options";
 import { maneuverDieFor, maneuverUse, type ManeuverUse } from "@/lib/dm/maneuver-rules";
-import { ragingMeleeBonus, weaponAttackProfile, weaponOf } from "@/lib/dm/attack-logic";
+import { weaponAttackProfile, weaponOf } from "@/lib/dm/attack-logic";
 import { dualWields, handsRuling, offHandProblem } from "@/lib/dm/attack-rules";
 import { shillelaghSwing } from "@/lib/dm/attack-features";
 import { magicWeaponOfRow, type WeaponGear } from "@/lib/dm/gear-attack";
@@ -25,14 +25,16 @@ import { beastAttackIcon } from "@/lib/battlemap/attack-art";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import { acBreakdownFor, computeSheetDerived } from "@/lib/srd";
 import { ammoKindForWeapon, findAmmo, type AmmoKind } from "@/lib/srd/ammunition";
-import { conditionOnHitDice } from "@/lib/srd/condition-effects";
+import { attackDamageLine, attackReach, attackRollLine } from "@/lib/battlemap/hand-attack-lines";
+import { grappleHandsProblem } from "@/lib/dm/cast-rules";
+import type { AttackProfile } from "@/lib/dm/attack-logic";
+import { longRangeTilesOf } from "@/lib/dm/attack-rules";
 import { combatRiders, type CombatRiders } from "@/lib/srd/feature-effects";
 import { matchWeapon, type SrdWeapon } from "@/lib/srd/weapons";
 
 import {
   FRESH_TURN,
   attackGate,
-  addFlat,
   costGate,
   gated,
   handsRulingReason,
@@ -51,10 +53,14 @@ import {
   type HandTurn,
 } from "@/lib/battlemap/hand-core";
 import { featureCards, spellCards, spellNames } from "@/lib/battlemap/hand-spells";
+import { itemSpellCards, itemSpellNames } from "@/lib/battlemap/hand-items";
+import { ringSpellCards, ringSpellNames } from "@/lib/battlemap/hand-ring";
 import { intimidatingPresenceCards, subclassSpendCards } from "@/lib/battlemap/hand-subclass";
 import { spellHoldOf } from "@/lib/battlemap/hand-escape";
 import { gearCards, undrawnGate } from "@/lib/battlemap/hand-gear";
+import { grantedAttackCards } from "@/lib/battlemap/hand-granted";
 import { textKey } from "@/lib/language/text-logic";
+import { magicItemRiders } from "@/lib/srd/magic-items";
 
 export * from "@/lib/battlemap/hand-core";
 
@@ -92,10 +98,17 @@ export function carriedWeapons(sheet: Pick<CharacterSheet, "equipment">): Carrie
   return out;
 }
 
-function weaponRange(srd: SrdWeapon | null, reachTiles: number, thrown: boolean, ranged: boolean, t: T = enT): string {
-  if (ranged && srd?.rangeFt) return t("table.hand.range.feet", { feet: srd.rangeFt });
-  const reach = t("table.hand.range.feet", { feet: reachTiles * 5 });
-  return thrown && srd?.rangeFt ? t("table.hand.range.weaponThrown", { reach, range: srd.rangeFt }) : reach;
+// The card's range line in the reader's words, from the same reading
+// attackReach makes (hand-attack-lines.ts): melee feet, a bow's span out to
+// its long range, a thrown weapon's reach then its span. The shot data the
+// preview reads rides on the card from attackReach itself.
+function weaponRange(profile: AttackProfile, t: T = enT): string {
+  const reachFt = profile.reachTiles * 5;
+  if (!profile.ranged && !profile.thrown) return t("table.hand.range.feet", { feet: reachFt });
+  const normalFt = profile.rangeTiles * 5;
+  const longFt = longRangeTilesOf(profile) * 5;
+  const span = longFt > normalFt ? t("table.hand.range.beastRanged", { range: normalFt, long: longFt }) : t("table.hand.range.feet", { feet: normalFt });
+  return profile.ranged ? span : t("table.hand.range.weaponThrownFt", { reach: reachFt, span });
 }
 
 function attackCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, options: HandOptions, t: T = enT): HandCard[] {
@@ -110,7 +123,6 @@ function attackCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders
   // src/lib/dm/attack-rules.ts). The off-hand swing of two-weapon fighting
   // has a weapon in each hand, so it is one-handed as well.
   const shieldName = acBreakdownFor(sheet).shieldName;
-  const onHit = conditionOnHitDice(sheet.conditions);
   const cards: HandCard[] = [];
   const base = {
     type: "attack" as const,
@@ -175,17 +187,19 @@ function attackCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders
       // A natural weapon is always proficient, as the engine swings it.
       natural ? [...profs, "simple", name.toLowerCase()] : profs,
       shillelagh?.resolved ?? resolved,
-      { riders, offHand, martialArts },
+      // Bracers of Archery's longbow training and +2 damage, as pc_attack swings.
+      { riders, offHand, martialArts, worn: magicItemRiders(sheet.equipment, sheet).weaponRiders },
     );
-    const rage = ragingMeleeBonus(sheet, profile);
-    const damage = `${addFlat(profile.damageExpression, rage)}${onHit.suffix}`;
+    // The damage and the roll as pc_attack makes them (hand-attack-lines.ts).
+    const line = attackDamageLine({ sheet, turn, profile, riders, kind: "weapon" });
+    const rolled = attackRollLine(sheet, profile.toHit);
+    const damage = line.damage;
     const notes: string[] = [];
     if (!offHand && allowed > 1) notes.push(t("table.hand.attack.extraAttack", { count: allowed }));
     if (riders.sneakAttackDice > 0 && profile.sneakEligible) {
       notes.push(t("table.hand.attack.sneakAttack", { dice: riders.sneakAttackDice }));
     }
-    if (rage) notes.push(t("table.hand.attack.rage", { bonus: rage }));
-    notes.push(...onHit.notes.map((note) => `${note}.`));
+    notes.push(...line.notes, ...rolled.notes);
     if (shillelagh) notes.push(`${shillelagh.note}.`);
     notes.push(...profile.riderNotes.map((note) => `${note}.`));
     if (!profile.proficient) notes.push(t("table.hand.attack.notProficient"));
@@ -203,16 +217,19 @@ function attackCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders
       id: `${offHand ? "offhand" : "attack"}:${textKey(name)}`,
       name: offHand ? t("table.hand.attack.offHand", { name }) : name,
       cost: offHand ? "bonus" : "action",
-      range: weaponRange(srd, profile.reachTiles, profile.thrown, profile.ranged, t),
+      ...attackReach(profile),
+      range: weaponRange(profile, t),
       dice: dmgWithType(damage, profile.damageType, t),
-      roll: t("table.hand.attack.toHit", { bonus: signed(profile.toHit) }),
+      roll: t("table.hand.attack.toHit", { bonus: `${(rolled.toHit ?? 0) >= 0 ? "+" : ""}${rolled.toHit ?? 0}${rolled.toHitDice ?? ""}` }),
       rules: notes.slice(0, 2).join(" "),
       description: notes.join(" "),
       resource: ammoKind ? (ammo ? t("table.hand.attack.ammoCount", { ammo: ammoLabel, count: ammo.count }) : t("table.hand.attack.noAmmo", { ammo: ammoLabel })) : "",
       icon: natural
         ? beastAttackIcon("", name)
         : srd ? { kind: "item", key: srd.name, family: "item-weapon" } : { kind: "action", key: "unarmed-strike" },
-      toHit: profile.toHit,
+      toHit: rolled.toHit,
+      ...(rolled.toHitDice ? { toHitDice: rolled.toHitDice } : {}),
+      ...(rolled.rollAdvantage ? { rollAdvantage: rolled.rollAdvantage } : {}),
       damage,
       damageType: profile.damageType,
       melee: !profile.ranged,
@@ -266,6 +283,8 @@ function attackCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders
   cards.push(build("Unarmed strike", null, false));
   // The bonus-action strikes a feature grants (Martial Arts, Frenzy).
   cards.push(...bonusStrikeCards(sheet, turn, riders, carried.map((weapon) => ({ name: weapon.name, srd: weapon.srd }))));
+  // The attacks a held condition grants (Spiritual Weapon's weapon).
+  cards.push(...grantedAttackCards(sheet, turn, allowed));
 
   // Two-weapon fighting: two light melee weapons in hand buy a bonus swing,
   // and with Dual Wielder any two melee weapons held in one hand do.
@@ -382,7 +401,7 @@ const BASICS: Array<{ id: BasicActionId; name: string; rules: string; target: Ha
   { id: "dodge", name: "Dodge", rules: "Attacks against you roll at disadvantage until your next turn.", target: "none" },
   { id: "dash", name: "Dash", rules: "Double your movement this turn.", target: "none" },
   { id: "disengage", name: "Disengage", rules: "Your movement provokes no opportunity attacks this turn.", target: "none" },
-  { id: "help", name: "Help", rules: "An ally gets advantage on their next attack against the creature you name, or on a check.", target: "ally" },
+  { id: "help", name: "Help", rules: "An ally gets advantage on their next attack against a creature you name within 5 ft of you, or on a check.", target: "ally" },
   { id: "hide", name: "Hide", rules: "A Stealth check to slip out of sight.", target: "none" },
   { id: "search", name: "Search", rules: "Perception or Investigation to find what is hidden.", target: "none" },
   { id: "escape", name: "Escape", rules: "Athletics or Acrobatics against the grappler's Athletics.", target: "none" },
@@ -462,9 +481,20 @@ const BASIC_NAME_KEYS: Record<BasicActionId, string> = {
   dismount: "table.hand.basic.dismount",
 };
 
-function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, t: T = enT): HandCard[] {
+function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders, board: HandOptions["board"], t: T = enT): HandCard[] {
   const derived = computeSheetDerived(sheet);
   const allowed = 1 + riders.extraAttacks;
+  // The engine's own refusals of a basic action on the rules (take_action's
+  // words): a grapple with both hands full (cast-rules.ts
+  // grappleHandsProblem), a Hide a watcher sees clearly (the board view's
+  // verdict, hide-traits.ts hideRefusal). Both cards were open and refused.
+  const grappleHands = grappleHandsProblem(sheet);
+  const ruled = (id: BasicActionId): Gate =>
+    id === "grapple" && grappleHands
+      ? { reason: grappleHands.error, spent: false }
+      : id === "hide" && board?.hide
+        ? { reason: board.hide, spent: false }
+        : null;
   const grappled = sheet.conditions.some((entry) => entry.trim().toLowerCase() === "grappled");
   const prone = sheet.conditions.some((entry) => entry.trim().toLowerCase() === "prone");
   // A spell's hold (Web, Maze, Irresistible Dance): take_action escape breaks
@@ -484,7 +514,9 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders,
         ? t("table.hand.basic.routeName", { feature: route.feature, name: t(BASIC_NAME_KEYS[basic.id]) })
         : t(BASIC_NAME_KEYS[basic.id]),
       cost,
-      range: contest || basic.id === "help" ? t("table.hand.range.melee") : t("table.hand.range.self"),
+      // Help aims at the ally, who may stand anywhere (SRD 5.1 gives helping
+      // with a task no range); its 5 feet are the foe's, named in its words.
+      range: contest ? t("table.hand.range.melee") : basic.id === "help" ? "" : t("table.hand.range.self"),
       dice: contest || escape
         ? t("table.hand.dice.athletics", { mod: signed(athletics) })
         : basic.id === "hide"
@@ -581,6 +613,7 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders,
           ? attackGate(turn, allowed, sheet, { hasteOk: false }, t)
           : costGate("action", turn, sheet, t(BASIC_NAME_KEYS[basic.id]), t),
         still,
+        ruled(basic.id),
       ),
     );
     // The same move as the bonus action, where a feature allows it: Cunning
@@ -597,7 +630,7 @@ function basicCards(sheet: CharacterSheet, turn: HandTurn, riders: CombatRiders,
           ? { reason: t("table.hand.gate.noUse", { name: sheet.name, feature: route.feature }), spent: true }
           : null;
       cards.push(
-        gated(make(basic, route), standingGate(sheet, turn, "bonus", t), costGate("bonus", turn, sheet, `${route.feature} (${basic.name})`, t), kiGate, usesGate, still),
+        gated(make(basic, route), standingGate(sheet, turn, "bonus", t), costGate("bonus", turn, sheet, `${route.feature} (${basic.name})`, t), kiGate, usesGate, still, ruled(basic.id)),
       );
     }
   }
@@ -614,17 +647,20 @@ export function deriveHand(sheet: CharacterSheet, turn: HandTurn = FRESH_TURN, o
   const riders = combatRiders(sheet);
   const spells = spellCards(sheet, turn, riders, options, t);
   const features = featureCards(sheet, turn, t, locale);
-  const taken = new Set(features.map((card) => textKey(card.name)));
+  // By name, and by the spend a card plays (Arcane Jolt's two cards are one spend, and so are Cauterizing Flames' two reactions).
+  const taken = new Set(features.flatMap((card) => [textKey(card.name), ...(card.intent.card === "reaction" ? [textKey(card.intent.feature)] : []), ...(card.intent.card === "feature" && card.intent.resourceId ? [textKey(card.intent.resourceId)] : [])]));
   return [
     ...attackCards(sheet, turn, riders, options, t),
     ...riderCards(sheet, turn, riders, t),
     ...spells,
+    ...ringSpellCards(sheet, turn, riders, options),
+    ...(options.items === false ? [] : itemSpellCards(sheet, turn, riders, options)),
     ...features,
     ...optionCards(sheet, turn, t),
     ...intimidatingPresenceCards(sheet, turn, t),
     ...subclassSpendCards(sheet, turn, taken, t),
     ...kiCards(sheet, turn, t),
-    ...basicCards(sheet, turn, riders, t).map((card) => (card.id === "basic:ready" ? withReadySpells(card, spells, t) : card)),
+    ...basicCards(sheet, turn, riders, options.board, t).map((card) => (card.id === "basic:ready" ? withReadySpells(card, spells, t) : card)),
     ...gearCards(sheet, turn, options.gear, t),
     ...fastHandsCards(sheet, turn, t),
   ];
@@ -668,12 +704,14 @@ export function spellsToLookUp(sheet: CharacterSheet): string[] {
   return spellNames(sheet);
 }
 
+// The same, and what its items cast, for the cards alone: the summoning door lists
+// what the sheet casts from its own slots.
+export function handSpellsToLookUp(sheet: CharacterSheet): string[] {
+  return [...spellNames(sheet), ...ringSpellNames(sheet), ...itemSpellNames(sheet)];
+}
+
 // Nine in the fan, the rest behind the "more" spine; a player's own
 // arrangement of the fan is hand-layout.ts (issue 231).
 export { splitHand } from "@/lib/battlemap/hand-layout";
 
-// Swings the Attack action grants this character (1 + Extra Attack), which
-// is what afterCommit needs to know when the action closes.
-export function attacksAllowed(sheet: CharacterSheet): number {
-  return 1 + combatRiders(sheet).extraAttacks;
-}
+export { attacksAllowed } from "@/lib/battlemap/hand-core";
