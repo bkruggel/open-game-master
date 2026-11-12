@@ -14973,11 +14973,6 @@
         "key",
         1,
         "roll kind ids"
-      ],
-      [
-        "key",
-        1,
-        "roll kind ids"
       ]
     ],
     "lib/rulebook/catalog-rows.ts#RegExp i": [

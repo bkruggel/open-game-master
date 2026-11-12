@@ -327,10 +327,10 @@ export function PendingRollCard({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not use your Portent.");
+        setError(data.error || t("pending.error.foretell"));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy(false);
     }

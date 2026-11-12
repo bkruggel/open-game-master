@@ -20829,13 +20829,6 @@
         "the answer keyed by the spell name exactly as it was asked, which the Hand reads back by the same name (issue 685)"
       ]
     ],
-    "app/campaigns/[campaignId]/AfterRollCard.tsx#keyed": [
-      [
-        "key",
-        1,
-        "the label of a roll kind the engine writes"
-      ]
-    ],
     "app/campaigns/[campaignId]/CompanionBondLine.tsx#whole": [
       [
         "identity",
@@ -23395,6 +23388,6 @@
         1,
         "upstream's new text-naming site, merged wholesale (same class as the file's other entries)"
       ]
-    ]
+    ],
   }
 }

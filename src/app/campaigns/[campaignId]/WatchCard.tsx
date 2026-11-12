@@ -6,6 +6,7 @@ import type { PendingRoll } from "@/app/campaigns/[campaignId]/useCampaignStream
 import { CheckFrame } from "@/app/campaigns/[campaignId]/SkillCheckCard";
 import { foretoldLeft } from "@/lib/dm/foretold-logic";
 import { holdsFeature } from "@/lib/srd/feature-names";
+import { useT } from "@/lib/locale";
 
 // A finger-sized target (40px, the kit's own) with a ring for the keyboard.
 const RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70";
@@ -13,7 +14,16 @@ const NUMBER = `motion-press inline-flex min-h-10 items-center justify-center ro
 const PLAIN = `motion-press inline-flex min-h-10 items-center px-1 text-xs font-medium underline decoration-dotted underline-offset-2 disabled:opacity-50 ${RING}`;
 
 type Power = "portent" | "chronal_shift" | "flash_of_genius" | "favored_by_the_gods";
-const FEATURES: Record<Power, string> = { portent: "Portent", chronal_shift: "Chronal Shift", flash_of_genius: "Flash of Genius", favored_by_the_gods: "Favored by the Gods" };
+// The feature names as the table reads them: Présage is the FR SRD print for
+// Portent; the other three have no official French, so the dictionary coins
+// them (Décalage chronal, Éclair de génie, Favori des dieux). The sheet
+// matches the features in English below — that matching is protocol.
+const FEATURE_KEYS: Record<Power, string> = {
+  portent: "pending.watch.feature.portent",
+  chronal_shift: "pending.watch.feature.chronalShift",
+  flash_of_genius: "pending.watch.feature.flashOfGenius",
+  favored_by_the_gods: "pending.watch.feature.favoredByTheGods",
+};
 
 // The feature a character watches with: a diviner's numbers first, then a
 // chronurgist's shift, an artificer's Flash of Genius, a divine soul's
@@ -26,12 +36,13 @@ export function watchFeatureOf(sheet: CharacterSheet): Power | null {
   return null;
 }
 
-// What watching lets the player do, on the button's hint.
-const WATCH_FOR: Record<Power, string> = {
-  portent: "use a foretold number",
-  chronal_shift: "use Chronal Shift on it",
-  flash_of_genius: "add your Intelligence modifier to a save that fails",
-  favored_by_the_gods: "add 2d4 to your save if it fails",
+// What watching lets the player do, on the button's hint: an infinitive
+// phrase, composed into the toggle's titles by {what}.
+const WATCH_FOR_KEYS: Record<Power, string> = {
+  portent: "pending.watch.for.portent",
+  chronal_shift: "pending.watch.for.chronalShift",
+  flash_of_genius: "pending.watch.for.flashOfGenius",
+  favored_by_the_gods: "pending.watch.for.favoredByTheGods",
 };
 
 // The Intelligence modifier Flash of Genius adds, as the sheet's score gives it.
@@ -55,6 +66,7 @@ export function WatchCard({
   meUserId: string;
   steersStory: boolean;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const deadline = pending.watch ? new Date(pending.watch.deadline).getTime() : 0;
@@ -68,7 +80,7 @@ export function WatchCard({
   const clockId = useId();
   const watcher = sheets.find((sheet) => sheet.id === pending.characterId);
   const power: Power = pending.watch?.power ?? "portent";
-  const feature = FEATURES[power] ?? "Portent";
+  const feature = t(FEATURE_KEYS[power] ?? "pending.watch.feature.portent");
   const choices = pending.watch?.choices ?? [];
   // Whose roll, when there is more than one to answer (an area's saves).
   const [picked, setPicked] = useState<number | null>(null);
@@ -86,10 +98,10 @@ export function WatchCard({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not send your choice.");
+        setError(data.error || t("pending.error.choice"));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy(false);
     }
@@ -99,7 +111,7 @@ export function WatchCard({
     return (
       <CheckFrame className="mb-2 flex items-center justify-between gap-2 px-3 py-2 text-xs">
         <span className="min-w-0">
-          {pending.reason} {watcher?.name ?? "A player"} is deciding whether to use {feature}.
+          {pending.reason} {watcher?.name ?? t("table.companion.aPlayer")} {t("pending.watch.otherDeciding", { feature })}.
         </span>
         {steersStory || left === 0 ? (
           <button
@@ -108,7 +120,7 @@ export function WatchCard({
             onClick={() => void answer({ pass: true })}
             className={`${PLAIN} shrink-0`}
           >
-            Go ahead
+            {t("pending.watch.goAhead")}
           </button>
         ) : null}
         {error ? <span role="alert" className="text-red-400">{error}</span> : null}
@@ -123,8 +135,8 @@ export function WatchCard({
     <CheckFrame className="mb-2 animate-fade-up px-3 py-2.5">
       <p className="text-sm">{pending.reason}</p>
       {asking ? (
-        <div role="radiogroup" aria-label="Whose roll it answers" className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-xs">Whose roll:</span>
+        <div role="radiogroup" aria-label={t("pending.watch.whoseAria")} className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs">{t("pending.watch.whoseLabel")}</span>
           {choices.map((entry, index) => (
             <button
               key={`${entry.name}:${index}`}
@@ -140,8 +152,8 @@ export function WatchCard({
           ))}
         </div>
       ) : null}
-      <div role="group" aria-label={power === "portent" ? "Use a number Portent foretold, or let it roll" : `Use ${feature} on this roll, or let it roll`} className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="text-xs">{feature}:</span>
+      <div role="group" aria-label={power === "portent" ? t("pending.watch.groupAriaPortent") : t("pending.watch.groupAriaFeature", { feature })} className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs">{t("pending.watch.featureLabel", { feature })}</span>
         {power === "portent"
           ? numbers.map((value) => (
               <button
@@ -150,10 +162,10 @@ export function WatchCard({
                 disabled={busy || pick === null}
                 aria-describedby={clockId}
                 onClick={() => void answer({ value, ...choice })}
-                title={`Use the foretold ${value} as ${asking && pick !== null ? `${choices[pick].name}'s` : "this roll's"} d20. It is gone until your next long rest.`}
+                title={asking && pick !== null ? t("pending.watch.foretoldTitleNamed", { value, name: choices[pick].name }) : t("pending.watch.foretoldTitle")}
                 className={NUMBER}
               >
-                Use the {value}
+                {t("pending.foretoldUse", { value })}
               </button>
             ))
           : (
@@ -164,14 +176,14 @@ export function WatchCard({
                 onClick={() => void answer({ shift: true, ...choice })}
                 title={
                   power === "flash_of_genius"
-                    ? "Spend a use of Flash of Genius and your reaction only if the save fails and your Intelligence modifier would carry it."
+                    ? t("pending.watch.flashTitle")
                     : power === "favored_by_the_gods"
-                      ? "Spend Favored by the Gods only if the save fails and 2d4 could carry it: the 2d4 is added to the save."
-                      : "Spend a use of Chronal Shift and your reaction only if the roll goes that way: it is rolled again and the new roll stands."
+                      ? t("pending.watch.favoredTitle")
+                      : t("pending.watch.shiftTitle")
                 }
                 className={NUMBER}
               >
-                {power === "flash_of_genius" ? `Add ${intModifier(watcher)} ${when}` : power === "favored_by_the_gods" ? `Add 2d4 ${when}` : `Roll it again ${when}`}
+                {power === "flash_of_genius" ? t("pending.watch.addMod", { mod: intModifier(watcher), when }) : power === "favored_by_the_gods" ? t("pending.watch.addDice", { when }) : t("pending.watch.rollAgain", { when })}
               </button>
             )}
         <button
@@ -181,11 +193,11 @@ export function WatchCard({
           onClick={() => void answer({ pass: true })}
           className={PLAIN}
         >
-          Let it roll
+          {t("pending.watch.letRoll")}
         </button>
-        <span id={clockId} className="check-dim text-xs" aria-live="off"><span className="sr-only">It rolls on its own in </span>{left}s</span>
+        <span id={clockId} className="check-dim text-xs" aria-live="off"><span className="sr-only">{t("pending.watch.clockSr")}{" "}</span>{left}s</span>
       </div>
-      {asking && picked === null ? <p className="check-dim mt-1 text-xs">Choose whose roll first.</p> : null}
+      {asking && picked === null ? <p className="check-dim mt-1 text-xs">{t("pending.watch.chooseWhose")}</p> : null}
       {error ? <p role="alert" className="mt-1.5 text-xs text-red-400">{error}</p> : null}
     </CheckFrame>
   );
@@ -202,12 +214,13 @@ export function WatchToggle({
   sheet: CharacterSheet;
   encounterId: string;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const on = sheet.watchingEncounterId === encounterId;
   const power = watchFeatureOf(sheet) ?? "portent";
-  const feature = FEATURES[power];
-  const what = WATCH_FOR[power];
+  const feature = t(FEATURE_KEYS[power]);
+  const what = t(WATCH_FOR_KEYS[power]);
 
   async function toggle() {
     setBusy(true);
@@ -220,10 +233,10 @@ export function WatchToggle({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not change that.");
+        setError(data.error || t("pending.watch.errorToggle"));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy(false);
     }
@@ -236,10 +249,10 @@ export function WatchToggle({
         aria-pressed={on}
         disabled={busy}
         onClick={() => void toggle()}
-        title={on ? `The game stops before each roll you can see, so you can ${what}. It turns off when the fight ends.` : `Stop the game before each roll you can see, so you can ${what}. Only turn it on when it matters: every stop holds up the table.`}
+        title={on ? t("pending.watch.toggleTitleOn", { what }) : t("pending.watch.toggleTitleOff", { what })}
         className={`motion-press inline-flex min-h-10 items-center rounded-full border px-3 py-1 text-xs font-semibold disabled:opacity-50 ${RING} ${on ? "border-amber-400 bg-amber-500/20" : "border-amber-400/60"}`}
       >
-        {on ? `Watching for ${feature}` : `Watch for ${feature}`}
+        {on ? t("pending.watch.toggleOn", { feature }) : t("pending.watch.toggleOff", { feature })}
       </button>
       {error ? <span role="alert" className="text-xs text-red-400">{error}</span> : null}
     </div>

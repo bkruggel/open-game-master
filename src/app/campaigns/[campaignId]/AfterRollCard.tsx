@@ -5,8 +5,9 @@ import { useEffect, useId, useState } from "react";
 import type { CharacterSheet } from "@/lib/schemas/sheet";
 import type { PendingRoll } from "@/app/campaigns/[campaignId]/useCampaignStream";
 import { CheckFrame } from "@/app/campaigns/[campaignId]/SkillCheckCard";
-import { ROLL_KIND_LABELS } from "@/lib/roll-labels";
+import { rollKindLabel } from "@/lib/roll-labels";
 import { AFTER_ROLL_SECONDS } from "@/lib/dm/after-roll-logic";
+import { useT } from "@/lib/locale";
 
 const STEP_IN_AFTER_MS = 3 * 60 * 1000;
 
@@ -34,6 +35,7 @@ export function AfterRollCard({
   meUserId: string;
   steersStory: boolean;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // A card already open when the wait runs long has to notice by itself: the
@@ -82,10 +84,10 @@ export function AfterRollCard({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not send your choice.");
+        setError(data.error || t("pending.error.choice"));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("creator.error.unreachable"));
     } finally {
       setBusy(false);
     }
@@ -95,15 +97,23 @@ export function AfterRollCard({
   // Blessing or Flash of Genius (after-roll.ts allyChoicesFor).
   const mine = new Set(sheets.filter((sheet) => sheet.userId === meUserId).map((sheet) => sheet.id));
   const myShifts = thrown.options.filter((option) => option.by && mine.has(option.by));
-  const waitingOn = [...new Set(thrown.options.filter((option) => option.by && !mine.has(option.by)).map((option) => sheets.find((sheet) => sheet.id === option.by)?.name ?? "An ally"))];
+  const waitingOn = [...new Set(thrown.options.filter((option) => option.by && !mine.has(option.by)).map((option) => sheets.find((sheet) => sheet.id === option.by)?.name ?? t("story.eventKind.ally")))];
   const onlyShifts = thrown.options.filter((option) => option.by).every((option) => option.id === "chronal_shift");
   const myHelpers = [...new Set(myShifts.map((option) => option.by))];
-  const standing = pending.kind === "attack" ? "misses as it stands" : pending.dc !== null ? `fails against Difficulty Class ${pending.dc} as it stands` : "may still fail";
-  const clock = left !== null ? <span id={clockId} className="check-dim text-xs" aria-live="off">The roll stands in {left}s</span> : null;
-  const helpLabel = `${onlyShifts ? "Use Chronal Shift on" : "Help"} ${character?.name ? `${character.name}'s` : "this"} roll, or let it stand`;
+  // The verdict as the dice lie, joined to "rolled {total}" by "and": each
+  // variant carries the connective so the sentence stays whole in French.
+  const standing = pending.kind === "attack" ? t("pending.afterroll.standingAttack") : pending.dc !== null ? t("pending.afterroll.standingDc", { dc: pending.dc }) : t("pending.afterroll.standingMayFail");
+  const clock = left !== null ? <span id={clockId} className="check-dim text-xs" aria-live="off">{t("pending.afterroll.clockStand", { left })}</span> : null;
+  const helpLabel = character?.name
+    ? onlyShifts
+      ? t("pending.afterroll.helpAriaShiftNamed", { name: character.name })
+      : t("pending.afterroll.helpAriaHelpNamed", { name: character.name })
+    : onlyShifts
+      ? t("pending.afterroll.helpAriaShiftThis")
+      : t("pending.afterroll.helpAriaHelpThis");
   const letItStand = myHelpers.map((helper) => (
     <button key={`leave-${helper}`} type="button" disabled={busy} aria-describedby={timed} onClick={() => void choose({ decline: true, by: helper })} className={`${PLAIN} check-dim`}>
-      {busy ? <Loader2 className="size-4 animate-spin" /> : myHelpers.length > 1 ? `Let it stand (${sheets.find((sheet) => sheet.id === helper)?.name})` : "Let it stand"}
+      {busy ? <Loader2 className="size-4 animate-spin" /> : myHelpers.length > 1 ? t("pending.afterroll.letStandNamed", { name: String(sheets.find((sheet) => sheet.id === helper)?.name) }) : t("pending.afterroll.letStand")}
     </button>
   ));
 
@@ -112,8 +122,8 @@ export function AfterRollCard({
     return (
       <CheckFrame className="mb-2 animate-fade-up px-3 py-2.5">
         <p className="text-sm">
-          {character?.name ?? "An ally"} rolled <strong>{thrown.outcome.total}</strong>
-          {thrown.outcome.natural !== undefined ? ` (the die shows ${thrown.outcome.natural})` : ""} and {standing}.
+          {character?.name ?? t("story.eventKind.ally")} {t("pending.afterroll.rolled")} <strong>{thrown.outcome.total}</strong>
+          {thrown.outcome.natural !== undefined ? ` ${t("pending.afterroll.dieShows", { value: thrown.outcome.natural })}` : ""} {standing}.
         </p>
         {pending.reason ? <p className="check-dim mt-0.5 text-xs">{pending.reason}</p> : null}
         <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label={helpLabel}>
@@ -131,11 +141,22 @@ export function AfterRollCard({
   }
 
   if (pending.userId !== meUserId) {
+    // Whom the kept roll waits on, named in a list: the joiner is the
+    // dictionaries' word for and.
+    const helpers = waitingOn.join(t("table.hand.join.and"));
+    const deciding = thrown.kept && waitingOn.length
+      ? t(
+          waitingOn.length > 1
+            ? onlyShifts ? "pending.afterroll.decidingShiftMany" : "pending.afterroll.decidingHelpMany"
+            : onlyShifts ? "pending.afterroll.decidingShiftOne" : "pending.afterroll.decidingHelpOne",
+          { who: helpers },
+        )
+      : t("pending.afterroll.decidingWhat");
     return (
       <CheckFrame className="mb-2 flex animate-fade-up items-center justify-between gap-2 px-3 py-2 text-xs">
         <span className="min-w-0" role="status">
-          {character?.name ?? "A player"} rolled {thrown.outcome.total} and {thrown.kept && waitingOn.length ? `${waitingOn.join(" and ")} ${waitingOn.length > 1 ? "are" : "is"} deciding whether to ${onlyShifts ? "use Chronal Shift" : "help"}` : "is deciding what to do with it"}.
-          {left !== null ? <span className="check-dim"> The roll stands in {left}s.</span> : null}
+          {character?.name ?? t("table.companion.aPlayer")} {t("pending.afterroll.rolled")} {thrown.outcome.total} {deciding}.
+          {left !== null ? <span className="check-dim"> {t("pending.afterroll.clockStandDot", { left })}</span> : null}
         </span>
         {steersStory && stale ? (
           <button
@@ -144,7 +165,7 @@ export function AfterRollCard({
             onClick={() => void choose({ keep: true })}
             className={`${PLAIN} shrink-0 font-medium`}
           >
-            Keep the roll for them
+            {t("pending.afterroll.keepForThem")}
           </button>
         ) : null}
       </CheckFrame>
@@ -156,39 +177,39 @@ export function AfterRollCard({
     <CheckFrame className="mb-2 animate-fade-up px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="check-well px-2 py-0.5 font-display text-[11px] font-semibold uppercase tracking-[0.08em]">
-          {ROLL_KIND_LABELS[pending.kind] ?? "Roll"}
+          {rollKindLabel(t, pending.kind)}
         </span>
         {pending.dc !== null ? (
-          <span className="check-well check-dim px-2 py-0.5 font-mono text-[11px]">Difficulty Class: {pending.dc}</span>
+          <span className="check-well check-dim px-2 py-0.5 font-mono text-[11px]">{t("pending.dc", { dc: pending.dc })}</span>
         ) : null}
       </div>
       <p className="mt-1 text-sm">
-        {character?.name ?? "You"} rolled <strong>{thrown.outcome.total}</strong>
-        {thrown.outcome.natural !== undefined ? ` (the die shows ${thrown.outcome.natural})` : ""}.{" "}
+        {character?.name ? `${character.name} ${t("pending.afterroll.rolled")}` : t("pending.afterroll.youRolled")} <strong>{thrown.outcome.total}</strong>
+        {thrown.outcome.natural !== undefined ? ` ${t("pending.afterroll.dieShows", { value: thrown.outcome.natural })}` : ""}.{" "}
         {thrown.choosing
-          ? "Choose which die counts."
+          ? t("pending.afterroll.chooseDie")
           : thrown.kept
-            ? "You kept this roll."
+            ? t("pending.afterroll.keptRoll")
             : pending.kind === "attack"
               // An attack waits on a miss, or on a hit for Touch of Death or
               // Destructive Wrath (after-roll-logic.ts afterAttackOptions). With
               // nothing of their own to press, only the helpers can change a miss.
               ? thrown.options.some((option) => option.id === "touch_of_death")
-                ? "The attack hits. You can add to its damage."
+                ? t("pending.afterroll.attackHitsAdd")
                 : thrown.options.some((option) => option.id === "destructive_wrath")
-                  ? "The attack hits. You can deal its lightning and thunder at their maximum."
-                  : `As it stands, the attack misses.${own.length ? " You can still change that." : ""}`
+                  ? t("pending.afterroll.attackHitsMax")
+                  : t("pending.afterroll.attackMisses", { still: own.length ? ` ${t("pending.afterroll.canStillChange")}` : "" })
               : own.length
-                ? "Before the game says what happens, you can still change it."
-                : "Before the game says what happens, someone may still help."}
+                ? t("pending.afterroll.beforeOwn")
+                : t("pending.afterroll.beforeHelp")}
       </p>
       {pending.reason ? <p className="check-dim mt-0.5 text-xs">{pending.reason}</p> : null}
       {waitingOn.length ? (
         <p className="check-dim mt-0.5 text-xs" role="status">
-          {waitingOn.join(" and ")} {onlyShifts ? "can still make you roll it again with Chronal Shift." : "can still help with this roll."}
+          {t(onlyShifts ? "pending.afterroll.helpersShift" : "pending.afterroll.helpersHelp", { who: waitingOn.join(t("table.hand.join.and")), count: waitingOn.length })}
         </p>
       ) : null}
-      <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label={thrown.choosing ? "Choose which die counts" : thrown.kept && myHelpers.length ? helpLabel : "Change this roll, or keep it"}>
+      <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label={thrown.choosing ? t("pending.afterroll.chooseDieAria") : thrown.kept && myHelpers.length ? helpLabel : t("pending.afterroll.changeAria")}>
         {thrown.choosing
           ? d20s.map((die, index) => (
               <button
@@ -199,7 +220,7 @@ export function AfterRollCard({
                 onClick={() => void choose({ die: index })}
                 className={OPTION}
               >
-                Use the {die.value} (total {die.value + others})
+                {t("pending.afterroll.useDie", { value: die.value, total: die.value + others })}
               </button>
             ))
           : [...own, ...myShifts].map((option) => (
@@ -229,13 +250,13 @@ export function AfterRollCard({
             onClick={() => void choose({ keep: true })}
             className={`${PLAIN} check-dim`}
           >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : "Keep this roll"}
+            {busy ? <Loader2 className="size-4 animate-spin" /> : t("pending.afterroll.keepRoll")}
           </button>
         )}
         {left !== null ? (
           // Read once by a screen reader with the card, not every second.
           <span id={clockId} className="check-dim text-xs" aria-live="off">
-            {thrown.choosing ? "The higher die counts" : "The roll stands"} in {left}s
+            {thrown.choosing ? t("pending.afterroll.clockHigher", { left }) : t("pending.afterroll.clockStand", { left })}
           </span>
         ) : null}
       </div>
