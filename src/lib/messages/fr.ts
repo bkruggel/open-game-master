@@ -2965,6 +2965,18 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.world.editor.notesHint": "Hors du monde : inspirations, rappels.",
   "workshop.world.editor.notSet": "Non réglé",
   "workshop.world.editor.addCalendar": "Ajoute un calendrier dans Chronologie pour nommer le comput.",
+  // The world editor's placeholders (EntityEditor.tsx, LinkEditor.tsx,
+  // SecretsView.tsx, PlaceBattleMaps.tsx, WikiView.tsx, OutlineView.tsx,
+  // TypesView.tsx).
+  "workshop.world.editor.aliasesPlaceholder": "un autre nom, un titre",
+  "workshop.world.editor.tagsPlaceholder": "port, contrebandiers",
+  "workshop.world.linkEditor.ownWordsPlaceholder": "lié par serment à",
+  "workshop.world.linkEditor.rankPlaceholder": "Second Gardien",
+  "workshop.world.secrets.titlePlaceholder": "Le gardien a vendu les codes",
+  "workshop.world.place.monsterPlaceholder": "Gobelin, Hibours…",
+  "workshop.world.wiki.folderPlaceholder": "Villageois",
+  "workshop.world.outline.ideaPlaceholder": "Un royaume noyé où les prêtres des marées rationnent la terre ferme, et où les contrebandiers font commerce des os des géants des mers…",
+  "workshop.world.types.namePlaceholder": "Divinité, Navire, Maison noble",
 
   // Les infobulles du glossaire et les phrases de compétence du module d’aide.
   "help.skillUses": "{skill} se teste avec {ability}.",
@@ -3587,6 +3599,40 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "sheet.spells.suggestedAria": "suggéré",
   "sheet.spells.homebrewPrefix": "artisanal · ",
   "sheet.spells.loadingList": "Chargement de la liste de sorts…",
+  // The spell pickers' shared words (SheetSpells.tsx, AnyListSpellGroup.tsx,
+  // SpellBook.tsx, SpellsGearStep.tsx).
+  "sheet.spells.fromAnyClass": "Toutes les classes",
+  "sheet.spells.fromSpecies": "De l’espèce",
+  "sheet.spells.findFor": "Cherche un sort pour {feature}",
+  "sheet.spells.findForClass": "Cherche un sort de {class}",
+  "sheet.spells.loadingAnyClass": "Chargement des sorts de toutes les classes…",
+  "sheet.spells.noneToChoose": "Plus aucun sort à choisir ici.",
+  "sheet.spells.speciesNote": "Connus par nature, sans emplacement de sort, sauf si la tuile indique qu’il en faut un aussi pour le lancer. Lance-les comme n’importe quel sort.",
+  // The owed picks (OwedPicks.tsx): the refusal sentinels stay English in
+  // the source and are keyed at this render (engineRefusalKey pattern).
+  "sheet.owed.refused": "Le choix a été refusé.",
+  "sheet.owed.unreachable": "Impossible de joindre le serveur.",
+  "sheet.owed.keep": "Garder {names}",
+  "sheet.owed.and": "et",
+  "sheet.owed.languageGrant": "{grant} : une langue qu’il parle",
+  "sheet.owed.chooseLanguage": "Choisis une langue",
+  // The attraction picker (AttractionPicker.tsx).
+  "attraction.title": "Attiré par",
+  "attraction.notePlaceholder": "Une note, si besoin (facultatif)",
+  "attraction.noteAria": "Attiré par : une note",
+  "attraction.openToggle": "Ouvert(e) à plus d’un partenaire",
+  "attraction.characterHint": "Qui ton personnage pourrait aimer. Laisse vide et rien ne change ; ce réglage ne compte qu’à une table où la romance est activée : un PNJ qui courtise ton personnage n’y parvient que si cette attirance le couvre.",
+  "attraction.openHint": "Désactivé, le cas ordinaire, la personne reste à un seul partenaire : tant qu’elle est avec quelqu’un, personne de nouveau ne la courtise et elle ne courtise personne de nouveau. Activé, elle peut en avoir plusieurs, à condition que tous les impliqués y soient ouverts aussi. Un partenaire qui ne l’est pas prend quand même mal un flirt devant elle. Là où toute une culture vit ainsi, dis-le dans les notes du monde de la campagne.",
+  "attraction.npcHint": "Qui pourrait lui plaire. Vide veut dire pas encore décidé : le MJ tranche la première fois que cela compte, et cela reste ensuite.",
+  // The about dialog (AboutDialog.tsx).
+  "about.beta": "Bêta",
+  "about.version": "Version",
+  "about.updateChannel": "Canal de mise à jour",
+  "about.betaChannel": "Bêta (versions quotidiennes)",
+  "about.stableChannel": "Stable",
+  // The reference page's result badges (ResultBadges.tsx): the FR SRD's
+  // own print is FP.
+  "reference.badge.cr": "FP {cr}",
 
   // Le dialogue de montée de niveau à la table (LevelUpDialog.tsx).
   "table.levelup.title": "Niveau {level} !",
@@ -3677,6 +3723,12 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.levelup.refused": "La montée de niveau a été refusée.",
   "table.levelup.grants": "Accorde : {grant}",
   "table.levelup.requiresLine": "Nécessite {prereq}",
+  // The level-up's group shorts and the chosen-elsewhere note
+  // (LevelUpDialog.tsx); Champion primitif is the names-fr dataset's print.
+  "table.levelup.chosenBelow": "Choisi plus bas",
+  "table.levelup.chosenAbove": "Choisi plus haut",
+  "table.levelup.chosenBelowLong": "{name} est déjà choisi sous {feature}, plus bas. Décoche-le là-bas pour le choisir ici.",
+  "table.levelup.primalChampion": "Champion primitif : +4 Force et Constitution (jusqu’à 24)",
 
   // Le créateur de personnage : la ligne des choix dus, les coquilles
   // partagées et les étapes (src/app/characters/builder/owed.ts, steps/,
@@ -6658,6 +6710,13 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "workshop.cast.goalsHint":
     "Celui du milieu avance avec les dés d’arrière-plan à la fin d’un chapitre, donc c’est au moteur de faire bouger sa progression, pas à toi.",
   "workshop.cast.feelingsTitle": "Ce qu’il pense des autres",
+  // The NPC editor's form fields (NpcEditorFields.tsx).
+  "workshop.cast.race": "Race",
+  "workshop.cast.raceUnspecified": "Non précisé",
+  "workshop.cast.knownBefore.howPlaceholder": "Elle t’a embauché deux fois pour garder ses caravanes",
+  "workshop.cast.goalScene": "Là, tout de suite, dans la prochaine scène",
+  "workshop.cast.goalSession": "Ce qu’il poursuit sur quelques séances",
+  "workshop.cast.goalAmbition": "Ce pour quoi il donnerait tout",
 
   // Fins de table encore à traduire : le dialogue des sources de dés, les
   // deux bandeaux (DiceSourcesDialog.tsx, AudioWaitingBanner.tsx,
@@ -7861,6 +7920,10 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "narrator.partyAtOnce": "Membres du groupe à la fois",
   "narrator.guestsAtOnce": "Invités à la fois",
   "creator.info.casting": "Deux choix décident qui lit une réplique à voix haute.\n\n**La voix et la cadence du narrateur** lisent l’histoire, et toute parole qui n’a pas de voix à elle.\n\n**Les voix des personnages** appartiennent à un locuteur chacune. Avec *Chaque parole a sa voix*, quiconque parle (un aubergiste, un monstre, un compagnon) reçoit une des voix de ce serveur à sa première réplique et la garde ensuite. Avec *Le narrateur les lit*, personne n’en reçoit automatiquement, et toute voix que tu donnes quand même à un personnage reste jouée.\n\nDans tous les cas, une voix se donne ou se change par personnage une fois la campagne peuplée : la liste Voix des personnages dans les Réglages de la table (Narration et voix des personnages), dans le salon ou l’onglet Réglages de la table. Chaque joueur peut aussi y choisir la voix de son propre personnage.\n\nCeci est la narration parlée de la table. La voix en direct entre joueurs est un réglage à part.",
+  // The settings panel's long consent texts (GameSettingsPanel.tsx):
+  // display-only, the GM prompt carries its own wording.
+  "creator.info.romanceText": "L’échelle de romance posée sur la jauge de lien : intéressé, courtisé, ensemble, fiancés, mariés.\n\nPersonne ne peut être courtisé qui n’aimait déjà le personnage, personne n’est courtisé sans l’avoir demandé, les partenaires restent entre eux sauf si tous les impliqués sont ouverts à plus d’un partenaire, et les scènes intimes s’estompent toujours au noir.\n\nChaque palier réclame un peu de temps d’histoire après le précédent, l’autre partie lance des scènes de son côté, et chaque palier est annoncé à la table.\n\nDemande que les Liens soient activés.",
+  "creator.info.narrationGuardText": "Après chaque tour, le serveur compare la narration du MJ à ce que les dés et les outils ont réellement résolu : un toucher écrit sur un raté, une mort que les points de vie démentent, un nombre de dégâts qu’aucun dé n’a donné.\n\nUne contradiction est renvoyée une fois au MJ pour réécriture. Il accomplit aussi ce que le MJ a laissé en suspens : un sort qu’un joueur a demandé et que l’histoire a lancé est réellement lancé, et une gentillesse ou un flirt qu’un joueur a déclarés est inscrit sur ses liens.\n\nDésactivé ne coûte rien que la vérification, et la narration est conservée exactement telle qu’écrite.",
   "creator.casting.place": "la liste Voix des personnages dans les Réglages de la table (Narration et voix des personnages), dans le salon ou l’onglet Réglages de la table",
 
 // ---- la fiche de table de l’étape de relecture
@@ -10556,6 +10619,15 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "lead.edit.reason": "Motif (visible dans le journal)",
   "lead.edit.reasonPlaceholder": "Le MJ a compté deux fois le coup du gobelin",
   "lead.edit.held": "Sauvegardé. Le serveur a ramené cela à ce que la feuille a :",
+  // The lead's expertise editor (LeadEditDialog.tsx).
+  "lead.edit.levelNone": "Aucune",
+  "lead.edit.levelTrained": "Maîtrisée",
+  "lead.edit.levelExpert": "Expertise",
+  "lead.edit.skills": "Compétences",
+  "lead.edit.expertiseClasses": "Expert en {experts} ; leurs classes en donnent {earned}",
+  "lead.edit.expertiseClass": "Expert en {experts} ; sa classe en donne {earned}",
+  "lead.edit.conditionsPlaceholder": "empoisonné, à terre",
+  "lead.edit.saveSwitch": "Jet de sauvegarde de {ability}",
 
 // ---- le décor propre au storyboard (DmStoryboardPanel.tsx) ; les mots des
 // types de cartes vivent dans workshop/board.ts et l’éditeur du tablier est
@@ -11634,6 +11706,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "builder.lineage.size.small": "Petite",
   "builder.lineage.size.medium": "Moyenne",
   "builder.lineage.size.large": "Grande",
+  // The size facets' smallest word (AncestryStep.tsx).
+  "builder.lineage.size.tiny": "Très petite",
 
 // ---- le bloc d’équipement (EquipmentSection.tsx, GearReceipt.tsx, BackgroundKitSection.tsx, KitChoicesSection.tsx) ----
   "builder.gear.title": "Équipement",
@@ -11845,6 +11919,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "builder.levels.casterNone": "{name} : encore aucun",
   "builder.quick.scoresNote": "{first} la plus haute, puis {second}",
   "builder.quick.levelAsi": "niveau {level} : {words}",
+  // The builder summary's note label (quickBuild.ts).
+  "builder.quick.subclassTraining": "Entraînement de sous-classe",
   "builder.levels.doorParty": "Le groupe est prévu pour le niveau {level}.",
 
 // ---- les refus de multiclasse (multiclassBuild.ts) ----
@@ -12336,6 +12412,8 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "pdf.serverRefused": "Le serveur n’a pas voulu de ça. Réessaie.",
   "pdf.import.stopped": "L’import s’est arrêté.",
   "pdf.import.lostTouch": "Le contact avec l’import a été perdu.",
+  // The WorldForge call site's label (WorldForgePanel.tsx).
+  "pdf.import.addToWorld": "Ajouter un PDF d’aventure à ce monde",
   "pdf.pdfUnreadable": "Ce PDF n’a pas pu être lu.",
   "pdf.discardFailed": "Cet import n’a pas pu être jeté.",
   "pdf.matchSaveFailed": "Ce rapprochement n’a pas pu être enregistré. Réessaie.",

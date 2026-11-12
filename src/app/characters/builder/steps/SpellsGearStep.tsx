@@ -819,7 +819,7 @@ export function SpellsSection({
             </span>
           ) : null
         }
-        searchLabel={anyGroup ? `Find a ${className} spell` : undefined}
+        searchLabel={anyGroup ? t("sheet.spells.findForClass", { class: className }) : undefined}
       />
       {anyGroup ? (
         <div className="mt-3">

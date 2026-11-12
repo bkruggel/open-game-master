@@ -711,8 +711,8 @@ export function LevelUpDialog({
   function pickRefusal(name: string, level: number | null): { short: string; long: string } | null {
     if (anyGroup && anyChosenKeys.has(textKey(name))) {
       return {
-        short: "Chosen below",
-        long: `${name} is already chosen under ${anyGroup.feature}, below. Untick it there to choose it here.`,
+        short: t("table.levelup.chosenBelow"),
+        long: t("table.levelup.chosenBelowLong", { name, feature: anyGroup.feature }),
       };
     }
     if (level === 0) {
@@ -793,7 +793,7 @@ export function LevelUpDialog({
         pool: anyPool,
         held: (name) => alreadyKnown.has(textKey(name)) || grantedFree.has(textKey(name)),
         picks: anyChosen,
-        elsewhere: (name) => (classPickKeys.has(textKey(name)) ? "Chosen above" : null),
+        elsewhere: (name) => (classPickKeys.has(textKey(name)) ? t("table.levelup.chosenAbove") : null),
         refusal: anyRefusal,
       })
     : [];
@@ -1078,7 +1078,7 @@ export function LevelUpDialog({
                         <li key={line}>{line}</li>
                       ))}
                       {after.primalChampion ? (
-                        <li className="text-amber-200">Primal Champion: +4 Strength and Constitution (to 24)</li>
+                        <li className="text-amber-200">{t("table.levelup.primalChampion")}</li>
                       ) : null}
                     </ul>
                   ) : null}

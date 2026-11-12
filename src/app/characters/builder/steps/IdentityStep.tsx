@@ -6,7 +6,8 @@ import { AttractionPicker, CHARACTER_ATTRACTION_HINT } from "@/components/Attrac
 import { InfoButton } from "@/components/ui/InfoDialog";
 import { LengthNote } from "@/components/ui/LengthNote";
 import { cn } from "@/lib/cn";
-import { useT } from "@/lib/locale";
+import { genderLabel } from "@/lib/gender";
+import { useLocale, useT } from "@/lib/locale";
 import type { CreateSheetInput } from "@/lib/schemas/sheet";
 import { ui } from "@/lib/ui";
 import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
@@ -54,6 +55,7 @@ export function IdentityStep({
   onEditGender?: () => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const { portrait, setPortrait } = state;
   const appearanceId = useId();
   const alignmentId = useId();
@@ -113,7 +115,7 @@ export function IdentityStep({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t("builder.shared.gender")}>
             <span className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-stone-300">{state.gender || t("builder.shared.notChosen")}</span>
+              <span className="text-sm text-stone-300">{state.gender ? genderLabel(state.gender, locale) : t("builder.shared.notChosen")}</span>
               {onEditGender ? (
                 <button type="button" onClick={onEditGender} className={cn(ui.btnSmall, "min-h-10")}>
                   {t("builder.identity.changeOnClass")}
@@ -121,7 +123,7 @@ export function IdentityStep({
               ) : null}
             </span>
           </Field>
-          <AttractionPicker value={state.attraction} onChange={state.setAttraction} hint={CHARACTER_ATTRACTION_HINT} />
+          <AttractionPicker value={state.attraction} onChange={state.setAttraction} hintKey={CHARACTER_ATTRACTION_HINT} />
         </div>
       </StepPanel>
 

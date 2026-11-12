@@ -2942,6 +2942,18 @@ export const en = {
   "workshop.world.editor.notesHint": "Out of the world: inspirations, reminders.",
   "workshop.world.editor.notSet": "Not set",
   "workshop.world.editor.addCalendar": "Add a calendar in Timeline to name the reckoning.",
+  // The world editor's placeholders (EntityEditor.tsx, LinkEditor.tsx,
+  // SecretsView.tsx, PlaceBattleMaps.tsx, WikiView.tsx, OutlineView.tsx,
+  // TypesView.tsx).
+  "workshop.world.editor.aliasesPlaceholder": "another name, a title",
+  "workshop.world.editor.tagsPlaceholder": "harbour, smugglers",
+  "workshop.world.linkEditor.ownWordsPlaceholder": "sworn to",
+  "workshop.world.linkEditor.rankPlaceholder": "Second Warden",
+  "workshop.world.secrets.titlePlaceholder": "The warden sold the codes",
+  "workshop.world.place.monsterPlaceholder": "Goblin, Owlbear...",
+  "workshop.world.wiki.folderPlaceholder": "Townsfolk",
+  "workshop.world.outline.ideaPlaceholder": "A drowned kingdom where the tide-priests ration dry land, and smugglers trade in the bones of sea giants...",
+  "workshop.world.types.namePlaceholder": "Deity, Ship, Noble House",
 
   // The glossary tooltips and the skill sentences the help module builds.
   "help.skillUses": "{skill} uses {ability}.",
@@ -3561,6 +3573,40 @@ export const en = {
   "sheet.spells.suggestedAria": "suggested",
   "sheet.spells.homebrewPrefix": "homebrew · ",
   "sheet.spells.loadingList": "Loading the spell list...",
+  // The spell pickers' shared words (SheetSpells.tsx, AnyListSpellGroup.tsx,
+  // SpellBook.tsx, SpellsGearStep.tsx).
+  "sheet.spells.fromAnyClass": "From any class",
+  "sheet.spells.fromSpecies": "From the species",
+  "sheet.spells.findFor": "Find a spell for {feature}",
+  "sheet.spells.findForClass": "Find a {class} spell",
+  "sheet.spells.loadingAnyClass": "Loading every class's spells...",
+  "sheet.spells.noneToChoose": "No spell left to choose here.",
+  "sheet.spells.speciesNote": "Known by nature, with no spell slot unless the tile says one casts it too. Cast them like any spell.",
+  // The owed picks (OwedPicks.tsx): the refusal sentinels stay English in
+  // the source and are keyed at this render (engineRefusalKey pattern).
+  "sheet.owed.refused": "The pick was refused.",
+  "sheet.owed.unreachable": "Could not reach the server.",
+  "sheet.owed.keep": "Keep {names}",
+  "sheet.owed.and": "and",
+  "sheet.owed.languageGrant": "{grant}: a language they speak",
+  "sheet.owed.chooseLanguage": "Choose a language",
+  // The attraction picker (AttractionPicker.tsx).
+  "attraction.title": "Drawn to",
+  "attraction.notePlaceholder": "A note, if it needs one (optional)",
+  "attraction.noteAria": "Drawn to: a note",
+  "attraction.openToggle": "Open to more than one partner",
+  "attraction.characterHint": "Who your character could fall for. Leave it blank and nothing changes; it only matters at a table with romance on, where an NPC who courts your character is one this fits.",
+  "attraction.openHint": "Off, the usual, they keep to one partner: while they are with someone, nobody new courts them and they court nobody new. On, they may have more than one, as long as everyone in it is open too. A partner who is not open still minds a flirt in front of them. Where a whole culture lives this way, say so in the campaign's world notes.",
+  "attraction.npcHint": "Who they could fall for. Blank means not decided yet: the GM settles it the first time it matters, and it then stays.",
+  // The about dialog (AboutDialog.tsx).
+  "about.beta": "Beta",
+  "about.version": "Version",
+  "about.updateChannel": "Update channel",
+  "about.betaChannel": "Beta (nightly builds)",
+  "about.stableChannel": "Stable",
+  // The reference page's result badges (ResultBadges.tsx): the FR SRD's
+  // own print is FP.
+  "reference.badge.cr": "CR {cr}",
 
   // The level-up dialog at the table (LevelUpDialog.tsx).
   "table.levelup.title": "Level {level}!",
@@ -3651,6 +3697,12 @@ export const en = {
   "table.levelup.refused": "The level-up was refused.",
   "table.levelup.grants": "Grants: {grant}",
   "table.levelup.requiresLine": "Requires {prereq}",
+  // The level-up's group shorts and the chosen-elsewhere note
+  // (LevelUpDialog.tsx); Champion primitif is the names-fr dataset's print.
+  "table.levelup.chosenBelow": "Chosen below",
+  "table.levelup.chosenAbove": "Chosen above",
+  "table.levelup.chosenBelowLong": "{name} is already chosen under {feature}, below. Untick it there to choose it here.",
+  "table.levelup.primalChampion": "Primal Champion: +4 Strength and Constitution (to 24)",
 
   // The character builder: the owed line, the shared shells, and the steps
   // (src/app/characters/builder/owed.ts, steps/, LevelUpSheet.tsx).
@@ -6616,6 +6668,13 @@ export const en = {
   "workshop.cast.goalsHint":
     "The middle one advances on background dice at the end of a chapter, so its progress is the engine's to move, not yours.",
   "workshop.cast.feelingsTitle": "How they feel about other people",
+  // The NPC editor's form fields (NpcEditorFields.tsx).
+  "workshop.cast.race": "Race",
+  "workshop.cast.raceUnspecified": "Unspecified",
+  "workshop.cast.knownBefore.howPlaceholder": "She hired you twice to guard her caravans",
+  "workshop.cast.goalScene": "Right now, in the next scene",
+  "workshop.cast.goalSession": "Working toward over a few sessions",
+  "workshop.cast.goalAmbition": "What they would give up everything for",
 
   // Table odds and ends still in English: the dice sources dialog, the two
   // banners (DiceSourcesDialog.tsx, AudioWaitingBanner.tsx,
@@ -7817,6 +7876,10 @@ export const en = {
   "narrator.partyAtOnce": "Party members at once",
   "narrator.guestsAtOnce": "Guests at once",
   "creator.info.casting": "Two choices decide who reads a line aloud.\n\n**The narrator's voice and pace** read the story, and every speaker who has no voice of their own.\n\n**Character voices** belong to one speaker each. With *Each speaker gets a voice*, everyone who speaks (an innkeeper, a monster, a companion) is given one of this server's voices the first time they talk and keeps it from then on. With *The narrator reads them*, nobody is given one automatically, and any voice you do give a character still plays.\n\nEither way, a voice can be given or changed per character once the campaign has people in it: the Character voices list in Table settings (Narration and character voices), in the lobby or the table's Settings tab. Each player can also choose the voice their own character speaks in there.\n\nThis is the table's spoken narration. Live voice chat between players is a separate setting.",
+  // The settings panel's long consent texts (GameSettingsPanel.tsx):
+  // display-only, the GM prompt carries its own wording.
+  "creator.info.romanceText": "The romance ladder on top of the bond meter: interested, courting, together, betrothed, married.\n\nNobody can be romanced who does not already like the character, nobody is courted who did not ask to be, partners keep to each other unless everyone involved is open to more than one partner, and intimate scenes always fade to black.\n\nEach step needs a little story time after the last, the other side starts scenes of their own, and every step is told to the table.\n\nRequires Bonds to be on.",
+  "creator.info.narrationGuardText": "After each turn the server compares the GM's narration against what the dice and tools actually resolved: a hit written on a miss, a death the hit points deny, a damage number no die rolled.\n\nA contradiction is sent back to the GM once for a rewrite. It also does what the GM left undone: a spell a player asked for that the story cast is cast for real, and a kindness or flirt a player declared is recorded on their bonds.\n\nOff costs nothing but the check, and the narration is persisted exactly as written.",
   "creator.casting.place": "the Character voices list in Table settings (Narration and character voices), in the lobby or the table's Settings tab",
 
 // ---- the review step's table sheet (src/app/create-campaign/table-sheet.ts) ----
@@ -10500,6 +10563,15 @@ export const en = {
   "lead.edit.reason": "Reason (shown in the log)",
   "lead.edit.reasonPlaceholder": "GM double-counted the goblin's hit",
   "lead.edit.held": "Saved. The server held these to what the sheet has:",
+  // The lead's expertise editor (LeadEditDialog.tsx).
+  "lead.edit.levelNone": "None",
+  "lead.edit.levelTrained": "Trained",
+  "lead.edit.levelExpert": "Expert",
+  "lead.edit.skills": "Skills",
+  "lead.edit.expertiseClasses": "Expert in {experts}; their classes give {earned}",
+  "lead.edit.expertiseClass": "Expert in {experts}; their class gives {earned}",
+  "lead.edit.conditionsPlaceholder": "poisoned, prone",
+  "lead.edit.saveSwitch": "{ability} saving throw",
 
 // ---- the storyboard's own chrome (DmStoryboardPanel.tsx); the card kinds'
 // words live in workshop/board.ts and the board's editor is the workshop's ----
@@ -11575,6 +11647,8 @@ export const en = {
   "builder.lineage.size.small": "Small",
   "builder.lineage.size.medium": "Medium",
   "builder.lineage.size.large": "Large",
+  // The size facets' smallest word (AncestryStep.tsx).
+  "builder.lineage.size.tiny": "Tiny",
 
 // ---- the equipment block (EquipmentSection.tsx, GearReceipt.tsx, BackgroundKitSection.tsx, KitChoicesSection.tsx) ----
   "builder.gear.title": "Equipment",
@@ -11786,6 +11860,8 @@ export const en = {
   "builder.levels.casterNone": "{name}: none yet",
   "builder.quick.scoresNote": "highest in {first}, then {second}",
   "builder.quick.levelAsi": "level {level}: {words}",
+  // The builder summary's note label (quickBuild.ts).
+  "builder.quick.subclassTraining": "Subclass training",
   "builder.levels.doorParty": "The party is built for level {level}.",
 
 // ---- multiclass reasons (multiclassBuild.ts) ----
@@ -12278,6 +12354,8 @@ export const en = {
   "pdf.serverRefused": "The server would not take that. Try again.",
   "pdf.import.stopped": "The import stopped.",
   "pdf.import.lostTouch": "Lost touch with the import.",
+  // The WorldForge call site's label (WorldForgePanel.tsx).
+  "pdf.import.addToWorld": "Add an adventure PDF to this world",
   "pdf.pdfUnreadable": "That PDF could not be read.",
   "pdf.discardFailed": "That import could not be discarded.",
   "pdf.matchSaveFailed": "That match could not be saved. Try it again.",

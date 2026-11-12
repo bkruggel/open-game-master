@@ -178,7 +178,7 @@ function SecretForm({ secret, world, onSave, onCancel }: { secret: Secret; world
   );
   return (
     <form className="panel motion-pop flex flex-col gap-2 rounded-lg p-3" onSubmit={(event) => { event.preventDefault(); if (draft.title.trim()) onSave(draft); }}>
-      <input className={ui.input} placeholder="The warden sold the codes" aria-label={t("workshop.world.secrets.theSecret")} maxLength={120} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} autoFocus />
+      <input className={ui.input} placeholder={t("workshop.world.secrets.titlePlaceholder")} aria-label={t("workshop.world.secrets.theSecret")} maxLength={120} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} autoFocus />
       <textarea className={cn(ui.input, "min-h-16")} placeholder={t("workshop.world.secrets.notesPlaceholder")} aria-label={t("workshop.world.secrets.moreAbout")} maxLength={4_000} value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} />
       <div className="flex flex-wrap items-center gap-1">
         <span className="eyebrow w-16 text-[10px] text-stone-500">{t("workshop.world.secrets.aboutLabel")}</span>

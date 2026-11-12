@@ -82,7 +82,10 @@ export function badgesFor(category: string, row: BadgeRow, t: T = enT): Badge[] 
     if (cost) badges.push({ key: "cost", text: cost, tone: "gold" });
   } else if (category === "monsters") {
     const cr = text(row.data.challenge_rating ?? row.data.cr);
-    if (cr) badges.push({ key: "cr", text: `CR ${cr}`, tone: "red" });
+    // The challenge badge reads the reader's words: the French SRD's own
+    // abbreviation is « FP » (facteur de puissance), as the FR dictionary's
+    // bestiary chips print it.
+    if (cr) badges.push({ key: "cr", text: t("reference.badge.cr", { cr }), tone: "red" });
     const type = text(row.data.type);
     if (type) badges.push({ key: "type", text: type.toLowerCase(), tone: "neutral" });
   }

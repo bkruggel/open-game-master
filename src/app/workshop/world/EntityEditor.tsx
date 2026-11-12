@@ -13,10 +13,11 @@ import type { WorldEntity } from "@/lib/db/world-forge";
 import { changesSince, describeValue, editableOf, same, type Editable, type EntryConflict } from "@/lib/worldforge/entry-merge";
 import { ROW_TEXT, olderText } from "@/lib/worldforge/account";
 import { useUnsavedDraft } from "@/app/workshop/unsaved";
+import { localeTag } from "@/lib/messages-logic";
 import type { EntryInput, UpdateOutcome } from "./useWorld";
 import { typeOf } from "./world-ui";
 import { KeptValueText } from "./ImportKept";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 
 // Editing one entry: what its own record holds (name, its line or its text,
 // aliases, tags, picture) and what WorldForge adds (type, folder, canon, the
@@ -91,6 +92,7 @@ export function EntityEditor({
   const [drafting, setDrafting] = useState(false);
   const [draftHint, setDraftHint] = useState("");
   const t = useT();
+  const locale = useLocale();
   const type = typeOf(doc, entity);
   const [opened, setOpened] = useState(() => editableOf(doc, entity));
   const [draft, setDraft] = useState<Draft>(() => draftOf(opened));
@@ -295,7 +297,9 @@ export function EntityEditor({
         : field(
             entity.shelf === "location" ? t("workshop.world.editor.onArrivalLabel") : t("workshop.world.editor.entryLabel"),
             <textarea className={cn(ui.input, "min-h-28")} maxLength={TEXT_LIMIT[entity.shelf as "location" | "lore"]} value={draft.text} onChange={(event) => set("text", event.target.value)} />,
-            t("workshop.world.editor.charCount", { at: draft.text.length.toLocaleString("en"), total: TEXT_LIMIT[entity.shelf as "location" | "lore"].toLocaleString("en"), tail: entity.shelf === "lore" ? t("workshop.world.editor.playersReadThis") : "" }),
+            // The digit grouping reads the reader's locale (localeTag, the
+            // toLocaleDateString rule).
+            t("workshop.world.editor.charCount", { at: draft.text.length.toLocaleString(localeTag(locale)), total: TEXT_LIMIT[entity.shelf as "location" | "lore"].toLocaleString(localeTag(locale)), tail: entity.shelf === "lore" ? t("workshop.world.editor.playersReadThis") : "" }),
           )}
       {entity.shelf !== "lore"
         ? field(
@@ -333,8 +337,8 @@ export function EntityEditor({
       ) : null}
 
       <div className="grid gap-3 @lg:grid-cols-2">
-        {field(t("workshop.world.editor.alsoCalled"), <input className={ui.input} placeholder="another name, a title" value={draft.aliases} onChange={(event) => set("aliases", event.target.value)} />, t("workshop.world.editor.commaHint"))}
-        {field(t("workshop.loreEditor.tags"), <input className={ui.input} placeholder="harbour, smugglers" value={draft.tags} onChange={(event) => set("tags", event.target.value)} />, t("workshop.world.editor.commaHint"))}
+        {field(t("workshop.world.editor.alsoCalled"), <input className={ui.input} placeholder={t("workshop.world.editor.aliasesPlaceholder")} value={draft.aliases} onChange={(event) => set("aliases", event.target.value)} />, t("workshop.world.editor.commaHint"))}
+        {field(t("workshop.loreEditor.tags"), <input className={ui.input} placeholder={t("workshop.world.editor.tagsPlaceholder")} value={draft.tags} onChange={(event) => set("tags", event.target.value)} />, t("workshop.world.editor.commaHint"))}
       </div>
 
       {chosenType.fields.length ? (

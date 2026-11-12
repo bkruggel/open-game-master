@@ -127,7 +127,7 @@ export function SpellBook({
   writingBook = false,
   filters = false,
   prompt,
-  searchLabel = "Find a spell",
+  searchLabel,
 }: {
   tiles: SpellTile[];
   // Tabs run from cantrips to this level even when a level is still empty,
@@ -329,7 +329,7 @@ export function SpellBook({
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           placeholder={t("sheet.spells.findPlaceholder")}
-          aria-label={searchLabel}
+          aria-label={searchLabel ?? t("sheet.spells.findAria")}
           className="ml-auto w-36 rounded-md border border-stone-700/70 bg-stone-950 px-2 py-1 text-xs text-stone-200 outline-none focus:border-amber-400/60"
         />
       </div>

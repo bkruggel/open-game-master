@@ -608,7 +608,7 @@ export function fillRound(ctx: FillContext): FillRound {
     }
     if (added.length) {
       patch.featChoices = featChoices;
-      note("subclass", added.join(", "), "Subclass training");
+      note("subclass", added.join(", "), ctx.t("builder.quick.subclassTraining"));
     }
   }
   // What a feat the player took leaves open (Linguist's three languages,

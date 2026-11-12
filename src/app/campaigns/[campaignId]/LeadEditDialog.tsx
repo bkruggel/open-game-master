@@ -30,7 +30,6 @@ import {
 } from "./LeadEditParts";
 import { coinCorrection, coinFields, earnedExpertise, expertiseOverCap, skillLevelsOf, trainingFrom, type SkillLevel } from "./lead-edit-logic";
 import { acBreakdownFor, effectiveAcFor, SRD_SKILLS } from "@/lib/srd";
-import { ABILITY_NAMES } from "@/lib/srd/legality/types";
 import { isCantripName } from "@/lib/srd/spell-lists";
 import { spellStyleFor } from "@/lib/srd/spell-prep";
 import { priceText } from "@/lib/srd/currency";
@@ -41,10 +40,12 @@ import { useT } from "@/lib/locale";
 
 const ABILITY_SHORT: Record<string, string> = { str: "STR", dex: "DEX", con: "CON", int: "INT", wis: "WIS", cha: "CHA" };
 
+// The training levels, their labels as message keys read with the dialog's
+// translator at draw time (the STATE_KEYS pattern, SpellBook.tsx).
 const SKILL_LEVELS: Array<{ value: SkillLevel; label: string }> = [
-  { value: "none", label: "None" },
-  { value: "trained", label: "Trained" },
-  { value: "expert", label: "Expert" },
+  { value: "none", label: "lead.edit.levelNone" },
+  { value: "trained", label: "lead.edit.levelTrained" },
+  { value: "expert", label: "lead.edit.levelExpert" },
 ];
 
 // Party lead correction of any character's numbers, scores, training, items
@@ -356,7 +357,7 @@ export function LeadEditDialog({
             <input
               value={conditions}
               onChange={(event) => setConditions(event.target.value)}
-              placeholder="poisoned, prone"
+              placeholder={t("lead.edit.conditionsPlaceholder")}
               className={field}
             />
           </label>
@@ -366,20 +367,20 @@ export function LeadEditDialog({
             <div className="grid grid-cols-3 gap-2">
               {ABILITIES.map((ability) => (
                 <div key={ability} className="space-y-1">
-                  <span className="text-stone-400">{ABILITY_NAMES[ability]}</span>
+                  <span className="text-stone-400">{t(`sheet.ability.${ability}`)}</span>
                   <NumberStepper
                     size="sm"
                     value={abilities[ability]}
                     min={1}
                     max={30}
                     onChange={(next) => setAbilities((scores) => ({ ...scores, [ability]: next }))}
-                    label={ABILITY_NAMES[ability]}
+                    label={t(`sheet.ability.${ability}`)}
                   />
                 </div>
               ))}
             </div>
             <div className="space-y-1">
-              <span className="text-stone-400">Saving throws</span>
+              <span className="text-stone-400">{t("table.sheet.savingThrows")}</span>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
                 {ABILITIES.map((ability) => (
                   // The whole row is the switch's label, a finger's height
@@ -388,18 +389,20 @@ export function LeadEditDialog({
                     <Switch
                       on={saves.includes(ability)}
                       onChange={(on) => setSaves((list) => (on ? [...list, ability] : list.filter((entry) => entry !== ability)))}
-                      label={`${ABILITY_NAMES[ability]} saving throw`}
+                      label={t("lead.edit.saveSwitch", { ability: t(`sheet.ability.${ability}`) })}
                     />
-                    <span className="text-stone-300">{ABILITY_NAMES[ability]}</span>
+                    <span className="text-stone-300">{t(`sheet.ability.${ability}`)}</span>
                   </label>
                 ))}
               </div>
             </div>
             <div className="space-y-1">
               <span className="flex items-baseline justify-between gap-2 text-stone-400">
-                Skills
+                {t("lead.edit.skills")}
                 <span className="text-[11px] text-stone-500">
-                  Expert in {experts}; {(sheet.classes?.length ?? 0) > 1 ? "their classes give" : "their class gives"} {earned || "none"}
+                  {(sheet.classes?.length ?? 0) > 1
+                    ? t("lead.edit.expertiseClasses", { experts, earned: earned || t("sheet.training.none") })
+                    : t("lead.edit.expertiseClass", { experts, earned: earned || t("sheet.training.none") })}
                 </span>
               </span>
               <ul className="divide-y divide-stone-800/60">
@@ -409,7 +412,7 @@ export function LeadEditDialog({
                       {skill.name} <span className="text-stone-500">{ABILITY_SHORT[skill.ability]}</span>
                     </span>
                     <SegmentedControl
-                      options={SKILL_LEVELS}
+                      options={SKILL_LEVELS.map((level) => ({ ...level, label: t(level.label) }))}
                       value={skillLevels[skill.id] ?? "none"}
                       onChange={(level) => setSkillLevels((levels) => ({ ...levels, [skill.id]: level }))}
                       size="sm"

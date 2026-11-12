@@ -43,27 +43,19 @@ import {
 export { LIVING_WORLD_INFO } from "@/app/campaigns/[campaignId]/GameSettingsGroups";
 
 // The same explainers as this panel's tooltips, shared with the campaign
-// creator's info buttons so the two surfaces never drift apart. The creator
-// reads these English lines; the table's settings read their keyed twins
-// (table.settings.info.*) so they answer in the interface's language.
-export const BONDS_INFO = [
-  "How each NPC and AI companion feels about each character, tracked by the server on one meter from hostile through neutral to devoted.",
-  "Deeds move it, and the same deed lands differently on different people: mercy wins over a kind healer and irritates a hard-bitten mercenary.",
-  "Standing shows in the Bonds tab and colors how the GM plays them. Off: the GM tracks no personal standing and NPCs react to the party as a whole.",
-].join("\n\n");
+// creator's info buttons so the two surfaces never drift apart. The
+// constants carry message keys; the strings live in the dictionaries and
+// read in the interface's language at each ⓘ. The bonds text is the table
+// settings' own line (table.settings.info.bonds, word for word); the
+// romance and guard texts are the creator's longer versions of their keyed
+// twins (table.settings.info.*), which the merge kept a little shorter.
+// Display-only: the GM prompt carries its own rules text (the safety
+// rules, src/lib/dm/relationship-tools.ts), not these words.
+export const BONDS_INFO = "table.settings.info.bonds";
 
-export const ROMANCE_INFO = [
-  "The romance ladder on top of the bond meter: interested, courting, together, betrothed, married.",
-  "Nobody can be romanced who does not already like the character, nobody is courted who did not ask to be, partners keep to each other unless everyone involved is open to more than one partner, and intimate scenes always fade to black.",
-  "Each step needs a little story time after the last, the other side starts scenes of their own, and every step is told to the table.",
-  "Requires Bonds to be on.",
-].join("\n\n");
+export const ROMANCE_INFO = "creator.info.romanceText";
 
-export const NARRATION_GUARD_INFO = [
-  "After each turn the server compares the GM's narration against what the dice and tools actually resolved: a hit written on a miss, a death the hit points deny, a damage number no die rolled.",
-  "A contradiction is sent back to the GM once for a rewrite. It also does what the GM left undone: a spell a player asked for that the story cast is cast for real, and a kindness or flirt a player declared is recorded on their bonds.",
-  "Off costs nothing but the check, and the narration is persisted exactly as written.",
-].join("\n\n");
+export const NARRATION_GUARD_INFO = "creator.info.narrationGuardText";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 

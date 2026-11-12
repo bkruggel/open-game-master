@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { UnofficialPackNotice } from "@/components/UnofficialPackNotice";
 import { Select } from "@/components/ui/Select";
-import { GENDERS, type Gender } from "@/lib/gender";
-import { useT } from "@/lib/locale";
+import { GENDERS, genderLabel, type Gender } from "@/lib/gender";
+import { useLocale, useT } from "@/lib/locale";
 import type { WorldPack } from "@/lib/worlds/types";
 import type { BuilderState } from "../useBuilderState";
 import { Field } from "./shared";
@@ -134,6 +134,7 @@ export function LevelField({
 // of looks (lineage.ts previewGender), and nothing of that mix is saved.
 export function GenderField({ state, className }: { state: BuilderState; className?: string }) {
     const t = useT();
+    const locale = useLocale();
     return (
       <Field label={t("builder.shared.gender")} className={className} anchor="gender">
       <div className="sm:max-w-xs">
@@ -142,7 +143,7 @@ export function GenderField({ state, className }: { state: BuilderState; classNa
           onChange={state.setGender}
           label={t("builder.shared.gender")}
           className="w-full"
-          options={[{ value: "", label: t("builder.shared.notChosen") }, ...GENDERS.map((value) => ({ value, label: value }))]}
+          options={[{ value: "", label: t("builder.shared.notChosen") }, ...GENDERS.map((value) => ({ value, label: genderLabel(value, locale) }))]}
         />
       </div>
       <span className="mt-1 block text-xs text-stone-500">

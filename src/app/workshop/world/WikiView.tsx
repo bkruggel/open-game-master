@@ -202,7 +202,7 @@ export function WikiView({
           </div>
           {folderName !== null ? (
             <form className="motion-pop flex gap-1" onSubmit={(event) => { event.preventDefault(); void addFolder(); }}>
-              <input className={cn(ui.input, "py-1 text-xs")} placeholder="Townsfolk" aria-label={t("workshop.world.wiki.folderNameAria")} maxLength={60} value={folderName} onChange={(event) => setFolderName(event.target.value)} autoFocus />
+              <input className={cn(ui.input, "py-1 text-xs")} placeholder={t("workshop.world.wiki.folderPlaceholder")} aria-label={t("workshop.world.wiki.folderNameAria")} maxLength={60} value={folderName} onChange={(event) => setFolderName(event.target.value)} autoFocus />
               <KitButton tone="small" type="submit" disabled={!folderName.trim()}>{t("workshop.bestiary.stats.add")}</KitButton>
             </form>
           ) : null}

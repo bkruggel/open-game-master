@@ -97,7 +97,7 @@ function TypeForm({ type, isNew, onSave, onCancel }: { type: WorldType; isNew: b
   return (
     <form className="panel motion-pop flex flex-col gap-2.5 rounded-lg p-3" onSubmit={(event) => { event.preventDefault(); if (draft.name.trim()) onSave({ ...draft, name: draft.name.trim(), fields: draft.fields.filter((field) => field.name.trim()) }); }}>
       <div className="grid gap-2 @lg:grid-cols-[1fr_auto]">
-        <input className={ui.input} placeholder="Deity, Ship, Noble House" aria-label={t("workshop.world.types.nameAria")} maxLength={40} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} autoFocus />
+        <input className={ui.input} placeholder={t("workshop.world.types.namePlaceholder")} aria-label={t("workshop.world.types.nameAria")} maxLength={40} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} autoFocus />
         <div className="flex items-center gap-1" role="radiogroup" aria-label={t("workshop.world.atlasCard.colour")}>
           {TYPE_COLORS.map((color) => (
             <button key={color} type="button" role="radio" aria-checked={draft.color === color} aria-label={color} onClick={() => setDraft({ ...draft, color })} className={cn("size-5 rounded-full border-2 motion-press", draft.color === color ? "border-amber-100" : "border-transparent")} style={{ background: color }} />

@@ -23395,6 +23395,20 @@
         1,
         "the both-shapes translator shift: upstream's plain call falls back to the dictionary's English (the handTargets pattern)"
       ]
+    ],
+    "components/AttractionPicker.tsx#keyed": [
+      [
+        "key",
+        1,
+        "the stored drawn-to word picks the FR chip label; an unknown word falls back to the stored value"
+      ]
+    ],
+    "app/characters/builder/steps/AncestryStep.tsx#normalizer": [
+      [
+        "key",
+        1,
+        "the stored size id lowercased picks its label key (the size-words idiom)"
+      ]
     ]
   }
 }

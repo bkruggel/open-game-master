@@ -98,18 +98,19 @@ export function SheetSpells({
 // The spells the species gives (src/lib/srd/species-spell-view.ts): known
 // for good, never prepared or swapped, each tile saying what it costs.
 function SpeciesBook({ entries, titled }: { entries: ReturnType<typeof speciesSpellsShown>; titled: boolean }) {
+  const t = useT();
   const tiles: SpellTile[] = entries.map((entry) => ({ name: entry.name, level: entry.level, state: "granted", note: entry.note }));
   return (
     <div data-species-spell-book>
-      {titled ? <p className="eyebrow mb-1.5 text-[10px] text-amber-400/80">From the species</p> : null}
+      {titled ? <p className="eyebrow mb-1.5 text-[10px] text-amber-400/80">{t("sheet.spells.fromSpecies")}</p> : null}
       <SpellBook
         tiles={tiles}
         maxLevel={Math.max(0, ...entries.map((entry) => entry.level))}
-        counters={[{ label: "From the species", value: entries.length }]}
+        counters={[{ label: t("sheet.spells.fromSpecies"), value: entries.length }]}
         canToggle={() => false}
         footer={
           <p className="mt-2 text-[11px] text-stone-500">
-            Known by nature, with no spell slot unless the tile says one casts it too. Cast them like any spell.
+            {t("sheet.spells.speciesNote")}
           </p>
         }
       />

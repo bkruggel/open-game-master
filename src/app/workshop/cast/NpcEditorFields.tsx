@@ -18,7 +18,7 @@ import {
   type RelationGraph,
 } from "@/lib/npcs/forge";
 import { npcRoleOptions } from "@/lib/placeholders";
-import { GENDERS, type Gender } from "@/lib/gender";
+import { GENDERS, genderLabel, type Gender } from "@/lib/gender";
 import { NPC_RACE_OPTIONS } from "@/lib/npc-race";
 import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
 import { AttractionPicker, NPC_ATTRACTION_HINT } from "@/components/AttractionPicker";
@@ -31,7 +31,7 @@ import {
 } from "@/app/campaigns/[campaignId]/NpcFields";
 import { DictateField } from "@/components/DictateField";
 import { appendDictation } from "@/lib/dictation";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
 import { KNOWN_BEFORE_HOW_CHARS, type KnownBeforeGrade } from "@/lib/dm/known-before-logic";
 
 // "Before the story" (issue 731): whether the whole party already knows this
@@ -43,6 +43,14 @@ const KNOWN_BEFORE_OPTIONS: Array<{ value: KnownBeforeGrade | "none"; label: str
   { value: "friend", label: "workshop.cast.knownBefore.friend", hint: "workshop.cast.knownBefore.friendHint" },
   { value: "close", label: "workshop.cast.knownBefore.close", hint: "workshop.cast.knownBefore.closeHint" },
 ];
+
+// The goal boxes' placeholders, as keys read in the reader's language; a
+// field the map does not know keeps the English NpcFields carries.
+const GOAL_PLACEHOLDER_KEYS: Record<string, string> = {
+  scene: "workshop.cast.goalScene",
+  session: "workshop.cast.goalSession",
+  ambition: "workshop.cast.goalAmbition",
+};
 
 // The four sections of the NPC form: who they are on the surface, who they
 // are underneath, what they want, and how they feel about everyone else.
@@ -93,6 +101,7 @@ export function NpcEditorFields({
   const keepsRace = hostOffers(useCapabilities(), "npcRace");
   const roles = npcRoleOptions(genre);
   const t = useT();
+  const locale = useLocale();
   return (
     <>
       <section
@@ -148,7 +157,7 @@ export function NpcEditorFields({
             label={t("builder.shared.gender")}
             value={draft.gender}
             onChange={(gender) => onChange({ ...draft, gender })}
-            options={[{ value: "", label: t("workshop.cast.genderUnspecified") }, ...GENDERS.map((gender) => ({ value: gender, label: gender }))]}
+            options={[{ value: "", label: t("workshop.cast.genderUnspecified") }, ...GENDERS.map((gender) => ({ value: gender, label: genderLabel(gender, locale) }))]}
           />
           </span>
           {/* Beside the gender because the two pick the stand-in face
@@ -158,10 +167,10 @@ export function NpcEditorFields({
           {keepsRace ? (
             <span className="w-full sm:w-48">
             <Select<string>
-              label="Race"
+              label={t("workshop.cast.race")}
               value={draft.race ?? ""}
               onChange={(race) => onChange({ ...draft, race })}
-              options={[{ value: "", label: "Unspecified" }, ...NPC_RACE_OPTIONS]}
+              options={[{ value: "", label: t("workshop.cast.raceUnspecified") }, ...NPC_RACE_OPTIONS]}
             />
             </span>
           ) : null}
@@ -172,7 +181,7 @@ export function NpcEditorFields({
         <AttractionPicker
           value={draft.attraction ?? { genders: [], note: "" }}
           onChange={(attraction) => onChange({ ...draft, attraction })}
-          hint={NPC_ATTRACTION_HINT}
+          hintKey={NPC_ATTRACTION_HINT}
           className="sm:max-w-md"
         />
 
@@ -330,7 +339,7 @@ export function NpcEditorFields({
                 value={known.how}
                 maxLength={KNOWN_BEFORE_HOW_CHARS}
                 onChange={(event) => onChange({ ...draft, knownBefore: { grade: known.grade, how: event.target.value } })}
-                placeholder="She hired you twice to guard her caravans"
+                placeholder={t("workshop.cast.knownBefore.howPlaceholder")}
                 aria-describedby={howHintId}
                 aria-invalid={!known.how.trim()}
                 className={ui.input}
@@ -356,7 +365,7 @@ export function NpcEditorFields({
             <input
               value={goalText(draft, field)}
               onChange={(event) => onChange(setGoal(draft, field, event.target.value))}
-              placeholder={placeholder}
+              placeholder={GOAL_PLACEHOLDER_KEYS[field] ? t(GOAL_PLACEHOLDER_KEYS[field]) : placeholder}
               className={cn(ui.input, "min-w-0 flex-1")}
             />
             {field === "session" && draft.goals.session ? (

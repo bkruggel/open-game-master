@@ -85,7 +85,7 @@ export function LinkEditor({
               ]}
             />
             {custom ? (
-              <input className={cn(ui.input, "text-xs motion-pop")} maxLength={60} placeholder="sworn to" aria-label={t("workshop.world.linkEditor.ownWords")} value={label} onChange={(event) => setLabel(event.target.value)} autoFocus />
+              <input className={cn(ui.input, "text-xs motion-pop")} maxLength={60} placeholder={t("workshop.world.linkEditor.ownWordsPlaceholder")} aria-label={t("workshop.world.linkEditor.ownWords")} value={label} onChange={(event) => setLabel(event.target.value)} autoFocus />
             ) : null}
           </div>
           <div className="flex flex-col gap-1">
@@ -110,7 +110,7 @@ export function LinkEditor({
           {label === "member of" ? (
             <label className="flex flex-col gap-1 motion-pop">
               <span className="eyebrow text-[10px] text-stone-500">{t("workshop.world.linkEditor.rankTitle")}</span>
-              <input className={cn(ui.input, "text-xs")} maxLength={60} placeholder="Second Warden" value={rank} onChange={(event) => setRank(event.target.value)} />
+              <input className={cn(ui.input, "text-xs")} maxLength={60} placeholder={t("workshop.world.linkEditor.rankPlaceholder")} value={rank} onChange={(event) => setRank(event.target.value)} />
             </label>
           ) : null}
           {from.shelf === "npc" && playFieldOf(label, target.shelf) ? (

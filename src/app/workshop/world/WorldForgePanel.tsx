@@ -297,7 +297,7 @@ export function WorldForgePanel({
         {/* The book's people, places, factions, lore, ties and story, laid
             into this world; its review card opens below the row. */}
         <div className="w-full">
-          <PdfImportButton campaignId={campaignId} className={ui.btnSmall} label="Add an adventure PDF to this world" onImported={refresh} />
+          <PdfImportButton campaignId={campaignId} className={ui.btnSmall} label={t("pdf.import.addToWorld")} onImported={refresh} />
         </div>
       </div>
       )}

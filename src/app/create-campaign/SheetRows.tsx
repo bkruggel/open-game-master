@@ -13,7 +13,8 @@ import { flipRow, tableSheet, type SheetInfo, type SheetRowKey } from "@/app/cre
 import { useT } from "@/lib/locale";
 
 // The rows' own labels and hints come from table-sheet.ts (the table sheet's
-// own vocabulary, still English); the ⓘ dialogs' questions are translated.
+// own vocabulary, still English); the ⓘ dialogs' questions and texts are
+// translated (the text constants are message keys).
 const INFO: Record<SheetInfo, { labelKey: string; text: string }> = {
   livingWorld: { labelKey: "creator.info.livingWorld", text: LIVING_WORLD_INFO },
   bonds: { labelKey: "creator.info.bonds", text: BONDS_INFO },
@@ -68,7 +69,7 @@ export function SheetRows({
           </button>
           {row.counted && row.on ? <span className="cc-dot" aria-hidden="true" /> : null}
           {row.info ? (
-            <InfoButton label={t(INFO[row.info].labelKey)} text={INFO[row.info].text} className="absolute right-1.5 top-1.5" />
+            <InfoButton label={t(INFO[row.info].labelKey)} text={t(INFO[row.info].text)} className="absolute right-1.5 top-1.5" />
           ) : null}
         </div>
       ))}

@@ -183,7 +183,7 @@ export function OutlineView({ api, world, onOpen, onOpenSystem }: { api: WorldAp
           <p className="text-sm text-stone-400">
             {t("workshop.world.outline.intro")}
           </p>
-          <textarea className={cn(ui.input, "min-h-28")} placeholder="A drowned kingdom where the tide-priests ration dry land, and smugglers trade in the bones of sea giants..." aria-label={t("workshop.world.outline.ideaAria")} maxLength={4_000} value={idea} onChange={(event) => setIdea(event.target.value)} />
+          <textarea className={cn(ui.input, "min-h-28")} placeholder={t("workshop.world.outline.ideaPlaceholder")} aria-label={t("workshop.world.outline.ideaAria")} maxLength={4_000} value={idea} onChange={(event) => setIdea(event.target.value)} />
           <div className="flex flex-wrap items-center gap-2">
             <input className={cn(ui.input, "max-w-md flex-1 text-xs")} placeholder={t("workshop.world.outline.steerPlaceholder")} aria-label={t("workshop.world.outline.steerAria")} maxLength={300} value={hint} onChange={(event) => setHint(event.target.value)} />
             <KitButton tone="primary" busy={drafting} disabled={drafting || !idea.trim()} onClick={draft} data-tour="world-outline">

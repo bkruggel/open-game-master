@@ -22146,6 +22146,34 @@
         2,
         "the settings summary lowercases the rule tail after its Stats: lead, as upstream pinned (no name reads here)"
       ]
+    ],
+    "app/characters/builder/steps/AncestryStep.tsx#toLowerCase": [
+      [
+        "key",
+        1,
+        "the stored size id lowercased picks its label key (the size-words idiom)"
+      ]
+    ],
+    "app/workshop/homebrew/SpeciesChoiceFields.tsx#toUpperCase": [
+      [
+        "display",
+        1,
+        "display-time capitalization of a label (the capital helper)"
+      ]
+    ],
+    "app/workshop/homebrew/SubclassChoiceFields.tsx#toUpperCase": [
+      [
+        "display",
+        1,
+        "display-time capitalization of a label (the capital helper)"
+      ]
+    ],
+    "lib/gender.ts#str-key": [
+      [
+        "key",
+        1,
+        "the stored gender id picks the locale-bank's FR label"
+      ]
     ]
   }
 }

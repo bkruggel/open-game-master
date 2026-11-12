@@ -136,11 +136,11 @@ export function AlliesFields({ draft, patch, gates }: StepProps) {
             </label>
           ) : null}
           <label className="block">
-            <span className="mb-1 block text-xs text-stone-500">Guests at once</span>
+            <span className="mb-1 block text-xs text-stone-500">{t("narrator.guestsAtOnce")}</span>
             <Select<string>
               value={String(draft.maxGuests)}
               onChange={(count) => patch({ maxGuests: Number(count) })}
-              label="Guests at once"
+              label={t("narrator.guestsAtOnce")}
               className="w-full"
               options={[1, 2, 3, 4].map((count) => ({ value: String(count), label: String(count) }))}
             />

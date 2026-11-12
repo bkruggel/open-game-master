@@ -106,7 +106,7 @@ export function AncestryStep({
       })),
     [raceGroups, slides],
   );
-  const facets = useMemo(() => raceFacets(t, slides), [t, slides]);
+  const facets = useMemo(() => raceFacets(t, locale, slides), [t, locale, slides]);
 
   return (
     <div className="space-y-4">
@@ -269,26 +269,38 @@ export function AncestryStep({
   );
 }
 
-const ABILITY_WORDS: Array<[Ability, string]> = [
-  ["str", "Strength"], ["dex", "Dexterity"], ["con", "Constitution"],
-  ["int", "Intelligence"], ["wis", "Wisdom"], ["cha", "Charisma"],
-];
+const ABILITY_WORDS: Ability[] = ["str", "dex", "con", "int", "wis", "cha"];
+
+// The size facet's labels read the reader's language (LineageCarousel's
+// sizeWords idiom): the stored values stay the English ids. A size the
+// dictionary does not carry reads as it was spelled.
+const SIZE_LABEL_KEYS: Record<string, string> = {
+  tiny: "builder.lineage.size.tiny",
+  small: "builder.lineage.size.small",
+  medium: "builder.lineage.size.medium",
+  large: "builder.lineage.size.large",
+};
+
+function sizeLabel(t: (key: string, vars?: Record<string, string | number>) => string, size: string): string {
+  const key = SIZE_LABEL_KEYS[size.toLowerCase()];
+  return key ? t(key) : size;
+}
 
 // The race grid's filters: what a lineage raises, which classes it suits,
 // its size and its book. Each offers only the values some lineage has. A
 // lineage whose bumps are the player's to place raises anything they like
 // and suits any class.
-function raceFacets(t: (key: string, vars?: Record<string, string | number>) => string, slides: LineageSlide[]): CardFacet[] {
+function raceFacets(t: (key: string, vars?: Record<string, string | number>) => string, locale: "en" | "fr", slides: LineageSlide[]): CardFacet[] {
   const byId = new Map(slides.map((slide) => [slide.id, slide]));
   const sizeOf = (id: string) => srdRaceFor(id)?.size ?? "";
-  const bookOf = (slide: LineageSlide) => slide.source || "Core rules";
+  const bookOf = (slide: LineageSlide) => slide.source || t("builder.shared.coreRules");
   const sizes = [...new Set(slides.map((slide) => sizeOf(slide.id)).filter(Boolean))].sort();
   const books = [...new Set(slides.map(bookOf))].sort();
   return [
     {
       key: "raises",
       label: t("builder.ancestry.facetRaises"),
-      options: ABILITY_WORDS.map(([value, label]) => ({ value, label })),
+      options: ABILITY_WORDS.map((value) => ({ value, label: t(`sheet.ability.${value}`) })),
       test: (id, ability) => {
         const slide = byId.get(id);
         return Boolean(slide && ((slide.asi[ability as Ability] ?? 0) > 0 || slide.asiChoice));
@@ -297,7 +309,9 @@ function raceFacets(t: (key: string, vars?: Record<string, string | number>) => 
     {
       key: "suits",
       label: t("builder.ancestry.facetSuits"),
-      options: SRD_CLASSES.map((klass) => ({ value: klass.name, label: klass.name })),
+      // The class names read in the reader's language (BuildMathPanel's
+      // contentName); the tested value stays the stored English name.
+      options: SRD_CLASSES.map((klass) => ({ value: klass.name, label: contentName("classes", klass.name, locale) })),
       test: (id, className) => {
         const slide = byId.get(id);
         const fits = slide ? lineageFits(slide, 13) : null;
@@ -305,7 +319,7 @@ function raceFacets(t: (key: string, vars?: Record<string, string | number>) => 
       },
     },
     ...(sizes.length > 1
-      ? [{ key: "size", label: t("builder.ancestry.facetSize"), options: sizes.map((size) => ({ value: size, label: size })), test: (id: string, size: string) => sizeOf(id) === size }]
+      ? [{ key: "size", label: t("builder.ancestry.facetSize"), options: sizes.map((size) => ({ value: size, label: sizeLabel(t, size) })), test: (id: string, size: string) => sizeOf(id) === size }]
       : []),
     ...(books.length > 1
       ? [{ key: "book", label: t("builder.ancestry.facetBook"), options: books.map((book) => ({ value: book, label: book })), test: (id: string, book: string) => { const slide = byId.get(id); return Boolean(slide && bookOf(slide) === book); } }]
