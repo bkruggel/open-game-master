@@ -2872,7 +2872,7 @@
     "app/workshop/homebrew/HazardFields.tsx#toUpperCase": [
       [
         "display",
-        4,
+        5,
         "ability abbreviations shown"
       ]
     ],
@@ -20249,8 +20249,8 @@
     "app/workshop/homebrew/ItemEffectFields.tsx#toUpperCase": [
       [
         "display",
-        1,
-        "ability abbreviation shown"
+        2,
+        "ability abbreviations shown"
       ]
     ],
     "app/workshop/homebrew/ItemEffectFields.tsx#str-list": [

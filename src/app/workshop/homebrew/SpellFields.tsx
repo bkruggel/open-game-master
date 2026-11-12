@@ -168,7 +168,7 @@ export function SpellFields({
           ])}
         />
         {ownClasses.length ? (
-          <p className="text-[11px] text-stone-500">Ticking one of your own classes puts the spell on its list, whichever list that class casts from.</p>
+          <p className="text-[11px] text-stone-500">{t("workshop.homebrew.spell.ownClassesHint")}</p>
         ) : null}
       </div>
 

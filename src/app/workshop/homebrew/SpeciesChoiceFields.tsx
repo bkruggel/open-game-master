@@ -14,13 +14,14 @@ import { addChip, rowIcon } from "@/app/workshop/kit";
 import type { Data } from "@/app/workshop/homebrew/draft";
 import { LANGUAGES, TOOL_PROFICIENCIES } from "@/lib/workshop/pickers";
 import { SKILL_IDS } from "@/lib/homebrew/item-magic-schema";
-import { DAMAGE_TYPES } from "@/lib/dm/damage-logic";
+import { DAMAGE_TYPES, damageTypeWord } from "@/lib/dm/damage-logic";
 import { raceMechanics } from "@/lib/content/mechanics";
 import { readSpeciesSpells } from "@/lib/content/species-spells";
 import { SpeciesSpellFields } from "@/app/workshop/homebrew/SpeciesSpellFields";
 import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
 import { ABILITIES, type Ability } from "@/lib/schemas/abilities";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import type { Locale } from "@/lib/messages-logic";
 import {
   BREATH_AREAS,
   VARIANT_LIMITS,
@@ -44,6 +45,12 @@ const ABILITY_KEYS: Record<Ability, string> = {
 };
 const SKILL_LABELS = Object.fromEntries(SKILL_IDS.map((id) => [id, id.replace(/_/g, " ")])) as Record<(typeof SKILL_IDS)[number], string>;
 const TOOLS = TOOL_PROFICIENCIES.map((tool) => tool.toLowerCase());
+
+// The damage words in the reader's language: capitalized out of the French
+// SRD's own list (damageTypeWord's pattern, src/lib/dm/damage-logic.ts).
+// English keeps the raw term, exactly as shipped; values stay the ids.
+const capital = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+const damageLabel = (type: string, locale: Locale): string => (locale === "fr" ? capital(damageTypeWord(type, locale)) : type);
 
 // An option as the draft holds it, read for its summary line.
 function readOption(raw: Data): SpeciesVariantOption {
@@ -126,6 +133,7 @@ function Increases({ option, put }: { option: Data; put: (asi: Data | undefined)
 
 function OptionFields({ option, put, spells }: { option: Data; put: (next: Data) => void; spells: boolean }) {
   const t = useT();
+  const locale = useLocale();
   const field = (key: string, value: unknown) => put(withField(option, key, value));
   const optionName = String(option.name ?? "").trim() || t("workshop.homebrew.speciesChoice.thisOption");
   const breath = sub(option.breath);
@@ -156,7 +164,7 @@ function OptionFields({ option, put, spells }: { option: Data; put: (next: Data)
       <Increases option={option} put={(asi) => field("asi", asi)} />
       <div className="col-span-2 space-y-1 sm:col-span-4">
         <span className="text-[11px] text-stone-400">{t("workshop.homebrew.speciesChoice.damageResists")}</span>
-        <ToggleChips options={DAMAGE_TYPES} selected={list(option.resistances)} max={L.resistances} onChange={(next) => field("resistances", next)} />
+        <ToggleChips options={DAMAGE_TYPES} labels={Object.fromEntries(DAMAGE_TYPES.map((type) => [type, damageLabel(type, locale)]))} selected={list(option.resistances)} max={L.resistances} onChange={(next) => field("resistances", next)} />
       </div>
       <div className="col-span-2 space-y-1 sm:col-span-4">
         <span className="text-[11px] text-stone-400">{t("workshop.homebrew.species.skillsProficient")}</span>
@@ -173,7 +181,7 @@ function OptionFields({ option, put, spells }: { option: Data; put: (next: Data)
       <SelectField
         label={t("workshop.homebrew.speciesChoice.breathWeapon")}
         value={breathType}
-        options={[{ value: "", label: t("workshop.homebrew.hazard.none") }, ...DAMAGE_TYPES.map((type) => ({ value: type, label: type }))]}
+        options={[{ value: "", label: t("workshop.homebrew.hazard.none") }, ...DAMAGE_TYPES.map((type) => ({ value: type, label: damageLabel(type, locale) }))]}
         onChange={(damageType) => putBreath({ damageType })}
         className="col-span-2"
         hint={breathType ? t("workshop.homebrew.speciesChoice.breathHint") : undefined}
@@ -250,7 +258,7 @@ export function SpeciesChoiceFields({ data, set }: Props) {
         summary={(option) => variantSummary(readOption(option))}
         attr="species"
         limits={{ options: L.options, minOptions: L.minOptions, name: L.name }}
-        placeholder="Ashen"
+        placeholder={t("workshop.homebrew.speciesChoice.optionPlaceholder")}
       />
       {options.length ? (
         <div className="space-y-0.5" data-species-choice-preview>

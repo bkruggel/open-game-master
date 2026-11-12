@@ -232,9 +232,9 @@ export function EncounterRows({
                 <details className="reveal group rounded-md border border-amber-500/25 bg-amber-500/5 px-2.5" data-encounter-setup={encounter.id}>
                   <summary className="flex min-h-10 cursor-pointer list-none items-center gap-1.5 text-xs text-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40">
                     <GameIcon icon={{ kind: "glyph", key: "tab-battle" }} size="size-4" />
-                    Starts from a saved set-up
-                    <span className="ml-auto text-[10px] text-amber-200/70 group-open:hidden">Show</span>
-                    <span className="ml-auto hidden text-[10px] text-amber-200/70 group-open:inline">Hide</span>
+                    {t("workshop.encounters.setupSummary")}
+                    <span className="ml-auto text-[10px] text-amber-200/70 group-open:hidden">{t("admin.log.showLabel")}</span>
+                    <span className="ml-auto hidden text-[10px] text-amber-200/70 group-open:inline">{t("table.hand.hide.foldHide")}</span>
                   </summary>
                   <ul className="space-y-0.5 pb-2 text-[11px] text-stone-300">
                     {encounter.setup.map((line) => (

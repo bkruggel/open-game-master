@@ -7,7 +7,10 @@ import { NumberField, SelectField, TextArea, TextField } from "@/app/workshop/ho
 import { ChipList } from "@/app/workshop/plugin/fields";
 import { MechGroup, list, num, sub, type Mech } from "@/app/workshop/homebrew/MechGroup";
 import { addChip, rowIcon } from "@/app/workshop/kit";
-import { useT } from "@/lib/locale";
+import { useLocale, useT } from "@/lib/locale";
+import type { Locale } from "@/lib/messages-logic";
+import { damageTypeWord } from "@/lib/dm/damage-logic";
+import { contentName } from "@/lib/content/names";
 import type { Data } from "@/app/workshop/homebrew/draft";
 
 // A hazard: a trap apply_hazard springs by name, a poison or a disease the
@@ -19,7 +22,14 @@ type Props = { data: Data; onChange: (next: Data) => void };
 
 const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"].map((value) => ({ value, label: value.toUpperCase() }));
 const DAMAGE = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
-const DAMAGE_OPTIONS = DAMAGE.map((value) => ({ value, label: value }));
+// The pickers' words in the reader's language: damage types capitalized out
+// of the French SRD's own list (damageTypeWord's pattern,
+// src/lib/dm/damage-logic.ts), conditions through the official names layer.
+// English keeps the raw term, exactly as the pickers always read it; the
+// stored values stay the ids.
+const capital = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+const damageOptions = (locale: Locale) => DAMAGE.map((value) => ({ value, label: locale === "fr" ? capital(damageTypeWord(value, locale)) : value }));
+const conditionWord = (term: string, locale: Locale) => contentName("conditions", term, locale);
 const CONDITIONS = ["blinded", "charmed", "deafened", "frightened", "grappled", "incapacitated", "paralyzed", "petrified", "poisoned", "prone", "restrained", "stunned", "unconscious"];
 const KINDS = [
   { value: "trap", label: "workshop.homebrew.hazard.kindTrap" },
@@ -32,6 +42,7 @@ const tidy = (block: Mech): Mech => Object.fromEntries(Object.entries(block).fil
 
 function DamageParts({ title, parts, onChange }: { title: string; parts: Mech[]; onChange: (next: Mech[]) => void }) {
   const t = useT();
+  const locale = useLocale();
   return (
     <div className="col-span-2 space-y-1 sm:col-span-4">
       <span className="text-[11px] text-stone-400">{title}</span>
@@ -45,7 +56,7 @@ function DamageParts({ title, parts, onChange }: { title: string; parts: Mech[];
             onChange={(event) => onChange(parts.map((entry, at) => (at === index ? { ...entry, dice: event.target.value } : entry)))}
             className={cn(ui.input, "w-24 text-sm")}
           />
-          <SelectField label="" value={String(part.type ?? "piercing")} options={DAMAGE_OPTIONS} onChange={(type) => onChange(parts.map((entry, at) => (at === index ? { ...entry, type } : entry)))} className="w-36" />
+          <SelectField label="" value={String(part.type ?? "piercing")} options={damageOptions(locale)} onChange={(type) => onChange(parts.map((entry, at) => (at === index ? { ...entry, type } : entry)))} className="w-36" />
           <button type="button" aria-label={t("workshop.homebrew.hazard.removeDamage")} onClick={() => onChange(parts.filter((_, at) => at !== index))} className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}>
             <X className="size-3.5" />
           </button>
@@ -62,6 +73,7 @@ function DamageParts({ title, parts, onChange }: { title: string; parts: Mech[];
 
 function TrapBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }) {
   const t = useT();
+  const locale = useLocale();
   const spot = sub(block.spot);
   const disarm = sub(block.disarm);
   const save = sub(block.save);
@@ -92,13 +104,13 @@ function TrapBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }) 
             <NumberField label={t("workshop.bestiary.attack.saveDc")} value={num(save.dc, 13)} min={1} max={30} onChange={(dc) => put({ save: { ...save, dc: dc === "" ? 13 : dc } })} />
             <SelectField label={t("workshop.homebrew.hazard.onSuccess")} value={save.halfOnSave === false ? "none" : "half"} options={[{ value: "half", label: t("workshop.homebrew.hazard.halfDamage") }, { value: "none", label: t("workshop.homebrew.hazard.noDamage") }]} onChange={(value) => put({ save: { ...save, halfOnSave: value === "half" } })} />
             <TextField label={t("workshop.homebrew.hazard.damageDice")} value={String(damage.dice ?? "")} onChange={(dice) => put({ damage: dice ? { dice, type: String(damage.type ?? "piercing") } : undefined })} placeholder="4d10" maxLength={40} />
-            <SelectField label={t("workshop.homebrew.hazard.damageType")} value={String(damage.type ?? "piercing")} options={DAMAGE_OPTIONS} onChange={(type) => put({ damage: { dice: String(damage.dice ?? "1d6"), type } })} />
-            <SelectField label={t("workshop.homebrew.hazard.onFailureAlso")} value={String(block.condition ?? "")} options={[{ value: "", label: t("workshop.homebrew.hazard.nothing") }, ...CONDITIONS.map((value) => ({ value, label: value }))]} onChange={(condition) => put({ condition: condition || undefined })} />
+            <SelectField label={t("workshop.homebrew.hazard.damageType")} value={String(damage.type ?? "piercing")} options={damageOptions(locale)} onChange={(type) => put({ damage: { dice: String(damage.dice ?? "1d6"), type } })} />
+            <SelectField label={t("workshop.homebrew.hazard.onFailureAlso")} value={String(block.condition ?? "")} options={[{ value: "", label: t("workshop.homebrew.hazard.nothing") }, ...CONDITIONS.map((value) => ({ value, label: conditionWord(value, locale) }))]} onChange={(condition) => put({ condition: condition || undefined })} />
           </>
         ) : null}
         <div className="col-span-2 space-y-1 sm:col-span-4">
           <span className="text-[11px] text-stone-400">{t("workshop.homebrew.hazard.onEveryone")}</span>
-          <ChipList items={list(block.conditionsAlways)} onChange={(next) => put({ conditionsAlways: next.length ? next : undefined, ...(next.length ? {} : { escape: undefined }) })} options={CONDITIONS} prompt={t("workshop.homebrew.hazard.addCondition")} max={4} />
+          <ChipList items={list(block.conditionsAlways)} onChange={(next) => put({ conditionsAlways: next.length ? next : undefined, ...(next.length ? {} : { escape: undefined }) })} options={CONDITIONS} labelFor={(value) => conditionWord(value, locale)} prompt={t("workshop.homebrew.hazard.addCondition")} max={4} />
         </div>
         {list(block.conditionsAlways).length ? (
           <>
@@ -120,6 +132,7 @@ function TrapBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }) 
 
 function PoisonBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }) {
   const t = useT();
+  const locale = useLocale();
   const repeat = sub(block.repeat);
   return (
     <MechGroup title={t("workshop.homebrew.hazard.thePoison")} summary={[`DC ${num(block.dc, 10)} CON`, block.damage ? String(block.damage) : "", list(block.conditions).join(", ")].filter(Boolean).join(", ")} open>
@@ -129,7 +142,7 @@ function PoisonBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }
       <SelectField label={t("workshop.homebrew.hazard.onSuccess")} value={block.halfOnSave ? "half" : "none"} options={[{ value: "half", label: t("workshop.homebrew.hazard.halfDamage") }, { value: "none", label: t("workshop.homebrew.hazard.noDamage") }]} onChange={(value) => put({ halfOnSave: value === "half" || undefined })} />
       <div className="col-span-2 space-y-1 sm:col-span-4">
         <span className="text-[11px] text-stone-400">{t("workshop.homebrew.hazard.onFailure")}</span>
-        <ChipList items={list(block.conditions)} onChange={(next) => put({ conditions: next.length ? next : undefined })} options={CONDITIONS} prompt={t("workshop.homebrew.hazard.addCondition")} max={4} />
+        <ChipList items={list(block.conditions)} onChange={(next) => put({ conditions: next.length ? next : undefined })} options={CONDITIONS} labelFor={(value) => conditionWord(value, locale)} prompt={t("workshop.homebrew.hazard.addCondition")} max={4} />
       </div>
       <NumberField label={t("workshop.homebrew.hazard.forMinutes")} value={num(block.minutes, 0) || ""} min={1} max={525600} onChange={(value) => put({ minutes: optional(value) })} />
       <TextField label={t("workshop.homebrew.hazard.orHoursOf")} value={String(block.hoursDice ?? "")} onChange={(hoursDice) => put({ hoursDice: hoursDice || undefined })} placeholder="4d6" maxLength={40} />
@@ -155,6 +168,7 @@ function PoisonBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }
 
 function DiseaseBlock({ block, put }: { block: Mech; put: (patch: Mech) => void }) {
   const t = useT();
+  const locale = useLocale();
   const infect = sub(block.infect);
   const onset = sub(block.onset);
   const rest = sub(block.rest);
@@ -171,7 +185,7 @@ function DiseaseBlock({ block, put }: { block: Mech; put: (patch: Mech) => void 
         <NumberField label={t("workshop.homebrew.hazard.exhaustionLevels")} value={num(block.exhaustion)} min={0} max={5} onChange={(exhaustion) => put({ exhaustion: exhaustion === "" ? 0 : exhaustion })} />
         <div className="col-span-2 space-y-1">
           <span className="text-[11px] text-stone-400">{t("workshop.homebrew.hazard.andWhileSick")}</span>
-          <ChipList items={list(block.conditions)} onChange={(next) => put({ conditions: next.length ? next : undefined })} options={CONDITIONS} prompt={t("workshop.homebrew.hazard.addCondition")} max={4} />
+          <ChipList items={list(block.conditions)} onChange={(next) => put({ conditions: next.length ? next : undefined })} options={CONDITIONS} labelFor={(value) => conditionWord(value, locale)} prompt={t("workshop.homebrew.hazard.addCondition")} max={4} />
         </div>
       </MechGroup>
       <MechGroup title={t("workshop.homebrew.hazard.afterLongRest")} summary={rest.ability ? `DC ${num(rest.dc, 11)} ${String(rest.ability).toUpperCase()}` : t("workshop.homebrew.hazard.noSave")} open={Boolean(rest.ability)}>

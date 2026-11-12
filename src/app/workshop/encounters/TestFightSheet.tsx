@@ -53,13 +53,14 @@ type Who = "stand-ins" | "characters";
 
 // "Level 4 Variant Human Fighter", in the words the library's cards use: the
 // ids themselves ("variant_human", "srd-2024-goliath") read as code here.
-function describe(character: Character): string {
-  return `Level ${character.level} ${[speciesName(character), classWordsAfterLevel(character)].filter(Boolean).join(" ")}`;
+// The "Level {n}" head reads the reader's language (workshop.bestiary.spells.levelN).
+function describe(character: Character, levelWord: string): string {
+  return `${levelWord} ${[speciesName(character), classWordsAfterLevel(character)].filter(Boolean).join(" ")}`;
 }
 
-function listed(names: string[]): string {
+function listed(names: string[], and: string): string {
   if (names.length <= 1) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  return `${names.slice(0, -1).join(", ")} ${and} ${names[names.length - 1]}`;
 }
 
 // Whether the party picked is the one a fight's set-up was saved with
@@ -179,7 +180,7 @@ export function TestFightSheet({
     if (sent.error !== null) {
       setError(
         sent.unanswered
-          ? `${sent.error} The table may have been made all the same: look under Encounters for the open test before starting another.`
+          ? `${sent.error} ${t("table.misc.testFight.unansweredNote")}`
           : sent.error,
       );
       setBusy(false);
@@ -214,10 +215,10 @@ export function TestFightSheet({
             <span className="flex flex-wrap items-center gap-1.5 text-sm text-stone-100">
               {character.name}
               {ally ? (
-                <span className="rounded-full border border-stone-600 px-1.5 text-[10px] uppercase tracking-[0.12em] text-amber-200">Ally</span>
+                <span className="rounded-full border border-stone-600 px-1.5 text-[10px] uppercase tracking-[0.12em] text-amber-200">{t("table.misc.testFight.allyChip")}</span>
               ) : null}
             </span>
-            <span className="block text-xs text-stone-400">{describe(character)}</span>
+            <span className="block text-xs text-stone-400">{describe(character, t("workshop.bestiary.spells.levelN", { level: character.level }))}</span>
           </span>
         </label>
       </li>
@@ -238,16 +239,15 @@ export function TestFightSheet({
   const legend = "mb-1.5 font-display text-xs uppercase tracking-[0.14em] text-amber-200/90";
 
   return (
-    <Sheet open={open} onOpenChange={close} title={encounter ? `Test ${encounter.name}` : "Test fight"} className="lg:w-[min(92vw,34rem)]">
+    <Sheet open={open} onOpenChange={close} title={encounter ? t("table.misc.testFight.testTitle", { name: encounter.name }) : t("table.misc.testFight.title")} className="lg:w-[min(92vw,34rem)]">
       <div className="space-y-4" data-testid="test-fight-sheet">
         <p className="text-sm text-stone-300">
-          Play this fight on a table only you can see, on its map and by its plan. You play the
-          party, each hero on their own turn.
+          {t("table.misc.testFight.intro")}
         </p>
 
         {encounter?.setup?.length ? (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-50" data-testid="test-fight-setup">
-            <p className="font-display text-amber-200">It opens on its saved set-up.</p>
+            <p className="font-display text-amber-200">{t("table.misc.testFight.opensOnSetup")}</p>
             <ul className="mt-1 space-y-0.5 text-stone-300">
               {encounter.setup.map((line) => (
                 <li key={line}>{line}</li>
@@ -255,29 +255,29 @@ export function TestFightSheet({
             </ul>
             {setupParty && !sameAsSetup(setupParty, who, picked, allies) ? (
               <p className="mt-1 text-amber-200/90">
-                This is another party than the set-up was saved with: the foes and the order start as saved, the heroes fresh.
+                {t("table.misc.testFight.otherPartyNote")}
               </p>
             ) : null}
           </div>
         ) : null}
 
         <fieldset className="space-y-2">
-          <legend className={legend}>Who fights it</legend>
+          <legend className={legend}>{t("table.misc.testFight.whoTitle")}</legend>
           {radio(
             "test-fight-party",
             who === "stand-ins",
             () => setWho("stand-ins"),
-            "The stand-in party",
+            t("table.misc.testFight.standInsTitle"),
             standIns
-              ? `${standIns.size} ${standIns.size === 1 ? "hero" : "heroes"} at level ${standIns.level}, the party this workshop is built for: ${listed(standIns.classes)}. Built by the rules when the test starts.`
-              : "The party this workshop is built for, built by the rules when the test starts.",
+              ? t("table.misc.testFight.standInsHint", { count: standIns.size, level: standIns.level, classes: listed(standIns.classes, t("table.misc.testFight.listAnd")) })
+              : t("table.misc.testFight.standInsFallback"),
           )}
           {radio(
             "test-fight-party",
             who === "characters",
             () => setWho("characters"),
-            "Characters you pick",
-            "This workshop's pregens or anyone in your library, at their own levels. They fight as copies: nothing in the test reaches your library.",
+            t("table.misc.testFight.pickTitle"),
+            t("table.misc.testFight.pickHint"),
           )}
         </fieldset>
 
@@ -285,30 +285,30 @@ export function TestFightSheet({
           <div className="reveal space-y-3" aria-live="polite">
             {pregens === null || library === null ? (
               <p className="flex items-center gap-2 text-xs text-stone-400">
-                <Loader2 className="size-3.5 animate-spin" /> Reading your characters...
+                <Loader2 className="size-3.5 animate-spin" /> {t("table.misc.testFight.reading")}
               </p>
             ) : heroPregens.length + others.length === 0 ? (
               <p className="text-xs text-stone-400">
-                You have no heroes to pick yet. Build one from the Party tool, or test with the stand-ins.
+                {t("table.misc.testFight.noHeroes")}
               </p>
             ) : (
               <>
                 {heroPregens.length ? (
                   <section>
-                    <h4 className="mb-1.5 text-xs text-stone-400">This workshop&apos;s pregens</h4>
+                    <h4 className="mb-1.5 text-xs text-stone-400">{t("table.misc.testFight.pregensHeading")}</h4>
                     <ul className="grid gap-1.5 sm:grid-cols-2">{heroPregens.map(checkbox)}</ul>
                   </section>
                 ) : null}
                 {others.length ? (
                   <section>
-                    <h4 className="mb-1.5 text-xs text-stone-400">Your library</h4>
+                    <h4 className="mb-1.5 text-xs text-stone-400">{t("table.misc.testFight.libraryHeading")}</h4>
                     <ul className="grid gap-1.5 sm:grid-cols-2">{others.map(checkbox)}</ul>
                   </section>
                 ) : null}
                 <p className="text-xs text-stone-500">
                   {picked.length
-                    ? `${picked.length} picked${full ? `, the most a test party holds` : ""}.`
-                    : `Pick up to ${TARGET_PARTY_LIMITS.size.max}.`}
+                    ? `${t("table.misc.testFight.pickedCount", { count: picked.length })}${full ? t("table.misc.testFight.pickedFull") : ""}.`
+                    : t("table.misc.testFight.pickUpTo", { count: TARGET_PARTY_LIMITS.size.max })}
                 </p>
               </>
             )}
@@ -320,16 +320,15 @@ export function TestFightSheet({
             companion, on a host that seats them (issue 685). */}
         {allyOffer && allyChoices.length ? (
           <fieldset className="reveal space-y-2" data-testid="test-fight-allies">
-            <legend className={legend}>Allies beside them</legend>
+            <legend className={legend}>{t("table.misc.testFight.alliesTitle")}</legend>
             <p className="text-xs text-stone-400">
-              Optional. Companions you keep fight beside the party as copies, at their own levels. Whoever runs
-              the test plays them; to play one yourself, take command of them on their card in the Party panel.
+              {t("table.misc.testFight.alliesBlurb")}
             </p>
             <ul className="grid gap-1.5 sm:grid-cols-2">{allyChoices.map((character) => pickCard(character, true))}</ul>
             <p className="text-xs text-stone-500">
               {allies.length
-                ? `${allies.length} beside the party${alliesFull ? ", the most a test seats" : ""}.`
-                : `None unless you pick them, up to ${TEST_ALLY_LIMIT}.`}
+                ? `${t("table.misc.testFight.alliesCount", { count: allies.length })}${alliesFull ? t("table.misc.testFight.alliesFull") : ""}.`
+                : t("table.misc.testFight.alliesNone", { count: TEST_ALLY_LIMIT })}
             </p>
           </fieldset>
         ) : null}
@@ -343,20 +342,20 @@ export function TestFightSheet({
           </p>
         ) : info?.ready ? (
           <fieldset className="space-y-2">
-            <legend className={legend}>Who runs it</legend>
+            <legend className={legend}>{t("table.misc.testFight.runnerTitle")}</legend>
             {radio(
               "test-fight-runner",
               runner === "ai",
               () => setRunner("ai"),
-              "The AI GM",
-              "It opens the fight and runs the enemies by their plan, as at a table the AI runs. You keep the GM console for set-ups and corrections.",
+              t("table.misc.testFight.runnerAiTitle"),
+              t("table.misc.testFight.runnerAiHint"),
             )}
             {radio(
               "test-fight-runner",
               runner === "person",
               () => setRunner("person"),
-              "You",
-              "You run the enemies with their cards and the party with theirs, as a GM at a table you run. No AI is called.",
+              t("table.misc.testFight.runnerYouTitle"),
+              t("table.misc.testFight.runnerYouHint"),
             )}
           </fieldset>
         ) : info ? (
@@ -366,13 +365,13 @@ export function TestFightSheet({
           </p>
         ) : null}
         {info?.open ? (
-          <p className="text-xs text-stone-400">Starting this ends the test already open, {info.open.title}.</p>
+          <p className="text-xs text-stone-400">{t("table.misc.testFight.openNote", { title: info.open.title })}</p>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" disabled={!canStart} aria-busy={busy} onClick={() => void start()} className={cn(ui.btnPrimary, "min-h-11")}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Swords className="size-4" />}
-            {busy ? "Setting the table..." : "Start the test fight"}
+            {busy ? t("table.misc.testFight.settingTable") : t("table.misc.testFight.startButton")}
           </button>
         </div>
         {error ? <PanelError>{error}</PanelError> : null}

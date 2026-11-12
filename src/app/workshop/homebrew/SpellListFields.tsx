@@ -11,6 +11,9 @@ import { addChip, rowIcon } from "@/app/workshop/kit";
 import { compareNames, textKey } from "@/lib/language/text-logic";
 import { checklistSpellsMatching, checklistSpellsOn, spellLevelOf } from "@/lib/srd/spell-lists";
 import { CUSTOM_LIST_MAX, SPELL_LISTS } from "@/lib/homebrew/class-data";
+import { ordinalOf } from "@/lib/characters/join-changes";
+import { classDisplayNameFor } from "@/lib/characters/class-words";
+import { useLocale, useT } from "@/lib/locale";
 
 // A workshop class's list of its own (issue #833): the spells it may learn
 // or prepare, picked from every spell this server knows (the SRD's, the
@@ -18,7 +21,12 @@ import { CUSTOM_LIST_MAX, SPELL_LISTS } from "@/lib/homebrew/class-data";
 // spell level. A published class's whole list can be added in one pick and
 // trimmed from there, so nobody clicks two hundred spells in one by one.
 
-const LEVEL_WORDS = ["Cantrips", "1st level", "2nd level", "3rd level", "4th level", "5th level", "6th level", "7th level", "8th level", "9th level"];
+// The level words as group headings: "Cantrips", then the ordinal family the
+// join sheet counts slots with (« 1er, 2e » — join.ordinal*, one ordinal set
+// for the whole app). EN reads "1st level" as upstream shipped; FR prints the
+// French SRD's own heading word (« Niveau 2 »).
+const levelWord = (t: (key: string, vars?: Record<string, string | number>) => string, level: number): string =>
+  level === 0 ? t("sheet.spells.cantrips") : t("workshop.homebrew.spellList.level", { ordinal: ordinalOf(t, level), level });
 
 type Found = { name: string; level: number; source?: string; document?: string };
 
@@ -67,6 +75,7 @@ export function SpellSearch({
   // A half caster learns no cantrips: none is offered.
   noCantrips?: boolean;
 }) {
+  const t = useT();
   const { query, setQuery, results: served, loading } = useContentSearch("spells", { lite: "1", limit: "30" });
   const wanted = textKey(query);
   const results: Found[] = useMemo(() => {
@@ -103,10 +112,10 @@ export function SpellSearch({
         {loading && wanted ? <Loader2 className="absolute right-2 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-stone-500" /> : null}
       </div>
       {wanted && !loading && !results.length ? (
-        <p className="reveal text-[11px] text-stone-500">Nothing matched &quot;{query.trim()}&quot; that is not picked already.</p>
+        <p className="reveal text-[11px] text-stone-500">{t("workshop.homebrew.spellList.noMatch", { query: query.trim() })}</p>
       ) : null}
       {results.length ? (
-        <ul aria-label="Spells to add" className="reveal stagger-up max-h-64 space-y-1 overflow-y-auto rounded-lg border border-stone-800 bg-stone-950/60 p-1.5">
+        <ul aria-label={t("workshop.homebrew.spellList.spellsToAddAria")} className="reveal stagger-up max-h-64 space-y-1 overflow-y-auto rounded-lg border border-stone-800 bg-stone-950/60 p-1.5">
           {results.map((spell) => (
             <li key={spell.name}>
               <button
@@ -118,8 +127,8 @@ export function SpellSearch({
                   <Plus className="size-3" /> {spell.name}
                 </span>
                 <span className="text-[11px] text-stone-500">
-                  {spell.level === 0 ? "cantrip" : `level ${spell.level}`}
-                  {spell.source === "homebrew" ? ", yours" : spell.document ? `, ${spell.document}` : ""}
+                  {spell.level === 0 ? t("workshop.homebrew.spellList.cantripTag") : t("workshop.homebrew.spellList.levelTag", { level: spell.level })}
+                  {spell.source === "homebrew" ? `, ${t("workshop.homebrew.spellList.yours")}` : spell.document ? `, ${spell.document}` : ""}
                 </span>
               </button>
             </li>
@@ -140,6 +149,11 @@ export function CustomSpellList({
   // A half caster's list: it learns no cantrips, so none is offered or added.
   noCantrips?: boolean;
 }) {
+  const t = useT();
+  const locale = useLocale();
+  // A published class's name in the reader's language fills the list-pick
+  // labels; English keeps the raw id, byte-identical to upstream's template.
+  const classWord = (id: string) => (locale === "fr" ? classDisplayNameFor(id, locale) : id);
   const [filling, setFilling] = useState("");
   // Levels of the picked names the checklist does not know (the pack's, the
   // author's homebrew), one lookup each, kept for the page's life.
@@ -173,19 +187,19 @@ export function CustomSpellList({
     <div className="space-y-2 text-sm" data-testid="custom-spell-list">
       <p className="text-[11px] text-stone-400" role="status">
         {names.length
-          ? `${names.length} ${names.length === 1 ? "spell" : "spells"} on the list${full ? `, the most a list keeps (${CUSTOM_LIST_MAX})` : ""}.`
-          : "No spells yet. Add a published class's list to start from, or find spells one by one."}
+          ? `${t("workshop.homebrew.spellList.onList", { count: names.length })}${full ? t("workshop.homebrew.spellList.fullSuffix", { max: CUSTOM_LIST_MAX }) : ""}.`
+          : t("workshop.homebrew.spellList.emptyStart")}
       </p>
       {noCantrips ? (
         <p className="text-[11px] text-stone-500" data-testid="no-cantrips-hint">
-          A half caster learns no cantrips, so none is offered here.
-          {cantripsHeld ? ` The ${cantripsHeld === 1 ? "cantrip" : `${cantripsHeld} cantrips`} on the list ${cantripsHeld === 1 ? "is" : "are"} never taken; take ${cantripsHeld === 1 ? "it" : "them"} off.` : ""}
+          {t("workshop.homebrew.spellList.noCantripsBase")}
+          {cantripsHeld ? ` ${t("workshop.homebrew.spellList.cantripsHeld", { count: cantripsHeld })}` : ""}
         </p>
       ) : null}
       {ordered.map(([level, group]) => (
         <div key={String(level)} className="live-in flex flex-wrap items-center gap-1.5 text-xs">
           <span className="w-24 shrink-0 text-stone-400">
-            {level === null ? "Level unknown" : LEVEL_WORDS[level]} ({group.length})
+            {level === null ? t("workshop.homebrew.spellList.levelUnknown") : levelWord(t, level)} ({group.length})
           </span>
           {group.sort(compareNames).map((name) => (
             <span
@@ -195,7 +209,7 @@ export function CustomSpellList({
               {name}
               <button
                 type="button"
-                aria-label={`Take ${name} off the list`}
+                aria-label={t("workshop.homebrew.spellList.takeOffAria", { name })}
                 onClick={() => onChange(names.filter((entry) => textKey(entry) !== textKey(name)))}
                 className={cn(ui.iconAction, rowIcon, "hover:text-red-300")}
               >
@@ -211,18 +225,18 @@ export function CustomSpellList({
           exclude={chosen}
           disabled={full}
           noCantrips={noCantrips}
-          label="Find a spell to add to the class's list"
-          placeholder={full ? "The list is full" : "Find a spell to add: fire bolt, shield..."}
+          label={t("workshop.homebrew.archetype.expandedFind")}
+          placeholder={full ? t("workshop.homebrew.spellList.listFull") : t("workshop.homebrew.spellList.findPlaceholder")}
           onPick={(spell) => add([spell.name])}
         />
         <AddFromList
           // Short enough to read whole beside the search at any width.
-          prompt={filling ? `Adding the ${filling}'s list` : "Add a class's list"}
+          prompt={filling ? t("workshop.homebrew.spellList.addingPrompt", { list: classWord(filling) }) : t("workshop.homebrew.spellList.addPrompt")}
           disabled={Boolean(filling) || full}
           // Wide enough for its prompt and room for its arrow: a native
           // select is as wide as its longest option, which is shorter.
           className="min-h-10 min-w-44 pr-7 sm:min-h-0"
-          options={SPELL_LISTS.map((list) => ({ value: list, label: `The ${list}'s list` }))}
+          options={SPELL_LISTS.map((list) => ({ value: list, label: t("workshop.homebrew.spellList.listOption", { list: classWord(list) }) }))}
           onPick={(list) => {
             setFilling(list);
             void listSpells(list)

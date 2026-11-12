@@ -220,17 +220,20 @@ function Training({ data, set }: Props) {
 }
 
 // The spells every one of its people casts by nature (issue #833), as the
-// tiefling's Infernal Legacy: shown on a host that keeps them.
+// tiefling's Infernal Legacy: shown on a host that keeps them. The summary
+// line is speciesSpellsSummary's — the engine's own English words (the same
+// builder feeds the AI-side sheet), quoted here as the folded row's summary.
 function Spells({ data, set }: Props) {
+  const t = useT();
   const group = readSpeciesSpells(data.spells);
   return (
-    <MechGroup title="Spells it casts" summary={speciesSpellsSummary(group) || "none"} open={Boolean(group)}>
+    <MechGroup title={t("workshop.homebrew.speciesSpells.groupTitle")} summary={speciesSpellsSummary(group) || t("workshop.homebrew.hazard.none")} open={Boolean(group)}>
       <SpeciesSpellFields
         value={data.spells}
         put={(spells) => set({ spells })}
-        title="Spells every one of them casts"
-        hint="As a tiefling's Infernal Legacy. A cantrip is cast at will; a spell of 1st level or higher a set number of times without a spell slot, and again after a rest. An option of the player's choice below can give spells of its own."
-        pickLabel="Find a spell the species gives"
+        title={t("workshop.homebrew.speciesSpells.groupEveryTitle")}
+        hint={t("workshop.homebrew.speciesSpells.groupHint")}
+        pickLabel={t("workshop.homebrew.speciesSpells.pickLabel")}
       />
     </MechGroup>
   );
