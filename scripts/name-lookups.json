@@ -23389,5 +23389,12 @@
         "upstream's new text-naming site, merged wholesale (same class as the file's other entries)"
       ]
     ],
+    "app/workshop/pdf-import/send-book.ts#fallback": [
+      [
+        "key",
+        1,
+        "the both-shapes translator shift: upstream's plain call falls back to the dictionary's English (the handTargets pattern)"
+      ]
+    ]
   }
 }
