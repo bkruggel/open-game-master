@@ -260,7 +260,7 @@ function QuestRow({
           ))}
         </ul>
       ) : null}
-      {quest.source === "arc" && quest.sourceRef ? <p className="reveal mt-1 text-[11px] text-stone-500">From the story</p> : null}
+      {quest.source === "arc" && quest.sourceRef ? <p className="reveal mt-1 text-[11px] text-stone-500">{t("quests.fromStory")}</p> : null}
     </ContextMenu>
   );
 }

@@ -74,10 +74,10 @@ export function MapTilesetPanel({
 
       {onSkin ? (
         <label className="block space-y-1">
-          <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">Skin</span>
+          <span className="font-display text-[9px] uppercase tracking-[0.14em] text-stone-500">{t("workshop.maps.forge.skin")}</span>
           <Select
             value={skin.id as string}
-            label="Skin"
+            label={t("workshop.maps.forge.skin")}
             size="sm"
             onChange={(id) => onSkin({ id, bind: {} })}
             options={[

@@ -1053,7 +1053,7 @@ export function BattleMapPanel({
     // A native board view draws no plate, so it is not offered there.
     const details: HudAction[] = nativeHudActive ? [] : [{
       id: "details",
-      label: "Details",
+      label: t("board.plate.details"),
       icon: Info,
       onPick: () => {
         setHudTokenId(null);

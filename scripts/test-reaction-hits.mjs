@@ -1055,7 +1055,7 @@ await test("The screens wire it: Speaking as on its host flag, Edit in chat name
   assert.match(composer, /kind === "do" && speakingAs\?\.reactors\.length/, "in Do: a reaction is something done");
   assert.match(composer, /onComposeAs=\{speakingAs\?\.onChange\}/);
   const picker = read("app/campaigns/[campaignId]/ReactAsPicker.tsx");
-  assert.match(picker, /label="Speaking as"/, "named for screen readers");
+  assert.match(picker, /label=\{t\("table\.composer\.react\.speakAs"\)\}/, "named for screen readers");
   assert.match(picker, /size="sm"/, "the kit's small select: 40 px on a touch screen");
   const hand = read("app/campaigns/[campaignId]/Hand.tsx");
   assert.match(hand, /hostOffers\(capabilities, "companionReactions"\)/);

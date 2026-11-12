@@ -372,8 +372,8 @@ export function DmEncounterPrepPanel({
   // roster and plan make it again, at a test and at a table.
   async function removeSetup(template: PreparedEncounter) {
     if (
-      !(await appConfirm(`Remove the saved set-up of "${template.name}"? Its tests and tables open as the roster and plan make it again. The map it kept stays.`, {
-        actionLabel: "Remove the set-up",
+      !(await appConfirm(t("dm.prep.setupRemoveConfirm", { name: template.name }), {
+        actionLabel: t("dm.prep.setupRemoveAction"),
       }))
     ) {
       return;

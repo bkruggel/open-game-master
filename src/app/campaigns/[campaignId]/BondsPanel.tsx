@@ -91,8 +91,10 @@ const TIER_GLYPH: Record<FriendshipTier, string> = {
 };
 
 // The tiers' and stages' words live in the dictionaries (table.bonds.*), so
-// a language switch rewords the rows with everything else.
-const TIER_KEY: Record<FriendshipTier, `table.bonds.tier.${FriendshipTier}`> = {
+// a language switch rewords the rows with everything else. The key maps are
+// exported for the consumers that read the same words elsewhere (the
+// companion bond line).
+export const TIER_KEY: Record<FriendshipTier, `table.bonds.tier.${FriendshipTier}`> = {
   hostile: "table.bonds.tier.hostile",
   disliked: "table.bonds.tier.disliked",
   wary: "table.bonds.tier.wary",
@@ -103,35 +105,13 @@ const TIER_KEY: Record<FriendshipTier, `table.bonds.tier.${FriendshipTier}`> = {
   devoted: "table.bonds.tier.devoted",
 };
 
-const ROMANCE_KEY: Record<RomanceStage, `table.bonds.romance.${RomanceStage}`> = {
+export const ROMANCE_KEY: Record<RomanceStage, `table.bonds.romance.${RomanceStage}`> = {
   none: "table.bonds.romance.none",
   interested: "table.bonds.romance.interested",
   courting: "table.bonds.romance.courting",
   together: "table.bonds.romance.together",
   betrothed: "table.bonds.romance.betrothed",
   married: "table.bonds.romance.married",
-};
-
-// The tiers' and stages' bare English words, for consumers that read a plain
-// word (the companion bond line); the panels themselves read the keys above.
-export const TIER_WORD: Record<FriendshipTier, string> = {
-  hostile: "Hostile",
-  disliked: "Dislikes",
-  wary: "Wary",
-  neutral: "Neutral",
-  cordial: "Cordial",
-  friendly: "Friendly",
-  close: "Close",
-  devoted: "Devoted",
-};
-
-export const ROMANCE_WORD: Record<RomanceStage, string> = {
-  none: "",
-  interested: "Interested",
-  courting: "Courting",
-  together: "Together",
-  betrothed: "Betrothed",
-  married: "Married",
 };
 
 // The romance ladder as a thin rung under the row: it fills to the stage
@@ -280,8 +260,8 @@ function BondRow({ bond }: { bond: RelationshipView }) {
         <p className="reveal mt-1 flex items-start gap-1.5 text-xs leading-5 text-rose-200" data-bond-scene={bond.subjectName}>
           <Heart className="mt-0.5 size-3 shrink-0" aria-hidden />
           <span>
-            <span className="font-medium text-rose-300">Their move, yours to play:</span> {bond.scene}
-            <span className="sr-only"> Only you see this.</span>
+            <span className="font-medium text-rose-300">{t("table.bonds.sceneLead")}</span> {bond.scene}
+            <span className="sr-only"> {t("table.bonds.actOnlyYou")}</span>
           </span>
         </p>
       ) : null}

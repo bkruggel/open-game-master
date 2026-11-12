@@ -3943,6 +3943,66 @@ export const en = {
   "table.composer.xcardTip": "X-card: pause the table without saying why. Nobody is told who pressed it.",
   "table.composer.xcardAria": "Raise the X-card",
   "table.composer.send": "Send",
+  // The reaction's voice (ReactAsPicker.tsx).
+  "table.composer.react.speakAs": "Speaking as",
+  "table.composer.react.turn": "{name}, their turn",
+  "table.composer.react.turnHint": "What they do with their turn",
+  "table.composer.react.reaction": "{name}, a reaction",
+  "table.composer.react.reactionHint": "Answering a hit, not their turn",
+  // The @ name menu (NameMenu.tsx, name-menu-logic.ts).
+  "table.name.aria": "Names at this table",
+  "table.name.group.party": "Party",
+  "table.name.group.people": "People",
+  "table.name.group.places": "Places",
+  "table.name.noMatch": "No known name matches.",
+  "table.name.notIntroduced": "Not introduced yet",
+  "table.name.legendChoose": "choose",
+  "table.name.legendOr": "or",
+  "table.name.legendWrite": "write it",
+  "table.name.legendClose": "close",
+  // The hold's fallback word (TurnHoldNote.tsx) and the party's travel
+  // formation (TravelFormation.tsx).
+  "table.turnHeld.watcher": "a watching player",
+  "table.formation.title": "Travel formation",
+  "table.formation.changeFailed": "Could not change the formation.",
+  "table.formation.rankFront": "Front",
+  "table.formation.rankRear": "Rear",
+  "table.formation.rankMiddle": "Middle",
+  "table.formation.allyGm": "ally the GM plays",
+  "table.formation.yours": "yours",
+  "table.formation.answerAgreed": "Agreed",
+  "table.formation.answerChange": "Asked for a change",
+  "table.formation.answerWaiting": "Waiting",
+  "table.formation.noteAria": "What to change for {name}",
+  "table.formation.notePlaceholder": "I would rather scout ahead.",
+  "table.formation.send": "Send",
+  "table.formation.cancel": "Cancel",
+  "table.formation.agree": "Agree",
+  "table.formation.askChange": "Ask for a change",
+  "table.formation.needOne": "Put at least one character in the formation.",
+  "table.formation.editorNote": "Front first. The GM reads this order on every turn; it places the party and grants no bonus.",
+  "table.formation.moveFrontAria": "Move {name} toward the front",
+  "table.formation.moveRearAria": "Move {name} toward the rear",
+  "table.formation.leaveOutAria": "Leave {name} out of the formation",
+  "table.formation.out": "Out",
+  "table.formation.notPlaced": "Not placed:",
+  "table.formation.atRear": "+ {name} at the rear",
+  "table.formation.saveNow": "Save now",
+  "table.formation.propose": "Propose to the party",
+  "table.formation.saveNote": "Save now puts it in force at once; Propose waits until the players it moves agree, or until you make it active. Either way they are asked.",
+  "table.formation.noneYet": "No travel formation yet.",
+  "table.formation.arrangeHint": "Arrange one so the GM knows who walks first.",
+  "table.formation.leadArranges": "The party lead arranges it.",
+  "table.formation.unplacedLine": "Not placed yet: {names}. The GM places them where the story has them until the party does.",
+  "table.formation.proposedBy": "Proposed by {name}, not in force yet",
+  "table.formation.leadLower": "the party lead",
+  "table.formation.leadCap": "The party lead",
+  "table.formation.activate": "Make it active now",
+  "table.formation.withdraw": "Withdraw",
+  "table.formation.movedLine": "{name} moved {names} in the formation in force.",
+  "table.formation.clearAnswers": "Clear the answers",
+  "table.formation.rearrange": "Rearrange the formation",
+  "table.formation.arrange": "Arrange the formation",
 
   // Why the box waits, as the placeholder says it (composerGate.ts).
   "table.gate.narrating": "The Game Master is setting the scene... (OOC still open)",
@@ -4704,6 +4764,32 @@ export const en = {
   "table.hand.monster.legendaryLineNoOne": "{name} spends a legendary action: {card}.",
   "table.hand.monster.lairLine": "The lair acts on {who}.",
   "table.hand.monster.lairLineNoOne": "The lair acts.",
+  // The monsters' aim bar (MonsterHandAim.tsx).
+  "table.hand.monster.squareAria": "Where it goes",
+  "table.hand.monster.toColumn": "To column",
+  "table.hand.monster.toRow": "To row",
+  "table.hand.monster.squareOptional": "Optional: up to {feet} ft, or leave it where it is.",
+  "table.hand.monster.squareRange": "Up to {feet} ft.",
+  "table.hand.monster.pickSpell": "Pick one from its list",
+  // The summoning door (SummonDoor.tsx) and its creature pick
+  // (HandSummonPick.tsx).
+  "table.summon.aria": "Summoning",
+  "table.summon.begin": "Begin casting",
+  "table.summon.finish": "Finish casting",
+  "table.summon.cast": "Cast",
+  "table.summon.castingLeft_one": "Casting: {count} rounds left.",
+  "table.summon.castingLeft_other": "Casting: {count} rounds left.",
+  "table.summon.beginNote": "Takes a minute or more: begun with your action, the creature chosen when it is done.",
+  "table.summon.finishNote": "The casting is done: choose what it brings.",
+  "table.summon.slotLevel": "Level {level} slot.",
+  "table.summon.ritualNote": "Ten minutes longer, and no spell slot spent.",
+  "table.summon.ritual": "Cast as a ritual",
+  "table.summon.sent": "Sent.",
+  "table.summon.refused": "The casting was refused.",
+  "table.summon.mixAria": "Each target's form for {name}",
+  "table.summon.eachTarget": "Each target",
+  "table.summon.creatureFor": "Creature for {name}",
+  "table.summon.chooseCreature": "Choose a creature",
 
   // A card the GM never carried out went back to its player
   // (CardReturnedNote.tsx): its line says so, with why, and its player can
@@ -4910,6 +4996,18 @@ export const en = {
   "table.bonds.off": "Relationship tracking is off for this campaign. Whoever runs the story can turn it on in Settings, under Bonds and romance.",
   "table.bonds.empty": "Nobody has an opinion yet. How NPCs and companions feel about each character builds as you deal with them, and shows up here.",
   "table.bonds.noneOf": "Nobody has an opinion of {name} yet.",
+  // The asks a fight held (HeldAsks.tsx) and the bonds' scene lead-in
+  // (BondsPanel.tsx, CompanionBondLine.tsx).
+  "table.bonds.heldAsk.eyebrow": "Asked in the fight",
+  "table.bonds.heldAsk.sentence": "{a} asked {b} {step}. {b} has not answered yet.",
+  "table.bonds.heldAsk.step.interested": "to return their interest",
+  "table.bonds.heldAsk.step.courting": "to court them",
+  "table.bonds.heldAsk.step.together": "to be partners",
+  "table.bonds.heldAsk.step.betrothed": "to be betrothed",
+  "table.bonds.heldAsk.step.married": "to marry them",
+  "table.bonds.heldAsk.answer": "Have {name} answer",
+  "table.bonds.sceneLead": "Their move, yours to play:",
+  "table.bonds.romanceWith": "Romance with",
 
   // The after-the-fight card (FightSummaryCard.tsx).
   "table.fight.title": "After the fight",
@@ -5143,6 +5241,14 @@ export const en = {
   "table.sheet.adjust": "Adjust",
   "table.sheet.refused": "That change was refused.",
   "table.sheet.changeUnreachable": "The change did not reach the server.",
+  // Gear without stats (GiveStats.tsx).
+  "table.sheet.giveStats.none": "No stats at this table yet.",
+  "table.sheet.giveStats.noAuthor": "The table's host or GM can give it some in their workshop.",
+  "table.sheet.giveStats.open": "Give it stats",
+  "table.sheet.giveStats.ariaInPlace": "(opens the workshop)",
+  "table.sheet.giveStats.ariaNewTab": "(opens the workshop in a new tab)",
+  "table.sheet.giveStats.make": "Make a workshop to give it stats",
+  "table.sheet.giveStats.heldBack": "Save or cancel your changes first: the workshop opens in place of the table.",
 
   // The dice tray (DiceTrayDialog.tsx).
   "table.tray.title": "Roll dice",
@@ -9397,6 +9503,10 @@ export const en = {
   "board.plate.more": "+{count} more: ",
   "board.plate.cover12": "Half cover (+{ac} AC)",
   "board.plate.enemyBeside": "Enemy beside you: ranged at disadvantage",
+  // The board's plates (BattleMapPanel.tsx, BoardChrome.tsx).
+  "board.plate.details": "Details",
+  "board.plate.roundsSuffix_one": "({count} rd)",
+  "board.plate.roundsSuffix_other": "({count} rd)",
   "board.targets.empty": "Nobody here to aim at.",
   "board.targets.groupAria": "Targets",
   "board.side.against": "against the party",
@@ -9900,7 +10010,16 @@ export const en = {
   "dm.prep.searchMonsters": "Search monsters to add: goblin, owlbear, the boss you built...",
   "dm.prep.searchMonstersAria": "Search monsters to add",
   "dm.forge.askModelFor": "Ask the model for {what}",
+  // The NPC forge's portrait buttons (DmNpcForgePanel.tsx).
+  "dm.forge.portrait.replace": "Replace face",
+  "dm.forge.portrait.add": "Add a face",
+  "dm.forge.portrait.renderTitle": "Render one on the shared media queue",
+  "dm.forge.portrait.takeAwayTitle": "Take the picture away and show the stand-in for their role instead",
+  "dm.forge.someoneNew": "Someone new",
   "dm.prep.crChip": "CR {cr}",
+  // The set-up removal confirm (DmEncounterPrepPanel.tsx).
+  "dm.prep.setupRemoveConfirm": "Remove the saved set-up of \"{name}\"? Its tests and tables open as the roster and plan make it again. The map it kept stays.",
+  "dm.prep.setupRemoveAction": "Remove the set-up",
 
 // ---- the odds calculator (DmOddsPanel.tsx) ----
   "dm.odds.title": "What is this likely to do?",
@@ -10254,6 +10373,7 @@ export const en = {
   "quests.statusLabel": "Status",
   "quests.gmOnly": "GM only",
   "quests.doneLabel": "Done: {text}",
+  "quests.fromStory": "From the story",
 
 // ---- the relations map's own words (RelationGraph.tsx) ----
   "rel.close": "close",
@@ -11685,6 +11805,13 @@ export const en = {
   "maptools.group.setting": "This setting",
   "maptools.group.fantasy": "Fantasy",
   "maptools.group.other": "Other settings",
+  // The map inspector's facts and the studio's holding words
+  // (MapInspector.tsx, DmMapStudioPanel.tsx).
+  "maptools.factGround": "Ground",
+  "maptools.factUnder": "Under",
+  "maptools.brushUnknown": "Unknown",
+  "maptools.holdingNothing": "Nothing",
+  "maptools.tableEmpty": "Nothing is on the table. Open a scene to put the party on a map without a fight.",
 
 // ---- roll words (roll-labels.ts) ----
   "rollmap.kind.skill_check": "Skill check",

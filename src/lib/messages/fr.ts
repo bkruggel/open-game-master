@@ -3970,6 +3970,66 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.composer.xcardTip": "Carte X : mets la table en pause sans dire pourquoi. Personne ne sait qui l’a levée.",
   "table.composer.xcardAria": "Lever la carte X",
   "table.composer.send": "Envoyer",
+  // The reaction's voice (ReactAsPicker.tsx).
+  "table.composer.react.speakAs": "En tant que",
+  "table.composer.react.turn": "{name} : c’est son tour",
+  "table.composer.react.turnHint": "Ce qu’ils font de leur tour",
+  "table.composer.react.reaction": "{name} : une réaction",
+  "table.composer.react.reactionHint": "Répond à un coup reçu, pas leur tour",
+  // The @ name menu (NameMenu.tsx, name-menu-logic.ts).
+  "table.name.aria": "Les noms de cette table",
+  "table.name.group.party": "Groupe",
+  "table.name.group.people": "Personnages",
+  "table.name.group.places": "Lieux",
+  "table.name.noMatch": "Aucun nom connu ne correspond.",
+  "table.name.notIntroduced": "Pas encore présenté",
+  "table.name.legendChoose": "choisir",
+  "table.name.legendOr": "ou",
+  "table.name.legendWrite": "l’écrire",
+  "table.name.legendClose": "fermer",
+  // The hold's fallback word (TurnHoldNote.tsx) and the party's travel
+  // formation (TravelFormation.tsx).
+  "table.turnHeld.watcher": "un joueur qui regarde",
+  "table.formation.title": "Ordre de marche",
+  "table.formation.changeFailed": "L’ordre de marche n’a pas pu être changé.",
+  "table.formation.rankFront": "Tête",
+  "table.formation.rankRear": "Arrière",
+  "table.formation.rankMiddle": "Milieu",
+  "table.formation.allyGm": "allié joué par le MJ",
+  "table.formation.yours": "à toi",
+  "table.formation.answerAgreed": "D’accord",
+  "table.formation.answerChange": "A demandé un changement",
+  "table.formation.answerWaiting": "En attente",
+  "table.formation.noteAria": "Quoi changer pour {name}",
+  "table.formation.notePlaceholder": "Je préférerais partir en éclaireur.",
+  "table.formation.send": "Envoyer",
+  "table.formation.cancel": "Annuler",
+  "table.formation.agree": "D’accord",
+  "table.formation.askChange": "Demander un changement",
+  "table.formation.needOne": "Mets au moins un personnage dans l’ordre de marche.",
+  "table.formation.editorNote": "En tête d’abord. Le MJ lit cet ordre à chaque tour ; il place le groupe et n’accorde aucun bonus.",
+  "table.formation.moveFrontAria": "Déplacer {name} vers l’avant",
+  "table.formation.moveRearAria": "Déplacer {name} vers l’arrière",
+  "table.formation.leaveOutAria": "Sortir {name} de l’ordre de marche",
+  "table.formation.out": "Retirer",
+  "table.formation.notPlaced": "Pas encore placés :",
+  "table.formation.atRear": "+ {name} à l’arrière",
+  "table.formation.saveNow": "Enregistrer maintenant",
+  "table.formation.propose": "Proposer au groupe",
+  "table.formation.saveNote": "« Enregistrer maintenant » le met en vigueur tout de suite ; « Proposer au groupe » attend l’accord des joueurs qu’il déplace, ou que tu le rendes actif. Dans les deux cas, ils sont consultés.",
+  "table.formation.noneYet": "Pas encore d’ordre de marche.",
+  "table.formation.arrangeHint": "Dispose-le pour que le MJ sache qui marche en premier.",
+  "table.formation.leadArranges": "C’est le chef du groupe qui le dispose.",
+  "table.formation.unplacedLine": "Pas encore placés : {names}. Le MJ les place là où l’histoire les tient, jusqu’à ce que le groupe le fasse.",
+  "table.formation.proposedBy": "Proposé par {name}, pas encore en vigueur",
+  "table.formation.leadLower": "le chef du groupe",
+  "table.formation.leadCap": "Le chef du groupe",
+  "table.formation.activate": "Le rendre actif maintenant",
+  "table.formation.withdraw": "Retirer",
+  "table.formation.movedLine": "{name} a déplacé {names} dans l’ordre de marche en vigueur.",
+  "table.formation.clearAnswers": "Effacer les réponses",
+  "table.formation.rearrange": "Réorganiser l’ordre de marche",
+  "table.formation.arrange": "Disposer l’ordre de marche",
 
   // Pourquoi la messagerie attend, tel que le nom le champ (composerGate.ts).
   "table.gate.narrating": "Le maître du jeu met en place la scène… (la discussion HRP reste ouverte)",
@@ -4736,6 +4796,32 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.hand.monster.legendaryLineNoOne": "{name} dépense une action légendaire : {card}.",
   "table.hand.monster.lairLine": "L’antre agit sur {who}.",
   "table.hand.monster.lairLineNoOne": "L’antre agit.",
+  // The monsters' aim bar (MonsterHandAim.tsx).
+  "table.hand.monster.squareAria": "Où ça va",
+  "table.hand.monster.toColumn": "Colonne d’arrivée",
+  "table.hand.monster.toRow": "Rangée d’arrivée",
+  "table.hand.monster.squareOptional": "Facultatif : jusqu’à {feet} pi, ou laisse-le où il est.",
+  "table.hand.monster.squareRange": "Jusqu’à {feet} pi.",
+  "table.hand.monster.pickSpell": "Choisis-en un dans sa liste",
+  // The summoning door (SummonDoor.tsx) and its creature pick
+  // (HandSummonPick.tsx).
+  "table.summon.aria": "Invocation",
+  "table.summon.begin": "Commencer l’incantation",
+  "table.summon.finish": "Terminer l’incantation",
+  "table.summon.cast": "Lancer",
+  "table.summon.castingLeft_one": "Incantation : {count} tour restant.",
+  "table.summon.castingLeft_other": "Incantation : {count} tours restants.",
+  "table.summon.beginNote": "Prend une minute ou plus : commencée avec ton action, la créature choisie une fois l’incantation finie.",
+  "table.summon.finishNote": "L’incantation est finie : choisis ce qu’elle amène.",
+  "table.summon.slotLevel": "Emplacement de niveau {level}.",
+  "table.summon.ritualNote": "Dix minutes de plus, et aucun emplacement de sort dépensé.",
+  "table.summon.ritual": "Lancer en rituel",
+  "table.summon.sent": "Envoyé.",
+  "table.summon.refused": "L’incantation a été refusée.",
+  "table.summon.mixAria": "La forme de chaque cible pour {name}",
+  "table.summon.eachTarget": "Chaque cible",
+  "table.summon.creatureFor": "Créature pour {name}",
+  "table.summon.chooseCreature": "Choisis une créature",
 
   // Une carte que le MJ n’a jamais jouée est retournée à sa joueuse ou son
   // joueur (CardReturnedNote.tsx) : sa ligne le dit, avec la raison, et on
@@ -4943,6 +5029,18 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.bonds.off": "Le suivi des liens est désactivé pour cette campagne. Celui qui mène l’histoire peut l’activer dans les paramètres, sous Liens et romance.",
   "table.bonds.empty": "Personne n’a encore d’avis. Ce que les PNJ et les compagnons pensent de chaque personnage se construit au fil des échanges, et s’affiche ici.",
   "table.bonds.noneOf": "Personne n’a encore d’avis sur {name}.",
+  // The asks a fight held (HeldAsks.tsx) and the bonds' scene lead-in
+  // (BondsPanel.tsx, CompanionBondLine.tsx).
+  "table.bonds.heldAsk.eyebrow": "Demande faite pendant le combat",
+  "table.bonds.heldAsk.sentence": "{a} a demandé à {b} {step}. {b} n’a pas encore répondu.",
+  "table.bonds.heldAsk.step.interested": "de répondre à son intérêt",
+  "table.bonds.heldAsk.step.courting": "de lui faire la cour",
+  "table.bonds.heldAsk.step.together": "d’être en couple",
+  "table.bonds.heldAsk.step.betrothed": "de se fiancer",
+  "table.bonds.heldAsk.step.married": "de l’épouser",
+  "table.bonds.heldAsk.answer": "Faire répondre {name}",
+  "table.bonds.sceneLead": "À eux d’agir, à toi de jouer :",
+  "table.bonds.romanceWith": "Romance avec",
 
   // La carte d’après-combat (FightSummaryCard.tsx).
   "table.fight.title": "Après le combat",
@@ -5176,6 +5274,14 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "table.sheet.adjust": "Ajuster",
   "table.sheet.refused": "Ce changement a été refusé.",
   "table.sheet.changeUnreachable": "Le changement n’a pas atteint le serveur.",
+  // Gear without stats (GiveStats.tsx).
+  "table.sheet.giveStats.none": "Pas encore de statistiques à cette table.",
+  "table.sheet.giveStats.noAuthor": "L’hôte ou le MJ de la table peut lui en donner dans son atelier.",
+  "table.sheet.giveStats.open": "Lui donner des statistiques",
+  "table.sheet.giveStats.ariaInPlace": "(ouvre l’atelier)",
+  "table.sheet.giveStats.ariaNewTab": "(ouvre l’atelier dans un nouvel onglet)",
+  "table.sheet.giveStats.make": "Créer un atelier pour lui donner des statistiques",
+  "table.sheet.giveStats.heldBack": "Enregistre ou annule d’abord tes changements : l’atelier s’ouvre à la place de la table.",
 
   // Le plateau de dés (DiceTrayDialog.tsx).
   "table.tray.title": "Lancer les dés",
@@ -9450,6 +9556,10 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "board.plate.more": "+{count} de plus : ",
   "board.plate.cover12": "Demi-couvert (+{ac} CA)",
   "board.plate.enemyBeside": "Un ennemi à ton contact : attaque à distance avec désavantage",
+  // The board's plates (BattleMapPanel.tsx, BoardChrome.tsx).
+  "board.plate.details": "Détails",
+  "board.plate.roundsSuffix_one": "({count} tour)",
+  "board.plate.roundsSuffix_other": "({count} tours)",
   "board.targets.empty": "Personne à viser ici.",
   "board.targets.groupAria": "Cibles",
   "board.side.against": "contre le groupe",
@@ -9955,7 +10065,16 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "dm.prep.searchMonsters": "Cherche des monstres à ajouter : gobelin, ours-hibou, le boss que tu as construit…",
   "dm.prep.searchMonstersAria": "Chercher des monstres à ajouter",
   "dm.forge.askModelFor": "Demander {what} au modèle",
+  // The NPC forge's portrait buttons (DmNpcForgePanel.tsx).
+  "dm.forge.portrait.replace": "Changer de visage",
+  "dm.forge.portrait.add": "Ajouter un visage",
+  "dm.forge.portrait.renderTitle": "La générer sur la file média partagée",
+  "dm.forge.portrait.takeAwayTitle": "Retirer l’image et montrer à la place le portrait de son rôle",
+  "dm.forge.someoneNew": "Quelqu’un de nouveau",
   "dm.prep.crChip": "FP {cr}",
+  // The set-up removal confirm (DmEncounterPrepPanel.tsx).
+  "dm.prep.setupRemoveConfirm": "Retirer la préparation enregistrée de « {name} » ? Ses tests et ses tables s’ouvrent tels que la composition et le plan les refont. La carte qu’elle gardait reste.",
+  "dm.prep.setupRemoveAction": "Retirer la préparation",
 
 // ---- la calculatrice de probabilités (DmOddsPanel.tsx) ----
   "dm.odds.title": "Que va-t-il probablement se passer ?",
@@ -10312,6 +10431,7 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "quests.statusLabel": "Statut",
   "quests.gmOnly": "MJ seul",
   "quests.doneLabel": "Fait : {text}",
+  "quests.fromStory": "De l’histoire",
 
 // ---- les mots de la carte des relations (RelationGraph.tsx) ----
   "rel.close": "proches",
@@ -11743,6 +11863,13 @@ export const fr: Partial<Record<MessageKey, string>> = {
   "maptools.group.setting": "Ce cadre",
   "maptools.group.fantasy": "Fantasy",
   "maptools.group.other": "Autres cadres",
+  // The map inspector's facts and the studio's holding words
+  // (MapInspector.tsx, DmMapStudioPanel.tsx).
+  "maptools.factGround": "Sol",
+  "maptools.factUnder": "Dessous",
+  "maptools.brushUnknown": "Inconnu",
+  "maptools.holdingNothing": "Rien",
+  "maptools.tableEmpty": "Rien n’est sur la table. Ouvre une scène pour poser le groupe sur une carte sans combat.",
 
 // ---- les mots des jets (roll-labels.ts) ----
   "rollmap.kind.skill_check": "Test de compétence",

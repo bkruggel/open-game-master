@@ -7,6 +7,7 @@ import { textKey } from "@/lib/language/text-logic";
 import { navigateTo } from "@/lib/navigation";
 import { shellHost } from "@/lib/shell-host";
 import { hostOffers, useCapabilities } from "@/lib/use-capabilities";
+import { useT } from "@/lib/locale";
 
 // Loot the model named that no list holds carries no stats: a "Ring of
 // Whispers" is a name and nothing more. A workshop item of the same name,
@@ -46,6 +47,7 @@ export function GiveStats({ name, gear, unsaved = false }: { name: string; gear:
   // where the workshop takes the table's place): the changes stay, and the
   // line says to save or cancel them first.
   const [heldBack, setHeldBack] = useState(false);
+  const t = useT();
   if (!gear || !gear.names.some((entry) => textKey(entry) === textKey(name))) {
     return null;
   }
@@ -67,26 +69,26 @@ export function GiveStats({ name, gear, unsaved = false }: { name: string; gear:
   });
   return (
     <p className="reveal flex flex-wrap items-center gap-x-2 gap-y-1 pl-8 text-[11px] text-stone-400">
-      <span>No stats at this table yet.</span>
+      <span>{t("table.sheet.giveStats.none")}</span>
       {!gear.canAuthor ? (
-        <span>The table&apos;s host or GM can give it some in their workshop.</span>
+        <span>{t("table.sheet.giveStats.noAuthor")}</span>
       ) : gear.workshopId ? (
         <a
           {...linkTo(`/workshop/${gear.workshopId}?system=homebrew&item=${encodeURIComponent(name)}`)}
           className={kitButtonClass("small", "gap-1 py-0.5")}
         >
           <Hammer className="size-3.5" aria-hidden="true" />
-          Give it stats
-          <span className="sr-only">{inApp ? " (opens the workshop)" : " (opens the workshop in a new tab)"}</span>
+          {t("table.sheet.giveStats.open")}
+          <span className="sr-only"> {inApp ? t("table.sheet.giveStats.ariaInPlace") : t("table.sheet.giveStats.ariaNewTab")}</span>
         </a>
       ) : (
         <a {...linkTo("/workshop")} className={kitButtonClass("link")}>
-          Make a workshop to give it stats
+          {t("table.sheet.giveStats.make")}
         </a>
       )}
       {inApp && gear.canAuthor ? (
         <span role="status" className={heldBack && unsaved ? "basis-full text-amber-200" : "sr-only"}>
-          {heldBack && unsaved ? "Save or cancel your changes first: the workshop opens in place of the table." : ""}
+          {heldBack && unsaved ? t("table.sheet.giveStats.heldBack") : ""}
         </span>
       ) : null}
     </p>

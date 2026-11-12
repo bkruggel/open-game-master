@@ -430,13 +430,13 @@ export function DmNpcForgePanel({
               onClick={() => fileRef.current?.click()}
               className={cn(ui.btnSmall, "min-h-9 gap-1 px-2 py-1 text-xs")}
             >
-              <ImageIcon className="size-3" /> {selected.portraitUrl ? "Replace face" : "Add a face"}
+              <ImageIcon className="size-3" /> {selected.portraitUrl ? t("dm.forge.portrait.replace") : t("dm.forge.portrait.add")}
             </button>
             {canPaint ? (
               <button
                 type="button"
                 disabled={busy} aria-busy={busy}
-                title="Render one on the shared media queue"
+                title={t("dm.forge.portrait.renderTitle")}
                 onClick={() => void patch({ draft, generatePortrait: true })}
                 className={cn(ui.btnSmall, "min-h-9 gap-1 px-2 py-1 text-xs")}
               >
@@ -447,7 +447,7 @@ export function DmNpcForgePanel({
               <button
                 type="button"
                 disabled={busy} aria-busy={busy}
-                title="Take the picture away and show the stand-in for their role instead"
+                title={t("dm.forge.portrait.takeAwayTitle")}
                 onClick={() => void patch({ portraitUrl: "" })}
                 className={cn(ui.btnSmall, "min-h-9 gap-1 px-2 py-1 text-xs")}
               >
@@ -540,7 +540,7 @@ export function DmNpcForgePanel({
         <Sheet
           open={editorOpen}
           onOpenChange={setEditorOpen}
-          title={selected ? selected.name : "Someone new"}
+          title={selected ? selected.name : t("dm.forge.someoneNew")}
           className="lg:w-[min(92vw,40rem)]"
         >
           {editor}

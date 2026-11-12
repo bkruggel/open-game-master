@@ -336,11 +336,12 @@ function HealthWordChip({ word }: { word: HealthWord }) {
 }
 
 export function ConditionChip({ label, rounds, note }: { label: string; rounds?: number; note?: string }) {
+  const t = useT();
   return (
     <span className="fx-pop inline-flex max-w-full items-center gap-1 rounded-full border border-amber-900/60 bg-amber-950/30 py-px pl-px pr-1.5 text-[10px] text-amber-300">
       <GameIcon icon={{ kind: "condition", key: conditionIconKey(label) }} size="size-4" />
       <span className="capitalize">{label}</span>
-      {rounds ? ` (${rounds} rd)` : ""}
+      {rounds ? ` ${t("board.plate.roundsSuffix", { count: rounds })}` : ""}
       {/* What the engine's metadata says: until whose turn, the save that
           ends it, who laid it (src/lib/battlemap/condition-notes.ts). */}
       {note ? <span className="truncate text-amber-200/70">{note}</span> : null}
@@ -374,6 +375,7 @@ function EdgeChips({ edge }: { edge: TargetEdge }) {
 // name, what it does (condition-rules.ts for the SRD's own; every other
 // condition's note leads with its summary), and how long it lasts.
 function ConditionRow({ id, label, rounds, note }: { id: string; label: string; rounds?: number; note?: string }) {
+  const t = useT();
   const rule = conditionRule(id);
   return (
     <li className="fx-pop flex items-start gap-2 text-left">
@@ -387,7 +389,7 @@ function ConditionRow({ id, label, rounds, note }: { id: string; label: string; 
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] font-semibold text-[#ecd287]">
           <span className="capitalize">{label}</span>
-          {rounds ? <span className="font-normal text-[rgba(244,224,166,0.8)]">{` (${rounds} rd)`}</span> : null}
+          {rounds ? <span className="font-normal text-[rgba(244,224,166,0.8)]">{` ${t("board.plate.roundsSuffix", { count: rounds })}`}</span> : null}
         </span>
         {rule ? <span className="block text-[10px] leading-snug text-[#d8d3ea]">{rule}</span> : null}
         {note ? <span className="block text-[10px] leading-snug text-[rgba(244,224,166,0.75)]">{note}</span> : null}
