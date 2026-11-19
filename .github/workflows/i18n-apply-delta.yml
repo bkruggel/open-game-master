@@ -1,0 +1,65 @@
+name: Apply i18n French Delta
+
+on:
+  push:
+    branches:
+      - "i18n/delta-*"
+    paths:
+      - "i18n-delta-fr.json"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply-delta:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout delta branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch helper scripts from automation branch
+        run: |
+          git fetch origin automation
+          git show origin/automation:scripts/apply-i18n-delta.mjs > .tmp-apply-i18n-delta.mjs
+          git show origin/automation:scripts/check-i18n-gaps.mjs > .tmp-check-i18n-gaps.mjs
+
+      - name: Merge delta into fr.json and validate
+        run: |
+          npm install --no-save typescript
+          node .tmp-apply-i18n-delta.mjs i18n-delta-fr.json
+          rm -f .tmp-apply-i18n-delta.mjs
+          node scripts/test-i18n-gettext.mjs
+          node .tmp-check-i18n-gaps.mjs --strict
+          rm -f .tmp-check-i18n-gaps.mjs
+
+      - name: Commit merged fr.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/i18n/fr.json i18n-delta-fr.json
+          git commit -m "i18n(fr): apply automated French translation delta"
+          git push
+
+      - name: Open Draft PR on fork
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          EXISTING=$(gh pr list --repo "${{ github.repository }}" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$EXISTING" ]; then
+            gh pr create \
+              --repo "${{ github.repository }}" \
+              --base main \
+              --head "$BRANCH" \
+              --draft \
+              --title "i18n(fr): sync translations from upstream" \
+              --body "Automated Stage 2 merge of \`i18n-delta-fr.json\` into \`src/lib/i18n/fr.json\`. Passed \`test-i18n-gettext.mjs\` and \`check-i18n-gaps.mjs --strict\`."
+          fi
