@@ -3,8 +3,8 @@
 // are missing from src/lib/i18n/fr.json.
 //
 // Options:
-//   --diff <ref>  Also report unwrapped JSX text and UI string props on lines
-//                 added in `git diff -U0 <ref>..HEAD -- src/`.
+//   --diff <ref>  Also report unwrapped JSX text/UI props and changed src/**/*.{ts,tsx}
+//                 files from `git diff <ref>..HEAD -- src/`.
 //   --strict      Exit with code 1 if any missing t/tp keys are found.
 //   --json        Emit machine-readable JSON summary (for CI / GitHub Actions).
 
@@ -167,6 +167,11 @@ function getAddedLinesByFile(ref) {
 }
 
 const addedByFile = diffRef ? getAddedLinesByFile(diffRef) : null;
+const changedFiles = addedByFile
+  ? [...addedByFile.keys()].filter(
+      (f) => /\.(ts|tsx)$/.test(f) && !/\.(test|spec)\.(ts|tsx)$/.test(f),
+    )
+  : [];
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -193,7 +198,7 @@ function walk(dir) {
 walk(SRC_DIR);
 
 if (jsonOut) {
-  console.log(JSON.stringify({ missing, unwrapped }, null, 2));
+  console.log(JSON.stringify({ missing, unwrapped, changedFiles }, null, 2));
 } else {
   console.log(`check-i18n-gaps: ${missing.length} missing t/tp keys in fr.json`);
   for (const m of missing) {
@@ -207,6 +212,7 @@ if (jsonOut) {
     if (unwrapped.length > 40) {
       console.log(`  ... and ${unwrapped.length - 40} more`);
     }
+    console.log(`check-i18n-gaps: ${changedFiles.length} changed src/**/*.{ts,tsx} files since ${diffRef}`);
   }
 }
 

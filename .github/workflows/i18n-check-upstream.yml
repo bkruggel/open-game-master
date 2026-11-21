@@ -70,8 +70,10 @@ jobs:
 
           MISSING_COUNT=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("../gaps.json","utf8")).missing.length)')
           UNWRAPPED_COUNT=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("../gaps.json","utf8")).unwrapped.length)')
+          CHANGED_COUNT=$(node -e 'console.log((JSON.parse(require("fs").readFileSync("../gaps.json","utf8")).changedFiles || []).length)')
           echo "missing=$MISSING_COUNT" >> "$GITHUB_OUTPUT"
           echo "unwrapped=$UNWRAPPED_COUNT" >> "$GITHUB_OUTPUT"
+          echo "changed=$CHANGED_COUNT" >> "$GITHUB_OUTPUT"
           echo "upstream_sha=$UPSTREAM_SHA" >> "$GITHUB_OUTPUT"
           echo "prev_sha=$PREV_SHA" >> "$GITHUB_OUTPUT"
 
@@ -83,7 +85,9 @@ jobs:
             const gaps = JSON.parse(fs.readFileSync("gaps.json", "utf8"));
             const missingCount = gaps.missing.length;
             const unwrappedCount = gaps.unwrapped.length;
+            const changedCount = (gaps.changedFiles || []).length;
             const upstreamSha = "${{ steps.scan.outputs.upstream_sha }}";
+            const prevSha = "${{ steps.scan.outputs.prev_sha }}";
             const label = "i18n-automation";
             const title = "i18n(fr): upstream translation gaps";
 
@@ -100,7 +104,7 @@ jobs:
             });
             const openIssue = existing.data[0];
 
-            if (missingCount === 0 && unwrappedCount === 0) {
+            if (missingCount === 0 && unwrappedCount === 0 && changedCount === 0) {
               if (openIssue) {
                 await github.rest.issues.createComment({
                   ...context.repo,
@@ -116,14 +120,15 @@ jobs:
               return;
             }
 
-            const payload = JSON.stringify({ upstreamSha, ...gaps }, null, 2);
+            const payload = JSON.stringify({ prevSha, upstreamSha, ...gaps }, null, 2);
             const body = [
-              `Upstream \`Lebbitheplow/open-game-master@main\` (\`${upstreamSha.slice(0, 9)}\`) has **${missingCount} missing \`t()\`/\`tp()\` keys** and **${unwrappedCount} potential unwrapped UI strings** on \`i18n/fr-sync\`.`,
+              `Upstream \`Lebbitheplow/open-game-master@main\` (\`${prevSha.slice(0, 9)}..${upstreamSha.slice(0, 9)}\`) has **${missingCount} missing \`t()\`/\`tp()\` keys**, **${unwrappedCount} potential unwrapped UI strings**, and **${changedCount} changed \`src/**/*.{ts,tsx}\` files** on \`i18n/fr-sync\`.`,
               "",
               "### Instructions for Gemini Scheduled Task",
-              "1. Read the JSON below and inspect the cited `.ts`/`.tsx` files on `main` if you need surrounding context.",
-              "2. Commit **only** `i18n-delta-fr.json` at the repo root on branch `i18n/fr-sync` with the French translations.",
-              "3. Stage 2 (`i18n-apply-delta.yml`) will merge it into `src/lib/i18n/fr.json`, run `test-i18n-gettext.mjs`, and update the Draft PR against `main`.",
+              "1. Read the JSON below (`missing`, `unwrapped`, and `changedFiles`).",
+              "2. Inspect the surrounding code around cited `file:line` entries AND review `changedFiles` on `i18n/fr-sync` for any hardcoded English UI text, `.ts` message builders, tooltips, or errors missed by the AST scanner.",
+              "3. Wire any genuine user-facing unwrapped strings in `.ts`/`.tsx` files with `t()`/`tp()` directly on `i18n/fr-sync`, and commit `i18n-delta-fr.json` at the repo root of `i18n/fr-sync` with French translations for both `missing` keys and any newly wired keys.",
+              "4. Stage 2 (`i18n-apply-delta.yml`) will merge `i18n-delta-fr.json` into `src/lib/i18n/fr.json`, run `test-i18n-gettext.mjs` and `check-i18n-gaps.mjs --strict`, and update the Draft PR against `main`.",
               "",
               "<details>",
               "<summary>Gap payload (JSON)</summary>",
