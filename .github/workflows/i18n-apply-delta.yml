@@ -2,8 +2,8 @@ name: Apply i18n French Delta
 
 on:
   schedule:
-    # Run daily at 08:00 UTC (03:00 EST / 04:00 EDT in Montreal), after Gemini's 02:00 AM sweep
-    - cron: "0 8 * * *"
+    # Run daily at 08:17 UTC (03:17 AM EST / 04:17 AM EDT in Montreal), after Gemini's 02:00 AM sweep
+    - cron: "17 8 * * *"
   workflow_dispatch:
 
 permissions:

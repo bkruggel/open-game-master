@@ -2,8 +2,8 @@ name: Check Upstream i18n Gaps
 
 on:
   schedule:
-    # Run daily at 05:00 UTC (midnight EST / 01:00 EDT in Montreal)
-    - cron: "0 5 * * *"
+    # Run daily at 04:17 UTC (11:17 PM EST / 12:17 AM EDT in Montreal) to avoid top-of-hour cron delays
+    - cron: "17 4 * * *"
   workflow_dispatch:
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
       - name: Sync main with upstream, update i18n/fr-sync, and scan for gaps
         id: scan
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
