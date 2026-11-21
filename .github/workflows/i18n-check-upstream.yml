@@ -69,10 +69,10 @@ jobs:
           rm -f ./.tmp-check-i18n-gaps.mjs
 
           MISSING_COUNT=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("../gaps.json","utf8")).missing.length)')
-          UNWRAPPED_COUNT=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("../gaps.json","utf8")).unwrapped.length)')
+          VICINITY_COUNT=$(node -e 'console.log((JSON.parse(require("fs").readFileSync("../gaps.json","utf8")).vicinityCandidates || []).length)')
           CHANGED_COUNT=$(node -e 'console.log((JSON.parse(require("fs").readFileSync("../gaps.json","utf8")).changedFiles || []).length)')
           echo "missing=$MISSING_COUNT" >> "$GITHUB_OUTPUT"
-          echo "unwrapped=$UNWRAPPED_COUNT" >> "$GITHUB_OUTPUT"
+          echo "vicinity=$VICINITY_COUNT" >> "$GITHUB_OUTPUT"
           echo "changed=$CHANGED_COUNT" >> "$GITHUB_OUTPUT"
           echo "upstream_sha=$UPSTREAM_SHA" >> "$GITHUB_OUTPUT"
           echo "prev_sha=$PREV_SHA" >> "$GITHUB_OUTPUT"
@@ -84,7 +84,7 @@ jobs:
             const fs = require("fs");
             const gaps = JSON.parse(fs.readFileSync("gaps.json", "utf8"));
             const missingCount = gaps.missing.length;
-            const unwrappedCount = gaps.unwrapped.length;
+            const vicinityCount = (gaps.vicinityCandidates || []).length;
             const changedCount = (gaps.changedFiles || []).length;
             const upstreamSha = "${{ steps.scan.outputs.upstream_sha }}";
             const prevSha = "${{ steps.scan.outputs.prev_sha }}";
@@ -104,7 +104,7 @@ jobs:
             });
             const openIssue = existing.data[0];
 
-            if (missingCount === 0 && unwrappedCount === 0 && changedCount === 0) {
+            if (missingCount === 0 && vicinityCount === 0) {
               if (openIssue) {
                 await github.rest.issues.createComment({
                   ...context.repo,
@@ -122,13 +122,13 @@ jobs:
 
             const payload = JSON.stringify({ prevSha, upstreamSha, ...gaps }, null, 2);
             const body = [
-              `Upstream \`Lebbitheplow/open-game-master@main\` (\`${prevSha.slice(0, 9)}..${upstreamSha.slice(0, 9)}\`) has **${missingCount} missing \`t()\`/\`tp()\` keys**, **${unwrappedCount} potential unwrapped UI strings**, and **${changedCount} changed \`src/**/*.{ts,tsx}\` files** on \`i18n/fr-sync\`.`,
+              `Upstream \`Lebbitheplow/open-game-master@main\` (\`${prevSha.slice(0, 9)}..${upstreamSha.slice(0, 9)}\`) has **${missingCount} missing \`t()\`/\`tp()\` keys** and **${vicinityCount} AST vicinity candidates** (across ${changedCount} changed \`src/**/*.{ts,tsx}\` files) on \`i18n/fr-sync\`.`,
               "",
               "### Instructions for Gemini Scheduled Task",
-              "1. Read the JSON below (`missing`, `unwrapped`, and `changedFiles`).",
-              "2. Inspect the surrounding code around cited `file:line` entries AND review `changedFiles` on `i18n/fr-sync` for any hardcoded English UI text, `.ts` message builders, tooltips, or errors missed by the AST scanner.",
-              "3. Wire any genuine user-facing unwrapped strings in `.ts`/`.tsx` files with `t()`/`tp()` directly on `i18n/fr-sync`, and commit `i18n-delta-fr.json` at the repo root of `i18n/fr-sync` with French translations for both `missing` keys and any newly wired keys.",
-              "4. Stage 2 (`i18n-apply-delta.yml`) will merge `i18n-delta-fr.json` into `src/lib/i18n/fr.json`, run `test-i18n-gettext.mjs` and `check-i18n-gaps.mjs --strict`, and update the Draft PR against `main`.",
+              "1. Read `missing` and `vicinityCandidates` in the JSON below (each candidate already includes its `±2` line `snippet` so you do not need to fetch full files just to triage).",
+              "2. Only fetch a `.ts`/`.tsx` file on `i18n/fr-sync` when a `vicinityCandidates` entry is genuinely user-facing UI text that needs `t()`/`tp()` wiring.",
+              "3. Commit any `.ts`/`.tsx` wiring changes and `i18n-delta-fr.json` at the repo root of `i18n/fr-sync` with French translations for both `missing` keys and any newly wired keys.",
+              "4. Stage 2 (`i18n-apply-delta.yml`) will merge `i18n-delta-fr.json` into `src/lib/i18n/fr.json`, run `test-i18n-gettext.mjs`, `check-i18n-gaps.mjs --strict`, `tsc --noEmit`, and the static audit tests (`test-name-lookups.mjs`, `test-text-comparisons.mjs`), and update the Draft PR against `main`.",
               "",
               "<details>",
               "<summary>Gap payload (JSON)</summary>",

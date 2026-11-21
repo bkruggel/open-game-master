@@ -46,12 +46,18 @@ jobs:
             exit 0
           fi
 
-          npm install --no-save typescript
+          npm ci --no-audit --no-fund
           node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json
           node scripts/test-i18n-gettext.mjs
           cp ../automation/scripts/check-i18n-gaps.mjs ./.tmp-check-i18n-gaps.mjs
           node ./.tmp-check-i18n-gaps.mjs --strict
           rm -f ./.tmp-check-i18n-gaps.mjs
+
+          # Fast safety net: catch TypeScript errors and static audit regressions
+          # here (~15s) instead of waiting 25 minutes for full smoke tests on the PR.
+          npx tsc --noEmit
+          node scripts/test-name-lookups.mjs
+          node scripts/test-text-comparisons.mjs
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -73,10 +79,10 @@ jobs:
               --head i18n/fr-sync \
               --draft \
               --title "i18n(fr): sync French translations from upstream" \
-              --body "Rolling French localization branch kept in sync with \`upstream/main\`. Automated deltas from \`i18n-delta-fr.json\` are merged into \`src/lib/i18n/fr.json\` and validated with \`test-i18n-gettext.mjs\` and \`check-i18n-gaps.mjs --strict\`. Ready for playtesting and upstream PR whenever you are."
+              --body "Rolling French localization branch kept in sync with \`upstream/main\`. Automated deltas from \`i18n-delta-fr.json\` are merged into \`src/lib/i18n/fr.json\` and validated with \`test-i18n-gettext.mjs\`, \`check-i18n-gaps.mjs --strict\`, \`tsc --noEmit\`, \`test-name-lookups.mjs\`, and \`test-text-comparisons.mjs\`. Ready for playtesting and upstream PR whenever you are."
           fi
 
           ISSUE_NUM=$(gh issue list --repo "${{ github.repository }}" --label "i18n-automation" --state open --json number --jq '.[0].number // empty')
           if [ -n "$ISSUE_NUM" ]; then
-            gh issue close "$ISSUE_NUM" --repo "${{ github.repository }}" --comment "Applied \`i18n-delta-fr.json\` to \`i18n/fr-sync\` and verified 0 remaining missing keys."
+            gh issue close "$ISSUE_NUM" --repo "${{ github.repository }}" --comment "Applied \`i18n-delta-fr.json\` to \`i18n/fr-sync\` and verified 0 remaining missing keys, clean TypeScript build, and passing static audit tests."
           fi
