@@ -49,7 +49,9 @@ jobs:
           npm install --no-save typescript
           node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json
           node scripts/test-i18n-gettext.mjs
-          node ../automation/scripts/check-i18n-gaps.mjs --strict
+          cp ../automation/scripts/check-i18n-gaps.mjs ./.tmp-check-i18n-gaps.mjs
+          node ./.tmp-check-i18n-gaps.mjs --strict
+          rm -f ./.tmp-check-i18n-gaps.mjs
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
