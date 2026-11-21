@@ -25,11 +25,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Sync main with upstream and scan for gaps
+      - name: Sync main with upstream, update i18n/fr-sync, and scan for gaps
         id: scan
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git clone --branch main --single-branch "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" upstream-work
           cd upstream-work
           PREV_SHA=$(git rev-parse HEAD)
@@ -43,6 +46,21 @@ jobs:
             DIFF_ARG="--diff $PREV_SHA"
           else
             DIFF_ARG=""
+          fi
+
+          # Maintain a single rolling French staging branch on top of main so
+          # previously translated strings accumulate cleanly until playtest/PR.
+          if git ls-remote --exit-code --heads origin i18n/fr-sync >/dev/null 2>&1; then
+            git fetch origin i18n/fr-sync
+            git checkout -B i18n/fr-sync origin/i18n/fr-sync
+            if ! git merge --no-edit main; then
+              git merge --abort || true
+              git merge --no-edit -X ours main
+            fi
+            git push origin i18n/fr-sync
+          else
+            git checkout -B i18n/fr-sync main
+            git push origin i18n/fr-sync
           fi
 
           npm install --no-save typescript
@@ -87,7 +105,7 @@ jobs:
                 await github.rest.issues.createComment({
                   ...context.repo,
                   issue_number: openIssue.number,
-                  body: `All gaps resolved on upstream \`${upstreamSha.slice(0, 9)}\`. Closing.`,
+                  body: `All gaps resolved on \`i18n/fr-sync\` (upstream \`${upstreamSha.slice(0, 9)}\`). Closing.`,
                 });
                 await github.rest.issues.update({
                   ...context.repo,
@@ -100,12 +118,12 @@ jobs:
 
             const payload = JSON.stringify({ upstreamSha, ...gaps }, null, 2);
             const body = [
-              `Upstream \`Lebbitheplow/open-game-master@main\` (\`${upstreamSha.slice(0, 9)}\`) has **${missingCount} missing \`t()\`/\`tp()\` keys** and **${unwrappedCount} potential unwrapped UI strings**.`,
+              `Upstream \`Lebbitheplow/open-game-master@main\` (\`${upstreamSha.slice(0, 9)}\`) has **${missingCount} missing \`t()\`/\`tp()\` keys** and **${unwrappedCount} potential unwrapped UI strings** on \`i18n/fr-sync\`.`,
               "",
               "### Instructions for Gemini Scheduled Task",
-              "1. Read the JSON below and inspect the cited `.ts`/`.tsx` files if you need surrounding context.",
-              "2. Create branch `i18n/delta-<YYYY-MM-DD>` from `main` and commit **only** `i18n-delta-fr.json` with the French translations.",
-              "3. Stage 2 (`i18n-apply-delta.yml`) will merge it into `src/lib/i18n/fr.json`, run `test-i18n-gettext.mjs`, and open a Draft PR.",
+              "1. Read the JSON below and inspect the cited `.ts`/`.tsx` files on `main` if you need surrounding context.",
+              "2. Commit **only** `i18n-delta-fr.json` at the repo root on branch `i18n/fr-sync` with the French translations.",
+              "3. Stage 2 (`i18n-apply-delta.yml`) will merge it into `src/lib/i18n/fr.json`, run `test-i18n-gettext.mjs`, and update the Draft PR against `main`.",
               "",
               "<details>",
               "<summary>Gap payload (JSON)</summary>",
