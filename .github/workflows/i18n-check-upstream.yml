@@ -52,7 +52,7 @@ jobs:
           # previously translated strings accumulate cleanly until playtest/PR.
           if git ls-remote --exit-code --heads origin i18n/fr-sync >/dev/null 2>&1; then
             git fetch origin i18n/fr-sync
-            git checkout -B i18n/fr-sync origin/i18n/fr-sync
+            git checkout -B i18n/fr-sync FETCH_HEAD
             if ! git merge --no-edit main; then
               git merge --abort || true
               git merge --no-edit -X ours main
