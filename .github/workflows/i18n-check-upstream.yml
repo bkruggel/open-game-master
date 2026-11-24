@@ -1,9 +1,6 @@
 name: Check Upstream i18n Gaps
 
 on:
-  schedule:
-    # Run daily at 04:17 UTC (11:17 PM EST / 12:17 AM EDT in Montreal) to avoid top-of-hour cron delays
-    - cron: "17 4 * * *"
   workflow_dispatch:
 
 permissions:

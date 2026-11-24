@@ -1,9 +1,6 @@
 name: Apply i18n French Delta
 
 on:
-  schedule:
-    # Run daily at 08:17 UTC (03:17 AM EST / 04:17 AM EDT in Montreal), after Gemini's 02:00 AM sweep
-    - cron: "17 8 * * *"
   workflow_dispatch:
 
 permissions:
@@ -74,10 +71,7 @@ jobs:
           EXISTING=$(gh pr list --repo "${{ github.repository }}" --head "i18n/fr-sync" --base "main" --state open --json number --jq '.[0].number // empty')
           if [ -z "$EXISTING" ]; then
             gh pr create \
-              --repo "${{ github.repository }}" \
-              --base main \
-              --head i18n/fr-sync \
-              --draft \
+              --repo "${{ github.repository }}" --base main --head i18n/fr-sync --draft \
               --title "i18n(fr): sync French translations from upstream" \
               --body "Rolling French localization branch kept in sync with \`upstream/main\`. Automated deltas from \`i18n-delta-fr.json\` are merged into \`src/lib/i18n/fr.json\` and validated with \`test-i18n-gettext.mjs\`, \`check-i18n-gaps.mjs --strict\`, \`tsc --noEmit\`, \`test-name-lookups.mjs\`, and \`test-text-comparisons.mjs\`. Ready for playtesting and upstream PR whenever you are."
           fi
