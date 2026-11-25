@@ -6,6 +6,7 @@ import type { PendingRoll } from "@/app/campaigns/[campaignId]/useCampaignStream
 import { CheckFrame } from "@/app/campaigns/[campaignId]/SkillCheckCard";
 import { TokenFace } from "@/app/campaigns/[campaignId]/BoardChrome";
 import { askLine, smiteChoiceLine, waitLine } from "@/lib/dm/opportunity-ask-logic";
+import { useT } from "@/lib/locale";
 
 // A finger-sized target (40px, the kit's own) with a ring for the keyboard.
 const RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70";
@@ -43,6 +44,7 @@ export function OpportunityCard({
   // An enemy's face by its id, for the two of a mounted pair.
   faceOf?: (enemyId: string) => Array<string | null | undefined>;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const ask = pending.carry?.ask ?? null;
@@ -69,10 +71,10 @@ export function OpportunityCard({
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setError(data.error || "Could not send your answer.");
+        setError(data.error || t("Could not send your answer."));
       }
     } catch {
-      setError("Could not reach the server.");
+      setError(t("Could not reach the server."));
     } finally {
       setBusy(false);
     }
@@ -81,10 +83,10 @@ export function OpportunityCard({
   if (!ask) {
     return null;
   }
-  const name = sheets.find((sheet) => sheet.id === pending.characterId)?.name ?? "A player";
+  const name = sheets.find((sheet) => sheet.id === pending.characterId)?.name ?? t("A player");
   const clock = left !== null ? (
     <span id={clockId} className="check-dim text-xs tabular-nums" aria-live="off">
-      <span className="sr-only">If nobody answers, the attack is taken in </span>
+      <span className="sr-only">{t("If nobody answers, the attack is taken in")} </span>
       {left}s
     </span>
   ) : null;
@@ -92,7 +94,7 @@ export function OpportunityCard({
   if (pending.userId !== meUserId) {
     return (
       <CheckFrame className="mb-2 flex animate-fade-up flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs">
-        <span className="min-w-0">{waitLine(ask, name)}</span>
+        <span className="min-w-0">{waitLine(ask, name, t, t.locale)}</span>
         <span className="flex items-center gap-2">
           {clock}
           {steersStory || left === 0 ? (
@@ -100,10 +102,10 @@ export function OpportunityCard({
               type="button"
               disabled={busy}
               onClick={() => void answer(true)}
-              title={`Take ${name}'s opportunity attack for them, as the clock would.`}
+              title={t("Take {name}'s opportunity attack for them, as the clock would.", { name })}
               className={`${PLAIN} shrink-0`}
             >
-              Take it for them
+              {t("Take it for them")}
             </button>
           ) : null}
         </span>
@@ -114,7 +116,7 @@ export function OpportunityCard({
 
   return (
     <CheckFrame className="opportunity-ask mb-2 animate-fade-up px-3 py-2.5">
-      <p id={lineId} className="text-sm">{askLine(ask)}</p>
+      <p id={lineId} className="text-sm">{askLine(ask, t, t.locale)}</p>
       <div role="group" aria-labelledby={lineId} className="mt-2 flex flex-wrap items-center gap-2">
         {(ask.rider ? [ask.rider, { id: ask.walkerId, name: ask.walker }] : [{ id: "", name: ask.walker }]).map((foe) => (
           <span key={foe.id} className="contents">
@@ -123,11 +125,11 @@ export function OpportunityCard({
               disabled={busy}
               aria-describedby={left !== null ? clockId : undefined}
               onClick={() => void answer(true, false, foe.id || undefined)}
-              title={`Swing your ${ask.weapon} at ${foe.name}. Your reaction is spent until your next turn.`}
+              title={t("Swing your {weapon} at {target}. Your reaction is spent until your next turn.", { weapon: ask.weapon, target: foe.name })}
               className={`${STRIKE} ${foe.id ? "gap-1.5 pl-1" : ""}`}
             >
               {foe.id ? <TokenFace candidates={faceOf?.(foe.id) ?? []} name={foe.name} enemy className="size-8 rounded-full border border-amber-400/60" /> : null}
-              {foe.id ? `Strike ${foe.name}` : "Strike"}
+              {foe.id ? t("Strike {target}", { target: foe.name }) : t("Strike")}
             </button>
             {smiteOffered && ask.smiteSlot ? (
               <button
@@ -135,10 +137,10 @@ export function OpportunityCard({
                 disabled={busy}
                 aria-describedby={left !== null ? clockId : undefined}
                 onClick={() => void answer(true, true, foe.id || undefined)}
-                title={`Swing your ${ask.weapon} at ${foe.name} and, if it hits, spend a level ${ask.smiteSlot} spell slot on Divine Smite for extra radiant damage. A miss keeps the slot.`}
+                title={t("Swing your {weapon} at {target} and, if it hits, spend a level {slot} spell slot on Divine Smite for extra radiant damage. A miss keeps the slot.", { weapon: ask.weapon, target: foe.name, slot: ask.smiteSlot })}
                 className={STRIKE}
               >
-                {smiteChoiceLine(ask.smiteSlot, foe.id ? foe.name : undefined)}
+                {smiteChoiceLine(ask.smiteSlot, foe.id ? foe.name : undefined, t, t.locale)}
               </button>
             ) : null}
           </span>
@@ -148,10 +150,10 @@ export function OpportunityCard({
           disabled={busy}
           aria-describedby={left !== null ? clockId : undefined}
           onClick={() => void answer(false)}
-          title="No attack, and you keep your reaction for something else."
+          title={t("No attack, and you keep your reaction for something else.")}
           className={LET_GO}
         >
-          Let it go
+          {t("Let it go")}
         </button>
         {clock}
       </div>
