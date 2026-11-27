@@ -1,0 +1,11 @@
+{
+  "messages": {
+    "an object": "un objet",
+    "Before you enter your dice: {steps}.": "Avant d’entrer tes dés : {steps}."
+  },
+  "contexts": {
+    "then": {
+      "roll.steps": "puis"
+    }
+  }
+}
