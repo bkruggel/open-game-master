@@ -44,7 +44,7 @@ jobs:
           fi
 
           git fetch origin main
-          git show origin/main:src/lib/i18n/fr.json > ../main-fr.json
+          git show FETCH_HEAD:src/lib/i18n/fr.json > ../main-fr.json
 
           npm ci --no-audit --no-fund
           node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json ../main-fr.json
