@@ -127,11 +127,13 @@ export function OpportunityCard({
               disabled={busy}
               aria-describedby={left !== null ? clockId : undefined}
               onClick={() => void answer(true, false, foe.id || undefined)}
-              title={t("Swing your {weapon} at {target}. Your reaction is spent until your next turn.", { weapon: ask.weapon, target: foe.name })}
+              title={ask.spell
+                ? t("Cast {spell} at {target}. Your reaction is spent until your next turn.", { spell: ask.spell, target: foe.name })
+                : t("Swing your {weapon} at {target}. Your reaction is spent until your next turn.", { weapon: ask.weapon, target: foe.name })}
               className={`${STRIKE} ${foe.id ? "gap-1.5 pl-1" : ""}`}
             >
               {foe.id ? <TokenFace candidates={faceOf?.(foe.id) ?? []} name={foe.name} enemy className="size-8 rounded-full border border-amber-400/60" /> : null}
-              {foe.id ? t("Strike {target}", { target: foe.name }) : t("Strike")}
+              {foe.id ? (ask.spell ? t("Cast at {target}", { target: foe.name }) : t("Strike {target}", { target: foe.name })) : t("Strike")}
             </button>
             {smiteOffered && ask.smiteSlot && !ask.spell ? (
               <button

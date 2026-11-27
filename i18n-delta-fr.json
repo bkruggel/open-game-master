@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "opportunity attack": "attaque d’opportunité",
+    "half on a miss": "moitié sur un raté",
+    "someone unseen": "quelqu’un hors de vue",
+    "Cast at {target}": "Lancer sur {target}",
+    "Cast {spell} at {target}. Your reaction is spent until your next turn.": "Lancer {spell} sur {target}. Ta réaction est dépensée jusqu’à ton prochain tour.",
+    "{walker} is moving out of your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} sort de ton allonge avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction.",
+    "{walker} is moving into your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} entre dans ton allonge avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction.",
+    "{walker} is moving within your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} se déplace dans ton allonge avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction.",
+    "{walker} is moving away from your echo with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} s’éloigne de ton écho avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction."
+  }
+}

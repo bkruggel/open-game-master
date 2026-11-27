@@ -106,6 +106,13 @@ const ASK_RIDER_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, strin
   echo: (t, vars) => t("{walker} is moving away from your echo with {rider} on its back. Take your opportunity attack with your {weapon}, and at which of them? It uses your reaction.", vars),
 };
 
+const ASK_SPELL_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, string>) => string> = {
+  leaves: (t, vars) => t("{walker} is moving out of your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+  enters: (t, vars) => t("{walker} is moving into your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+  within: (t, vars) => t("{walker} is moving within your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+  echo: (t, vars) => t("{walker} is moving away from your echo with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+};
+
 const WAIT_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, string>) => string> = {
   leaves: (t, vars) => t("{walker} is moving out of {name}'s reach. {name} is deciding whether to take an opportunity attack.", vars),
   enters: (t, vars) => t("{walker} is moving into {name}'s reach. {name} is deciding whether to take an opportunity attack.", vars),
@@ -118,12 +125,20 @@ const WAIT_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, string>) =
 // With a rider on the walker's back: "The Wolf is moving out of your reach
 // with Goblin on its back. Take your opportunity attack with your Longsword,
 // and at which of them? It uses your reaction."
-export function askLine(ask: Pick<OpportunityAsk, "walker" | "weapon" | "trigger" | "rider">, t?: T, locale: Locale = "en"): string {
+// With War Caster's spell named: "... Cast Fire Bolt as your opportunity
+// attack (War Caster), and at which of them? It uses your reaction."
+export function askLine(ask: Pick<OpportunityAsk, "walker" | "weapon" | "trigger" | "rider" | "spell">, t?: T, locale: Locale = "en"): string {
   if (t && locale === "fr") {
+    if (ask.rider && ask.spell) {
+      return ASK_SPELL_FR[ask.trigger](t, { walker: ask.walker, rider: ask.rider.name, spell: ask.spell });
+    }
     if (ask.rider) {
       return ASK_RIDER_FR[ask.trigger](t, { walker: ask.walker, rider: ask.rider.name, weapon: ask.weapon });
     }
     return ASK_FR[ask.trigger](t, { walker: ask.walker, weapon: ask.weapon });
+  }
+  if (ask.rider && ask.spell) {
+    return `${ask.walker} ${MOVES[ask.trigger]("your")} with ${ask.rider.name} on its back. Cast ${ask.spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.`;
   }
   if (ask.rider) {
     return `${ask.walker} ${MOVES[ask.trigger]("your")} with ${ask.rider.name} on its back. Take your opportunity attack with your ${ask.weapon}, and at which of them? It uses your reaction.`;
