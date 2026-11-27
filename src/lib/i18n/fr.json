@@ -11065,7 +11065,10 @@
     "{walker} is moving out of {name}'s reach. {name} is deciding whether to take an opportunity attack.": "{walker} sort de l’allonge de {name}. {name} décide s’il faut porter une attaque d’opportunité.",
     "{walker} is moving into {name}'s reach. {name} is deciding whether to take an opportunity attack.": "{walker} entre dans l’allonge de {name}. {name} décide s’il faut porter une attaque d’opportunité.",
     "{walker} is moving within {name}'s reach. {name} is deciding whether to take an opportunity attack.": "{walker} se déplace dans l’allonge de {name}. {name} décide s’il faut porter une attaque d’opportunité.",
-    "{walker} is moving away from {name}'s echo. {name} is deciding whether to take an opportunity attack.": "{walker} s’éloigne de l’écho de {name}. {name} décide s’il faut porter une attaque d’opportunité."
+    "{walker} is moving away from {name}'s echo. {name} is deciding whether to take an opportunity attack.": "{walker} s’éloigne de l’écho de {name}. {name} décide s’il faut porter une attaque d’opportunité.",
+    "an object": "un objet",
+    "Before you enter your dice: {steps}.": "Avant d’entrer tes dés : {steps}.",
+    "then": "puis"
   },
   "contexts": {
     "Arcane": {
