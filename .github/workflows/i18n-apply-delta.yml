@@ -43,9 +43,13 @@ jobs:
             exit 0
           fi
 
+          git fetch origin main
+          git show origin/main:src/lib/i18n/fr.json > ../main-fr.json
+
           npm ci --no-audit --no-fund
-          node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json
+          node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json ../main-fr.json
           node scripts/test-i18n-gettext.mjs
+          node scripts/test-roll-words.mjs
           cp ../automation/scripts/check-i18n-gaps.mjs ./.tmp-check-i18n-gaps.mjs
           node ./.tmp-check-i18n-gaps.mjs --strict
           rm -f ./.tmp-check-i18n-gaps.mjs

@@ -45,6 +45,8 @@ jobs:
             DIFF_ARG=""
           fi
 
+          cp src/lib/i18n/fr.json ../main-fr.json
+
           # Maintain a single rolling French staging branch on top of main so
           # previously translated strings accumulate cleanly until playtest/PR.
           if git ls-remote --exit-code --heads origin i18n/fr-sync >/dev/null 2>&1; then
@@ -53,6 +55,11 @@ jobs:
             if ! git merge --no-edit main; then
               git merge --abort || true
               git merge --no-edit -X ours main
+            fi
+            node ../automation/scripts/apply-i18n-delta.mjs --upstream-only ../main-fr.json
+            if ! git diff --quiet src/lib/i18n/fr.json; then
+              git add src/lib/i18n/fr.json
+              git commit -m "i18n(fr): sync upstream fr.json keys from main"
             fi
             git push origin i18n/fr-sync
           else
