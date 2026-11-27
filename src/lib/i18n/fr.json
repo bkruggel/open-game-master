@@ -11068,7 +11068,16 @@
     "{walker} is moving away from {name}'s echo. {name} is deciding whether to take an opportunity attack.": "{walker} s’éloigne de l’écho de {name}. {name} décide s’il faut porter une attaque d’opportunité.",
     "an object": "un objet",
     "Before you enter your dice: {steps}.": "Avant d’entrer tes dés : {steps}.",
-    "then": "puis"
+    "then": "puis",
+    "opportunity attack": "attaque d’opportunité",
+    "half on a miss": "moitié sur un raté",
+    "someone unseen": "quelqu’un hors de vue",
+    "Cast at {target}": "Lancer sur {target}",
+    "Cast {spell} at {target}. Your reaction is spent until your next turn.": "Lancer {spell} sur {target}. Ta réaction est dépensée jusqu’à ton prochain tour.",
+    "{walker} is moving out of your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} sort de ton allonge avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction.",
+    "{walker} is moving into your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} entre dans ton allonge avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction.",
+    "{walker} is moving within your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} se déplace dans ton allonge avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction.",
+    "{walker} is moving away from your echo with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.": "{walker} s’éloigne de ton écho avec {rider} sur son dos. Lancer {spell} en attaque d’opportunité (Mage de guerre), et sur lequel des deux ? Cela utilise ta réaction."
   },
   "contexts": {
     "Arcane": {
