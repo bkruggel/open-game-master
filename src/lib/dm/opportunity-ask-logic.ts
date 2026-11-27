@@ -26,11 +26,14 @@ type Locale = "en" | "fr";
 // ruling 5: enemy-riders.ts): "If the mount provokes an opportunity attack
 // while you're on it, the attacker can target you or the mount" (SRD 5.1,
 // Mounted Combat), so the card offers both by name and `target` is the id of
-// the one the player chose.
+// the one the player chose. `spell` is the spell War Caster casts in the
+// swing's place (ar-wbf-feat-warcaster.ts), on a pair's card only: a spell at
+// one creature is cast with nobody asked, as the player named it beforehand.
 export type OpportunityAsk = {
   walkerId: string;
   walker: string;
   weapon: string;
+  spell?: string;
   trigger: OpportunityTrigger;
   rider?: { id: string; name: string };
   deadline?: string;

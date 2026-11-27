@@ -24,7 +24,9 @@ const PLAIN = `motion-press inline-flex min-h-10 items-center px-1 text-xs font-
 //
 // A mount walking out of reach with a rider on its back (issue 1055, ruling
 // 5): "the attacker can target you or the mount". The card then has no plain
-// Strike: it offers the two by face and name, and the player picks one.
+// Strike: it offers the two by face and name, and the player picks one. With
+// War Caster's spell named for their opportunity attacks the two buttons cast
+// it ("Cast at Goblin"), and no smite is offered: no weapon swings.
 export function OpportunityCard({
   campaignId,
   pending,
@@ -131,7 +133,7 @@ export function OpportunityCard({
               {foe.id ? <TokenFace candidates={faceOf?.(foe.id) ?? []} name={foe.name} enemy className="size-8 rounded-full border border-amber-400/60" /> : null}
               {foe.id ? t("Strike {target}", { target: foe.name }) : t("Strike")}
             </button>
-            {smiteOffered && ask.smiteSlot ? (
+            {smiteOffered && ask.smiteSlot && !ask.spell ? (
               <button
                 type="button"
                 disabled={busy}

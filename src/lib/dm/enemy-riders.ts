@@ -25,7 +25,8 @@
 // Must not import map-tools, encounter-tools or enemy-damage: they call in.
 
 import type { Campaign } from "@/lib/db/campaigns";
-import { getBattleMapForEncounter, handTokenTo, insertToken, listTokens } from "@/lib/db/battle-maps";
+import { getBattleMapForEncounter, handTokenTo, insertToken, listTokens, moveToken } from "@/lib/db/battle-maps";
+import { enemyMoveBudget } from "@/lib/dm/enemy-speed";
 import { getEncounter, getEnemy, listEnemies, saveEncounter, setEnemyMount, setEnemySlotOwed, type Encounter, type EncounterEnemy } from "@/lib/db/encounters";
 import { enemyActedThisRound, markEnemyActed } from "@/lib/dm/can-act";
 import { spliceIntoOrder } from "@/lib/dm/encounter-logic";
@@ -76,12 +77,34 @@ export function onOwnToken<T extends Linked>(enemies: readonly T[]): T[] {
 export function mountSizeProblem(
   rider: { name: string; stats: Pick<EnemyStats, "size"> },
   mount: { name: string; stats: Pick<EnemyStats, "size"> },
+  // What to do about it, for a pair refused in the middle of a fight
+  // (enemy-mounting.ts); the default is for one being fielded.
+  advice = "Name a larger mount, or leave mount out and field them on foot.",
 ): string | null {
   if (sizeRank(mount.stats.size) > sizeRank(rider.stats.size)) {
     return null;
   }
   const size = (stats: Pick<EnemyStats, "size">) => stats.size ?? "Medium";
-  return `${mount.name} (${size(mount.stats)}) cannot carry ${rider.name} (${size(rider.stats)}): a mount is at least one size larger than its rider (SRD 5.1, Mounting and Dismounting). Name a larger mount, or leave mount out and field them on foot.`;
+  return `${mount.name} (${size(mount.stats)}) cannot carry ${rider.name} (${size(rider.stats)}): a mount is at least one size larger than its rider (SRD 5.1, Mounting and Dismounting). ${advice}`;
+}
+
+// A mount its rider steers has no place of its own in the order (ruling 2):
+// "the initiative of a controlled mount changes to match yours when you
+// mount it" (SRD 5.1, Controlling a Mount). One steered from the middle of a
+// fight (issue 1091, enemy-mounting.ts) held a place until then, which goes
+// here: where the pair is made, and again on the walk of the order, whose
+// copy of the fight is the one saved. Changes `encounter` and returns whether
+// its order changed; the caller saves.
+export function unseatLedMounts(encounter: Encounter): boolean {
+  const led = new Set(listEnemies(encounter.id).flatMap((enemy) => (enemy.ledBy ? [enemy.id] : [])));
+  const slots = encounter.order.flatMap((entry, index) => (entry.kind === "enemy" && led.has(entry.enemyId) ? [index] : []));
+  if (!slots.length) {
+    return false;
+  }
+  const before = slots.filter((slot) => slot <= encounter.turnIndex).length;
+  encounter.order = encounter.order.filter((_, index) => !slots.includes(index));
+  encounter.turnIndex = Math.max(0, encounter.turnIndex - before);
+  return true;
 }
 
 // Puts each rider on its mount as the rows are made. `carries[i]` is the
@@ -179,6 +202,26 @@ function freeMount(rider: EncounterEnemy, mount: EncounterEnemy) {
   if (seated || spent) {
     saveEncounter(encounter);
   }
+}
+
+// A steered mount whose rider got down by choice on the rider's own turn:
+// its turn this round was that one (SRD 5.1, Controlling a Mount), so it
+// neither acts nor walks on before the next round. freeMount marks it so only
+// when the rider has acted, and a rider who gets down first has not. Returns
+// true, for the caller's words.
+export function spendLedMountTurn(mount: EncounterEnemy): true {
+  const encounter = getEncounter(mount.encounterId);
+  if (encounter?.orderReady && !enemyActedThisRound(encounter, mount.id)) {
+    markEnemyActed(encounter, mount.id);
+    saveEncounter(encounter);
+  }
+  const map = getBattleMapForEncounter(mount.encounterId);
+  const token = map ? listTokens(map.id).find((entry) => entry.refId === mount.id) : undefined;
+  const rest = token ? enemyMoveBudget(encounter, getEnemy(mount.id) ?? mount, token).tilesLeft : 0;
+  if (token && rest > 0) {
+    moveToken(token.id, token.x, token.y, token.movedThisRound + rest);
+  }
+  return true;
 }
 
 // Gives each freed mount its place in a locked order: its rider's count,
