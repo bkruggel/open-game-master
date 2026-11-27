@@ -1,7 +1,8 @@
 {
   "messages": {
     "an object": "un objet",
-    "Before you enter your dice: {steps}.": "Avant d’entrer tes dés : {steps}."
+    "Before you enter your dice: {steps}.": "Avant d’entrer tes dés : {steps}.",
+    "then": "puis"
   },
   "contexts": {
     "then": {
