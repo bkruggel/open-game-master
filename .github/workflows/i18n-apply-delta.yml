@@ -82,7 +82,7 @@ jobs:
       - name: Ensure Draft PR and close tracking issue
         if: steps.apply.outputs.applied == 'true'
         env:
-          GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           EXISTING=$(gh pr list --repo "${{ github.repository }}" --head "i18n/fr-sync" --base "main" --state open --json number --jq '.[0].number // empty')
           if [ -z "$EXISTING" ]; then
