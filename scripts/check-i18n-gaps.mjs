@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Scans src/ with the TypeScript AST for t(...) and tp(...) calls whose keys
-// are missing from src/lib/i18n/fr.json, and emits compact AST-based vicinity
-// candidates (with +-2 line snippets) near missing keys and git-diff hunks so
-// downstream automation does not need to fetch full source files just to audit
-// surrounding code.
+// are missing from src/lib/i18n/fr.json, checks for any keys present in
+// src/lib/i18n/es.json that are missing from fr.json, and emits compact
+// AST-based vicinity candidates (with +-2 line snippets) near missing keys and
+// git-diff hunks so downstream automation does not need to fetch full source
+// files just to audit surrounding code.
 //
 // Options:
 //   --diff <ref>  Also scan +-10 lines around git diff hunks since <ref> for
@@ -18,6 +19,7 @@ import ts from "typescript";
 
 const ROOT = process.cwd();
 const FR_PATH = path.join(ROOT, "src/lib/i18n/fr.json");
+const ES_PATH = path.join(ROOT, "src/lib/i18n/es.json");
 const SRC_DIR = path.join(ROOT, "src");
 
 const args = process.argv.slice(2);
@@ -27,6 +29,7 @@ const strict = args.includes("--strict");
 const jsonOut = args.includes("--json");
 
 const fr = JSON.parse(fs.readFileSync(FR_PATH, "utf8"));
+const es = fs.existsSync(ES_PATH) ? JSON.parse(fs.readFileSync(ES_PATH, "utf8")) : null;
 const missing = [];
 const vicinityCandidates = [];
 
@@ -104,6 +107,42 @@ function scanMissingAst(sf, relPath) {
   }
   visit(sf);
   return missingLines;
+}
+
+function scanEsParity() {
+  if (!es) return;
+  const seen = new Set(missing.map((m) => `${m.fn}:${m.key}:${m.ctx ?? ""}`));
+  for (const key of Object.keys(es.messages ?? {})) {
+    if (!Object.hasOwn(fr.messages ?? {}, key)) {
+      const id = `t:${key}:`;
+      if (!seen.has(id)) {
+        seen.add(id);
+        missing.push({ file: "src/lib/i18n/es.json", line: 1, fn: "t", key });
+      }
+    }
+  }
+  for (const [key, ctxMap] of Object.entries(es.contexts ?? {})) {
+    for (const ctx of Object.keys(ctxMap ?? {})) {
+      if (!Object.hasOwn(fr.contexts?.[key] ?? {}, ctx)) {
+        const id = `t:${key}:${ctx}`;
+        if (!seen.has(id)) {
+          seen.add(id);
+          missing.push({ file: "src/lib/i18n/es.json", line: 1, fn: "t", key, ctx });
+        }
+      }
+    }
+  }
+  for (const key of Object.keys(es.plurals ?? {})) {
+    if (!Object.hasOwn(fr.plurals ?? {}, key)) {
+      const [singular, plural] = key.split("\u0000");
+      const formatted = plural !== undefined ? `${singular} | ${plural}` : singular;
+      const id = `tp:${formatted}:`;
+      if (!seen.has(id)) {
+        seen.add(id);
+        missing.push({ file: "src/lib/i18n/es.json", line: 1, fn: "tp", key: formatted });
+      }
+    }
+  }
 }
 
 const UI_PROPS = new Set([
@@ -352,6 +391,7 @@ function walk(dir) {
 }
 
 walk(SRC_DIR);
+scanEsParity();
 
 // Prioritize candidates closest to missing keys first, then diff hunks.
 const REASON_ORDER = { "near-missing+diff": 0, "near-missing": 1, "in-diff": 2 };
