@@ -13,7 +13,7 @@
 export type OpportunityTrigger = "leaves" | "enters" | "within" | "echo";
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
-type Locale = "en" | "fr";
+type Locale = "en" | "fr" | "es";
 
 // The card's question, carried on the parked roll (dm-turns.ts PendingCarry).
 // `walker` is the walker's name as the table sees it, `weapon` the one the
