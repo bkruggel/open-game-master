@@ -8,9 +8,13 @@ permissions:
   pull-requests: write
   issues: write
 
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+
 jobs:
   apply-delta:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout automation branch
         uses: actions/checkout@v4
@@ -21,7 +25,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Apply i18n-delta-fr.json on i18n/fr-sync
         id: apply
@@ -48,17 +52,21 @@ jobs:
 
           npm ci --no-audit --no-fund
           node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json ../main-fr.json
+
+          # Fast i18n, TypeScript, and static audit checks
           node scripts/test-i18n-gettext.mjs
           node scripts/test-roll-words.mjs
+          node scripts/test-item-sheet.mjs
           cp ../automation/scripts/check-i18n-gaps.mjs ./.tmp-check-i18n-gaps.mjs
           node ./.tmp-check-i18n-gaps.mjs --strict
           rm -f ./.tmp-check-i18n-gaps.mjs
-
-          # Fast safety net: catch TypeScript errors and static audit regressions
-          # here (~15s) instead of waiting 25 minutes for full smoke tests on the PR.
           npx tsc --noEmit
           node scripts/test-name-lookups.mjs
           node scripts/test-text-comparisons.mjs
+
+          # Production build + first-load JS/CSS bundle size budget
+          npm run build
+          node scripts/check-bundle-budget.mjs
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -77,10 +85,10 @@ jobs:
             gh pr create \
               --repo "${{ github.repository }}" --base main --head i18n/fr-sync --draft \
               --title "i18n(fr): sync French translations from upstream" \
-              --body "Rolling French localization branch kept in sync with \`upstream/main\`. Automated deltas from \`i18n-delta-fr.json\` are merged into \`src/lib/i18n/fr.json\` and validated with \`test-i18n-gettext.mjs\`, \`check-i18n-gaps.mjs --strict\`, \`tsc --noEmit\`, \`test-name-lookups.mjs\`, and \`test-text-comparisons.mjs\`. Ready for playtesting and upstream PR whenever you are."
+              --body "Rolling French localization branch kept in sync with \`upstream/main\`. Automated deltas from \`i18n-delta-fr.json\` are merged into \`src/lib/i18n/fr.json\` and validated with \`test-i18n-gettext.mjs\`, \`test-roll-words.mjs\`, \`test-item-sheet.mjs\`, \`check-i18n-gaps.mjs --strict\`, \`tsc --noEmit\`, \`test-name-lookups.mjs\`, \`test-text-comparisons.mjs\`, \`npm run build\`, and \`check-bundle-budget.mjs\`. Ready for playtesting and upstream PR whenever you are."
           fi
 
           ISSUE_NUM=$(gh issue list --repo "${{ github.repository }}" --label "i18n-automation" --state open --json number --jq '.[0].number // empty')
           if [ -n "$ISSUE_NUM" ]; then
-            gh issue close "$ISSUE_NUM" --repo "${{ github.repository }}" --comment "Applied \`i18n-delta-fr.json\` to \`i18n/fr-sync\` and verified 0 remaining missing keys, clean TypeScript build, and passing static audit tests."
+            gh issue close "$ISSUE_NUM" --repo "${{ github.repository }}" --comment "Applied \`i18n-delta-fr.json\` to \`i18n/fr-sync\` and verified 0 remaining missing keys, clean TypeScript/Next.js build, bundle budgets, and passing i18n & static audit tests."
           fi
