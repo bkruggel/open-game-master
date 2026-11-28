@@ -49,9 +49,10 @@ jobs:
 
           git fetch origin main
           git show FETCH_HEAD:src/lib/i18n/fr.json > ../main-fr.json
+          git show FETCH_HEAD:src/lib/i18n/es.json > ../main-es.json || true
 
           npm ci --no-audit --no-fund
-          node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json ../main-fr.json
+          node ../automation/scripts/apply-i18n-delta.mjs i18n-delta-fr.json ../main-fr.json ../main-es.json
 
           # Fast i18n, TypeScript, and static audit checks
           node scripts/test-i18n-gettext.mjs
@@ -71,6 +72,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/lib/i18n/fr.json i18n-delta-fr.json
+          if [ -f "src/lib/i18n/es.json" ]; then
+            git add src/lib/i18n/es.json
+          fi
           git commit -m "i18n(fr): apply automated French translation delta"
           git push origin i18n/fr-sync
           echo "applied=true" >> "$GITHUB_OUTPUT"
