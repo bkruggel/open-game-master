@@ -12,6 +12,9 @@
 // from a Manifest Echo's side.
 export type OpportunityTrigger = "leaves" | "enters" | "within" | "echo";
 
+type T = (key: string, vars?: Record<string, string | number>) => string;
+type Locale = "en" | "fr" | "es";
+
 // The card's question, carried on the parked roll (dm-turns.ts PendingCarry).
 // `walker` is the walker's name as the table sees it, `weapon` the one the
 // swing would use. `deadline` only while another player is at the table
@@ -72,7 +75,12 @@ export function smiteSlotOf(casting: { slots?: Record<string, { max: number; use
 // The card's smite choice in words: "Strike and smite (1st-level slot)", or
 // on a mounted pair's card, where each of the two has its own pair of
 // buttons, "Strike Goblin and smite (1st-level slot)", beside "Strike Goblin".
-export function smiteChoiceLine(slot: number, at?: string): string {
+export function smiteChoiceLine(slot: number, at?: string, t?: T, locale: Locale = "en"): string {
+  if (t && locale === "fr") {
+    return at
+      ? t("Strike {target} and smite (level {slot} slot)", { target: at, slot })
+      : t("Strike and smite (level {slot} slot)", { slot });
+  }
   const suffix = slot === 1 ? "st" : slot === 2 ? "nd" : slot === 3 ? "rd" : "th";
   return `Strike ${at ? `${at} ` : ""}and smite (${slot}${suffix}-level slot)`;
 }
@@ -84,6 +92,34 @@ const MOVES: Record<OpportunityTrigger, (whose: string) => string> = {
   echo: (whose) => `is moving away from ${whose} echo`,
 };
 
+const ASK_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, string>) => string> = {
+  leaves: (t, vars) => t("{walker} is moving out of your reach. Take your opportunity attack with your {weapon}? It uses your reaction.", vars),
+  enters: (t, vars) => t("{walker} is moving into your reach. Take your opportunity attack with your {weapon}? It uses your reaction.", vars),
+  within: (t, vars) => t("{walker} is moving within your reach. Take your opportunity attack with your {weapon}? It uses your reaction.", vars),
+  echo: (t, vars) => t("{walker} is moving away from your echo. Take your opportunity attack with your {weapon}? It uses your reaction.", vars),
+};
+
+const ASK_RIDER_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, string>) => string> = {
+  leaves: (t, vars) => t("{walker} is moving out of your reach with {rider} on its back. Take your opportunity attack with your {weapon}, and at which of them? It uses your reaction.", vars),
+  enters: (t, vars) => t("{walker} is moving into your reach with {rider} on its back. Take your opportunity attack with your {weapon}, and at which of them? It uses your reaction.", vars),
+  within: (t, vars) => t("{walker} is moving within your reach with {rider} on its back. Take your opportunity attack with your {weapon}, and at which of them? It uses your reaction.", vars),
+  echo: (t, vars) => t("{walker} is moving away from your echo with {rider} on its back. Take your opportunity attack with your {weapon}, and at which of them? It uses your reaction.", vars),
+};
+
+const ASK_SPELL_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, string>) => string> = {
+  leaves: (t, vars) => t("{walker} is moving out of your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+  enters: (t, vars) => t("{walker} is moving into your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+  within: (t, vars) => t("{walker} is moving within your reach with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+  echo: (t, vars) => t("{walker} is moving away from your echo with {rider} on its back. Cast {spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.", vars),
+};
+
+const WAIT_FR: Record<OpportunityTrigger, (t: T, vars: Record<string, string>) => string> = {
+  leaves: (t, vars) => t("{walker} is moving out of {name}'s reach. {name} is deciding whether to take an opportunity attack.", vars),
+  enters: (t, vars) => t("{walker} is moving into {name}'s reach. {name} is deciding whether to take an opportunity attack.", vars),
+  within: (t, vars) => t("{walker} is moving within {name}'s reach. {name} is deciding whether to take an opportunity attack.", vars),
+  echo: (t, vars) => t("{walker} is moving away from {name}'s echo. {name} is deciding whether to take an opportunity attack.", vars),
+};
+
 // The player's own card: "The Goblin is moving out of your reach. Take your
 // opportunity attack with your Longsword? It uses your reaction."
 // With a rider on the walker's back: "The Wolf is moving out of your reach
@@ -91,7 +127,16 @@ const MOVES: Record<OpportunityTrigger, (whose: string) => string> = {
 // and at which of them? It uses your reaction."
 // With War Caster's spell named: "... Cast Fire Bolt as your opportunity
 // attack (War Caster), and at which of them? It uses your reaction."
-export function askLine(ask: Pick<OpportunityAsk, "walker" | "weapon" | "trigger" | "rider" | "spell">): string {
+export function askLine(ask: Pick<OpportunityAsk, "walker" | "weapon" | "trigger" | "rider" | "spell">, t?: T, locale: Locale = "en"): string {
+  if (t && locale === "fr") {
+    if (ask.rider && ask.spell) {
+      return ASK_SPELL_FR[ask.trigger](t, { walker: ask.walker, rider: ask.rider.name, spell: ask.spell });
+    }
+    if (ask.rider) {
+      return ASK_RIDER_FR[ask.trigger](t, { walker: ask.walker, rider: ask.rider.name, weapon: ask.weapon });
+    }
+    return ASK_FR[ask.trigger](t, { walker: ask.walker, weapon: ask.weapon });
+  }
   if (ask.rider && ask.spell) {
     return `${ask.walker} ${MOVES[ask.trigger]("your")} with ${ask.rider.name} on its back. Cast ${ask.spell} as your opportunity attack (War Caster), and at which of them? It uses your reaction.`;
   }
@@ -102,7 +147,10 @@ export function askLine(ask: Pick<OpportunityAsk, "walker" | "weapon" | "trigger
 }
 
 // What everyone else at the table reads while the player decides.
-export function waitLine(ask: Pick<OpportunityAsk, "walker" | "trigger">, name: string): string {
+export function waitLine(ask: Pick<OpportunityAsk, "walker" | "trigger">, name: string, t?: T, locale: Locale = "en"): string {
+  if (t && locale === "fr") {
+    return WAIT_FR[ask.trigger](t, { walker: ask.walker, name });
+  }
   return `${ask.walker} ${MOVES[ask.trigger](`${name}'s`)}. ${name} is deciding whether to take an opportunity attack.`;
 }
 
